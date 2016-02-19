@@ -1,0 +1,12 @@
+language: go
+go:
+  - 1.6
+  - tip
+cache:
+  directories:
+    - vendor
+install:
+  - make dependencies
+script:
+  - make coveralls
+  - make lint
