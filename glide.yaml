@@ -1,0 +1,20 @@
+package: github.com/akshayjshah/flog
+import:
+- package: github.com/stretchr/testify
+  subpackages:
+  - assert
+  - require
+- package: github.com/golang/lint
+  subpackages:
+  - golint
+- package: github.com/mattn/goveralls
+- package: github.com/Sirupsen/logrus
+- package: github.com/axw/gocov
+  subpackages:
+  - gocov
+- package: github.com/golang/glog
+- package: github.com/go-kit/kit
+  subpackages:
+  - log
+- package: gopkg.in/logfmt.v0
+- package: gopkg.in/stack.v1
