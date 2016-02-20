@@ -1,3 +1,4 @@
+export GO15VENDOREXPERIMENT=1
 
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 PACKAGES ?= $(shell glide novendor)
