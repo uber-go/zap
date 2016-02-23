@@ -1,0 +1,51 @@
+hash: 62c3a1f1604ecfb5c9b447b5c4f7c91a44e8cde18155f2b25925b662cd3c27b4
+updated: 2016-02-15T16:07:45.743891128-08:00
+imports:
+- name: github.com/axw/gocov
+  version: ac431cdb392ef21dc2aa61f4f4470ada6b70fced
+  subpackages:
+  - gocov
+- name: github.com/davecgh/go-spew
+  version: 2df174808ee097f90d259e432cc04442cf60be21
+  subpackages:
+  - spew
+- name: github.com/go-kit/kit
+  version: 724fee9497e9788bf00911ea5b2f4cfaf726bf3f
+  subpackages:
+  - log
+- name: github.com/golang/glog
+  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+- name: github.com/golang/lint
+  version: 32a87160691b3c96046c0c678fe57c5bef761456
+  subpackages:
+  - golint
+- name: github.com/mattn/goveralls
+  version: 025ace5d02b8e6df403c2d63fec4f7f86f7cc619
+- name: github.com/pborman/uuid
+  version: cd53251766d76cf1969596428dc09c7b97956eeb
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
+- name: github.com/Sirupsen/logrus
+  version: 3455d89ac9652295c85db2a98ea32f1d61c380bc
+- name: github.com/stretchr/objx
+  version: cbeaeb16a013161a98496fad62933b1d21786672
+- name: github.com/stretchr/testify
+  version: 9f9027faeb0dad515336ed2f28317f9f8f527ab4
+  subpackages:
+  - assert
+  - require
+  - http
+  - mock
+- name: golang.org/x/tools
+  version: cadb821a95df0e7ef6343c3d16d13d53e8f9a9d6
+  subpackages:
+  - go/gcimporter
+  - go/types
+  - go/exact
+- name: gopkg.in/logfmt.v0
+  version: c50dc9aa845e681529d8e49d3dc11ec0195aacac
+- name: gopkg.in/stack.v1
+  version: 0585967eab0016c8e4e2d55ac20585b469574cec
+devImports: []
