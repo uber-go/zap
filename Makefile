@@ -16,15 +16,19 @@ dependencies:
 
 .PHONY: lint
 lint:
-	rm -rf lint.log
+	@rm -rf lint.log
 	@echo "Checking formatting..."
-	gofmt -d -s *.go benchmarks 2>&1 | tee lint.log
+	@gofmt -d -s *.go benchmarks encoder 2>&1 | tee lint.log
 	@echo "Checking vet..."
-	go tool vet *.go 2>&1 | tee -a lint.log
-	go tool vet benchmarks 2>&1 | tee -a lint.log
+	@go tool vet *.go 2>&1 | tee -a lint.log
+	@go tool vet benchmarks 2>&1 | tee -a lint.log
+	@go tool vet encoder 2>&1 | tee -a lint.log
 	@echo "Checking lint..."
-	golint . 2>&1 | tee -a lint.log
-	golint benchmarks 2>&1 | tee -a lint.log
+	@golint . 2>&1 | tee -a lint.log
+	@golint benchmarks 2>&1 | tee -a lint.log
+	@golint encoder 2>&1 | tee -a lint.log
+	@echo "Checking for unresolved FIXMEs..."
+	@git grep -i fixme | grep -v -e vendor -e Makefile | tee -a lint.log
 	@[ ! -s lint.log ]
 
 .PHONY: test
