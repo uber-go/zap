@@ -6,7 +6,7 @@ Fast, structured, leveled logging in Go.
 
 Zap takes an opinionated stance on logging and doesn't provide any
 `printf`-style helpers. Rather than `logger.Printf("Error %v writing logs to
-%v, lost %v messages.", err, f, m)`, flog encourages the more structured
+%v, lost %v messages.", err, f, m)`, zap encourages the more structured
 
 ```
 Logger.
