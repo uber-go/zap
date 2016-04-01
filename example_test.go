@@ -30,6 +30,8 @@ import (
 func Example() {
 	// Log in JSON, using zap's reflection-free JSON encoder.
 	logger := zap.NewJSON(zap.Info, os.Stdout)
+	// For repeatable tests, pretend that it's always 1970.
+	logger.StubTime()
 
 	logger.Warn("Log without structured data...")
 	logger.Warn(
@@ -47,8 +49,19 @@ func Example() {
 
 func ExampleNest() {
 	logger := zap.NewJSON(zap.Info, os.Stdout)
+	// Stub the current time in tests.
+	logger.StubTime()
+
 	// We'd like the logging context to be {"outer":{"inner":42}}
 	logger.Debug("Nesting context.", zap.Nest("outer",
 		zap.Int("inner", 42),
 	))
+
+	// If we want to stop a field from being returned to a sync.Pool on use,
+	// use Keep.
+	nest := zap.Nest("outer", zap.Int("inner", 42))
+	logger.Info("Logging a nested field.", nest)
+
+	// Output:
+	// {"msg":"Logging a nested field.","level":"info","ts":0,"fields":{"outer":{"inner":42}}}
 }

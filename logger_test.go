@@ -27,20 +27,14 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func stubTime() func() {
-	_timeNow = func() time.Time { return time.Unix(0, 0) }
-	return func() { _timeNow = time.Now }
-}
-
 func withJSONLogger(f func(*jsonLogger, func() []string), fields ...Field) {
-	defer stubTime()()
 	sink := bytes.NewBuffer(nil)
 	jl := NewJSON(All, sink, fields...)
+	jl.StubTime()
 
 	f(jl.(*jsonLogger), func() []string { return strings.Split(sink.String(), "\n") })
 }
@@ -166,8 +160,6 @@ func TestJSONLoggerNoOpsDisabledLevels(t *testing.T) {
 }
 
 func TestJSONLoggerInternalErrorHandling(t *testing.T) {
-	defer stubTime()()
-
 	errBuf := bytes.NewBuffer(nil)
 	_errSink = errBuf
 	defer func() { _errSink = os.Stderr }()
@@ -175,6 +167,7 @@ func TestJSONLoggerInternalErrorHandling(t *testing.T) {
 	buf := bytes.NewBuffer(nil)
 
 	jl := NewJSON(All, buf, Object("user", fakeUser{"fail"}))
+	jl.StubTime()
 	output := func() []string { return strings.Split(buf.String(), "\n") }
 
 	// Expect partial output, even if there's an error serializing
