@@ -92,8 +92,8 @@ func (l *Level) MarshalText() ([]byte, error) {
 
 // UnmarshalText satisfies text.Unmarshaler.
 //
-// In particular, this makes it easy to configure logging levels using YAML or
-// TOML files.
+// In particular, this makes it easy to configure logging levels using YAML,
+// TOML, or JSON files.
 func (l *Level) UnmarshalText(text []byte) error {
 	switch string(text) {
 	case "all":

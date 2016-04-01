@@ -116,8 +116,7 @@ func (enc *jsonEncoder) AddFloat64(key string, val float64) {
 // object. Until the returned function is called, calls to AddString and friends
 // operate on the nested namespace.
 //
-// Failing to call the returned function will result in invalid JSON
-// output.
+// Failing to use the returned FieldCloser will result in invalid JSON output.
 func (enc *jsonEncoder) Nest(key string) FieldCloser {
 	enc.addKey(key)
 	enc.bytes = append(enc.bytes, '{')
