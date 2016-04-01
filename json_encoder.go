@@ -127,16 +127,11 @@ func (enc *jsonEncoder) CloseField() {
 	enc.bytes = append(enc.bytes, '}')
 }
 
-// Clone duplicates the current encoder, including any data already encoded. The
-// clone has copy-on-write semantics, so it's safe to add fields to both the
-// original encoder and the clone.
+// Clone copies the current encoder, including any data already encoded.
 func (enc *jsonEncoder) Clone() encoder {
-	return &jsonEncoder{
-		// Slicing saves us from immediately making a copy, but we set the
-		// capacity of the slice so that appending to the clone triggers a
-		// re-allocation.
-		bytes: enc.bytes[0:len(enc.bytes):len(enc.bytes)],
-	}
+	clone := newJSONEncoder()
+	clone.bytes = append(clone.bytes, enc.bytes...)
+	return clone
 }
 
 // AddFields applies the passed fields to this encoder.

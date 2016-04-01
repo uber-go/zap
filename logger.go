@@ -95,6 +95,9 @@ func (jl *jsonLogger) Enabled(lvl Level) bool {
 }
 
 func (jl *jsonLogger) With(fields ...Field) Logger {
+	if len(fields) == 0 {
+		return jl
+	}
 	clone := &jsonLogger{
 		level: jl.level,
 		enc:   jl.enc.Clone(),
@@ -137,8 +140,7 @@ func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
 		return
 	}
 
-	temp := newJSONEncoder()
-	temp.bytes = append(temp.bytes, jl.enc.(*jsonEncoder).bytes...)
+	temp := jl.enc.Clone()
 	if err := temp.AddFields(fields); err != nil {
 		jl.internalError(err.Error())
 	}
