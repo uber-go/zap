@@ -181,5 +181,5 @@ func TestJSONLoggerInternalErrorHandling(t *testing.T) {
 	// user-defined types.
 	assertFields(t, jl, output, `{"user":{}}`)
 	// Internal errors go to stderr.
-	assert.Equal(t, "fail", errBuf.String(), "Expected internal errors to print to stderr.")
+	assert.Equal(t, "fail\n", errBuf.String(), "Expected internal errors to print to stderr.")
 }

@@ -147,5 +147,5 @@ func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
 }
 
 func (jl *jsonLogger) internalError(msg string) {
-	fmt.Fprint(_errSink, msg)
+	fmt.Fprintln(_errSink, msg)
 }
