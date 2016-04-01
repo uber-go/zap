@@ -57,4 +57,4 @@ coveralls:
 .PHONY: bench
 BENCH ?= .
 bench:
-	go test -bench=$(BENCH) $(BENCH_FLAGS) .
+	go test -bench=$(BENCH) -run="^$$" $(BENCH_FLAGS) .
