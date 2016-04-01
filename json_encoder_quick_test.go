@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package encoder
+package zap
 
 import (
 	"encoding/json"
@@ -30,7 +30,7 @@ import (
 
 func encodeString(s string) []byte {
 	// Escape and quote a string using our encoder.
-	enc := NewJSON()
+	enc := newJSONEncoder()
 	defer enc.Free()
 	enc.safeAddString(s)
 
@@ -55,7 +55,7 @@ func roundTrip(original string) bool {
 
 type ASCII string
 
-func (_ ASCII) Generate(r *rand.Rand, size int) reflect.Value {
+func (s ASCII) Generate(r *rand.Rand, size int) reflect.Value {
 	bs := make([]byte, size)
 	for i := range bs {
 		bs[i] = byte(r.Intn(128))

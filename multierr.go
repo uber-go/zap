@@ -18,7 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package encoder provides a JSON encoder specifically intended for logging
-// with zap. It's not suitable for general use, but it makes zap much faster
-// and lower-allocation.
-package encoder
+package zap
+
+import "strings"
+
+type multiError []error
+
+func (m multiError) Error() string {
+	msgs := make([]string, len(m))
+	for i, err := range m {
+		msgs[i] = err.Error()
+	}
+	return strings.Join(msgs, ", ")
+}

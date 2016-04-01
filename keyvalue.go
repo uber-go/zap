@@ -18,23 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package spy
+package zap
 
-import "errors"
+import "time"
 
-// FailWriter is an io.Writer that always returns an error.
-type FailWriter struct{}
-
-// Write implements io.Writer.
-func (w FailWriter) Write(b []byte) (int, error) {
-	return len(b), errors.New("failed")
-}
-
-// ShortWriter is an io.Writer that never returns an error, but doesn't write
-// the last byte of the input.
-type ShortWriter struct{}
-
-// Write implements io.Writer.
-func (w ShortWriter) Write(b []byte) (int, error) {
-	return len(b) - 1, nil
+// KeyValue is an encoding-agnostic interface to add structured data to the
+// logging context. Like maps, KeyValues aren't safe for concurrent use (though
+// typical use shouldn't require locks).
+type KeyValue interface {
+	AddBool(string, bool)
+	AddFloat64(string, float64)
+	AddInt(string, int)
+	AddInt64(string, int64)
+	AddString(string, string)
+	AddTime(string, time.Time)
+	Nest(string) func() // returned function closes the nested namespace
 }
