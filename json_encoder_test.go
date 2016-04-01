@@ -122,8 +122,7 @@ func TestJSONWriteMessage(t *testing.T) {
 		// Messages should be escaped.
 		err := enc.WriteMessage(sink, "info", `hello\`, time.Unix(0, 0))
 		assert.NoError(t, err, "WriteMessage returned an unexpected error.")
-		assert.Equal(
-			t,
+		assert.Equal(t,
 			`{"msg":"hello\\","level":"info","ts":0,"fields":{"foo":"bar"}}`,
 			strings.TrimRight(sink.String(), "\n"),
 		)
@@ -133,8 +132,7 @@ func TestJSONWriteMessage(t *testing.T) {
 		sink.Reset()
 		err = enc.WriteMessage(sink, "debug", "fake msg", time.Unix(0, 100))
 		assert.NoError(t, err, "WriteMessage returned an unexpected error.")
-		assert.Equal(
-			t,
+		assert.Equal(t,
 			`{"msg":"fake msg","level":"debug","ts":100,"fields":{"foo":"bar"}}`,
 			strings.TrimRight(sink.String(), "\n"),
 		)

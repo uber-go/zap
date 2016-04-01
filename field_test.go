@@ -43,13 +43,8 @@ func assertFieldJSON(t testing.TB, expected string, field Field) {
 	defer enc.Free()
 
 	field.addTo(enc)
-	assert.Equal(
-		t,
-		expected,
-		string(enc.bytes),
-		"Unexpected JSON output after applying field %+v.",
-		field,
-	)
+	assert.Equal(t, expected, string(enc.bytes),
+		"Unexpected JSON output after applying field %+v.", field)
 }
 
 func TestBoolField(t *testing.T) {

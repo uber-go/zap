@@ -48,7 +48,7 @@ func Float64(key string, val float64) Field {
 
 // Int constructs a Field with the given key and value.
 func Int(key string, val int) Field {
-	return intField{key, val}
+	return int64Field{key, int64(val)}
 }
 
 // Int64 constructs a Field with the given key and value.
@@ -108,16 +108,6 @@ type float64Field struct {
 
 func (f float64Field) addTo(enc encoder) error {
 	enc.AddFloat64(f.key, f.val)
-	return nil
-}
-
-type intField struct {
-	key string
-	val int
-}
-
-func (i intField) addTo(enc encoder) error {
-	enc.AddInt(i.key, i.val)
 	return nil
 }
 

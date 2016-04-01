@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-// Encoder is a format-agnostic interface for all log field encoders. It's not
+// encoder is a format-agnostic interface for all log field encoders. It's not
 // safe for concurrent use.
 type encoder interface {
 	KeyValue
