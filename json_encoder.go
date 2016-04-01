@@ -138,6 +138,17 @@ func (enc *jsonEncoder) Clone() encoder {
 	}
 }
 
+// AddFields applies the passed fields to this encoder.
+func (enc *jsonEncoder) AddFields(fields []Field) error {
+	var errs multiError
+	for _, f := range fields {
+		if err := f.addTo(enc); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
 // WriteMessage writes a complete log message to the supplied writer, including
 // the encoder's accumulated fields. It doesn't modify or lock the encoder's
 // underlying byte slice. It's safe to call from multiple goroutines, but it's

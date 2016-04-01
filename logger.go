@@ -74,7 +74,7 @@ func NewJSON(lvl Level, sink io.Writer, fields ...Field) Logger {
 		enc:   newJSONEncoder(),
 		w:     sink,
 	}
-	jl.addFields(jl.enc, fields)
+	jl.enc.AddFields(fields)
 	return jl
 }
 
@@ -96,7 +96,7 @@ func (jl *jsonLogger) With(fields ...Field) Logger {
 		enc:   jl.enc.Clone(),
 		w:     jl.w,
 	}
-	clone.addFields(clone.enc, fields)
+	clone.enc.AddFields(fields)
 	return clone
 }
 
@@ -131,18 +131,11 @@ func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
 		return
 	}
 
-	temp := jl.enc.Clone()
-	jl.addFields(temp, fields)
+	temp := newJSONEncoder()
+	temp.bytes = append(temp.bytes, jl.enc.(*jsonEncoder).bytes...)
+	temp.AddFields(fields)
 	temp.WriteMessage(jl.w, lvl.String(), msg, _timeNow())
 	temp.Free()
-}
-
-func (jl *jsonLogger) addFields(enc encoder, fields []Field) {
-	for _, f := range fields {
-		if err := f.addTo(enc); err != nil {
-			jl.internalError(err.Error())
-		}
-	}
 }
 
 func (jl *jsonLogger) internalError(msg string) {
