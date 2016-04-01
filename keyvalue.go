@@ -32,5 +32,5 @@ type KeyValue interface {
 	AddInt64(string, int64)
 	AddString(string, string)
 	AddTime(string, time.Time)
-	Nest(string) func() // returned function closes the nested namespace
+	Nest(string) FieldCloser
 }

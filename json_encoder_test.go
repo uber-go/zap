@@ -143,9 +143,9 @@ func TestJSONWriteMessage(t *testing.T) {
 
 func TestJSONNest(t *testing.T) {
 	withJSONEncoder(func(enc *jsonEncoder) {
-		end := enc.Nest("nested")
+		closer := enc.Nest("nested")
 		enc.AddString("sub-foo", "sub-bar")
-		end()
+		closer.CloseField()
 		enc.AddString("baz", "bing")
 
 		assertJSON(t, `"foo":"bar","nested":{"sub-foo":"sub-bar"},"baz":"bing"`, enc)

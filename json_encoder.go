@@ -118,12 +118,14 @@ func (enc *jsonEncoder) AddFloat64(key string, val float64) {
 //
 // Failing to call the returned function will result in invalid JSON
 // output.
-func (enc *jsonEncoder) Nest(key string) func() {
+func (enc *jsonEncoder) Nest(key string) FieldCloser {
 	enc.addKey(key)
 	enc.bytes = append(enc.bytes, '{')
-	return func() {
-		enc.bytes = append(enc.bytes, '}')
-	}
+	return enc
+}
+
+func (enc *jsonEncoder) CloseField() {
+	enc.bytes = append(enc.bytes, '}')
 }
 
 // Clone duplicates the current encoder, including any data already encoded. The
@@ -146,7 +148,10 @@ func (enc *jsonEncoder) AddFields(fields []Field) error {
 			errs = append(errs, err)
 		}
 	}
-	return errs
+	if len(errs) > 0 {
+		return errs
+	}
+	return nil
 }
 
 // WriteMessage writes a complete log message to the supplied writer, including

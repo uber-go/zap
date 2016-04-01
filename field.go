@@ -29,6 +29,11 @@ type Field interface {
 	addTo(encoder) error
 }
 
+// A FieldCloser closes a nested field.
+type FieldCloser interface {
+	CloseField()
+}
+
 // Bool constructs a Field with the given key and value.
 func Bool(key string, val bool) Field {
 	return boolField{key, val}
@@ -152,9 +157,9 @@ type marshalerField struct {
 }
 
 func (m marshalerField) addTo(enc encoder) error {
-	finish := enc.Nest(m.key)
+	closer := enc.Nest(m.key)
 	err := m.val.MarshalLog(enc)
-	finish()
+	closer.CloseField()
 	return err
 }
 
@@ -164,14 +169,14 @@ type nestedField struct {
 }
 
 func (n nestedField) addTo(enc encoder) error {
-	finish := enc.Nest(n.key)
+	closer := enc.Nest(n.key)
 	var errs multiError
 	for _, f := range n.vals {
 		if err := f.addTo(enc); err != nil {
 			errs = append(errs, err)
 		}
 	}
-	finish()
+	closer.CloseField()
 	if len(errs) > 0 {
 		return errs
 	}
