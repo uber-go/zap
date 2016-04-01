@@ -29,8 +29,10 @@ import (
 )
 
 // For stubbing in tests.
-var _timeNow = time.Now
-var _errSink io.Writer = os.Stderr
+var (
+	_timeNow           = time.Now
+	_errSink io.Writer = os.Stderr
+)
 
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
