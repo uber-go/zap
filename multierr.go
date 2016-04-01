@@ -18,23 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package spy
+package zap
 
-import "errors"
+import "strings"
 
-// FailWriter is an io.Writer that always returns an error.
-type FailWriter struct{}
+type multiError []error
 
-// Write implements io.Writer.
-func (w FailWriter) Write(b []byte) (int, error) {
-	return len(b), errors.New("failed")
-}
-
-// ShortWriter is an io.Writer that never returns an error, but doesn't write
-// the last byte of the input.
-type ShortWriter struct{}
-
-// Write implements io.Writer.
-func (w ShortWriter) Write(b []byte) (int, error) {
-	return len(b) - 1, nil
+func (m multiError) Error() string {
+	msgs := make([]string, len(m))
+	for i, err := range m {
+		msgs[i] = err.Error()
+	}
+	return strings.Join(msgs, ", ")
 }

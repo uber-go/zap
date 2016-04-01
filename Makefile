@@ -3,7 +3,7 @@ export GO15VENDOREXPERIMENT=1
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 PKGS ?= $(shell glide novendor)
 # Many Go tools take file globs or directories as arguments instead of packages.
-PKG_FILES ?= *.go
+PKG_FILES ?= *.go spy
 
 # The linting tools evolve with each Go version, so run them only on the latest
 # stable release.
@@ -41,7 +41,7 @@ lint:
 	@echo "Checking vet..."
 	@$(foreach dir,$(PKG_FILES),go tool vet $(dir) 2>&1 | tee -a lint.log;)
 	@echo "Checking lint..."
-	@$(foreach dir,$(PKG_FILES),golint $(dir) 2>&1 | tee -a lint.log;)
+	@$(foreach dir,$(PKGS),golint $(dir) 2>&1 | tee -a lint.log;)
 	@echo "Checking for unresolved FIXMEs..."
 	@git grep -i fixme | grep -v -e vendor -e Makefile | tee -a lint.log
 	@[ ! -s lint.log ]

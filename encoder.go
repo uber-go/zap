@@ -18,23 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package spy
+package zap
 
-import "errors"
+import (
+	"io"
+	"time"
+)
 
-// FailWriter is an io.Writer that always returns an error.
-type FailWriter struct{}
-
-// Write implements io.Writer.
-func (w FailWriter) Write(b []byte) (int, error) {
-	return len(b), errors.New("failed")
-}
-
-// ShortWriter is an io.Writer that never returns an error, but doesn't write
-// the last byte of the input.
-type ShortWriter struct{}
-
-// Write implements io.Writer.
-func (w ShortWriter) Write(b []byte) (int, error) {
-	return len(b) - 1, nil
+// encoder is a format-agnostic interface for all log field encoders. It's not
+// safe for concurrent use.
+type encoder interface {
+	KeyValue
+	AddFields([]Field) error
+	Clone() encoder
+	Free()
+	WriteMessage(io.Writer, string, string, time.Time) error
 }

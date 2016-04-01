@@ -18,7 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package encoder provides a JSON encoder specifically intended for logging
-// with zap. It's not suitable for general use, but it makes zap much faster
-// and lower-allocation.
-package encoder
+package zap
+
+import "time"
+
+// KeyValue is an encoding-agnostic interface to add structured data to the
+// logging context. Like maps, KeyValues aren't safe for concurrent use (though
+// typical use shouldn't require locks).
+type KeyValue interface {
+	AddBool(string, bool)
+	AddFloat64(string, float64)
+	AddInt(string, int)
+	AddInt64(string, int64)
+	AddString(string, string)
+	AddTime(string, time.Time)
+	Nest(string) FieldCloser
+}

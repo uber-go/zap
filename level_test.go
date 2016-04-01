@@ -77,10 +77,16 @@ func TestLevelNils(t *testing.T) {
 	assert.Equal(t, "Level(nil)", l.String(), "Unexpected result stringifying nil *Level.")
 
 	_, err := l.MarshalText()
-	assert.Equal(t, _errMarshalNilLevel, err, "Expected _errMarshalNilLevel.")
+	assert.Equal(t, errMarshalNilLevel, err, "Expected errMarshalNilLevel.")
 
 	assert.Panics(t, func() {
 		var l *Level
 		l.UnmarshalText([]byte("debug"))
 	}, "Expected to panic when unmarshaling into a null pointer.")
+}
+
+func TestLevelUnmarshalUnknownText(t *testing.T) {
+	var l Level
+	err := l.UnmarshalText([]byte("foo"))
+	assert.Contains(t, err.Error(), "unrecognized level", "Expected unmarshaling arbitrary text to fail.")
 }

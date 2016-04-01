@@ -18,23 +18,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package spy
+package zap
 
-import "errors"
+import (
+	"errors"
+	"testing"
 
-// FailWriter is an io.Writer that always returns an error.
-type FailWriter struct{}
+	"github.com/stretchr/testify/assert"
+)
 
-// Write implements io.Writer.
-func (w FailWriter) Write(b []byte) (int, error) {
-	return len(b), errors.New("failed")
+func maybeFail(fail bool) error {
+	var errs multiError
+	if fail {
+		errs = append(errs, errors.New("fail"))
+	}
+	if len(errs) > 0 {
+		return errs
+	}
+	return nil
 }
 
-// ShortWriter is an io.Writer that never returns an error, but doesn't write
-// the last byte of the input.
-type ShortWriter struct{}
-
-// Write implements io.Writer.
-func (w ShortWriter) Write(b []byte) (int, error) {
-	return len(b) - 1, nil
+func TestMultiError(t *testing.T) {
+	err := maybeFail(false)
+	assert.NoError(t, err, "Didn't expect an error.")
+	err = maybeFail(true)
+	assert.Error(t, err, "Expected an error.")
+	assert.Equal(t, "fail", err.Error(), "Unexpected string representation of multiError.")
 }

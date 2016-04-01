@@ -18,23 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package spy
+package zap
 
-import "errors"
-
-// FailWriter is an io.Writer that always returns an error.
-type FailWriter struct{}
-
-// Write implements io.Writer.
-func (w FailWriter) Write(b []byte) (int, error) {
-	return len(b), errors.New("failed")
-}
-
-// ShortWriter is an io.Writer that never returns an error, but doesn't write
-// the last byte of the input.
-type ShortWriter struct{}
-
-// Write implements io.Writer.
-func (w ShortWriter) Write(b []byte) (int, error) {
-	return len(b) - 1, nil
+// A Marshaler uses the passed KeyValue to add itself to a logger's context.
+// (Think of it as an encoding-agnostic alternative to json.Marshaler.)
+type Marshaler interface {
+	MarshalLog(KeyValue) error
 }

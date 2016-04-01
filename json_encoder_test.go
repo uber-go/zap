@@ -18,11 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package encoder
+package zap
 
 import (
 	"bytes"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,19 +32,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func assertJSON(t *testing.T, expected string, enc *JSONEncoder) {
+func assertJSON(t *testing.T, expected string, enc *jsonEncoder) {
 	assert.Equal(t, expected, string(enc.bytes), "Encoded JSON didn't match expectations.")
 }
 
-func withEncoder(f func(*JSONEncoder)) {
-	enc := NewJSON()
+func withJSONEncoder(f func(*jsonEncoder)) {
+	enc := newJSONEncoder()
 	enc.AddString("foo", "bar")
 	f(enc)
 	enc.Free()
 }
 
-func TestAddString(t *testing.T) {
-	withEncoder(func(enc *JSONEncoder) {
+func TestJSONAddString(t *testing.T) {
+	withJSONEncoder(func(enc *jsonEncoder) {
 		enc.AddString("baz", "bing")
 		assertJSON(t, `"foo":"bar","baz":"bing"`, enc)
 
@@ -54,8 +55,8 @@ func TestAddString(t *testing.T) {
 	})
 }
 
-func TestAddBool(t *testing.T) {
-	withEncoder(func(enc *JSONEncoder) {
+func TestJSONAddBool(t *testing.T) {
+	withJSONEncoder(func(enc *jsonEncoder) {
 		enc.AddBool("baz", true)
 		assertJSON(t, `"foo":"bar","baz":true`, enc)
 
@@ -66,8 +67,8 @@ func TestAddBool(t *testing.T) {
 	})
 }
 
-func TestAddInt(t *testing.T) {
-	withEncoder(func(enc *JSONEncoder) {
+func TestJSONAddInt(t *testing.T) {
+	withJSONEncoder(func(enc *jsonEncoder) {
 		enc.AddInt("baz", 2)
 		assertJSON(t, `"foo":"bar","baz":2`, enc)
 
@@ -78,8 +79,8 @@ func TestAddInt(t *testing.T) {
 	})
 }
 
-func TestAddInt64(t *testing.T) {
-	withEncoder(func(enc *JSONEncoder) {
+func TestJSONAddInt64(t *testing.T) {
+	withJSONEncoder(func(enc *jsonEncoder) {
 		enc.AddInt64("baz", 2)
 		assertJSON(t, `"foo":"bar","baz":2`, enc)
 
@@ -90,8 +91,8 @@ func TestAddInt64(t *testing.T) {
 	})
 }
 
-func TestAddTime(t *testing.T) {
-	withEncoder(func(enc *JSONEncoder) {
+func TestJSONAddTime(t *testing.T) {
+	withJSONEncoder(func(enc *jsonEncoder) {
 		enc.AddTime("ts", time.Unix(0, 100))
 		assertJSON(t, `"foo":"bar","ts":100`, enc)
 
@@ -102,8 +103,8 @@ func TestAddTime(t *testing.T) {
 	})
 }
 
-func TestAddFloat64(t *testing.T) {
-	withEncoder(func(enc *JSONEncoder) {
+func TestJSONAddFloat64(t *testing.T) {
+	withJSONEncoder(func(enc *jsonEncoder) {
 		enc.AddFloat64("baz", 1e10)
 		assertJSON(t, `"foo":"bar","baz":1e+10`, enc)
 
@@ -114,29 +115,16 @@ func TestAddFloat64(t *testing.T) {
 	})
 }
 
-func TestUnsafeAddBytes(t *testing.T) {
-	withEncoder(func(enc *JSONEncoder) {
-		enc.UnsafeAddBytes("baz", []byte(`"bing"`))
-		assertJSON(t, `"foo":"bar","baz":"bing"`, enc)
-
-		// Keys should be escaped, but values shouldn't.
-		enc.truncate()
-		enc.UnsafeAddBytes(`foo\`, []byte(`"bar\"`))
-		assertJSON(t, `"foo\\":"bar\"`, enc)
-	})
-}
-
-func TestWriteMessage(t *testing.T) {
-	withEncoder(func(enc *JSONEncoder) {
+func TestJSONWriteMessage(t *testing.T) {
+	withJSONEncoder(func(enc *jsonEncoder) {
 		sink := bytes.NewBuffer(nil)
 
 		// Messages should be escaped.
 		err := enc.WriteMessage(sink, "info", `hello\`, time.Unix(0, 0))
 		assert.NoError(t, err, "WriteMessage returned an unexpected error.")
-		assert.Equal(
-			t,
+		assert.Equal(t,
 			`{"msg":"hello\\","level":"info","ts":0,"fields":{"foo":"bar"}}`,
-			sink.String(),
+			strings.TrimRight(sink.String(), "\n"),
 		)
 
 		// We should be able to re-use the encoder, preserving the accumulated
@@ -144,16 +132,39 @@ func TestWriteMessage(t *testing.T) {
 		sink.Reset()
 		err = enc.WriteMessage(sink, "debug", "fake msg", time.Unix(0, 100))
 		assert.NoError(t, err, "WriteMessage returned an unexpected error.")
-		assert.Equal(
-			t,
+		assert.Equal(t,
 			`{"msg":"fake msg","level":"debug","ts":100,"fields":{"foo":"bar"}}`,
-			sink.String(),
+			strings.TrimRight(sink.String(), "\n"),
 		)
 	})
 }
 
-func TestWriteMessageFailure(t *testing.T) {
-	withEncoder(func(enc *JSONEncoder) {
+func TestJSONNest(t *testing.T) {
+	withJSONEncoder(func(enc *jsonEncoder) {
+		closer := enc.Nest("nested")
+		enc.AddString("sub-foo", "sub-bar")
+		closer.CloseField()
+		enc.AddString("baz", "bing")
+
+		assertJSON(t, `"foo":"bar","nested":{"sub-foo":"sub-bar"},"baz":"bing"`, enc)
+	})
+}
+
+func TestJSONClone(t *testing.T) {
+	// The parent encoder is created with plenty of excess capacity.
+	parent := &jsonEncoder{bytes: make([]byte, 0, 128)}
+	clone := parent.Clone()
+
+	// Adding to the parent shouldn't affect the clone, and vice versa.
+	parent.AddString("foo", "bar")
+	clone.AddString("baz", "bing")
+
+	assertJSON(t, `"foo":"bar"`, parent)
+	assertJSON(t, `"baz":"bing"`, clone.(*jsonEncoder))
+}
+
+func TestJSONWriteMessageFailure(t *testing.T) {
+	withJSONEncoder(func(enc *jsonEncoder) {
 		tests := []struct {
 			sink io.Writer
 			msg  string
@@ -168,7 +179,7 @@ func TestWriteMessageFailure(t *testing.T) {
 	})
 }
 
-func TestJSONEscaping(t *testing.T) {
+func TestJSONJSONEscaping(t *testing.T) {
 	// Test all the edge cases of JSON escaping directly.
 	cases := map[string]string{
 		// ASCII.
@@ -202,7 +213,7 @@ func TestJSONEscaping(t *testing.T) {
 		"\xed\xa0\x80":    `\ufffd\ufffd\ufffd`,
 		"foo\xed\xa0\x80": `foo\ufffd\ufffd\ufffd`,
 	}
-	enc := NewJSON()
+	enc := newJSONEncoder()
 	for input, output := range cases {
 		enc.truncate()
 		enc.safeAddString(input)

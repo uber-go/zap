@@ -18,18 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package benchmarks
+package zap
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"testing"
 	"time"
-
-	"github.com/uber-common/zap/encoder"
 )
 
-type LogRecord struct {
+type logRecord struct {
 	Level   string                 `json:"level"`
 	Message string                 `json:"msg"`
 	Time    time.Time              `json:"ts"`
@@ -39,7 +37,7 @@ type LogRecord struct {
 func BenchmarkZapJSON(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			enc := encoder.NewJSON()
+			enc := newJSONEncoder()
 			enc.AddString("one", "foo")
 			enc.AddInt("two", 1)
 			enc.AddInt64("three", 1)
@@ -57,7 +55,7 @@ func BenchmarkZapJSON(b *testing.B) {
 }
 
 func BenchmarkStandardJSON(b *testing.B) {
-	record := LogRecord{
+	record := logRecord{
 		Level:   "debug",
 		Message: "fake",
 		Time:    time.Unix(0, 0),

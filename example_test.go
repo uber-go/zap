@@ -18,23 +18,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package spy
+package zap_test
 
-import "errors"
+import (
+	"os"
+	"time"
 
-// FailWriter is an io.Writer that always returns an error.
-type FailWriter struct{}
+	"github.com/uber-common/zap"
+)
 
-// Write implements io.Writer.
-func (w FailWriter) Write(b []byte) (int, error) {
-	return len(b), errors.New("failed")
+func Example() {
+	// Log in JSON, using zap's reflection-free JSON encoder.
+	logger := zap.NewJSON(zap.Info, os.Stdout)
+
+	logger.Warn("Log without structured data...")
+	logger.Warn(
+		"Or use strongly-typed wrappers to add structured context.",
+		zap.String("library", "zap"),
+		zap.Duration("latency", time.Nanosecond),
+	)
+
+	// Avoid re-serializing the same data repeatedly by creating a child logger
+	// with some attached context. That context is added to all the child's
+	// log output, but doesn't affect the parent.
+	child := logger.With(zap.String("user", "jane@test.com"), zap.Int("visits", 42))
+	child.Error("Oh no!")
 }
 
-// ShortWriter is an io.Writer that never returns an error, but doesn't write
-// the last byte of the input.
-type ShortWriter struct{}
-
-// Write implements io.Writer.
-func (w ShortWriter) Write(b []byte) (int, error) {
-	return len(b) - 1, nil
+func ExampleNest() {
+	logger := zap.NewJSON(zap.Info, os.Stdout)
+	// We'd like the logging context to be {"outer":{"inner":42}}
+	logger.Debug("Nesting context.", zap.Nest("outer",
+		zap.Int("inner", 42),
+	))
 }
