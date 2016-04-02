@@ -29,10 +29,7 @@ import (
 )
 
 // For stubbing in tests.
-var (
-	_timeNow           = time.Now
-	_errSink io.Writer = os.Stderr
-)
+var _errSink io.Writer = os.Stderr
 
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
@@ -47,6 +44,10 @@ type Logger interface {
 	SetLevel(Level)
 	// Create a child logger, and optionally add some context to that logger.
 	With(...Field) Logger
+	// StubTime stops the logger from including the current time in each
+	// message. Instead, it always reports the time as Unix epoch 0. (This is
+	// useful in tests and examples.)
+	StubTime()
 
 	// Log a message at the given level. Messages include any context that's
 	// accumulated on the logger, as well as any fields added at the log site.
@@ -59,10 +60,11 @@ type Logger interface {
 }
 
 type jsonLogger struct {
-	level *int32 // atomic
-	enc   encoder
-	errW  io.Writer
-	w     io.Writer
+	level       *int32 // atomic
+	enc         encoder
+	errW        io.Writer
+	w           io.Writer
+	alwaysEpoch bool
 }
 
 // NewJSON returns a logger that formats its output as JSON. Zap uses a
@@ -99,14 +101,19 @@ func (jl *jsonLogger) With(fields ...Field) Logger {
 		return jl
 	}
 	clone := &jsonLogger{
-		level: jl.level,
-		enc:   jl.enc.Clone(),
-		w:     jl.w,
+		level:       jl.level,
+		enc:         jl.enc.Clone(),
+		w:           jl.w,
+		alwaysEpoch: jl.alwaysEpoch,
 	}
 	if err := clone.enc.AddFields(fields); err != nil {
 		jl.internalError(err.Error())
 	}
 	return clone
+}
+
+func (jl *jsonLogger) StubTime() {
+	jl.alwaysEpoch = true
 }
 
 func (jl *jsonLogger) Debug(msg string, fields ...Field) {
@@ -144,7 +151,11 @@ func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
 	if err := temp.AddFields(fields); err != nil {
 		jl.internalError(err.Error())
 	}
-	temp.WriteMessage(jl.w, lvl.String(), msg, _timeNow())
+	now := time.Now().UTC()
+	if jl.alwaysEpoch {
+		now = time.Unix(0, 0)
+	}
+	temp.WriteMessage(jl.w, lvl.String(), msg, now)
 	temp.Free()
 }
 
