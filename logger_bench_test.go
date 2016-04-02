@@ -23,7 +23,6 @@ package zap_test
 import (
 	"errors"
 	"io/ioutil"
-	"strconv"
 	"testing"
 	"time"
 
@@ -49,36 +48,119 @@ var _jane = user{
 	createdAt: time.Date(1980, 1, 1, 12, 0, 0, 0, time.UTC),
 }
 
-func benchField(b *testing.B, fields ...zap.Field) {
+func withBenchedLogger(b *testing.B, f func(zap.Logger)) {
 	logger := zap.NewJSON(zap.All, ioutil.Discard)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			logger.Info("Go fast.", fields...)
+			f(logger)
 		}
 	})
 }
 
-func benchManyFields(b *testing.B, numFields int) {
-	fields := make([]zap.Field, numFields)
-	for i := 0; i < numFields; i++ {
-		fields[i] = zap.Int(strconv.Itoa(i), i)
-	}
-	benchField(b, fields...)
+func BenchmarkNoContext(b *testing.B) {
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("No context.")
+	})
 }
 
-func BenchmarkNoContext(b *testing.B)     { benchField(b) }
-func BenchmarkBoolField(b *testing.B)     { benchField(b, zap.Bool("foo", true)) }
-func BenchmarkFloat64Field(b *testing.B)  { benchField(b, zap.Float64("foo", 3.14)) }
-func BenchmarkIntField(b *testing.B)      { benchField(b, zap.Int("foo", 42)) }
-func BenchmarkInt64Field(b *testing.B)    { benchField(b, zap.Int64("foo", 42)) }
-func BenchmarkStringField(b *testing.B)   { benchField(b, zap.String("foo", "bar")) }
-func BenchmarkTimeField(b *testing.B)     { benchField(b, zap.Time("foo", time.Unix(0, 0))) }
-func BenchmarkDurationField(b *testing.B) { benchField(b, zap.Duration("foo", time.Second)) }
-func BenchmarkErrField(b *testing.B)      { benchField(b, zap.Err(errors.New("egad!"))) }
-func BenchmarkObjectField(b *testing.B)   { benchField(b, zap.Object("user", _jane)) }
-func Benchmark10Fields(b *testing.B)      { benchManyFields(b, 10) }
-func Benchmark50Fields(b *testing.B)      { benchManyFields(b, 50) }
-func Benchmark100Fields(b *testing.B)     { benchManyFields(b, 100) }
-func Benchmark200Fields(b *testing.B)     { benchManyFields(b, 200) }
-func Benchmark500Fields(b *testing.B)     { benchManyFields(b, 500) }
+func BenchmarkBoolField(b *testing.B) {
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("Boolean.", zap.Bool("foo", true))
+	})
+}
+
+func BenchmarkFloat64Field(b *testing.B) {
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("Floating point.", zap.Float64("foo", 3.14))
+	})
+}
+
+func BenchmarkIntField(b *testing.B) {
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("Integer.", zap.Int("foo", 42))
+	})
+}
+
+func BenchmarkInt64Field(b *testing.B) {
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("64-bit integer.", zap.Int64("foo", 42))
+	})
+}
+
+func BenchmarkStringField(b *testing.B) {
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("Strings.", zap.String("foo", "bar"))
+	})
+}
+
+func BenchmarkTimeField(b *testing.B) {
+	t := time.Unix(0, 0)
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("Time.", zap.Time("foo", t))
+	})
+}
+
+func BenchmarkDurationField(b *testing.B) {
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("Duration", zap.Duration("foo", time.Second))
+	})
+}
+
+func BenchmarkErrorField(b *testing.B) {
+	err := errors.New("egad!")
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("Error.", zap.Err(err))
+	})
+}
+
+func BenchmarkObjectField(b *testing.B) {
+	// Expect an extra allocation here, since casting the user struct to the
+	// zap.Marshaler interface costs an alloc.
+	u := user{
+		name:      "Jane Example",
+		email:     "jane@example.com",
+		createdAt: time.Unix(0, 0),
+	}
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("Arbitrary zap.Marshaler.", zap.Object("user", u))
+	})
+}
+
+func Benchmark10Fields(b *testing.B) {
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("Ten fields, passed at the log site.",
+			zap.Int("one", 1),
+			zap.Int("two", 2),
+			zap.Int("three", 3),
+			zap.Int("four", 4),
+			zap.Int("five", 5),
+			zap.Int("six", 6),
+			zap.Int("seven", 7),
+			zap.Int("eight", 8),
+			zap.Int("nine", 9),
+			zap.Int("ten", 10),
+		)
+	})
+}
+
+func Benchmark100Fields(b *testing.B) {
+	const batchSize = 50
+	logger := zap.NewJSON(zap.All, ioutil.Discard)
+
+	// Don't include allocating these helper slices in the benchmark. Since
+	// access to them isn't synchronized, we can't run the benchmark in
+	// parallel.
+	first := make([]zap.Field, batchSize)
+	second := make([]zap.Field, batchSize)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		for i := 0; i < batchSize; i++ {
+			// We're duplicating keys, but that doesn't affect performance.
+			first[i] = zap.Int("foo", i)
+			second[i] = zap.Int("foo", i+batchSize)
+		}
+		logger.With(first...).Info("Child loggers with lots of context.", second...)
+	}
+}
