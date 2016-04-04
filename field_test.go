@@ -49,38 +49,47 @@ func assertFieldJSON(t testing.TB, expected string, field Field) {
 
 func TestBoolField(t *testing.T) {
 	assertFieldJSON(t, `"foo":true`, Bool("foo", true))
+	assertFieldJSON(t, `"foo":true`, Bool("foo", true, Keep))
 }
 
 func TestFloat64Field(t *testing.T) {
 	assertFieldJSON(t, `"foo":1.314`, Float64("foo", 1.314))
+	assertFieldJSON(t, `"foo":1.314`, Float64("foo", 1.314, Keep))
 }
 
 func TestIntField(t *testing.T) {
 	assertFieldJSON(t, `"foo":1`, Int("foo", 1))
+	assertFieldJSON(t, `"foo":1`, Int("foo", 1, Keep))
 }
 
 func TestInt64Field(t *testing.T) {
 	assertFieldJSON(t, `"foo":1`, Int64("foo", int64(1)))
+	assertFieldJSON(t, `"foo":1`, Int64("foo", int64(1), Keep))
 }
 
 func TestStringField(t *testing.T) {
 	assertFieldJSON(t, `"foo":"bar"`, String("foo", "bar"))
+	assertFieldJSON(t, `"foo":"bar"`, String("foo", "bar", Keep))
 }
 
 func TestTimeField(t *testing.T) {
 	assertFieldJSON(t, `"foo":0`, Time("foo", time.Unix(0, 0)))
+	assertFieldJSON(t, `"foo":0`, Time("foo", time.Unix(0, 0), Keep))
 }
 
 func TestErrField(t *testing.T) {
 	assertFieldJSON(t, `"error":"fail"`, Err(errors.New("fail")))
+	assertFieldJSON(t, `"error":"fail"`, Err(errors.New("fail"), Keep))
 }
 
 func TestDurationField(t *testing.T) {
 	assertFieldJSON(t, `"foo":1`, Duration("foo", time.Nanosecond))
+	assertFieldJSON(t, `"foo":1`, Duration("foo", time.Nanosecond, Keep))
 }
 
 func TestObjectField(t *testing.T) {
 	assertFieldJSON(t, `"foo":{"name":"phil"}`, Object("foo", fakeUser{"phil"}))
+	assertFieldJSON(t, `"foo":{"name":"phil"}`, Object("foo", fakeUser{"phil"}, Keep))
 	// Marshaling the user failed, so we expect an empty object.
 	assertFieldJSON(t, `"foo":{}`, Object("foo", fakeUser{"fail"}))
 }
