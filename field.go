@@ -22,18 +22,21 @@ package zap
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 var (
 	// Pool all the things.
-	_boolFieldPool      = sync.Pool{New: func() interface{} { return &boolField{} }}
-	_float64FieldPool   = sync.Pool{New: func() interface{} { return &float64Field{} }}
-	_int64FieldPool     = sync.Pool{New: func() interface{} { return &int64Field{} }}
-	_stringFieldPool    = sync.Pool{New: func() interface{} { return &stringField{} }}
-	_timeFieldPool      = sync.Pool{New: func() interface{} { return &timeField{} }}
-	_marshalerFieldPool = sync.Pool{New: func() interface{} { return &marshalerField{} }}
-	_nestedFieldPool    = sync.Pool{New: func() interface{} { return &nestedField{} }}
+	_boolFieldPool      = sync.Pool{New: func() interface{} { return &boolField{fieldRefCount: new(fieldRefCount)} }}
+	_float64FieldPool   = sync.Pool{New: func() interface{} { return &float64Field{fieldRefCount: new(fieldRefCount)} }}
+	_int64FieldPool     = sync.Pool{New: func() interface{} { return &int64Field{fieldRefCount: new(fieldRefCount)} }}
+	_stringFieldPool    = sync.Pool{New: func() interface{} { return &stringField{fieldRefCount: new(fieldRefCount)} }}
+	_timeFieldPool      = sync.Pool{New: func() interface{} { return &timeField{fieldRefCount: new(fieldRefCount)} }}
+	_marshalerFieldPool = sync.Pool{New: func() interface{} { return &marshalerField{fieldRefCount: new(fieldRefCount)} }}
+	_nestedFieldPool    = sync.Pool{New: func() interface{} { return &nestedField{fieldRefCount: new(fieldRefCount)} }}
+
+	_msgFreedTwice = "Field was freed more than once. To re-use fields, use zap.Keep (https://godoc.org/github.com/uber-common/zap/#Keep)."
 )
 
 // A FieldOption configures a field.
@@ -56,6 +59,7 @@ func Keep(f Field) {
 type Field interface {
 	addTo(encoder) error
 	doNotFree()
+	incRef() int32
 }
 
 // A FieldCloser closes a nested field.
@@ -71,6 +75,7 @@ func Bool(key string, val bool, opts ...FieldOption) Field {
 	for _, opt := range opts {
 		opt(field)
 	}
+	field.incRef()
 	return field
 }
 
@@ -84,6 +89,7 @@ func Float64(key string, val float64, opts ...FieldOption) Field {
 	for _, opt := range opts {
 		opt(field)
 	}
+	field.incRef()
 	return field
 }
 
@@ -100,6 +106,7 @@ func Int64(key string, val int64, opts ...FieldOption) Field {
 	for _, opt := range opts {
 		opt(field)
 	}
+	field.incRef()
 	return field
 }
 
@@ -111,6 +118,7 @@ func String(key string, val string, opts ...FieldOption) Field {
 	for _, opt := range opts {
 		opt(field)
 	}
+	field.incRef()
 	return field
 }
 
@@ -123,6 +131,7 @@ func Time(key string, val time.Time, opts ...FieldOption) Field {
 	for _, opt := range opts {
 		opt(field)
 	}
+	field.incRef()
 	return field
 }
 
@@ -147,6 +156,7 @@ func Object(key string, val Marshaler, opts ...FieldOption) Field {
 	for _, opt := range opts {
 		opt(field)
 	}
+	field.incRef()
 	return field
 }
 
@@ -159,13 +169,40 @@ func Nest(key string, fields ...Field) Field {
 	field := _nestedFieldPool.Get().(*nestedField)
 	field.key = key
 	field.vals = fields
+	field.incRef()
 	return field
 }
 
-type boolField struct {
-	key  string
-	val  bool
+type fieldRefCount struct {
+	n    int32
 	keep bool
+}
+
+func (rc *fieldRefCount) incRef() int32 {
+	return atomic.AddInt32(&rc.n, 1)
+}
+
+func (rc *fieldRefCount) doNotFree() {
+	rc.keep = true
+}
+
+func (rc *fieldRefCount) shouldFree() bool {
+	if rc.keep {
+		return false
+	}
+	refs := atomic.AddInt32(&rc.n, -1)
+	if refs > 0 {
+		panic("Shouldn't get here. FIXME")
+	} else if refs < 0 {
+		panic(_msgFreedTwice)
+	}
+	return true
+}
+
+type boolField struct {
+	*fieldRefCount
+	key string
+	val bool
 }
 
 func (b *boolField) addTo(enc encoder) error {
@@ -174,21 +211,16 @@ func (b *boolField) addTo(enc encoder) error {
 	return nil
 }
 
-func (b *boolField) doNotFree() {
-	b.keep = true
-}
-
 func (b *boolField) free() {
-	if b.keep {
-		return
+	if b.shouldFree() {
+		_boolFieldPool.Put(b)
 	}
-	_boolFieldPool.Put(b)
 }
 
 type float64Field struct {
-	key  string
-	val  float64
-	keep bool
+	*fieldRefCount
+	key string
+	val float64
 }
 
 func (f *float64Field) addTo(enc encoder) error {
@@ -197,21 +229,16 @@ func (f *float64Field) addTo(enc encoder) error {
 	return nil
 }
 
-func (f *float64Field) doNotFree() {
-	f.keep = true
-}
-
 func (f *float64Field) free() {
-	if f.keep {
-		return
+	if f.shouldFree() {
+		_float64FieldPool.Put(f)
 	}
-	_float64FieldPool.Put(f)
 }
 
 type int64Field struct {
-	key  string
-	val  int64
-	keep bool
+	*fieldRefCount
+	key string
+	val int64
 }
 
 func (i *int64Field) addTo(enc encoder) error {
@@ -220,21 +247,16 @@ func (i *int64Field) addTo(enc encoder) error {
 	return nil
 }
 
-func (i *int64Field) doNotFree() {
-	i.keep = true
-}
-
 func (i *int64Field) free() {
-	if i.keep {
-		return
+	if i.shouldFree() {
+		_int64FieldPool.Put(i)
 	}
-	_int64FieldPool.Put(i)
 }
 
 type stringField struct {
-	key  string
-	val  string
-	keep bool
+	*fieldRefCount
+	key string
+	val string
 }
 
 func (s *stringField) addTo(enc encoder) error {
@@ -243,21 +265,16 @@ func (s *stringField) addTo(enc encoder) error {
 	return nil
 }
 
-func (s *stringField) doNotFree() {
-	s.keep = true
-}
-
 func (s *stringField) free() {
-	if s.keep {
-		return
+	if s.shouldFree() {
+		_stringFieldPool.Put(s)
 	}
-	_stringFieldPool.Put(s)
 }
 
 type timeField struct {
-	key  string
-	val  time.Time
-	keep bool
+	*fieldRefCount
+	key string
+	val time.Time
 }
 
 func (t *timeField) addTo(enc encoder) error {
@@ -266,21 +283,16 @@ func (t *timeField) addTo(enc encoder) error {
 	return nil
 }
 
-func (t *timeField) doNotFree() {
-	t.keep = true
-}
-
 func (t *timeField) free() {
-	if t.keep {
-		return
+	if t.shouldFree() {
+		_timeFieldPool.Put(t)
 	}
-	_timeFieldPool.Put(t)
 }
 
 type marshalerField struct {
-	key  string
-	val  Marshaler
-	keep bool
+	*fieldRefCount
+	key string
+	val Marshaler
 }
 
 func (m *marshalerField) addTo(enc encoder) error {
@@ -291,21 +303,16 @@ func (m *marshalerField) addTo(enc encoder) error {
 	return err
 }
 
-func (m *marshalerField) doNotFree() {
-	m.keep = true
-}
-
 func (m *marshalerField) free() {
-	if m.keep {
-		return
+	if m.shouldFree() {
+		_marshalerFieldPool.Put(m)
 	}
-	_marshalerFieldPool.Put(m)
 }
 
 type nestedField struct {
+	*fieldRefCount
 	key  string
 	vals []Field
-	keep bool
 }
 
 func (n *nestedField) addTo(enc encoder) error {
@@ -325,12 +332,14 @@ func (n *nestedField) addTo(enc encoder) error {
 }
 
 func (n *nestedField) doNotFree() {
-	n.keep = true
+	n.fieldRefCount.doNotFree()
+	for _, f := range n.vals {
+		f.doNotFree()
+	}
 }
 
 func (n *nestedField) free() {
-	if n.keep {
-		return
+	if n.shouldFree() {
+		_nestedFieldPool.Put(n)
 	}
-	_nestedFieldPool.Put(n)
 }
