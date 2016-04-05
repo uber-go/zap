@@ -36,7 +36,8 @@ var (
 	_marshalerFieldPool = sync.Pool{New: func() interface{} { return &marshalerField{fieldRefCount: new(fieldRefCount)} }}
 	_nestedFieldPool    = sync.Pool{New: func() interface{} { return &nestedField{fieldRefCount: new(fieldRefCount)} }}
 
-	_msgFreedTwice = "Field was freed more than once. To re-use fields, use zap.Keep (https://godoc.org/github.com/uber-common/zap/#Keep)."
+	_msgTooManyRefs = "Field was freed with an active reference. To re-use fields, use zap.Keep (https://godoc.org/github.com/uber-common/zap/#Keep)."
+	_msgFreedTwice  = "Field was freed more than once. To re-use fields, use zap.Keep (https://godoc.org/github.com/uber-common/zap/#Keep)."
 )
 
 // A FieldOption configures a field.
@@ -192,7 +193,7 @@ func (rc *fieldRefCount) shouldFree() bool {
 	}
 	refs := atomic.AddInt32(&rc.n, -1)
 	if refs > 0 {
-		panic("Shouldn't get here. FIXME")
+		panic(_msgTooManyRefs)
 	} else if refs < 0 {
 		panic(_msgFreedTwice)
 	}
