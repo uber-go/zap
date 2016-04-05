@@ -130,16 +130,7 @@ func (enc *jsonEncoder) Clone() encoder {
 
 // AddFields applies the passed fields to this encoder.
 func (enc *jsonEncoder) AddFields(fields []Field) error {
-	var errs multiError
-	for _, f := range fields {
-		if err := f.addTo(enc); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if len(errs) > 0 {
-		return errs
-	}
-	return nil
+	return addFields(enc, fields)
 }
 
 // WriteMessage writes a complete log message to the supplied writer, including

@@ -111,34 +111,44 @@ func Nest(key string, fields ...Field) Field {
 	return Field{key: key, fieldType: marshalerType, obj: multiFields(fields)}
 }
 
-type multiFields []Field
-
-func (fs multiFields) MarshalLog(kv KeyValue) error {
-	for _, f := range fs {
-		f.addTo(kv)
-	}
-	return nil
-}
-
-func (f Field) addTo(enc KeyValue) error {
+func (f Field) addTo(kv KeyValue) error {
 	switch f.fieldType {
 	case boolType:
-		enc.AddBool(f.key, f.ival == 1)
+		kv.AddBool(f.key, f.ival == 1)
 	case floatType:
-		enc.AddFloat64(f.key, math.Float64frombits(uint64(f.ival)))
+		kv.AddFloat64(f.key, math.Float64frombits(uint64(f.ival)))
 	case intType:
-		enc.AddInt(f.key, int(f.ival))
+		kv.AddInt(f.key, int(f.ival))
 	case int64Type:
-		enc.AddInt64(f.key, f.ival)
+		kv.AddInt64(f.key, f.ival)
 	case stringType:
-		enc.AddString(f.key, f.str)
+		kv.AddString(f.key, f.str)
 	case marshalerType:
-		closer := enc.Nest(f.key)
-		err := f.obj.MarshalLog(enc)
+		closer := kv.Nest(f.key)
+		err := f.obj.MarshalLog(kv)
 		closer.CloseField()
 		return err
 	default:
 		panic(fmt.Sprintf("unknown field type found: %v", f))
+	}
+	return nil
+}
+
+type multiFields []Field
+
+func (fs multiFields) MarshalLog(kv KeyValue) error {
+	return addFields(kv, []Field(fs))
+}
+
+func addFields(kv KeyValue, fields []Field) error {
+	var errs multiError
+	for _, f := range fields {
+		if err := f.addTo(kv); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return errs
 	}
 	return nil
 }
