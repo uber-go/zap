@@ -97,12 +97,6 @@ func (enc *jsonEncoder) AddInt64(key string, val int64) {
 	enc.bytes = strconv.AppendInt(enc.bytes, val, 10)
 }
 
-// AddTime adds a string key and time.Time value to the encoder's fields. The key
-// is JSON-escaped, and the time is encoded as nanoseconds since epoch.
-func (enc *jsonEncoder) AddTime(key string, val time.Time) {
-	enc.AddInt64(key, val.UnixNano())
-}
-
 // AddFloat64 adds a string key and float64 value to the encoder's fields. The
 // key is JSON-escaped, and the floating-point value is encoded using
 // strconv.FormatFloat's 'g' option (exponential notation for large exponents,

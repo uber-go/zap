@@ -38,16 +38,15 @@ func BenchmarkZapJSON(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			enc := newJSONEncoder()
-			enc.AddString("one", "foo")
-			enc.AddInt("two", 1)
-			enc.AddInt64("three", 1)
-			enc.AddTime("four", time.Unix(0, 0))
-			enc.AddFloat64("five", 1.0)
-			enc.AddString("six", "\n")
-			enc.AddString("seven", "💩")
-			enc.AddString("eight", "🤔")
-			enc.AddString("nine", "🙊")
-			enc.AddBool("ten", true)
+			enc.AddString("str", "foo")
+			enc.AddInt("int", 1)
+			enc.AddInt64("int64", 1)
+			enc.AddFloat64("float64", 1.0)
+			enc.AddString("string1", "\n")
+			enc.AddString("string2", "💩")
+			enc.AddString("string3", "🤔")
+			enc.AddString("string4", "🙊")
+			enc.AddBool("bool", true)
 			enc.WriteMessage(ioutil.Discard, "debug", "fake", time.Unix(0, 0))
 			enc.Free()
 		}
@@ -60,16 +59,15 @@ func BenchmarkStandardJSON(b *testing.B) {
 		Message: "fake",
 		Time:    time.Unix(0, 0),
 		Fields: map[string]interface{}{
-			"one":   "foo",
-			"two":   int(1),
-			"three": int64(1),
-			"four":  time.Unix(0, 0),
-			"five":  float64(1.0),
-			"six":   "\n",
-			"seven": "💩",
-			"eight": "🤔",
-			"nine":  "🙊",
-			"ten":   true,
+			"str":     "foo",
+			"int":     int(1),
+			"int64":   int64(1),
+			"float64": float64(1.0),
+			"string1": "\n",
+			"string2": "💩",
+			"string3": "🤔",
+			"string4": "🙊",
+			"bool":    true,
 		},
 	}
 	b.ResetTimer()
