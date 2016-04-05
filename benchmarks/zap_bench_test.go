@@ -29,7 +29,7 @@ import (
 	"github.com/uber-common/zap"
 )
 
-var _exampleError = errors.New("fail")
+var errExample = errors.New("fail")
 
 type user struct {
 	Name      string    `json:"name"`
@@ -62,7 +62,7 @@ func BenchmarkZapAddingFields(b *testing.B) {
 				zap.String("four", "four!"),
 				zap.Bool("five", true),
 				zap.Time("six", time.Unix(0, 0)),
-				zap.Err(_exampleError),
+				zap.Err(errExample),
 				zap.Duration("eight", time.Second),
 				zap.Object("nine", _jane),
 				zap.String("ten", "done!"),
@@ -79,7 +79,7 @@ func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 		zap.String("four", "four!"),
 		zap.Bool("five", true),
 		zap.Time("six", time.Unix(0, 0)),
-		zap.Err(_exampleError),
+		zap.Err(errExample),
 		zap.Duration("eight", time.Second),
 		zap.Object("nine", _jane),
 		zap.String("ten", "done!"),
