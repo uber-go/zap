@@ -45,6 +45,20 @@ func Example() {
 	// log output, but doesn't affect the parent.
 	child := logger.With(zap.String("user", "jane@test.com"), zap.Int("visits", 42))
 	child.Error("Oh no!")
+
+	// To reduce allocations, fields are returned to a sync.Pool immediately
+	// after use. To safely re-use fields, pass the Keep option when
+	// constructing them.
+	fields := []zap.Field{zap.Int("one", 1, zap.Keep), zap.Int("two", 2, zap.Keep)}
+	logger.Info("Using fields once is always safe.", fields...)
+	logger.Info("Because we passed Keep, it's safe to re-use our fields.", fields...)
+
+	// Output:
+	// {"msg":"Log without structured data...","level":"warn","ts":0,"fields":{}}
+	// {"msg":"Or use strongly-typed wrappers to add structured context.","level":"warn","ts":0,"fields":{"library":"zap","latency":1}}
+	// {"msg":"Oh no!","level":"error","ts":0,"fields":{"user":"jane@test.com","visits":42}}
+	// {"msg":"Using fields once is always safe.","level":"info","ts":0,"fields":{"one":1,"two":2}}
+	// {"msg":"Because we passed Keep, it's safe to re-use our fields.","level":"info","ts":0,"fields":{"one":1,"two":2}}
 }
 
 func ExampleNest() {
@@ -60,8 +74,11 @@ func ExampleNest() {
 	// If we want to stop a field from being returned to a sync.Pool on use,
 	// use Keep.
 	nest := zap.Nest("outer", zap.Int("inner", 42))
-	logger.Info("Logging a nested field.", nest)
+	zap.Keep(nest)
+	logger.Info("The first use is always safe.", nest)
+	logger.Info("Since we called Keep, re-use is safe.", nest)
 
 	// Output:
-	// {"msg":"Logging a nested field.","level":"info","ts":0,"fields":{"outer":{"inner":42}}}
+	// {"msg":"The first use is always safe.","level":"info","ts":0,"fields":{"outer":{"inner":42}}}
+	// {"msg":"Since we called Keep, re-use is safe.","level":"info","ts":0,"fields":{"outer":{"inner":42}}}
 }
