@@ -5,62 +5,70 @@ Fast, structured, leveled logging in Go.
 ## Structure
 
 Zap takes an opinionated stance on logging and doesn't provide any
-`printf`-style helpers. Rather than `logger.Printf("Error %v writing logs to
-%v, lost %v messages.", err, f, m)`, zap encourages the more structured
+`printf`-style helpers. Rather than `logger.Printf("Failed to fetch URL %s
+(attempt %v), sleeping %s before retry.", url, tryNum, sleepFor)`, zap
+encourages the more structured
 
 ```
-Logger.
-  WithError(err).
-  With("msgCount", m).
-  With("fileName", f).
-  Info("Error writing logs.")
+logger.Info("Failed to fetch URL.",
+  zap.String("url", url),
+  zap.Int("attempt", tryNum),
+  zap.Duration("backoff", sleepFor),
+)
 ```
 
 This a bit more verbose, but it enables powerful ad-hoc analysis, flexible
 dashboarding, and accurate message bucketing. In short, it helps you get the
-most out of tools like ELK, Splunk, and Sentry. All log messages are
-JSON-serialized.
+most out of fancy tools like ELK, Splunk, and Sentry. All log messages are
+JSON-serialized, though PRs to support other formats are welcome.
 
 ## Performance
 
 For applications that log in the hot path, reflection-based serialization and
 string formatting are prohibitively expensive &mdash; they're CPU-intensive and
-make many small allocations. Put differently, using `encoding/json` to log tons
-of `interface{}`s makes your application slow.
+make many small allocations. Put differently, using `encoding/json` and
+`fmt.Println` to log tons of `interface{}`s makes your application slow.
 
-Zap's API offers a variety of type-safe ways to annotate a logger's context
-without incurring tons of overhead. It also offers a suite of conditional
-annotations, so collecting rich debugging context doesn't impact normal
-operations.
+Zap takes a different approach. It includes a reflection-free, zero-allocation
+JSON encoder, and it offers a variety of type-safe ways to add structured
+context to your log messages. It strives to avoid serialization overhead and
+allocations wherever possible, so collecting rich `Debug`-level logs doesn't
+impact normal operations.
 
 As measured by its own benchmarking suite, not only is zap more performant
 than comparable structured logging libraries &mdash; it's also faster than the
 standard library. Like all benchmarks, take these with a grain of salt.
 
-Add 5 fields to the logging context, one at a time:
+Log a message and 10 fields:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
-| :--- | :---: | :---: | ---: |
-| zap | 3340 ns/op | 5713 B/op | 16 allocs/op |
-| logrus | 66776 ns/op | 52646 B/op | 254 allocs/op |
+| :--- | :---: | :---: | :---: |
+| zap | FIXME ns/op | FIXME B/op | FIXME allocs/op |
+| logrus | 8410 ns/op | 3560 B/op | 67 allocs/op |
+| go-kit | 7380 ns/op | 3204 B/op | 70 allocs/op |
+| log15 | 20610 ns/op | 4207 B/op | 90 allocs/op |
 
-Add 5 fields to the logging context as a single map:
-
-| Library | Time | Bytes Allocated | Objects Allocated |
-| :--- | :---: | :---: | ---: |
-| zap | 1615 ns/op | 1504 B/op | 6 allocs/op |
-| logrus | 36592 ns/op | 21409 B/op | 209 allocs/op |
-
-Log static strings, without any context or `printf`-style formatting:
+Log a message using a logger that already has 10 fields of context:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
-| :--- | :---: | :---: | ---: |
-| zap | 328 ns/op | 32 B/op | 1 allocs/op |
-| standard library | 840 ns/op | 592 B/op | 2 allocs/op |
+| :--- | :---: | :---: | :---: |
+| zap | FIXME ns/op | 0 B/op | 0 allocs/op |
+| logrus | 8035 ns/op | 3438 B/op | 61 allocs/op |
+| go-kit | 6790 ns/op | 2486 B/op | 48 allocs/op |
+| log15 | 20709 ns/op | 3543 B/op | 69 allocs/op |
 
-## Development Status: Alpha
+Log a static string, without any context or `printf`-style formatting:
 
-Breaking changes are certain.
+| Library | Time | Bytes Allocated | Objects Allocated |
+| :--- | :---: | :---: | :---: |
+| zap | FIXME ns/op | 0 B/op | 0 allocs/op |
+| standard library | 562 ns/op | 32 B/op | 2 allocs/op |
+| logrus | 2765 ns/op | 1336 B/op | 26 allocs/op |
+| go-kit | 1092 ns/op | 624 B/op | 13 allocs/op |
+| log15 | 5513 ns/op | 1351 B/op | 23 allocs/op |
+
+## Development Status: Beta
+Ready for adventurous users, but breaking API changes are likely.
 
 <hr>
 Released under the [MIT License](LICENSE.txt).
