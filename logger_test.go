@@ -176,3 +176,21 @@ func TestJSONLoggerInternalErrorHandling(t *testing.T) {
 	// Internal errors go to stderr.
 	assert.Equal(t, "fail\n", errBuf.String(), "Expected internal errors to print to stderr.")
 }
+
+func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
+	// Test that changing a logger's level also changes the level of all
+	// ancestors and descendants.
+	grandparent := NewJSON(Info, ioutil.Discard, Int("generation", 1))
+	parent := grandparent.With(Int("generation", 2))
+	child := parent.With(Int("generation", 3))
+
+	all := []Logger{grandparent, parent, child}
+	for _, logger := range all {
+		assert.Equal(t, Info, logger.Level(), "Expected all loggers to start at Info level.")
+	}
+
+	parent.SetLevel(Debug)
+	for _, logger := range all {
+		assert.Equal(t, Debug, logger.Level(), "Expected all loggers to switch to Debug level.")
+	}
+}

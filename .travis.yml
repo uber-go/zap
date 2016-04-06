@@ -12,5 +12,7 @@ cache:
 install:
   - make dependencies
 script:
-  - make coveralls
+  - make test
   - make lint
+after_success:
+  - make coveralls

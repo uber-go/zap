@@ -11,3 +11,15 @@ import:
 - package: github.com/go-logfmt/logfmt
 - package: gopkg.in/stack.v1
 - package: gopkg.in/inconshreveable/log15.v2
+- package: github.com/axw/gocov
+  subpackages:
+  - gocov
+- package: github.com/mattn/goveralls
+- package: golang.org/x/tools
+  subpackages:
+  - cover
+- package: github.com/pborman/uuid
+- package: github.com/golang/lint
+  subpackages:
+  - golint
+- package: github.com/mattn/go-colorable

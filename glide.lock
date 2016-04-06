@@ -1,12 +1,26 @@
-hash: c287f70882073416105c80f4bb3e6b592ee8411c1b6afcc33065202fc1b0b6af
-updated: 2016-04-05T16:02:15.890845919-07:00
+hash: 7d8e99769b636ec8b079ce78a6810dfb4e9396c8b1068296924790006f93ed50
+updated: 2016-04-05T23:08:57.795320664-07:00
 imports:
+- name: github.com/axw/gocov
+  version: f5b2b5cf8644b8b432436eaee1c8a73d2f4cf86e
+  subpackages:
+  - gocov
 - name: github.com/go-kit/kit
   version: 2ecaaad4b9ff04d9da92fe4babb270c54d88841f
   subpackages:
   - log
 - name: github.com/go-logfmt/logfmt
   version: 08ab82a63ef462ac643ec79e659f023891f588f5
+- name: github.com/golang/lint
+  version: 8f348af5e29faa4262efdc14302797f23774e477
+  subpackages:
+  - golint
+- name: github.com/mattn/go-colorable
+  version: 9cbef7c35391cca05f15f8181dc0b18bc9736dbb
+- name: github.com/mattn/goveralls
+  version: b8787b61088a1fa0593616c35add0ba8a412fc85
+- name: github.com/pborman/uuid
+  version: c55201b036063326c5b1b89ccfe45a184973d073
 - name: github.com/Sirupsen/logrus
   version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
 - name: github.com/stretchr/testify
@@ -14,6 +28,10 @@ imports:
   subpackages:
   - assert
   - require
+- name: golang.org/x/tools
+  version: fe1488f8abd7e0eea44f1950dad93a6ff6880a60
+  subpackages:
+  - cover
 - name: gopkg.in/inconshreveable/log15.v2
   version: b105bd37f74e5d9dc7b6ad7806715c7a2b83fd3f
 - name: gopkg.in/stack.v1
