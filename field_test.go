@@ -22,6 +22,7 @@ package zap
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -47,57 +48,84 @@ func assertFieldJSON(t testing.TB, expected string, field Field) {
 		"Unexpected JSON output after applying field %+v.", field)
 }
 
+func assertCanBeReused(t testing.TB, field Field) {
+	var wg sync.WaitGroup
+
+	for i := 0; i < 100; i++ {
+		enc := newJSONEncoder()
+		defer enc.Free()
+
+		// Ensure using the field in multiple encoders in separate goroutines
+		// does not cause any races or panics.
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			assert.NotPanics(t, func() {
+				field.addTo(enc)
+			}, "Reusing a field should not cause issues")
+		}()
+	}
+
+	wg.Wait()
+}
+
 func TestBoolField(t *testing.T) {
 	assertFieldJSON(t, `"foo":true`, Bool("foo", true))
+	assertCanBeReused(t, Bool("foo", true))
 }
 
 func TestFloat64Field(t *testing.T) {
 	assertFieldJSON(t, `"foo":1.314`, Float64("foo", 1.314))
+	assertCanBeReused(t, Float64("foo", 1.314))
 }
 
 func TestIntField(t *testing.T) {
 	assertFieldJSON(t, `"foo":1`, Int("foo", 1))
+	assertCanBeReused(t, Int("foo", 1))
 }
 
 func TestInt64Field(t *testing.T) {
 	assertFieldJSON(t, `"foo":1`, Int64("foo", int64(1)))
+	assertCanBeReused(t, Int64("foo", int64(1)))
 }
 
 func TestStringField(t *testing.T) {
 	assertFieldJSON(t, `"foo":"bar"`, String("foo", "bar"))
+	assertCanBeReused(t, String("foo", "bar"))
 }
 
 func TestTimeField(t *testing.T) {
 	assertFieldJSON(t, `"foo":0`, Time("foo", time.Unix(0, 0)))
+	assertCanBeReused(t, Time("foo", time.Unix(0, 0)))
 }
 
 func TestErrField(t *testing.T) {
 	assertFieldJSON(t, `"error":"fail"`, Err(errors.New("fail")))
+	assertCanBeReused(t, Err(errors.New("fail")))
 }
 
 func TestDurationField(t *testing.T) {
 	assertFieldJSON(t, `"foo":1`, Duration("foo", time.Nanosecond))
+	assertCanBeReused(t, Duration("foo", time.Nanosecond))
 }
 
 func TestObjectField(t *testing.T) {
-	assertFieldJSON(t, `"foo":{"name":"phil"}`, Object("foo", fakeUser{"phil"}))
 	// Marshaling the user failed, so we expect an empty object.
 	assertFieldJSON(t, `"foo":{}`, Object("foo", fakeUser{"fail"}))
+
+	assertFieldJSON(t, `"foo":{"name":"phil"}`, Object("foo", fakeUser{"phil"}))
+	assertCanBeReused(t, Object("foo", fakeUser{"phil"}))
 }
 
 func TestNestField(t *testing.T) {
-	assertFieldJSON(
-		t,
-		`"foo":{"name":"phil","age":42}`,
-		Nest("foo",
-			String("name", "phil"),
-			Int("age", 42),
-		),
+	assertFieldJSON(t, `"foo":{"name":"phil","age":42}`,
+		Nest("foo", String("name", "phil"), Int("age", 42)),
 	)
-	assertFieldJSON(
-		t,
-		// Marshaling the user failed, so we expect an empty object.
-		`"foo":{"user":{}}`,
+	// Marshaling the user failed, so we expect an empty object.
+	assertFieldJSON(t, `"foo":{"user":{}}`,
 		Nest("foo", Object("user", fakeUser{"fail"})),
 	)
+
+	nest := Nest("foo", String("name", "phil"), Int("age", 42))
+	assertCanBeReused(t, nest)
 }

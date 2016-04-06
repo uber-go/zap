@@ -91,18 +91,6 @@ func TestJSONAddInt64(t *testing.T) {
 	})
 }
 
-func TestJSONAddTime(t *testing.T) {
-	withJSONEncoder(func(enc *jsonEncoder) {
-		enc.AddTime("ts", time.Unix(0, 100))
-		assertJSON(t, `"foo":"bar","ts":100`, enc)
-
-		// Keys should be escaped.
-		enc.truncate()
-		enc.AddTime(`start\`, time.Unix(0, 0))
-		assertJSON(t, `"start\\":0`, enc)
-	})
-}
-
 func TestJSONAddFloat64(t *testing.T) {
 	withJSONEncoder(func(enc *jsonEncoder) {
 		enc.AddFloat64("baz", 1e10)

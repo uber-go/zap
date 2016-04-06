@@ -20,153 +20,133 @@
 
 package zap
 
-import "time"
+import (
+	"fmt"
+	"math"
+	"time"
+)
 
-// A Field is a deferred marshaling operation used to add a key-value pair to
-// a logger's context. Keys and values are appropriately escaped for the current
-// encoding scheme (e.g., JSON).
-type Field interface {
-	addTo(encoder) error
-}
+type fieldType int
 
 // A FieldCloser closes a nested field.
 type FieldCloser interface {
 	CloseField()
 }
 
+const (
+	unknownType fieldType = iota
+	boolType
+	floatType
+	intType
+	int64Type
+	stringType
+	marshalerType
+)
+
+// A Field is a deferred marshaling operation used to add a key-value pair to
+// a logger's context. Keys and values are appropriately escaped for the current
+// encoding scheme (e.g., JSON).
+type Field struct {
+	key       string
+	fieldType fieldType
+	ival      int64
+	str       string
+	obj       Marshaler
+}
+
 // Bool constructs a Field with the given key and value.
 func Bool(key string, val bool) Field {
-	return boolField{key, val}
+	return Field{key: key, fieldType: boolType, ival: 1}
 }
 
 // Float64 constructs a Field with the given key and value. The floating-point
 // value is encoded using strconv.FormatFloat's 'g' option (exponential notation
 // for large exponents, grade-school notation otherwise).
 func Float64(key string, val float64) Field {
-	return float64Field{key, val}
+	return Field{key: key, fieldType: floatType, ival: int64(math.Float64bits(val))}
 }
 
 // Int constructs a Field with the given key and value.
 func Int(key string, val int) Field {
-	return int64Field{key, int64(val)}
+	return Field{key: key, fieldType: intType, ival: int64(val)}
 }
 
 // Int64 constructs a Field with the given key and value.
 func Int64(key string, val int64) Field {
-	return int64Field{key, val}
+	return Field{key: key, fieldType: int64Type, ival: val}
 }
 
 // String constructs a Field with the given key and value.
 func String(key string, val string) Field {
-	return stringField{key, val}
+	return Field{key: key, fieldType: stringType, str: val}
 }
 
 // Time constructs a Field with the given key and value. It represents a
 // time.Time as nanoseconds since epoch.
 func Time(key string, val time.Time) Field {
-	return timeField{key, val}
+	return Int64(key, val.UnixNano())
 }
 
 // Err constructs a Field that stores err.Error() under the key "error".
 func Err(err error) Field {
-	return stringField{"error", err.Error()}
+	return String("error", err.Error())
 }
 
 // Duration constructs a Field with the given key and value. It represents
 // durations as an integer number of nanoseconds.
 func Duration(key string, val time.Duration) Field {
-	return int64Field{key, int64(val)}
+	return Int64(key, int64(val))
 }
 
 // Object constructs a field with the given key and zap.Marshaler. It provides a
 // flexible, but still type-safe and efficient, way to add user-defined types to
 // the logging context.
 func Object(key string, val Marshaler) Field {
-	return marshalerField{key, val}
+	return Field{key: key, fieldType: marshalerType, obj: val}
 }
 
 // Nest takes a key and a variadic number of Fields and creates a nested
 // namespace.
 func Nest(key string, fields ...Field) Field {
-	return nestedField{key, fields}
+	return Field{key: key, fieldType: marshalerType, obj: multiFields(fields)}
 }
 
-type boolField struct {
-	key string
-	val bool
-}
-
-func (b boolField) addTo(enc encoder) error {
-	enc.AddBool(b.key, b.val)
+func (f Field) addTo(kv KeyValue) error {
+	switch f.fieldType {
+	case boolType:
+		kv.AddBool(f.key, f.ival == 1)
+	case floatType:
+		kv.AddFloat64(f.key, math.Float64frombits(uint64(f.ival)))
+	case intType:
+		kv.AddInt(f.key, int(f.ival))
+	case int64Type:
+		kv.AddInt64(f.key, f.ival)
+	case stringType:
+		kv.AddString(f.key, f.str)
+	case marshalerType:
+		closer := kv.Nest(f.key)
+		err := f.obj.MarshalLog(kv)
+		closer.CloseField()
+		return err
+	default:
+		panic(fmt.Sprintf("unknown field type found: %v", f))
+	}
 	return nil
 }
 
-type float64Field struct {
-	key string
-	val float64
+type multiFields []Field
+
+func (fs multiFields) MarshalLog(kv KeyValue) error {
+	return addFields(kv, []Field(fs))
 }
 
-func (f float64Field) addTo(enc encoder) error {
-	enc.AddFloat64(f.key, f.val)
-	return nil
-}
-
-type int64Field struct {
-	key string
-	val int64
-}
-
-func (i int64Field) addTo(enc encoder) error {
-	enc.AddInt64(i.key, i.val)
-	return nil
-}
-
-type stringField struct {
-	key string
-	val string
-}
-
-func (s stringField) addTo(enc encoder) error {
-	enc.AddString(s.key, s.val)
-	return nil
-}
-
-type timeField struct {
-	key string
-	val time.Time
-}
-
-func (t timeField) addTo(enc encoder) error {
-	enc.AddTime(t.key, t.val)
-	return nil
-}
-
-type marshalerField struct {
-	key string
-	val Marshaler
-}
-
-func (m marshalerField) addTo(enc encoder) error {
-	closer := enc.Nest(m.key)
-	err := m.val.MarshalLog(enc)
-	closer.CloseField()
-	return err
-}
-
-type nestedField struct {
-	key  string
-	vals []Field
-}
-
-func (n nestedField) addTo(enc encoder) error {
-	closer := enc.Nest(n.key)
+func addFields(kv KeyValue, fields []Field) error {
 	var errs multiError
-	for _, f := range n.vals {
-		if err := f.addTo(enc); err != nil {
+	for _, f := range fields {
+		if err := f.addTo(kv); err != nil {
 			errs = append(errs, err)
 		}
 	}
-	closer.CloseField()
 	if len(errs) > 0 {
 		return errs
 	}

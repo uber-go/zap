@@ -20,8 +20,6 @@
 
 package zap
 
-import "time"
-
 // KeyValue is an encoding-agnostic interface to add structured data to the
 // logging context. Like maps, KeyValues aren't safe for concurrent use (though
 // typical use shouldn't require locks).
@@ -31,6 +29,5 @@ type KeyValue interface {
 	AddInt(string, int)
 	AddInt64(string, int64)
 	AddString(string, string)
-	AddTime(string, time.Time)
 	Nest(string) FieldCloser
 }
