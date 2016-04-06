@@ -19,7 +19,7 @@ logger.Info("Failed to fetch URL.",
 
 This a bit more verbose, but it enables powerful ad-hoc analysis, flexible
 dashboarding, and accurate message bucketing. In short, it helps you get the
-most out of fancy tools like ELK, Splunk, and Sentry. All log messages are
+most out of tools like ELK, Splunk, and Sentry. All log messages are
 JSON-serialized, though PRs to support other formats are welcome.
 
 ## Performance
@@ -32,8 +32,8 @@ make many small allocations. Put differently, using `encoding/json` and
 Zap takes a different approach. It includes a reflection-free, zero-allocation
 JSON encoder, and it offers a variety of type-safe ways to add structured
 context to your log messages. It strives to avoid serialization overhead and
-allocations wherever possible, so collecting rich `Debug`-level logs doesn't
-impact normal operations.
+allocations wherever possible, so collecting rich debug logs doesn't impact
+normal operations.
 
 As measured by its own benchmarking suite, not only is zap more performant
 than comparable structured logging libraries &mdash; it's also faster than the
