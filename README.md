@@ -35,9 +35,10 @@ context to your log messages. It strives to avoid serialization overhead and
 allocations wherever possible, so collecting rich debug logs doesn't impact
 normal operations.
 
-As measured by its own benchmarking suite, not only is zap more performant
-than comparable structured logging libraries &mdash; it's also faster than the
-standard library. Like all benchmarks, take these with a grain of salt.
+As measured by its own [benchmarking suite][], not only is zap more
+performant than comparable structured logging libraries &mdash; it's also faster
+than the standard library. Like all benchmarks, take these with a grain of
+salt.<sup id="anchor-versions">[1](#footnote-versions)</sup>
 
 Log a message and 10 fields:
 
@@ -73,9 +74,15 @@ Ready for adventurous users, but breaking API changes are likely.
 <hr>
 Released under the [MIT License](LICENSE.txt).
 
+<sup id="footnote-versions">1</sup> In particular, note that we may be
+benchmarking against slightly older versions of other libraries. Versions are
+pinned in zap's [glide.lock][] file. [↩](#anchor-versions)
+
 [doc-img]: https://godoc.org/github.com/uber-common/zap?status.svg
 [doc]: https://godoc.org/github.com/uber-common/zap
 [ci-img]: https://travis-ci.org/uber-common/zap.svg?branch=master
 [ci]: https://travis-ci.org/uber-common/zap
 [cov-img]: https://coveralls.io/repos/github/uber-common/zap/badge.svg?branch=master
 [cov]: https://coveralls.io/github/uber-common/zap?branch=master
+[benchmarking suite]: https://github.com/uber-common/zap/tree/master/benchmarks
+[glide.lock]: https://github.com/uber-common/zap/blob/master/glide.lock
