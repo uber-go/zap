@@ -35,6 +35,7 @@ endif
 
 .PHONY: lint
 lint:
+ifdef SHOULD_LINT
 	@rm -rf lint.log
 	@echo "Checking formatting..."
 	@gofmt -d -s $(PKG_FILES) 2>&1 | tee lint.log
@@ -45,14 +46,17 @@ lint:
 	@echo "Checking for unresolved FIXMEs..."
 	@git grep -i fixme | grep -v -e vendor -e Makefile | tee -a lint.log
 	@[ ! -s lint.log ]
+else
+	@echo "Skipping linters on" $(GO_VERSION)
+endif
 
 .PHONY: test
 test:
 	go test -race $(PKGS)
 
 .PHONY: coveralls
-coveralls:
-	goveralls -service=travis-ci $(PKGS)
+coveralls: test
+	goveralls -service=travis-ci
 
 .PHONY: bench
 BENCH ?= .
