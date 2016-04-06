@@ -22,6 +22,7 @@ package zap
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -48,11 +49,24 @@ func assertFieldJSON(t testing.TB, expected string, field Field) {
 }
 
 func assertCanBeReused(t testing.TB, field Field) {
-	enc := newJSONEncoder()
-	defer enc.Free()
+	var wg sync.WaitGroup
 
-	field.addTo(enc)
-	assert.NotPanics(t, func() { field.addTo(enc) }, "Expected reusing field to panic.")
+	for i := 0; i < 100; i++ {
+		enc := newJSONEncoder()
+		defer enc.Free()
+
+		// Ensure using the field in multiple encoders in separate goroutines
+		// does not cause any races or panics.
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			assert.NotPanics(t, func() {
+				field.addTo(enc)
+			}, "Reusing a field should not cause issues")
+		}()
+	}
+
+	wg.Wait()
 }
 
 func TestBoolField(t *testing.T) {
