@@ -129,3 +129,14 @@ func TestNestField(t *testing.T) {
 	nest := Nest("foo", String("name", "phil"), Int("age", 42))
 	assertCanBeReused(t, nest)
 }
+
+func TestStackField(t *testing.T) {
+	enc := newJSONEncoder()
+	defer enc.Free()
+
+	Stack().addTo(enc)
+	output := string(enc.bytes)
+
+	assert.Equal(t, `"stacktrace":`, output[:13], "Stacktrace added under an unexpected key.")
+	assert.Contains(t, output[13:], "zap.takeStacktrace", "Expected stacktrace to contain our stacktrace capture function.")
+}
