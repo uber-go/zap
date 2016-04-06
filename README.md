@@ -43,7 +43,7 @@ Log a message and 10 fields:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| zap | FIXME ns/op | FIXME B/op | FIXME allocs/op |
+| :zap: zap | 1171 ns/op | 705 B/op | 2 allocs/op |
 | logrus | 8410 ns/op | 3560 B/op | 67 allocs/op |
 | go-kit | 7380 ns/op | 3204 B/op | 70 allocs/op |
 | log15 | 20610 ns/op | 4207 B/op | 90 allocs/op |
@@ -52,7 +52,7 @@ Log a message using a logger that already has 10 fields of context:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| zap | FIXME ns/op | 0 B/op | 0 allocs/op |
+| :zap: zap | 231 ns/op | 0 B/op | 0 allocs/op |
 | logrus | 8035 ns/op | 3438 B/op | 61 allocs/op |
 | go-kit | 6790 ns/op | 2486 B/op | 48 allocs/op |
 | log15 | 20709 ns/op | 3543 B/op | 69 allocs/op |
@@ -61,7 +61,7 @@ Log a static string, without any context or `printf`-style formatting:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| zap | FIXME ns/op | 0 B/op | 0 allocs/op |
+| :zap: zap | 223 ns/op | 0 B/op | 0 allocs/op |
 | standard library | 562 ns/op | 32 B/op | 2 allocs/op |
 | logrus | 2765 ns/op | 1336 B/op | 26 allocs/op |
 | go-kit | 1092 ns/op | 624 B/op | 13 allocs/op |
