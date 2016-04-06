@@ -100,7 +100,11 @@ func Stack() Field {
 	// Try to avoid allocating a buffer.
 	enc := newJSONEncoder()
 	bs := enc.bytes[:cap(enc.bytes)]
-	field := String("stacktrace", string(takeStacktrace(bs, false)))
+	// Returning the stacktrace as a string costs an allocation, but saves us
+	// from expanding the Field union struct to include a byte slice. Since
+	// taking a stacktrace is already so expensive (~10us), the extra allocation
+	// is okay.
+	field := String("stacktrace", takeStacktrace(bs, false))
 	enc.Free()
 	return field
 }

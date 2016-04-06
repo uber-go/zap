@@ -26,20 +26,17 @@ import "runtime"
 // If the provided slice isn't large enough, takeStacktrace will allocate
 // successively larger slices until it can capture the whole stack.
 func takeStacktrace(buf []byte, includeAllGoroutines bool) string {
+	if len(buf) == 0 {
+		// We may have been passed a nil byte slice.
+		buf = make([]byte, 1024)
+	}
 	n := runtime.Stack(buf, includeAllGoroutines)
 	for n >= len(buf) {
 		// Buffer wasn't large enough, allocate a larger one. No need to copy
 		// previous buffer's contents.
 		size := 2 * n
-		if size == 0 {
-			// We may have been passed a nil byte slice.
-			size = 1024
-		}
 		buf = make([]byte, size)
 		n = runtime.Stack(buf, includeAllGoroutines)
 	}
-	// Casting this to a string costs an allocation, but saves us from expanding
-	// the Field union struct to include a byte slice. Since taking a stacktrace
-	// is already so expensive (~10us), the extra allocation is okay.
 	return string(buf[:n])
 }

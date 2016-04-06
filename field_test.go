@@ -22,11 +22,13 @@ package zap
 
 import (
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type fakeUser struct{ name string }
@@ -137,6 +139,6 @@ func TestStackField(t *testing.T) {
 	Stack().addTo(enc)
 	output := string(enc.bytes)
 
-	assert.Equal(t, `"stacktrace":`, output[:13], "Stacktrace added under an unexpected key.")
-	assert.Contains(t, output[13:], "zap.takeStacktrace", "Expected stacktrace to contain our stacktrace capture function.")
+	require.True(t, strings.HasPrefix(output, `"stacktrace":`), "Stacktrace added under an unexpected key.")
+	assert.Contains(t, output[13:], "zap.TestStackField", "Expected stacktrace to contain caller.")
 }

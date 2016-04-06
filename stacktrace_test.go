@@ -29,10 +29,12 @@ import (
 func TestTakeStacktrace(t *testing.T) {
 	// Even if we pass a tiny buffer, takeStacktrace should allocate until it
 	// can capture the whole stacktrace.
-	trace := takeStacktrace(nil, false)
-	// The top frame should be takeStacktrace.
-	assert.Contains(t, trace, "zap.takeStacktrace", "Stacktrace should contain the takeStacktrace function.")
-	// The stacktrace should also capture something from the testing package
-	// (details vary by Go version).
-	assert.Contains(t, trace, "testing", "Stacktrace should contain the test runner.")
+	traceNil := takeStacktrace(nil, false)
+	traceTiny := takeStacktrace(make([]byte, 1), false)
+	for _, trace := range []string{traceNil, traceTiny} {
+		// The top frame should be takeStacktrace.
+		assert.Contains(t, trace, "zap.takeStacktrace", "Stacktrace should contain the takeStacktrace function.")
+		// The stacktrace should also capture its immediate caller.
+		assert.Contains(t, trace, "TestTakeStacktrace", "Stacktrace should contain the test function.")
+	}
 }
