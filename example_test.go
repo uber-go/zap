@@ -45,6 +45,11 @@ func Example() {
 	// log output, but doesn't affect the parent.
 	child := logger.With(zap.String("user", "jane@test.com"), zap.Int("visits", 42))
 	child.Error("Oh no!")
+
+	// Output:
+	// {"msg":"Log without structured data...","level":"warn","ts":0,"fields":{}}
+	// {"msg":"Or use strongly-typed wrappers to add structured context.","level":"warn","ts":0,"fields":{"library":"zap","latency":1}}
+	// {"msg":"Oh no!","level":"error","ts":0,"fields":{"user":"jane@test.com","visits":42}}
 }
 
 func ExampleNest() {
