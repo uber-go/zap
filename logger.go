@@ -29,7 +29,7 @@ import (
 )
 
 // For stubbing in tests.
-var _errSink io.Writer = os.Stderr
+var _defaultErrSink io.Writer = os.Stderr
 
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
@@ -71,11 +71,16 @@ type jsonLogger struct {
 // customized JSON encoder to avoid reflection and minimize allocations.
 //
 // Any passed fields are added to the logger as context.
-func NewJSON(lvl Level, sink io.Writer, fields ...Field) Logger {
+func NewJSON(lvl Level, sink, errSink io.Writer, fields ...Field) Logger {
+	if errSink == nil {
+		errSink = _defaultErrSink
+	}
+
 	integerLevel := int32(lvl)
 	jl := &jsonLogger{
 		level: &integerLevel,
 		enc:   newJSONEncoder(),
+		errW:  errSink,
 		w:     sink,
 	}
 	if err := jl.enc.AddFields(fields); err != nil {
@@ -160,5 +165,5 @@ func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
 }
 
 func (jl *jsonLogger) internalError(msg string) {
-	fmt.Fprintln(_errSink, msg)
+	fmt.Fprintln(jl.errW, msg)
 }

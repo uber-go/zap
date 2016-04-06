@@ -29,7 +29,7 @@ import (
 
 func Example() {
 	// Log in JSON, using zap's reflection-free JSON encoder.
-	logger := zap.NewJSON(zap.Info, os.Stdout)
+	logger := zap.NewJSON(zap.Info, os.Stdout, os.Stderr)
 	// For repeatable tests, pretend that it's always 1970.
 	logger.StubTime()
 
@@ -53,7 +53,7 @@ func Example() {
 }
 
 func ExampleNest() {
-	logger := zap.NewJSON(zap.Info, os.Stdout)
+	logger := zap.NewJSON(zap.Info, os.Stdout, os.Stderr)
 	// Stub the current time in tests.
 	logger.StubTime()
 

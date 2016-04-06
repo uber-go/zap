@@ -51,7 +51,7 @@ var _jane = user{
 }
 
 func BenchmarkZapAddingFields(b *testing.B) {
-	logger := zap.NewJSON(zap.All, ioutil.Discard)
+	logger := zap.NewJSON(zap.All, ioutil.Discard, ioutil.Discard)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -72,7 +72,7 @@ func BenchmarkZapAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapWithAccumulatedContext(b *testing.B) {
-	logger := zap.NewJSON(zap.All, ioutil.Discard,
+	logger := zap.NewJSON(zap.All, ioutil.Discard, ioutil.Discard,
 		zap.Int("int", 1),
 		zap.Int64("int64", 2),
 		zap.Float64("float", 3.0),
@@ -93,7 +93,7 @@ func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapWithoutFields(b *testing.B) {
-	logger := zap.NewJSON(zap.All, ioutil.Discard)
+	logger := zap.NewJSON(zap.All, ioutil.Discard, ioutil.Discard)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
