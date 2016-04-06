@@ -40,7 +40,7 @@ type user struct {
 func (u user) MarshalLog(kv zap.KeyValue) error {
 	kv.AddString("name", u.Name)
 	kv.AddString("email", u.Email)
-	kv.AddTime("created_at", u.CreatedAt)
+	kv.AddInt64("created_at", u.CreatedAt.UnixNano())
 	return nil
 }
 
