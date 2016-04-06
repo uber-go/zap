@@ -31,12 +31,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func withJSONLogger(f func(*jsonLogger, func() []string), fields ...Field) {
-	sink := bytes.NewBuffer(nil)
-	jl := NewJSON(All, sink, fields...)
+func withJSONLogger(t testing.TB, f func(*jsonLogger, func() []string), fields ...Field) {
+	sink := &bytes.Buffer{}
+	errSink := &bytes.Buffer{}
+	jl := NewJSON(All, sink, errSink, fields...)
 	jl.StubTime()
 
 	f(jl.(*jsonLogger), func() []string { return strings.Split(sink.String(), "\n") })
+	assert.Empty(t, errSink.String(), "Expected error sink to be empty")
 }
 
 func assertMessage(t testing.TB, level, expectedMsg, actualLog string) {
@@ -54,7 +56,7 @@ func assertFields(t testing.TB, jl Logger, getOutput func() []string, expectedFi
 }
 
 func TestJSONLoggerSetLevel(t *testing.T) {
-	withJSONLogger(func(jl *jsonLogger, _ func() []string) {
+	withJSONLogger(t, func(jl *jsonLogger, _ func() []string) {
 		assert.Equal(t, All, jl.Level(), "Unexpected initial level.")
 		jl.SetLevel(Debug)
 		assert.Equal(t, Debug, jl.Level(), "Unexpected level after SetLevel.")
@@ -62,7 +64,7 @@ func TestJSONLoggerSetLevel(t *testing.T) {
 }
 
 func TestJSONLoggerEnabled(t *testing.T) {
-	withJSONLogger(func(jl *jsonLogger, _ func() []string) {
+	withJSONLogger(t, func(jl *jsonLogger, _ func() []string) {
 		jl.SetLevel(Info)
 		assert.False(t, jl.Enabled(Debug), "Debug logs shouldn't be enabled at Info level.")
 		assert.True(t, jl.Enabled(Info), "Info logs should be enabled at Info level.")
@@ -83,7 +85,7 @@ func TestJSONLoggerEnabled(t *testing.T) {
 func TestJSONLoggerConcurrentLevelMutation(t *testing.T) {
 	// Trigger races for non-atomic level mutations.
 	proceed := make(chan struct{})
-	jl := NewJSON(Info, ioutil.Discard)
+	jl := NewJSON(Info, ioutil.Discard, ioutil.Discard)
 
 	for i := 0; i < 50; i++ {
 		go func(l Logger) {
@@ -99,13 +101,13 @@ func TestJSONLoggerConcurrentLevelMutation(t *testing.T) {
 }
 
 func TestJSONLoggerInitialFields(t *testing.T) {
-	withJSONLogger(func(jl *jsonLogger, output func() []string) {
+	withJSONLogger(t, func(jl *jsonLogger, output func() []string) {
 		assertFields(t, jl, output, `{"foo":42,"bar":"baz"}`)
 	}, Int("foo", 42), String("bar", "baz"))
 }
 
 func TestJSONLoggerWith(t *testing.T) {
-	withJSONLogger(func(jl *jsonLogger, output func() []string) {
+	withJSONLogger(t, func(jl *jsonLogger, output func() []string) {
 		// Child loggers should have copy-on-write semantics, so two children
 		// shouldn't stomp on each other's fields or affect the parent's fields.
 		jl.With(String("one", "two")).Debug("")
@@ -115,35 +117,35 @@ func TestJSONLoggerWith(t *testing.T) {
 }
 
 func TestJSONLoggerDebug(t *testing.T) {
-	withJSONLogger(func(jl *jsonLogger, output func() []string) {
+	withJSONLogger(t, func(jl *jsonLogger, output func() []string) {
 		jl.Debug("foo")
 		assertMessage(t, "debug", "foo", output()[0])
 	})
 }
 
 func TestJSONLoggerInfo(t *testing.T) {
-	withJSONLogger(func(jl *jsonLogger, output func() []string) {
+	withJSONLogger(t, func(jl *jsonLogger, output func() []string) {
 		jl.Info("foo")
 		assertMessage(t, "info", "foo", output()[0])
 	})
 }
 
 func TestJSONLoggerWarn(t *testing.T) {
-	withJSONLogger(func(jl *jsonLogger, output func() []string) {
+	withJSONLogger(t, func(jl *jsonLogger, output func() []string) {
 		jl.Warn("foo")
 		assertMessage(t, "warn", "foo", output()[0])
 	})
 }
 
 func TestJSONLoggerError(t *testing.T) {
-	withJSONLogger(func(jl *jsonLogger, output func() []string) {
+	withJSONLogger(t, func(jl *jsonLogger, output func() []string) {
 		jl.Error("foo")
 		assertMessage(t, "error", "foo", output()[0])
 	})
 }
 
 func TestJSONLoggerPanic(t *testing.T) {
-	withJSONLogger(func(jl *jsonLogger, output func() []string) {
+	withJSONLogger(t, func(jl *jsonLogger, output func() []string) {
 		assert.Panics(t, func() {
 			jl.Panic("foo")
 		})
@@ -152,21 +154,36 @@ func TestJSONLoggerPanic(t *testing.T) {
 }
 
 func TestJSONLoggerNoOpsDisabledLevels(t *testing.T) {
-	withJSONLogger(func(jl *jsonLogger, output func() []string) {
+	withJSONLogger(t, func(jl *jsonLogger, output func() []string) {
 		jl.SetLevel(Warn)
 		jl.Info("silence!")
 		assert.Equal(t, []string{""}, output(), "Expected logging at a disabled level to produce no output.")
 	})
 }
 
-func TestJSONLoggerInternalErrorHandling(t *testing.T) {
+func TestJSONLoggerInternalErrorHandlingNoSink(t *testing.T) {
 	errBuf := bytes.NewBuffer(nil)
-	_errSink = errBuf
-	defer func() { _errSink = os.Stderr }()
+	_defaultErrSink = errBuf
+	defer func() { _defaultErrSink = os.Stderr }()
 
-	buf := bytes.NewBuffer(nil)
+	buf := &bytes.Buffer{}
 
-	jl := NewJSON(All, buf, Object("user", fakeUser{"fail"}))
+	jl := NewJSON(All, buf, nil, Object("user", fakeUser{"fail"}))
+	jl.StubTime()
+	output := func() []string { return strings.Split(buf.String(), "\n") }
+
+	// Expect partial output, even if there's an error serializing
+	// user-defined types.
+	assertFields(t, jl, output, `{"user":{}}`)
+	// Internal errors go to stderr.
+	assert.Equal(t, "fail\n", errBuf.String(), "Expected internal errors to print to stderr.")
+}
+
+func TestJSONLoggerInternalErrorHandlingWithSink(t *testing.T) {
+	buf := &bytes.Buffer{}
+	errBuf := &bytes.Buffer{}
+
+	jl := NewJSON(All, buf, errBuf, Object("user", fakeUser{"fail"}))
 	jl.StubTime()
 	output := func() []string { return strings.Split(buf.String(), "\n") }
 
@@ -180,7 +197,7 @@ func TestJSONLoggerInternalErrorHandling(t *testing.T) {
 func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
 	// Test that changing a logger's level also changes the level of all
 	// ancestors and descendants.
-	grandparent := NewJSON(Info, ioutil.Discard, Int("generation", 1))
+	grandparent := NewJSON(Info, ioutil.Discard, ioutil.Discard, Int("generation", 1))
 	parent := grandparent.With(Int("generation", 2))
 	child := parent.With(Int("generation", 3))
 
