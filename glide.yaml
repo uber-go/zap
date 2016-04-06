@@ -1,20 +1,13 @@
-package: github.com/akshayjshah/flog
+package: github.com/uber-common/zap
 import:
 - package: github.com/stretchr/testify
   subpackages:
   - assert
   - require
-- package: github.com/golang/lint
-  subpackages:
-  - golint
-- package: github.com/mattn/goveralls
 - package: github.com/Sirupsen/logrus
-- package: github.com/axw/gocov
-  subpackages:
-  - gocov
-- package: github.com/golang/glog
 - package: github.com/go-kit/kit
   subpackages:
   - log
-- package: gopkg.in/logfmt.v0
+- package: github.com/go-logfmt/logfmt
 - package: gopkg.in/stack.v1
+- package: gopkg.in/inconshreveable/log15.v2
