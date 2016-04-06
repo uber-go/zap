@@ -40,16 +40,16 @@ func BenchmarkLog15AddingFields(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			logger.Info("Go fast.",
-				"one", 1,
-				"two", int64(1),
-				"three", 3.0,
-				"four", "four!",
-				"five", true,
-				"six", time.Unix(0, 0),
+				"int", 1,
+				"int64", int64(1),
+				"float", 3.0,
+				"string", "four!",
+				"bool", true,
+				"time", time.Unix(0, 0),
 				"error", errExample.Error(),
-				"eight", time.Second,
-				"nine", _jane,
-				"ten", "done!",
+				"duration", time.Second,
+				"user-defined type", _jane,
+				"another string", "done!",
 			)
 		}
 	})
@@ -57,16 +57,16 @@ func BenchmarkLog15AddingFields(b *testing.B) {
 
 func BenchmarkLog15WithAccumulatedContext(b *testing.B) {
 	logger := newLog15().New(
-		"one", 1,
-		"two", int64(1),
-		"three", 3.0,
-		"four", "four!",
-		"five", true,
-		"six", time.Unix(0, 0),
+		"int", 1,
+		"int64", int64(1),
+		"float", 3.0,
+		"string", "four!",
+		"bool", true,
+		"time", time.Unix(0, 0),
 		"error", errExample.Error(),
-		"eight", time.Second,
-		"nine", _jane,
-		"ten", "done!",
+		"duration", time.Second,
+		"user-defined type", _jane,
+		"another string", "done!",
 	)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

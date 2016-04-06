@@ -56,16 +56,16 @@ func BenchmarkZapAddingFields(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			logger.Info("Go fast.",
-				zap.Int("one", 1),
-				zap.Int64("two", 2),
-				zap.Float64("three", 3.0),
-				zap.String("four", "four!"),
-				zap.Bool("five", true),
-				zap.Time("six", time.Unix(0, 0)),
+				zap.Int("int", 1),
+				zap.Int64("int64", 2),
+				zap.Float64("float", 3.0),
+				zap.String("string", "four!"),
+				zap.Bool("bool", true),
+				zap.Time("time", time.Unix(0, 0)),
 				zap.Err(errExample),
-				zap.Duration("eight", time.Second),
-				zap.Object("nine", _jane),
-				zap.String("ten", "done!"),
+				zap.Duration("duration", time.Second),
+				zap.Object("user-defined type", _jane),
+				zap.String("another string", "done!"),
 			)
 		}
 	})
@@ -73,16 +73,16 @@ func BenchmarkZapAddingFields(b *testing.B) {
 
 func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 	logger := zap.NewJSON(zap.All, ioutil.Discard,
-		zap.Int("one", 1),
-		zap.Int64("two", 2),
-		zap.Float64("three", 3.0),
-		zap.String("four", "four!"),
-		zap.Bool("five", true),
-		zap.Time("six", time.Unix(0, 0)),
+		zap.Int("int", 1),
+		zap.Int64("int64", 2),
+		zap.Float64("float", 3.0),
+		zap.String("string", "four!"),
+		zap.Bool("bool", true),
+		zap.Time("time", time.Unix(0, 0)),
 		zap.Err(errExample),
-		zap.Duration("eight", time.Second),
-		zap.Object("nine", _jane),
-		zap.String("ten", "done!"),
+		zap.Duration("duration", time.Second),
+		zap.Object("user-defined type", _jane),
+		zap.String("another string", "done!"),
 	)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

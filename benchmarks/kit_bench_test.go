@@ -38,16 +38,16 @@ func BenchmarkGoKitAddingFields(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			logger.With(
-				"one", 1,
-				"two", int64(1),
-				"three", 3.0,
-				"four", "four!",
-				"five", true,
-				"six", time.Unix(0, 0),
+				"int", 1,
+				"int64", int64(1),
+				"float", 3.0,
+				"string", "four!",
+				"bool", true,
+				"time", time.Unix(0, 0),
 				"error", errExample.Error(),
-				"eight", time.Second,
-				"nine", _jane,
-				"ten", "done!",
+				"duration", time.Second,
+				"user-defined type", _jane,
+				"another string", "done!",
 			).Log("Go fast.")
 		}
 	})
@@ -55,16 +55,16 @@ func BenchmarkGoKitAddingFields(b *testing.B) {
 
 func BenchmarkGoKitWithAccumulatedContext(b *testing.B) {
 	logger := newKit().With(
-		"one", 1,
-		"two", int64(1),
-		"three", 3.0,
-		"four", "four!",
-		"five", true,
-		"six", time.Unix(0, 0),
+		"int", 1,
+		"int64", int64(1),
+		"float", 3.0,
+		"string", "four!",
+		"bool", true,
+		"time", time.Unix(0, 0),
 		"error", errExample.Error(),
-		"eight", time.Second,
-		"nine", _jane,
-		"ten", "done!",
+		"duration", time.Second,
+		"user-defined type", _jane,
+		"another string", "done!",
 	)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
