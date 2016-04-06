@@ -18,5 +18,5 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package zap provides efficient, structured, leveled logging in Go.
+// Package zap provides fast, structured, leveled logging in Go.
 package zap
