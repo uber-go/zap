@@ -55,8 +55,8 @@ test:
 	go test -race $(PKGS)
 
 .PHONY: coveralls
-coveralls: test
-	goveralls -service=travis-ci
+coveralls:
+	goveralls -service=travis-ci .
 
 .PHONY: bench
 BENCH ?= .
