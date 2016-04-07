@@ -34,7 +34,7 @@ func TestHookAddCaller(t *testing.T) {
 	logger := NewJSON(All, Output(buf), AddCaller())
 	logger.Info("Callers.")
 
-	re := regexp.MustCompile(`github\.com\\/uber-common\\/zap\\/hook_test.go:[\d]+: Callers\.`)
+	re := regexp.MustCompile(`hook_test.go:[\d]+: Callers\.`)
 	assert.Regexp(t, re, buf.String(), "Expected to find package name and file name in output.")
 }
 

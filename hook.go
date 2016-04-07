@@ -22,6 +22,7 @@ package zap
 
 import (
 	"errors"
+	"path/filepath"
 	"runtime"
 	"strconv"
 )
@@ -53,7 +54,7 @@ func AddCaller() Option {
 		// Re-use a buffer from the pool.
 		enc := newJSONEncoder()
 		buf := enc.bytes
-		buf = append(buf, filename...)
+		buf = append(buf, filepath.Base(filename)...)
 		buf = append(buf, ':')
 		buf = strconv.AppendInt(buf, int64(line), 10)
 		buf = append(buf, ':', ' ')
