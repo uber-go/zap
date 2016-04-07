@@ -92,6 +92,23 @@ func Err(err error) Field {
 	return String("error", err.Error())
 }
 
+// Stack constructs a Field that stores a stacktrace of the current goroutine
+// under the key "stacktrace". Keep in mind that taking a stacktrace is
+// extremely expensive (relatively speaking); this function both makes an
+// allocation and takes ~10 microseconds.
+func Stack() Field {
+	// Try to avoid allocating a buffer.
+	enc := newJSONEncoder()
+	bs := enc.bytes[:cap(enc.bytes)]
+	// Returning the stacktrace as a string costs an allocation, but saves us
+	// from expanding the Field union struct to include a byte slice. Since
+	// taking a stacktrace is already so expensive (~10us), the extra allocation
+	// is okay.
+	field := String("stacktrace", takeStacktrace(bs, false))
+	enc.Free()
+	return field
+}
+
 // Duration constructs a Field with the given key and value. It represents
 // durations as an integer number of nanoseconds.
 func Duration(key string, val time.Duration) Field {

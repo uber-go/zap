@@ -114,6 +114,12 @@ func BenchmarkErrorField(b *testing.B) {
 	})
 }
 
+func BenchmarkStackField(b *testing.B) {
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("Error.", zap.Stack())
+	})
+}
+
 func BenchmarkObjectField(b *testing.B) {
 	// Expect an extra allocation here, since casting the user struct to the
 	// zap.Marshaler interface costs an alloc.
