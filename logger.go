@@ -70,22 +70,26 @@ type jsonLogger struct {
 // NewJSON returns a logger that formats its output as JSON. Zap uses a
 // customized JSON encoder to avoid reflection and minimize allocations.
 //
-// Any passed fields are added to the logger as context.
-func NewJSON(lvl Level, sink, errSink io.Writer, fields ...Field) Logger {
-	if errSink == nil {
-		errSink = _defaultErrSink
+// By default, the logger will write Info logs or higher to standard
+// out. Any errors during logging will be written to standard error.
+//
+// Options can change the log level, the output location, or the initial
+// fields that should be added as context.
+func NewJSON(options ...Option) Logger {
+	defaultLevel := int32(Info)
+	jl := &jsonLogger{
+		enc:   newJSONEncoder(),
+		level: &defaultLevel,
+		errW:  _defaultErrSink,
+		w:     os.Stdout,
 	}
 
-	integerLevel := int32(lvl)
-	jl := &jsonLogger{
-		level: &integerLevel,
-		enc:   newJSONEncoder(),
-		errW:  errSink,
-		w:     sink,
+	for _, opt := range options {
+		if err := opt.apply(jl); err != nil {
+			jl.internalError(err.Error())
+		}
 	}
-	if err := jl.enc.AddFields(fields); err != nil {
-		jl.internalError(err.Error())
-	}
+
 	return jl
 }
 
