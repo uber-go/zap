@@ -142,3 +142,13 @@ func TestStackField(t *testing.T) {
 	require.True(t, strings.HasPrefix(output, `"stacktrace":`), "Stacktrace added under an unexpected key.")
 	assert.Contains(t, output[13:], "zap.TestStackField", "Expected stacktrace to contain caller.")
 }
+
+func TestUnknownField(t *testing.T) {
+	enc := newJSONEncoder()
+	defer enc.Free()
+
+	for _, ft := range []fieldType{unknownType, -42} {
+		field := Field{fieldType: ft}
+		assert.Panics(t, func() { field.addTo(enc) }, "Expected panic when using a field of unknown type.")
+	}
+}
