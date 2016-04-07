@@ -21,7 +21,6 @@
 package zap_test
 
 import (
-	"os"
 	"time"
 
 	"github.com/uber-common/zap"
@@ -29,7 +28,8 @@ import (
 
 func Example() {
 	// Log in JSON, using zap's reflection-free JSON encoder.
-	logger := zap.NewJSON(zap.Info, os.Stdout, os.Stderr)
+	// The default options will log any Info or higher logs to standard out.
+	logger := zap.NewJSON()
 	// For repeatable tests, pretend that it's always 1970.
 	logger.StubTime()
 
@@ -53,20 +53,47 @@ func Example() {
 }
 
 func ExampleNest() {
-	logger := zap.NewJSON(zap.Info, os.Stdout, os.Stderr)
+	logger := zap.NewJSON()
 	// Stub the current time in tests.
 	logger.StubTime()
 
 	// We'd like the logging context to be {"outer":{"inner":42}}
-	logger.Debug("Nesting context.", zap.Nest("outer",
-		zap.Int("inner", 42),
-	))
-
-	// If we want to stop a field from being returned to a sync.Pool on use,
-	// use Keep.
 	nest := zap.Nest("outer", zap.Int("inner", 42))
 	logger.Info("Logging a nested field.", nest)
 
 	// Output:
 	// {"msg":"Logging a nested field.","level":"info","ts":0,"fields":{"outer":{"inner":42}}}
+}
+
+func ExampleNewJSON() {
+	// The default logger outputs to standard out and only writes logs that are
+	// Info level or higher.
+	logger := zap.NewJSON()
+	// Stub the current time in tests.
+	logger.StubTime()
+
+	// The default logger does not print Debug logs.
+	logger.Debug("this won't be printed")
+	logger.Info("This is an info log.")
+
+	// Output:
+	// {"msg":"This is an info log.","level":"info","ts":0,"fields":{}}
+}
+
+func ExampleNewJSON_options() {
+	// We can pass multiple options to the NewJSON method to configure
+	// the logging level, output location, or even the initial context.
+	logger := zap.NewJSON(
+		zap.Debug,
+		zap.Fields(zap.Int("count", 1)),
+	)
+	// Stub the current time in tests.
+	logger.StubTime()
+
+	logger.Debug("This is a debug log.")
+	logger.Info("This is an info log.")
+
+	// Output:
+	// {"msg":"This is a debug log.","level":"debug","ts":0,"fields":{"count":1}}
+	// {"msg":"This is an info log.","level":"info","ts":0,"fields":{"count":1}}
 }
