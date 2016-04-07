@@ -62,6 +62,7 @@ type Logger interface {
 type jsonLogger struct {
 	level       *int32 // atomic
 	enc         encoder
+	hooks       []hook
 	errW        io.Writer
 	w           io.Writer
 	alwaysEpoch bool
@@ -112,7 +113,9 @@ func (jl *jsonLogger) With(fields ...Field) Logger {
 	clone := &jsonLogger{
 		level:       jl.level,
 		enc:         jl.enc.Clone(),
+		hooks:       jl.hooks,
 		w:           jl.w,
+		errW:        jl.errW,
 		alwaysEpoch: jl.alwaysEpoch,
 	}
 	if err := clone.enc.AddFields(fields); err != nil {
@@ -160,6 +163,15 @@ func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
 	if err := temp.AddFields(fields); err != nil {
 		jl.internalError(err.Error())
 	}
+
+	for _, hook := range jl.hooks {
+		newMsg, err := hook(lvl, msg, temp)
+		if err != nil {
+			jl.internalError(err.Error())
+		}
+		msg = newMsg
+	}
+
 	now := time.Now().UTC()
 	if jl.alwaysEpoch {
 		now = time.Unix(0, 0)
