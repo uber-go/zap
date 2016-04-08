@@ -29,6 +29,9 @@ import (
 var errMarshalNilLevel = errors.New("can't marshal a nil *Level to text")
 
 // A Level is a logging priority. Higher levels are more important.
+//
+// Note that Level satisfies the Option interface, so any Level can be passed to
+// NewJSON to override the default logging priority.
 type Level int32
 
 const (
