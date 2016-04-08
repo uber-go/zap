@@ -133,6 +133,19 @@ func BenchmarkObjectField(b *testing.B) {
 	})
 }
 
+func BenchmarkAddCallerHook(b *testing.B) {
+	logger := zap.NewJSON(
+		zap.Output(ioutil.Discard),
+		zap.AddCaller(),
+	)
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Info("Caller.")
+		}
+	})
+}
+
 func Benchmark10Fields(b *testing.B) {
 	withBenchedLogger(b, func(log zap.Logger) {
 		log.Info("Ten fields, passed at the log site.",

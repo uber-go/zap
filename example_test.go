@@ -73,7 +73,7 @@ func ExampleNewJSON() {
 	logger.StubTime()
 
 	// The default logger does not print Debug logs.
-	logger.Debug("this won't be printed")
+	logger.Debug("This won't be printed.")
 	logger.Info("This is an info log.")
 
 	// Output:
