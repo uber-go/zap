@@ -34,7 +34,7 @@ func TestHookAddCaller(t *testing.T) {
 	logger := NewJSON(All, Output(buf), AddCaller())
 	logger.Info("Callers.")
 
-	re := regexp.MustCompile(`hook_test.go:[\d]+: Callers\.`)
+	re := regexp.MustCompile(`"msg":"hook_test.go:[\d]+: Callers\."`)
 	assert.Regexp(t, re, buf.String(), "Expected to find package name and file name in output.")
 }
 
@@ -55,9 +55,17 @@ func TestHookAddCallerFail(t *testing.T) {
 func TestHookAddStacks(t *testing.T) {
 	buf := &bytes.Buffer{}
 	logger := NewJSON(All, Output(buf), AddStacks(Info))
-	logger.Info("Stacks.")
 
+	logger.Info("Stacks.")
 	output := buf.String()
 	require.Contains(t, output, "zap.TestHookAddStacks", "Expected to find test function in stacktrace.")
 	assert.Contains(t, output, `"stacktrace":`, "Stacktrace added under an unexpected key.")
+
+	buf.Reset()
+	logger.Warn("Stacks.")
+	assert.Contains(t, buf.String(), `"stacktrace":`, "Expected to include stacktrace at Warn level.")
+
+	buf.Reset()
+	logger.Debug("No stacks.")
+	assert.NotContains(t, buf.String(), "Unexpected stacktrace at Debug level.")
 }
