@@ -20,7 +20,10 @@
 
 package spy
 
-import "errors"
+import (
+	"errors"
+	"io"
+)
 
 // FailWriter is an io.Writer that always returns an error.
 type FailWriter struct{}
@@ -37,4 +40,30 @@ type ShortWriter struct{}
 // Write implements io.Writer.
 func (w ShortWriter) Write(b []byte) (int, error) {
 	return len(b) - 1, nil
+}
+
+// WriteSyncer is a concrete type that implements zap.WriteSyncer.
+type WriteSyncer struct {
+	io.Writer
+	Err        error
+	SyncCalled bool
+}
+
+// Sync sets the SyncCalled bit and returns the user-specified error.
+func (w *WriteSyncer) Sync() error {
+	w.SyncCalled = true
+	return w.Err
+}
+
+// WriteFlusher is a concrete type that implements zap.WriteFlusher.
+type WriteFlusher struct {
+	io.Writer
+	Err         error
+	FlushCalled bool
+}
+
+// Flush sets the FlushCalled bit and returns the user-specified error.
+func (w *WriteFlusher) Flush() error {
+	w.FlushCalled = true
+	return w.Err
 }

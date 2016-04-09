@@ -21,7 +21,6 @@
 package zap
 
 import (
-	"bytes"
 	"regexp"
 	"testing"
 
@@ -30,7 +29,7 @@ import (
 )
 
 func TestHookAddCaller(t *testing.T) {
-	buf := &bytes.Buffer{}
+	buf := newTestBuffer()
 	logger := NewJSON(All, Output(buf), AddCaller())
 	logger.Info("Callers.")
 
@@ -39,8 +38,8 @@ func TestHookAddCaller(t *testing.T) {
 }
 
 func TestHookAddCallerFail(t *testing.T) {
-	buf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
+	buf := newTestBuffer()
+	errBuf := newTestBuffer()
 
 	originalSkip := _callerSkip
 	_callerSkip = 1e3
@@ -53,7 +52,7 @@ func TestHookAddCallerFail(t *testing.T) {
 }
 
 func TestHookAddStacks(t *testing.T) {
-	buf := &bytes.Buffer{}
+	buf := newTestBuffer()
 	logger := NewJSON(All, Output(buf), AddStacks(Info))
 
 	logger.Info("Stacks.")

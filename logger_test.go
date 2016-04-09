@@ -23,11 +23,12 @@ package zap
 import (
 	"bytes"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-common/zap/spy"
 )
 
 func opts(opts ...Option) []Option {
@@ -35,8 +36,8 @@ func opts(opts ...Option) []Option {
 }
 
 func withJSONLogger(t testing.TB, opts []Option, f func(*jsonLogger, func() []string)) {
-	sink := &bytes.Buffer{}
-	errSink := &bytes.Buffer{}
+	sink := newTestBuffer()
+	errSink := newTestBuffer()
 
 	allOpts := make([]Option, 0, 3+len(opts))
 	allOpts = append(allOpts, All, Output(sink), ErrorOutput(errSink))
@@ -169,27 +170,9 @@ func TestJSONLoggerNoOpsDisabledLevels(t *testing.T) {
 	})
 }
 
-func TestJSONLoggerInternalErrorHandlingNoSink(t *testing.T) {
-	errBuf := bytes.NewBuffer(nil)
-	_defaultErrSink = errBuf
-	defer func() { _defaultErrSink = os.Stderr }()
-
-	buf := &bytes.Buffer{}
-
-	jl := NewJSON(All, Output(buf), Fields(Object("user", fakeUser{"fail"})))
-	jl.StubTime()
-	output := func() []string { return strings.Split(buf.String(), "\n") }
-
-	// Expect partial output, even if there's an error serializing
-	// user-defined types.
-	assertFields(t, jl, output, `{"user":{}}`)
-	// Internal errors go to stderr.
-	assert.Equal(t, "fail\n", errBuf.String(), "Expected internal errors to print to stderr.")
-}
-
 func TestJSONLoggerInternalErrorHandlingWithSink(t *testing.T) {
-	buf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
+	buf := newTestBuffer()
+	errBuf := newTestBuffer()
 
 	jl := NewJSON(All, Output(buf), ErrorOutput(errBuf), Fields(Object("user", fakeUser{"fail"})))
 	jl.StubTime()
@@ -200,6 +183,17 @@ func TestJSONLoggerInternalErrorHandlingWithSink(t *testing.T) {
 	assertFields(t, jl, output, `{"user":{}}`)
 	// Internal errors go to stderr.
 	assert.Equal(t, "fail\n", errBuf.String(), "Expected internal errors to print to stderr.")
+}
+
+func TestJSONLoggerWriteMessageFailure(t *testing.T) {
+	errBuf := &bytes.Buffer{}
+	errSink := &spy.WriteSyncer{Writer: errBuf}
+	logger := NewJSON(All, Output(AddSync(spy.FailWriter{})), ErrorOutput(errSink))
+
+	logger.Info("foo")
+	// Should log the error.
+	assert.Equal(t, "failed\n", errBuf.String(), "Expected to log the error to the error output.")
+	assert.True(t, errSink.SyncCalled, "Expected logging an internal error to Sync error WriteSyncer.")
 }
 
 func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
@@ -218,4 +212,15 @@ func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
 	for _, logger := range all {
 		assert.Equal(t, Debug, logger.Level(), "Expected all loggers to switch to Debug level.")
 	}
+}
+
+func TestJSONLoggerSyncsOutput(t *testing.T) {
+	sink := &spy.WriteSyncer{Writer: ioutil.Discard}
+	logger := NewJSON(All, Output(sink))
+
+	logger.Error("foo")
+	assert.False(t, sink.SyncCalled, "Didn't expect logging at error level to Sync underlying WriteCloser.")
+
+	assert.Panics(t, func() { logger.Panic("foo") }, "Expected panic when logging at Panic level.")
+	assert.True(t, sink.SyncCalled, "Expected logging at panic level to Sync underlying WriteSyncer.")
 }

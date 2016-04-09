@@ -22,7 +22,6 @@ package zap
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"sync/atomic"
 	"time"
@@ -60,8 +59,8 @@ type jsonLogger struct {
 	level       *int32 // atomic
 	enc         encoder
 	hooks       []hook
-	errW        io.Writer
-	w           io.Writer
+	errW        WriteSyncer
+	w           WriteSyncer
 	alwaysEpoch bool
 }
 
@@ -173,10 +172,18 @@ func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
 	if jl.alwaysEpoch {
 		now = time.Unix(0, 0)
 	}
-	temp.WriteMessage(jl.w, lvl.String(), msg, now)
+	if err := temp.WriteMessage(jl.w, lvl.String(), msg, now); err != nil {
+		jl.internalError(err.Error())
+	}
 	temp.Free()
+
+	if lvl > Error {
+		// Sync on Panic and Fatal, since they may crash the program.
+		jl.w.Sync()
+	}
 }
 
 func (jl *jsonLogger) internalError(msg string) {
 	fmt.Fprintln(jl.errW, msg)
+	jl.errW.Sync()
 }
