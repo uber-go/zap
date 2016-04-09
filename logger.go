@@ -28,9 +28,6 @@ import (
 	"time"
 )
 
-// For stubbing in tests.
-var _defaultErrSink io.Writer = os.Stderr
-
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
 type Logger interface {
@@ -81,7 +78,7 @@ func NewJSON(options ...Option) Logger {
 	jl := &jsonLogger{
 		enc:   newJSONEncoder(),
 		level: &defaultLevel,
-		errW:  _defaultErrSink,
+		errW:  os.Stderr,
 		w:     os.Stdout,
 	}
 
