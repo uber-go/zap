@@ -94,6 +94,12 @@ func BenchmarkStringField(b *testing.B) {
 	})
 }
 
+func BenchmarkStringerField(b *testing.B) {
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("Level.", zap.Stringer("foo", zap.Info))
+	})
+}
+
 func BenchmarkTimeField(b *testing.B) {
 	t := time.Unix(0, 0)
 	withBenchedLogger(b, func(log zap.Logger) {
