@@ -20,8 +20,9 @@
 
 package zap
 
-// A Marshaler uses the passed KeyValue to add itself to a logger's context.
-// (Think of it as an encoding-agnostic alternative to json.Marshaler.)
+// Marshaler allows user-defined types to efficiently add themselves to the
+// logging context, and to selectively omit information which shouldn't be
+// included in logs (e.g., passwords).
 type Marshaler interface {
 	MarshalLog(KeyValue) error
 }

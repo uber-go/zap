@@ -23,6 +23,8 @@ package zap
 // KeyValue is an encoding-agnostic interface to add structured data to the
 // logging context. Like maps, KeyValues aren't safe for concurrent use (though
 // typical use shouldn't require locks).
+//
+// See Marshaler for an example.
 type KeyValue interface {
 	AddBool(string, bool)
 	AddFloat64(string, float64)
