@@ -170,7 +170,7 @@ func TestJSONLoggerNoOpsDisabledLevels(t *testing.T) {
 	})
 }
 
-func TestJSONLoggerInternalErrorHandlingWithSink(t *testing.T) {
+func TestJSONLoggerInternalErrorHandling(t *testing.T) {
 	buf := newTestBuffer()
 	errBuf := newTestBuffer()
 
@@ -193,7 +193,7 @@ func TestJSONLoggerWriteMessageFailure(t *testing.T) {
 	logger.Info("foo")
 	// Should log the error.
 	assert.Equal(t, "failed\n", errBuf.String(), "Expected to log the error to the error output.")
-	assert.True(t, errSink.SyncCalled, "Expected logging an internal error to Sync error WriteSyncer.")
+	assert.True(t, errSink.Called(), "Expected logging an internal error to Sync error WriteSyncer.")
 }
 
 func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
@@ -219,8 +219,8 @@ func TestJSONLoggerSyncsOutput(t *testing.T) {
 	logger := NewJSON(All, Output(sink))
 
 	logger.Error("foo")
-	assert.False(t, sink.SyncCalled, "Didn't expect logging at error level to Sync underlying WriteCloser.")
+	assert.False(t, sink.Called(), "Didn't expect logging at error level to Sync underlying WriteCloser.")
 
 	assert.Panics(t, func() { logger.Panic("foo") }, "Expected panic when logging at Panic level.")
-	assert.True(t, sink.SyncCalled, "Expected logging at panic level to Sync underlying WriteSyncer.")
+	assert.True(t, sink.Called(), "Expected logging at panic level to Sync underlying WriteSyncer.")
 }

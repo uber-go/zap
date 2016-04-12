@@ -55,9 +55,9 @@ func TestAddSyncWriteSyncer(t *testing.T) {
 	requireWriteWorks(t, ws)
 
 	require.NoError(t, ws.Sync(), "Unexpected error syncing a WriteSyncer.")
-	require.True(t, concrete.SyncCalled, "Expected to dispatch to concrete type's Sync method.")
+	require.True(t, concrete.Called(), "Expected to dispatch to concrete type's Sync method.")
 
-	concrete.Err = errors.New("fail")
+	concrete.SetError(errors.New("fail"))
 	assert.Error(t, ws.Sync(), "Expected to propagate errors from concrete type's Sync method.")
 }
 
@@ -68,10 +68,29 @@ func TestAddSyncWriteFlusher(t *testing.T) {
 	requireWriteWorks(t, ws)
 
 	require.NoError(t, ws.Sync(), "Unexpected error syncing a WriteSyncer.")
-	require.True(t, concrete.FlushCalled, "Expected to dispatch to concrete type's Flush method.")
+	require.True(t, concrete.Called(), "Expected to dispatch to concrete type's Flush method.")
 
-	concrete.Err = errors.New("fail")
+	concrete.SetError(errors.New("fail"))
 	assert.Error(t, ws.Sync(), "Expected to propagate errors from concrete type's Flush method.")
+}
+
+func TestAddSyncWriteFlushSyncer(t *testing.T) {
+	buf := &bytes.Buffer{}
+	concrete := &spy.WriteFlushSyncer{Writer: buf}
+	ws := AddSync(concrete)
+	requireWriteWorks(t, ws)
+
+	require.NoError(t, ws.Sync(), "Unexpected error syncing a WriteSyncer.")
+	require.True(t, concrete.Syncer.Called(), "Expected to delegate to concrete type's Sync method.")
+	require.False(t, concrete.Flusher.Called(), "Unexpected use of concrete type's Flush method.")
+
+	concrete.Syncer.SetError(errors.New("fail sync"))
+	concrete.Flusher.SetError(nil)
+	assert.Error(t, ws.Sync(), "Expected to propagate errors from concrete type's Sync method.")
+
+	concrete.Syncer.SetError(nil)
+	concrete.Flusher.SetError(errors.New("flush sync"))
+	assert.NoError(t, ws.Sync(), "Errors in concrete type's Flush method shouldn't affect wrapper's Sync.")
 }
 
 func TestAddSyncWriter(t *testing.T) {
