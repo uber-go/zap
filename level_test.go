@@ -72,9 +72,12 @@ func TestLevelText(t *testing.T) {
 }
 
 func TestLevelNils(t *testing.T) {
-	// Test all our nil-handling logic here.
 	var l *Level
-	assert.Equal(t, "Level(nil)", l.String(), "Unexpected result stringifying nil *Level.")
+
+	// The String() method will not handle nil level properly.
+	assert.Panics(t, func() {
+		assert.Equal(t, "Level(nil)", l.String(), "Unexpected result stringifying nil *Level.")
+	}, "Level(nil).String() should panic")
 
 	_, err := l.MarshalText()
 	assert.Equal(t, errMarshalNilLevel, err, "Expected errMarshalNilLevel.")
