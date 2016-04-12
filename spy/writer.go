@@ -20,7 +20,10 @@
 
 package spy
 
-import "errors"
+import (
+	"errors"
+	"io"
+)
 
 // FailWriter is an io.Writer that always returns an error.
 type FailWriter struct{}
@@ -37,4 +40,69 @@ type ShortWriter struct{}
 // Write implements io.Writer.
 func (w ShortWriter) Write(b []byte) (int, error) {
 	return len(b) - 1, nil
+}
+
+// A Syncer is a spy for the Sync portion of zap.WriteSyncer.
+type Syncer struct {
+	err    error
+	called bool
+}
+
+// SetError sets the error that the Sync method will return.
+func (s *Syncer) SetError(err error) {
+	s.err = err
+}
+
+// Sync records that it was called, then returns the user-supplied error (if
+// any).
+func (s *Syncer) Sync() error {
+	s.called = true
+	return s.err
+}
+
+// Called reports whether the Sync method was called.
+func (s *Syncer) Called() bool {
+	return s.called
+}
+
+// A Flusher is a spy for the Flush portion of zap.WriteFlusher.
+type Flusher struct {
+	err    error
+	called bool
+}
+
+// SetError sets the error that the Flush method will return.
+func (f *Flusher) SetError(err error) {
+	f.err = err
+}
+
+// Flush records that it was called, then returns the user-supplied error (if
+// any).
+func (f *Flusher) Flush() error {
+	f.called = true
+	return f.err
+}
+
+// Called reports whether the Flush method was called.
+func (f *Flusher) Called() bool {
+	return f.called
+}
+
+// WriteSyncer is a concrete type that implements zap.WriteSyncer.
+type WriteSyncer struct {
+	io.Writer
+	Syncer
+}
+
+// WriteFlusher is a concrete type that implements zap.WriteFlusher.
+type WriteFlusher struct {
+	io.Writer
+	Flusher
+}
+
+// A WriteFlushSyncer implements both zap.WriteFlusher and zap.WriteSyncer.
+type WriteFlushSyncer struct {
+	io.Writer
+	Syncer
+	Flusher
 }
