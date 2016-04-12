@@ -22,6 +22,7 @@ package zap
 
 import (
 	"errors"
+	"net"
 	"strings"
 	"sync"
 	"testing"
@@ -94,6 +95,12 @@ func TestInt64Field(t *testing.T) {
 func TestStringField(t *testing.T) {
 	assertFieldJSON(t, `"foo":"bar"`, String("foo", "bar"))
 	assertCanBeReused(t, String("foo", "bar"))
+}
+
+func TestStringerField(t *testing.T) {
+	ip := net.ParseIP("1.2.3.4")
+	assertFieldJSON(t, `"foo":"1.2.3.4"`, Stringer("foo", ip))
+	assertCanBeReused(t, Stringer("foo", ip))
 }
 
 func TestTimeField(t *testing.T) {

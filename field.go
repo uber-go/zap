@@ -81,6 +81,12 @@ func String(key string, val string) Field {
 	return Field{key: key, fieldType: stringType, str: val}
 }
 
+// Stringer constructs a Field with the given key and value. The value
+// is the result of the String method.
+func Stringer(key string, val fmt.Stringer) Field {
+	return Field{key: key, fieldType: stringType, str: val.String()}
+}
+
 // Time constructs a Field with the given key and value. It represents a
 // time.Time as nanoseconds since epoch.
 func Time(key string, val time.Time) Field {
