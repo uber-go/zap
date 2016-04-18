@@ -32,4 +32,8 @@ type KeyValue interface {
 	AddInt64(string, int64)
 	AddString(string, string)
 	Nest(string) FieldCloser
+	// UnsafeAddBytes adds an arbitrary slice of bytes to the logging context.
+	// The key is escaped, but the bytes aren't escaped or safety-checked in any
+	// way. Use with caution!
+	UnsafeAddBytes(string, []byte)
 }

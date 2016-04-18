@@ -126,6 +126,11 @@ func TestObjectField(t *testing.T) {
 	assertCanBeReused(t, Object("foo", fakeUser{"phil"}))
 }
 
+func TestUnsafeBytesField(t *testing.T) {
+	assertFieldJSON(t, `"foo":{"name":"phil"}`, UnsafeBytes("foo", []byte(`{"name":"phil"}`)))
+	assertCanBeReused(t, UnsafeBytes("foo", []byte(`{"name":"phil"}`)))
+}
+
 func TestNestField(t *testing.T) {
 	assertFieldJSON(t, `"foo":{"name":"phil","age":42}`,
 		Nest("foo", String("name", "phil"), Int("age", 42)),
