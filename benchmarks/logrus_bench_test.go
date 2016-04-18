@@ -25,7 +25,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/uber-common/zap"
+	"github.com/uber-common/zap/zbark"
+
 	"github.com/Sirupsen/logrus"
+	"github.com/uber-common/bark"
 )
 
 func newLogrus() *logrus.Logger {
@@ -42,7 +46,7 @@ func BenchmarkLogrusAddingFields(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			logger.Info("Go fast.", logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"int":               1,
 				"int64":             int64(1),
 				"float":             3.0,
@@ -53,7 +57,28 @@ func BenchmarkLogrusAddingFields(b *testing.B) {
 				"duration":          time.Second,
 				"user-defined type": _jane,
 				"another string":    "done!",
-			})
+			}).Info("Go fast.")
+		}
+	})
+}
+
+func BenchmarkZapBarkifyAddingFields(b *testing.B) {
+	logger := zbark.Barkify(zap.NewJSON(zap.All, zap.Output(zap.Discard)))
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.WithFields(bark.Fields{
+				"int":               1,
+				"int64":             int64(1),
+				"float":             3.0,
+				"string":            "four!",
+				"bool":              true,
+				"time":              time.Unix(0, 0),
+				"error":             errExample.Error(),
+				"duration":          time.Second,
+				"user-defined type": _jane,
+				"another string":    "done!",
+			}).Info("Go fast.")
 		}
 	})
 }
@@ -61,6 +86,28 @@ func BenchmarkLogrusAddingFields(b *testing.B) {
 func BenchmarkLogrusWithAccumulatedContext(b *testing.B) {
 	baseLogger := newLogrus()
 	logger := baseLogger.WithFields(logrus.Fields{
+		"int":               1,
+		"int64":             int64(1),
+		"float":             3.0,
+		"string":            "four!",
+		"bool":              true,
+		"time":              time.Unix(0, 0),
+		"error":             errExample.Error(),
+		"duration":          time.Second,
+		"user-defined type": _jane,
+		"another string":    "done!",
+	})
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Info("Go really fast.")
+		}
+	})
+}
+
+func BenchmarkZapBarkifyWithAccumulatedContext(b *testing.B) {
+	baseLogger := zbark.Barkify(zap.NewJSON(zap.All, zap.Output(zap.Discard)))
+	logger := baseLogger.WithFields(bark.Fields{
 		"int":               1,
 		"int64":             int64(1),
 		"float":             3.0,
