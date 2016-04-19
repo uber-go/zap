@@ -41,7 +41,6 @@ const (
 	int64Type
 	stringType
 	marshalerType
-	unsafeBytesType
 )
 
 // A Field is a deferred marshaling operation used to add a key-value pair to
@@ -135,16 +134,6 @@ func Nest(key string, fields ...Field) Field {
 	return Field{key: key, fieldType: marshalerType, obj: multiFields(fields)}
 }
 
-// UnsafeBytes constructs a Field which will add arbitrary bytes to the logging
-// context. While the key is escaped, the passed bytes aren't escaped or sanity
-// checked in any way - passing improperly encoded bytes can easily make the
-// logger's final output unparsable.
-//
-// This is unsafe - use with caution!
-func UnsafeBytes(key string, val []byte) Field {
-	return Field{key: key, fieldType: unsafeBytesType, str: string(val)}
-}
-
 func (f Field) addTo(kv KeyValue) error {
 	switch f.fieldType {
 	case boolType:
@@ -162,8 +151,6 @@ func (f Field) addTo(kv KeyValue) error {
 		err := f.obj.MarshalLog(kv)
 		closer.CloseField()
 		return err
-	case unsafeBytesType:
-		kv.UnsafeAddBytes(f.key, []byte(f.str))
 	default:
 		panic(fmt.Sprintf("unknown field type found: %v", f))
 	}

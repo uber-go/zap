@@ -103,9 +103,6 @@ func (jl *jsonLogger) Enabled(lvl Level) bool {
 }
 
 func (jl *jsonLogger) With(fields ...Field) Logger {
-	if len(fields) == 0 {
-		return jl
-	}
 	clone := &jsonLogger{
 		level:       jl.level,
 		enc:         jl.enc.Clone(),
@@ -117,6 +114,16 @@ func (jl *jsonLogger) With(fields ...Field) Logger {
 	if err := clone.enc.AddFields(fields); err != nil {
 		jl.internalError(err.Error())
 	}
+	return clone
+}
+
+// WithUnsafeJSON adds a key and a slice of arbitrary bytes to the logging
+// context. It's highly unsafe, and intended only for use by the zbark wrappers.
+//
+// For details, see jsonEncoder.UnsafeAddBytes.
+func (jl *jsonLogger) WithUnsafeJSON(key string, val []byte) Logger {
+	clone := jl.With().(*jsonLogger)
+	clone.enc.(*jsonEncoder).UnsafeAddBytes(key, val)
 	return clone
 }
 

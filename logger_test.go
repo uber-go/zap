@@ -119,9 +119,22 @@ func TestJSONLoggerWith(t *testing.T) {
 	withJSONLogger(t, fieldOpts, func(jl *jsonLogger, output func() []string) {
 		// Child loggers should have copy-on-write semantics, so two children
 		// shouldn't stomp on each other's fields or affect the parent's fields.
+		jl.With().Debug("")
 		jl.With(String("one", "two")).Debug("")
 		jl.With(String("three", "four")).Debug("")
-		assertFields(t, jl, output, `{"foo":42,"one":"two"}`, `{"foo":42,"three":"four"}`, `{"foo":42}`)
+		assertFields(t, jl, output,
+			`{"foo":42}`,
+			`{"foo":42,"one":"two"}`,
+			`{"foo":42,"three":"four"}`,
+			`{"foo":42}`,
+		)
+	})
+}
+
+func TestJSONLoggerWithUnsafeJSON(t *testing.T) {
+	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
+		jl.WithUnsafeJSON(`foo\`, []byte(`{"inner":42}`)).Debug("")
+		assertFields(t, jl, output, `{"foo\\":{"inner":42}}`)
 	})
 }
 
