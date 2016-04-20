@@ -103,6 +103,14 @@ func TestJSONAddFloat64(t *testing.T) {
 	})
 }
 
+func TestJSONUnsafeAddBytes(t *testing.T) {
+	withJSONEncoder(func(enc *jsonEncoder) {
+		// Keys should be escaped.
+		enc.UnsafeAddBytes(`baz\`, []byte(`{"inner":42}`))
+		assertJSON(t, `"foo":"bar","baz\\":{"inner":42}`, enc)
+	})
+}
+
 func TestJSONWriteMessage(t *testing.T) {
 	withJSONEncoder(func(enc *jsonEncoder) {
 		sink := bytes.NewBuffer(nil)

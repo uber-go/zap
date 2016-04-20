@@ -106,6 +106,16 @@ func (enc *jsonEncoder) AddFloat64(key string, val float64) {
 	enc.bytes = strconv.AppendFloat(enc.bytes, val, 'g', -1, 64)
 }
 
+// UnsafeAddBytes adds a string key and an arbitrary byte slice to the encoder's
+// fields. The key is JSON-escaped, but the value isn't; if the value is not
+// itself valid JSON, it will make the entire fields buffer unparsable.
+//
+// Use this method with great care - it's unsafe!
+func (enc *jsonEncoder) UnsafeAddBytes(key string, val []byte) {
+	enc.addKey(key)
+	enc.bytes = append(enc.bytes, val...)
+}
+
 // Nest starts a nested object and returns a function that closes the nested
 // object. Until the returned function is called, calls to AddString and friends
 // operate on the nested namespace.

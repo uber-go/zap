@@ -1,10 +1,14 @@
-hash: 7d8e99769b636ec8b079ce78a6810dfb4e9396c8b1068296924790006f93ed50
-updated: 2016-04-05T23:08:57.795320664-07:00
+hash: adb82d82c3f4e076845f514da0ffeb104ce1f79825bc67132999c976cd961ea2
+updated: 2016-04-18T08:54:46.580456609-07:00
 imports:
 - name: github.com/axw/gocov
   version: f5b2b5cf8644b8b432436eaee1c8a73d2f4cf86e
   subpackages:
   - gocov
+- name: github.com/cactus/go-statsd-client
+  version: 5517f304319b9a066354b84860cb264c89655f69
+  subpackages:
+  - statsd
 - name: github.com/go-kit/kit
   version: 2ecaaad4b9ff04d9da92fe4babb270c54d88841f
   subpackages:
@@ -28,6 +32,12 @@ imports:
   subpackages:
   - assert
   - require
+- name: github.com/uber-common/bark
+  version: d52ffa061726911f47fcd3d9e8b9b55f22794772
+- name: golang.org/x/sys
+  version: f64b50fbea64174967a8882830d621a18ee1548e
+  subpackages:
+  - unix
 - name: golang.org/x/tools
   version: fe1488f8abd7e0eea44f1950dad93a6ff6880a60
   subpackages:

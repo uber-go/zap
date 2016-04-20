@@ -18,39 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package benchmarks
+package zbark_test
 
 import (
-	"io/ioutil"
-	"log"
-	"testing"
-
 	"github.com/uber-common/zap"
-	"github.com/uber-common/zap/zwrap"
+	"github.com/uber-common/zap/zbark"
 )
 
-func BenchmarkStandardLibraryWithoutFields(b *testing.B) {
-	logger := log.New(ioutil.Discard, "", log.LstdFlags)
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Println("Go fast.")
-		}
-	})
-}
+func Example() {
+	zapLogger := zap.NewJSON()
+	// Stub the current time in tests.
+	zapLogger.StubTime()
 
-func BenchmarkZapStandardizeWithoutFields(b *testing.B) {
-	logger, err := zwrap.Standardize(
-		zap.NewJSON(zap.All, zap.Output(zap.Discard)),
-		zap.Info,
-	)
-	if err != nil {
-		panic("Failed to Standardize a zap.Logger.")
-	}
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Println("Go fast.")
-		}
-	})
+	// Wrap our structured logger to mimic bark.Logger.
+	logger := zbark.Barkify(zapLogger)
+
+	// The wrapped logger has bark's usual fluent API.
+	logger.WithField("errors", 0).Infof("%v accepts arbitrary types.", "Bark")
+
+	// Output:
+	// {"msg":"Bark accepts arbitrary types.","level":"info","ts":0,"fields":{"errors":0}}
 }

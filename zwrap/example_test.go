@@ -18,39 +18,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package benchmarks
+package zwrap_test
 
 import (
-	"io/ioutil"
-	"log"
-	"testing"
-
 	"github.com/uber-common/zap"
 	"github.com/uber-common/zap/zwrap"
 )
 
-func BenchmarkStandardLibraryWithoutFields(b *testing.B) {
-	logger := log.New(ioutil.Discard, "", log.LstdFlags)
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Println("Go fast.")
-		}
-	})
-}
+func Example() {
+	zapLogger := zap.NewJSON()
+	// Stub the current time in tests.
+	zapLogger.StubTime()
 
-func BenchmarkZapStandardizeWithoutFields(b *testing.B) {
-	logger, err := zwrap.Standardize(
-		zap.NewJSON(zap.All, zap.Output(zap.Discard)),
-		zap.Info,
-	)
+	// Wrap our structured logger to mimic the standard library's log.Logger.
+	// We also specify that we want all calls to the standard logger's Print
+	// family of methods to log at zap's Warn level.
+	stdLogger, err := zwrap.Standardize(zapLogger, zap.Warn)
 	if err != nil {
-		panic("Failed to Standardize a zap.Logger.")
+		panic(err.Error())
 	}
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Println("Go fast.")
-		}
-	})
+
+	// The wrapped logger has the usual Print, Panic, and Fatal families of
+	// methods.
+	stdLogger.Printf("Encountered %d errors.", 0)
+
+	// Output:
+	// {"msg":"Encountered 0 errors.","level":"warn","ts":0,"fields":{}}
 }

@@ -18,39 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package benchmarks
-
-import (
-	"io/ioutil"
-	"log"
-	"testing"
-
-	"github.com/uber-common/zap"
-	"github.com/uber-common/zap/zwrap"
-)
-
-func BenchmarkStandardLibraryWithoutFields(b *testing.B) {
-	logger := log.New(ioutil.Discard, "", log.LstdFlags)
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Println("Go fast.")
-		}
-	})
-}
-
-func BenchmarkZapStandardizeWithoutFields(b *testing.B) {
-	logger, err := zwrap.Standardize(
-		zap.NewJSON(zap.All, zap.Output(zap.Discard)),
-		zap.Info,
-	)
-	if err != nil {
-		panic("Failed to Standardize a zap.Logger.")
-	}
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Println("Go fast.")
-		}
-	})
-}
+// Package zbark provides a wrapper to make zap.Loggers compatible with the
+// bark.Logger interface.
+//
+// This package is only of interest to users of github.com/uber-common/bark.
+package zbark
