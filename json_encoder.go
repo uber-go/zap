@@ -125,6 +125,13 @@ func (enc *jsonEncoder) Nest(key string, f func(KeyValue) error) error {
 	return err
 }
 
+// AddObject adds a Marshaler to the encoder's fields.
+func (enc *jsonEncoder) AddObject(key string, obj Marshaler) error {
+	return enc.Nest(key, func(kv KeyValue) error {
+		return obj.MarshalLog(kv)
+	})
+}
+
 // Clone copies the current encoder, including any data already encoded.
 func (enc *jsonEncoder) Clone() encoder {
 	clone := newJSONEncoder()

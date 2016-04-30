@@ -149,6 +149,21 @@ func TestJSONNest(t *testing.T) {
 	})
 }
 
+type loggable struct{}
+
+func (l loggable) MarshalLog(kv KeyValue) error {
+	kv.AddString("loggable", "yes")
+	return nil
+}
+
+func TestJSONAddObject(t *testing.T) {
+	withJSONEncoder(func(enc *jsonEncoder) {
+		err := enc.AddObject("nested", loggable{})
+		require.NoError(t, err, "Unexpected error using AddObject.")
+		assertJSON(t, `"foo":"bar","nested":{"loggable":"yes"}`, enc)
+	})
+}
+
 func TestJSONClone(t *testing.T) {
 	// The parent encoder is created with plenty of excess capacity.
 	parent := &jsonEncoder{bytes: make([]byte, 0, 128)}

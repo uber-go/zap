@@ -142,9 +142,7 @@ func (f Field) addTo(kv KeyValue) error {
 	case stringType:
 		kv.AddString(f.key, f.str)
 	case marshalerType:
-		return kv.Nest(f.key, func(enc KeyValue) error {
-			return f.obj.MarshalLog(kv)
-		})
+		return kv.AddObject(f.key, f.obj)
 	default:
 		panic(fmt.Sprintf("unknown field type found: %v", f))
 	}
