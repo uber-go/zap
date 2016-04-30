@@ -31,5 +31,5 @@ type KeyValue interface {
 	AddInt(string, int)
 	AddInt64(string, int64)
 	AddString(string, string)
-	Nest(string) FieldCloser
+	Nest(string, func(KeyValue) error) error
 }

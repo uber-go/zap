@@ -30,6 +30,7 @@ import (
 	"github.com/uber-common/zap/spy"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func assertJSON(t *testing.T, expected string, enc *jsonEncoder) {
@@ -137,9 +138,11 @@ func TestJSONWriteMessage(t *testing.T) {
 
 func TestJSONNest(t *testing.T) {
 	withJSONEncoder(func(enc *jsonEncoder) {
-		closer := enc.Nest("nested")
-		enc.AddString("sub-foo", "sub-bar")
-		closer.CloseField()
+		err := enc.Nest("nested", func(kv KeyValue) error {
+			kv.AddString("sub-foo", "sub-bar")
+			return nil
+		})
+		require.NoError(t, err, "Unexpected error using Nest.")
 		enc.AddString("baz", "bing")
 
 		assertJSON(t, `"foo":"bar","nested":{"sub-foo":"sub-bar"},"baz":"bing"`, enc)

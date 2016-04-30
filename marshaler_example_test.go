@@ -51,8 +51,9 @@ func (u User) MarshalLog(kv zap.KeyValue) error {
 	kv.AddInt("age", u.Age)
 
 	// Put the authentication information in a nested object.
-	defer kv.Nest("auth").CloseField()
-	return u.Auth.MarshalLog(kv)
+	return kv.Nest("auth", func(kv zap.KeyValue) error {
+		return u.Auth.MarshalLog(kv)
+	})
 }
 
 func ExampleMarshaler() {
