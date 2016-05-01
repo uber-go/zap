@@ -205,7 +205,6 @@ func TestJSONJSONEscaping(t *testing.T) {
 		// Special-cased characters.
 		`"`: `\"`,
 		`\`: `\\`,
-		`/`: `\/`,
 		// Special-cased characters within everyday ASCII.
 		`foo"foo`: `foo\"foo`,
 		"foo\n":   `foo\n`,
