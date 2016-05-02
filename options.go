@@ -60,3 +60,12 @@ func ErrorOutput(w WriteSyncer) Option {
 		return nil
 	})
 }
+
+// Development puts the logger in development mode, which alters the behavior
+// of the DFatal method.
+func Development() Option {
+	return optionFunc(func(jl *jsonLogger) error {
+		jl.development = true
+		return nil
+	})
+}
