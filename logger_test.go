@@ -176,7 +176,7 @@ func TestJSONLoggerPanic(t *testing.T) {
 }
 
 func TestJSONLoggerDFatal(t *testing.T) {
-	withJSONLogger(t, []Option{Development()}, func(jl *jsonLogger, output func() []string) {
+	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
 		jl.DFatal("foo")
 		assertMessage(t, "error", "foo", output()[0])
 	})
