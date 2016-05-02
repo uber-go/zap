@@ -194,7 +194,7 @@ func TestJSONLoggerInternalErrorHandling(t *testing.T) {
 	buf := newTestBuffer()
 	errBuf := newTestBuffer()
 
-	jl := NewJSON(All, Output(buf), ErrorOutput(errBuf), Fields(Object("user", fakeUser{"fail"})))
+	jl := NewJSON(All, Output(buf), ErrorOutput(errBuf), Fields(Marshaler("user", fakeUser{"fail"})))
 	jl.StubTime()
 	output := func() []string { return strings.Split(buf.String(), "\n") }
 

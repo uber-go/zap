@@ -46,7 +46,7 @@ type Field struct {
 	fieldType fieldType
 	ival      int64
 	str       string
-	obj       Marshaler
+	marshaler LogMarshaler
 }
 
 // Bool constructs a Field with the given key and value.
@@ -116,17 +116,17 @@ func Duration(key string, val time.Duration) Field {
 	return Int64(key, int64(val))
 }
 
-// Object constructs a field with the given key and zap.Marshaler. It provides a
-// flexible, but still type-safe and efficient, way to add user-defined types to
-// the logging context.
-func Object(key string, val Marshaler) Field {
-	return Field{key: key, fieldType: marshalerType, obj: val}
+// Marshaler constructs a field with the given key and zap.LogMarshaler. It
+// provides a flexible, but still type-safe and efficient, way to add
+// user-defined types to the logging context.
+func Marshaler(key string, val LogMarshaler) Field {
+	return Field{key: key, fieldType: marshalerType, marshaler: val}
 }
 
 // Nest takes a key and a variadic number of Fields and creates a nested
 // namespace.
 func Nest(key string, fields ...Field) Field {
-	return Field{key: key, fieldType: marshalerType, obj: multiFields(fields)}
+	return Field{key: key, fieldType: marshalerType, marshaler: multiFields(fields)}
 }
 
 func (f Field) addTo(kv KeyValue) error {
@@ -142,7 +142,7 @@ func (f Field) addTo(kv KeyValue) error {
 	case stringType:
 		kv.AddString(f.key, f.str)
 	case marshalerType:
-		return kv.AddObject(f.key, f.obj)
+		return kv.AddMarshaler(f.key, f.marshaler)
 	default:
 		panic(fmt.Sprintf("unknown field type found: %v", f))
 	}

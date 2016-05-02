@@ -152,8 +152,8 @@ func (l *logger) addZapFields(fs bark.Fields) unsafeJSONLogger {
 		case time.Duration:
 			zfs = append(zfs, zap.Duration(key, v))
 		// zap.Marshaler takes precedence over other interfaces.
-		case zap.Marshaler:
-			zfs = append(zfs, zap.Object(key, v))
+		case zap.LogMarshaler:
+			zfs = append(zfs, zap.Marshaler(key, v))
 		case error:
 			// zap.Err ignores the user-supplied key.
 			zfs = append(zfs, zap.String(key, v.Error()))

@@ -125,7 +125,7 @@ func BenchmarkStackField(b *testing.B) {
 	})
 }
 
-func BenchmarkObjectField(b *testing.B) {
+func BenchmarkMarshalerField(b *testing.B) {
 	// Expect an extra allocation here, since casting the user struct to the
 	// zap.Marshaler interface costs an alloc.
 	u := user{
@@ -134,7 +134,7 @@ func BenchmarkObjectField(b *testing.B) {
 		createdAt: time.Unix(0, 0),
 	}
 	withBenchedLogger(b, func(log zap.Logger) {
-		log.Info("Arbitrary zap.Marshaler.", zap.Object("user", u))
+		log.Info("Arbitrary zap.LogMarshaler.", zap.Marshaler("user", u))
 	})
 }
 

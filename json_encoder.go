@@ -125,8 +125,8 @@ func (enc *jsonEncoder) Nest(key string, f func(KeyValue) error) error {
 	return err
 }
 
-// AddObject adds a Marshaler to the encoder's fields.
-func (enc *jsonEncoder) AddObject(key string, obj Marshaler) error {
+// AddMarshaler adds a LogMarshaler to the encoder's fields.
+func (enc *jsonEncoder) AddMarshaler(key string, obj LogMarshaler) error {
 	return enc.Nest(key, func(kv KeyValue) error {
 		return obj.MarshalLog(kv)
 	})

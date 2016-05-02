@@ -20,9 +20,9 @@
 
 package zap
 
-// Marshaler allows user-defined types to efficiently add themselves to the
+// LogMarshaler allows user-defined types to efficiently add themselves to the
 // logging context, and to selectively omit information which shouldn't be
 // included in logs (e.g., passwords).
-type Marshaler interface {
+type LogMarshaler interface {
 	MarshalLog(KeyValue) error
 }

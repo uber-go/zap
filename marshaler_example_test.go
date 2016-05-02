@@ -49,7 +49,7 @@ type User struct {
 func (u User) MarshalLog(kv zap.KeyValue) error {
 	kv.AddString("name", u.Name)
 	kv.AddInt("age", u.Age)
-	return kv.AddObject("auth", u.Auth)
+	return kv.AddMarshaler("auth", u.Auth)
 }
 
 func ExampleMarshaler() {
@@ -65,7 +65,7 @@ func ExampleMarshaler() {
 	logger := zap.NewJSON()
 	// Stub time in tests.
 	logger.StubTime()
-	logger.Info("Successful login.", zap.Object("user", jane))
+	logger.Info("Successful login.", zap.Marshaler("user", jane))
 
 	// Output:
 	// {"msg":"Successful login.","level":"info","ts":0,"fields":{"user":{"name":"Jane Doe","age":42,"auth":{"expires_at":100,"token":"---"}}}}
