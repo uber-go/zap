@@ -18,6 +18,5 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package zwrap provides a wrapper to make zap.Loggers compatible with the
-// standard library's log.Logger.
+// Package zwrap provides a variety of wrappers for the core zap logger.
 package zwrap
