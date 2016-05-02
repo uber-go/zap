@@ -63,7 +63,7 @@ func BenchmarkZapAddingFields(b *testing.B) {
 				zap.Time("time", time.Unix(0, 0)),
 				zap.Err(errExample),
 				zap.Duration("duration", time.Second),
-				zap.Object("user-defined type", _jane),
+				zap.Marshaler("user-defined type", _jane),
 				zap.String("another string", "done!"),
 			)
 		}
@@ -80,7 +80,7 @@ func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 		zap.Time("time", time.Unix(0, 0)),
 		zap.Err(errExample),
 		zap.Duration("duration", time.Second),
-		zap.Object("user-defined type", _jane),
+		zap.Marshaler("user-defined type", _jane),
 		zap.String("another string", "done!"),
 	))
 	b.ResetTimer()

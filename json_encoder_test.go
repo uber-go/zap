@@ -156,10 +156,10 @@ func (l loggable) MarshalLog(kv KeyValue) error {
 	return nil
 }
 
-func TestJSONAddObject(t *testing.T) {
+func TestJSONAddMarshaler(t *testing.T) {
 	withJSONEncoder(func(enc *jsonEncoder) {
-		err := enc.AddObject("nested", loggable{})
-		require.NoError(t, err, "Unexpected error using AddObject.")
+		err := enc.AddMarshaler("nested", loggable{})
+		require.NoError(t, err, "Unexpected error using AddMarshaler.")
 		assertJSON(t, `"foo":"bar","nested":{"loggable":"yes"}`, enc)
 	})
 }
