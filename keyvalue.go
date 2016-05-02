@@ -30,6 +30,7 @@ type KeyValue interface {
 	AddFloat64(string, float64)
 	AddInt(string, int)
 	AddInt64(string, int64)
+	AddObject(string, Marshaler) error
 	AddString(string, string)
-	Nest(string) FieldCloser
+	Nest(string, func(KeyValue) error) error
 }

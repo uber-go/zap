@@ -116,19 +116,20 @@ func (enc *jsonEncoder) UnsafeAddBytes(key string, val []byte) {
 	enc.bytes = append(enc.bytes, val...)
 }
 
-// Nest starts a nested object and returns a function that closes the nested
-// object. Until the returned function is called, calls to AddString and friends
-// operate on the nested namespace.
-//
-// Failing to use the returned FieldCloser will result in invalid JSON output.
-func (enc *jsonEncoder) Nest(key string) FieldCloser {
+// Nest allows the caller to populate a nested object under the provided key.
+func (enc *jsonEncoder) Nest(key string, f func(KeyValue) error) error {
 	enc.addKey(key)
 	enc.bytes = append(enc.bytes, '{')
-	return enc
+	err := f(enc)
+	enc.bytes = append(enc.bytes, '}')
+	return err
 }
 
-func (enc *jsonEncoder) CloseField() {
-	enc.bytes = append(enc.bytes, '}')
+// AddObject adds a Marshaler to the encoder's fields.
+func (enc *jsonEncoder) AddObject(key string, obj Marshaler) error {
+	return enc.Nest(key, func(kv KeyValue) error {
+		return obj.MarshalLog(kv)
+	})
 }
 
 // Clone copies the current encoder, including any data already encoded.

@@ -28,11 +28,6 @@ import (
 
 type fieldType int
 
-// A FieldCloser closes a nested field.
-type FieldCloser interface {
-	CloseField()
-}
-
 const (
 	unknownType fieldType = iota
 	boolType
@@ -147,10 +142,7 @@ func (f Field) addTo(kv KeyValue) error {
 	case stringType:
 		kv.AddString(f.key, f.str)
 	case marshalerType:
-		closer := kv.Nest(f.key)
-		err := f.obj.MarshalLog(kv)
-		closer.CloseField()
-		return err
+		return kv.AddObject(f.key, f.obj)
 	default:
 		panic(fmt.Sprintf("unknown field type found: %v", f))
 	}

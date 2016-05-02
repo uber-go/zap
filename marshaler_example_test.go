@@ -49,10 +49,7 @@ type User struct {
 func (u User) MarshalLog(kv zap.KeyValue) error {
 	kv.AddString("name", u.Name)
 	kv.AddInt("age", u.Age)
-
-	// Put the authentication information in a nested object.
-	defer kv.Nest("auth").CloseField()
-	return u.Auth.MarshalLog(kv)
+	return kv.AddObject("auth", u.Auth)
 }
 
 func ExampleMarshaler() {

@@ -175,6 +175,13 @@ func TestJSONLoggerPanic(t *testing.T) {
 	})
 }
 
+func TestJSONLoggerDFatal(t *testing.T) {
+	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
+		jl.DFatal("foo")
+		assertMessage(t, "error", "foo", output()[0])
+	})
+}
+
 func TestJSONLoggerNoOpsDisabledLevels(t *testing.T) {
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
 		jl.SetLevel(Warn)

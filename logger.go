@@ -53,6 +53,9 @@ type Logger interface {
 	Error(string, ...Field)
 	Panic(string, ...Field)
 	Fatal(string, ...Field)
+	// If the logger is in development mode (via the Development option), DFatal
+	// logs at the Fatal level. Otherwise, it logs at the Error level.
+	DFatal(string, ...Field)
 }
 
 type jsonLogger struct {
@@ -62,6 +65,7 @@ type jsonLogger struct {
 	errW        WriteSyncer
 	w           WriteSyncer
 	alwaysEpoch bool
+	development bool
 }
 
 // NewJSON returns a logger that formats its output as JSON. Zap uses a
@@ -110,6 +114,7 @@ func (jl *jsonLogger) With(fields ...Field) Logger {
 		w:           jl.w,
 		errW:        jl.errW,
 		alwaysEpoch: jl.alwaysEpoch,
+		development: jl.development,
 	}
 	if err := clone.enc.AddFields(fields); err != nil {
 		jl.internalError(err.Error())
@@ -155,6 +160,13 @@ func (jl *jsonLogger) Panic(msg string, fields ...Field) {
 func (jl *jsonLogger) Fatal(msg string, fields ...Field) {
 	jl.log(Fatal, msg, fields)
 	os.Exit(1)
+}
+
+func (jl *jsonLogger) DFatal(msg string, fields ...Field) {
+	if jl.development {
+		jl.Fatal(msg, fields...)
+	}
+	jl.Error(msg, fields...)
 }
 
 func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
