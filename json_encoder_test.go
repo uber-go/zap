@@ -28,7 +28,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/uber-common/zap/spy"
+	"github.com/uber-common/zap/spywrite"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -201,8 +201,8 @@ func TestJSONWriteMessageFailure(t *testing.T) {
 			sink io.Writer
 			msg  string
 		}{
-			{spy.FailWriter{}, "Expected an error when writing to sink fails."},
-			{spy.ShortWriter{}, "Expected an error on partial writes to sink."},
+			{spywrite.FailWriter{}, "Expected an error when writing to sink fails."},
+			{spywrite.ShortWriter{}, "Expected an error on partial writes to sink."},
 		}
 		for _, tt := range tests {
 			err := enc.WriteMessage(tt.sink, "info", "hello", time.Unix(0, 0))

@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/uber-common/zap"
+	"github.com/uber-common/zap/zwrap"
 )
 
 var errExample = errors.New("fail")
@@ -121,6 +122,16 @@ func BenchmarkZapWithoutFields(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			logger.Info("Go fast.")
+		}
+	})
+}
+
+func BenchmarkSampledZap(b *testing.B) {
+	logger := zwrap.Sample(zap.NewJSON(zap.All, zap.Output(zap.Discard)), 10, 100)
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Info("Sample the logs.")
 		}
 	})
 }

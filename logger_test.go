@@ -28,7 +28,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-common/zap/spy"
+	"github.com/uber-common/zap/spywrite"
 )
 
 func opts(opts ...Option) []Option {
@@ -200,8 +200,8 @@ func TestJSONLoggerInternalErrorHandling(t *testing.T) {
 
 func TestJSONLoggerWriteMessageFailure(t *testing.T) {
 	errBuf := &bytes.Buffer{}
-	errSink := &spy.WriteSyncer{Writer: errBuf}
-	logger := NewJSON(All, Output(AddSync(spy.FailWriter{})), ErrorOutput(errSink))
+	errSink := &spywrite.WriteSyncer{Writer: errBuf}
+	logger := NewJSON(All, Output(AddSync(spywrite.FailWriter{})), ErrorOutput(errSink))
 
 	logger.Info("foo")
 	// Should log the error.
@@ -228,7 +228,7 @@ func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
 }
 
 func TestJSONLoggerSyncsOutput(t *testing.T) {
-	sink := &spy.WriteSyncer{Writer: ioutil.Discard}
+	sink := &spywrite.WriteSyncer{Writer: ioutil.Discard}
 	logger := NewJSON(All, Output(sink))
 
 	logger.Error("foo")
