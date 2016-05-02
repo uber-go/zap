@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"strconv"
@@ -106,16 +107,6 @@ func (enc *jsonEncoder) AddFloat64(key string, val float64) {
 	enc.bytes = strconv.AppendFloat(enc.bytes, val, 'g', -1, 64)
 }
 
-// UnsafeAddBytes adds a string key and an arbitrary byte slice to the encoder's
-// fields. The key is JSON-escaped, but the value isn't; if the value is not
-// itself valid JSON, it will make the entire fields buffer unparsable.
-//
-// Use this method with great care - it's unsafe!
-func (enc *jsonEncoder) UnsafeAddBytes(key string, val []byte) {
-	enc.addKey(key)
-	enc.bytes = append(enc.bytes, val...)
-}
-
 // Nest allows the caller to populate a nested object under the provided key.
 func (enc *jsonEncoder) Nest(key string, f func(KeyValue) error) error {
 	enc.addKey(key)
@@ -126,10 +117,23 @@ func (enc *jsonEncoder) Nest(key string, f func(KeyValue) error) error {
 }
 
 // AddMarshaler adds a LogMarshaler to the encoder's fields.
+//
+// TODO: Encode the error into the message instead of returning.
 func (enc *jsonEncoder) AddMarshaler(key string, obj LogMarshaler) error {
 	return enc.Nest(key, func(kv KeyValue) error {
 		return obj.MarshalLog(kv)
 	})
+}
+
+// AddObject uses reflection to add an arbitrary object to the logging context.
+func (enc *jsonEncoder) AddObject(key string, obj interface{}) {
+	marshaled, err := json.Marshal(obj)
+	if err != nil {
+		enc.AddString(key, err.Error())
+		return
+	}
+	enc.addKey(key)
+	enc.bytes = append(enc.bytes, marshaled...)
 }
 
 // Clone copies the current encoder, including any data already encoded.

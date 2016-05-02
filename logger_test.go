@@ -131,13 +131,6 @@ func TestJSONLoggerWith(t *testing.T) {
 	})
 }
 
-func TestJSONLoggerWithUnsafeJSON(t *testing.T) {
-	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
-		jl.WithUnsafeJSON(`foo\`, []byte(`{"inner":42}`)).Debug("")
-		assertFields(t, jl, output, `{"foo\\":{"inner":42}}`)
-	})
-}
-
 func TestJSONLoggerDebug(t *testing.T) {
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
 		jl.Debug("foo")

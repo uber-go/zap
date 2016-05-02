@@ -122,16 +122,6 @@ func (jl *jsonLogger) With(fields ...Field) Logger {
 	return clone
 }
 
-// WithUnsafeJSON adds a key and a slice of arbitrary bytes to the logging
-// context. It's highly unsafe, and intended only for use by the zbark wrappers.
-//
-// For details, see jsonEncoder.UnsafeAddBytes.
-func (jl *jsonLogger) WithUnsafeJSON(key string, val []byte) Logger {
-	clone := jl.With().(*jsonLogger)
-	clone.enc.(*jsonEncoder).UnsafeAddBytes(key, val)
-	return clone
-}
-
 func (jl *jsonLogger) StubTime() {
 	jl.alwaysEpoch = true
 }
