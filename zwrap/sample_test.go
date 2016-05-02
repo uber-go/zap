@@ -82,7 +82,6 @@ func TestSampler(t *testing.T) {
 			level:   zap.Fatal,
 			logFunc: func(sampler zap.Logger, msg string) { sampler.Fatal(msg) },
 		},
-		/* TODO: Depends on PR #35.
 		{
 			level:   zap.Error,
 			logFunc: func(sampler zap.Logger, msg string) { sampler.DFatal(msg) },
@@ -92,7 +91,6 @@ func TestSampler(t *testing.T) {
 			logFunc:     func(sampler zap.Logger, msg string) { sampler.DFatal(msg) },
 			development: true,
 		},
-		*/
 	}
 
 	for _, tt := range tests {

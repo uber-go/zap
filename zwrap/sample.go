@@ -91,14 +91,11 @@ func (s *sampler) Fatal(msg string, fields ...zap.Field) {
 	}
 }
 
-/* TODO: Depends on #35.
 func (s *sampler) DFatal(msg string, fields ...zap.Field) {
 	if s.check(zap.Error) {
 		s.Logger.DFatal(msg, fields...)
 	}
-
 }
-*/
 
 func (s *sampler) check(lvl zap.Level) bool {
 	// If this log level isn't enabled, don't count this statement.
