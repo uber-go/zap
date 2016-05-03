@@ -126,6 +126,11 @@ func TestMarshalerField(t *testing.T) {
 	assertCanBeReused(t, Marshaler("foo", fakeUser{"phil"}))
 }
 
+func TestObjectField(t *testing.T) {
+	assertFieldJSON(t, `"foo":[5,6]`, Object("foo", []int{5, 6}))
+	assertCanBeReused(t, Object("foo", []int{5, 6}))
+}
+
 func TestNestField(t *testing.T) {
 	assertFieldJSON(t, `"foo":{"name":"phil","age":42}`,
 		Nest("foo", String("name", "phil"), Int("age", 42)),

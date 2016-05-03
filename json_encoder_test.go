@@ -104,14 +104,6 @@ func TestJSONAddFloat64(t *testing.T) {
 	})
 }
 
-func TestJSONUnsafeAddBytes(t *testing.T) {
-	withJSONEncoder(func(enc *jsonEncoder) {
-		// Keys should be escaped.
-		enc.UnsafeAddBytes(`baz\`, []byte(`{"inner":42}`))
-		assertJSON(t, `"foo":"bar","baz\\":{"inner":42}`, enc)
-	})
-}
-
 func TestJSONWriteMessage(t *testing.T) {
 	withJSONEncoder(func(enc *jsonEncoder) {
 		sink := bytes.NewBuffer(nil)
@@ -161,6 +153,18 @@ func TestJSONAddMarshaler(t *testing.T) {
 		err := enc.AddMarshaler("nested", loggable{})
 		require.NoError(t, err, "Unexpected error using AddMarshaler.")
 		assertJSON(t, `"foo":"bar","nested":{"loggable":"yes"}`, enc)
+	})
+}
+
+func TestJSONAddObject(t *testing.T) {
+	withJSONEncoder(func(enc *jsonEncoder) {
+		enc.AddObject("nested", map[string]string{"loggable": "yes"})
+		assertJSON(t, `"foo":"bar","nested":{"loggable":"yes"}`, enc)
+	})
+
+	withJSONEncoder(func(enc *jsonEncoder) {
+		enc.AddObject("nested", map[int]string{42: "yes"})
+		assertJSON(t, `"foo":"bar","nested":"json: unsupported type: map[int]string"`, enc)
 	})
 }
 

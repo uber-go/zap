@@ -36,6 +36,7 @@ const (
 	int64Type
 	stringType
 	marshalerType
+	objectType
 )
 
 // A Field is a deferred marshaling operation used to add a key-value pair to
@@ -46,7 +47,7 @@ type Field struct {
 	fieldType fieldType
 	ival      int64
 	str       string
-	marshaler LogMarshaler
+	obj       interface{}
 }
 
 // Bool constructs a Field with the given key and value.
@@ -120,13 +121,23 @@ func Duration(key string, val time.Duration) Field {
 // provides a flexible, but still type-safe and efficient, way to add
 // user-defined types to the logging context.
 func Marshaler(key string, val LogMarshaler) Field {
-	return Field{key: key, fieldType: marshalerType, marshaler: val}
+	return Field{key: key, fieldType: marshalerType, obj: val}
+}
+
+// Object constructs a field with the given key and an arbitrary object. It uses
+// an encoding-appropriate, reflection-based function to serialize nearly any
+// object into the logging context, but it's relatively slow and allocation-heavy.
+//
+// If encoding fails (e.g., trying to serialize a map[int]string to JSON), Object
+// includes the error message in the final log output.
+func Object(key string, val interface{}) Field {
+	return Field{key: key, fieldType: objectType, obj: val}
 }
 
 // Nest takes a key and a variadic number of Fields and creates a nested
 // namespace.
 func Nest(key string, fields ...Field) Field {
-	return Field{key: key, fieldType: marshalerType, marshaler: multiFields(fields)}
+	return Field{key: key, fieldType: marshalerType, obj: multiFields(fields)}
 }
 
 func (f Field) addTo(kv KeyValue) error {
@@ -142,7 +153,9 @@ func (f Field) addTo(kv KeyValue) error {
 	case stringType:
 		kv.AddString(f.key, f.str)
 	case marshalerType:
-		return kv.AddMarshaler(f.key, f.marshaler)
+		return kv.AddMarshaler(f.key, f.obj.(LogMarshaler))
+	case objectType:
+		kv.AddObject(f.key, f.obj)
 	default:
 		panic(fmt.Sprintf("unknown field type found: %v", f))
 	}

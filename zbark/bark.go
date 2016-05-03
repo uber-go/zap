@@ -21,7 +21,6 @@
 package zbark
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -30,26 +29,17 @@ import (
 	"github.com/uber-common/bark"
 )
 
-type unsafeJSONLogger interface {
-	zap.Logger
-	WithUnsafeJSON(string, []byte) zap.Logger
-}
-
 // Barkify wraps zap's JSON logger to make it compatible with the bark.Logger
-// interface. If passed a non-JSON zap.Logger, it panics.
+// interface.
 func Barkify(l zap.Logger) bark.Logger {
-	jsonLogger, ok := l.(unsafeJSONLogger)
-	if !ok {
-		panic("Barkify only works with zap's JSON logger.")
-	}
 	return &logger{
-		zl:     jsonLogger,
+		zl:     l,
 		fields: make(bark.Fields),
 	}
 }
 
 type logger struct {
-	zl     unsafeJSONLogger
+	zl     zap.Logger
 	fields bark.Fields
 }
 
@@ -132,9 +122,8 @@ func (l *logger) addBarkFields(fs bark.Fields) bark.Fields {
 	return newFields
 }
 
-func (l *logger) addZapFields(fs bark.Fields) unsafeJSONLogger {
+func (l *logger) addZapFields(fs bark.Fields) zap.Logger {
 	zfs := make([]zap.Field, 0, len(fs))
-	zl := l.zl
 	for key, val := range fs {
 		switch v := val.(type) {
 		case bool:
@@ -160,19 +149,8 @@ func (l *logger) addZapFields(fs bark.Fields) unsafeJSONLogger {
 		case fmt.Stringer:
 			zfs = append(zfs, zap.Stringer(key, v))
 		default:
-			jsonBytes, err := json.Marshal(v)
-			if err != nil {
-				// Even if JSON serialization fails, make sure we log something
-				// and include the error message.
-				zfs = append(zfs, zap.String(key, err.Error()))
-			} else {
-				zl = zl.WithUnsafeJSON(key, jsonBytes).(unsafeJSONLogger)
-			}
+			zfs = append(zfs, zap.Object(key, v))
 		}
-
 	}
-	if len(zfs) > 0 {
-		zl = zl.With(zfs...).(unsafeJSONLogger)
-	}
-	return zl
+	return l.zl.With(zfs...)
 }
