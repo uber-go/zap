@@ -22,18 +22,21 @@ package zwrap
 
 import (
 	"sync/atomic"
+	"time"
 
 	"github.com/uber-common/zap"
 )
 
-// Sample returns a sampling logger that logs the first N statements and every
-// Mth statement thereafter. Sampling loggers are safe for concurrent use.
+// Sample returns a sampling logger. Each tick, the sampler records the first N
+// messages and every Mth message thereafter. Sampling loggers are safe for
+// concurrent use.
 //
 // The children of sampling loggers (i.e., the results of calls to the With method)
 // inherit their parent's sampling logic but maintain independent counters.
-func Sample(zl zap.Logger, first int, thereafter int) zap.Logger {
+func Sample(zl zap.Logger, tick time.Duration, first, thereafter int) zap.Logger {
 	return &sampler{
 		Logger:     zl,
+		tick:       tick,
 		first:      uint64(first),
 		thereafter: uint64(thereafter),
 	}
@@ -42,6 +45,7 @@ func Sample(zl zap.Logger, first int, thereafter int) zap.Logger {
 type sampler struct {
 	zap.Logger
 
+	tick       time.Duration
 	count      uint64
 	first      uint64
 	thereafter uint64
@@ -50,6 +54,7 @@ type sampler struct {
 func (s *sampler) With(fields ...zap.Field) zap.Logger {
 	return &sampler{
 		Logger:     s.Logger.With(fields...),
+		tick:       s.tick,
 		first:      s.first,
 		thereafter: s.thereafter,
 	}
@@ -106,5 +111,13 @@ func (s *sampler) check(lvl zap.Level) bool {
 	if n <= s.first {
 		return true
 	}
+	if n == s.first+1 {
+		// We've started sampling, reset the counter in a tick.
+		time.AfterFunc(s.tick, func() { s.Reset() })
+	}
 	return (n-s.first)%s.thereafter == 0
+}
+
+func (s *sampler) Reset() {
+	atomic.StoreUint64(&s.count, 0)
 }

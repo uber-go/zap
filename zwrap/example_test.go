@@ -22,6 +22,7 @@ package zwrap_test
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/uber-common/zap"
 	"github.com/uber-common/zap/zwrap"
@@ -49,8 +50,8 @@ func Example_standardize() {
 }
 
 func Example_sample() {
-	// Log the first message, and every 100th message thereafter.
-	sampledLogger := zwrap.Sample(zap.NewJSON(), 1, 100)
+	// Every second, log the first message and every hundredth message thereafter.
+	sampledLogger := zwrap.Sample(zap.NewJSON(), time.Second, 1, 100)
 	// Stub the current time in tests.
 	sampledLogger.StubTime()
 

@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/uber-common/zap"
 	"github.com/uber-common/zap/spy"
@@ -31,12 +32,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func fakeSampler(first, thereafter int, development bool) (zap.Logger, *spy.Sink) {
+func fakeSampler(tick time.Duration, first, thereafter int, development bool) (zap.Logger, *spy.Sink) {
 	sink := &spy.Sink{}
 	base := spy.New(sink)
 	base.SetLevel(zap.All)
 	base.SetDevelopment(development)
-	sampler := Sample(base, first, thereafter)
+	sampler := Sample(base, tick, first, thereafter)
 	return sampler, sink
 }
 
@@ -94,7 +95,7 @@ func TestSampler(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		sampler, sink := fakeSampler(2, 3, tt.development)
+		sampler, sink := fakeSampler(time.Minute, 2, 3, tt.development)
 		for i := 1; i < 10; i++ {
 			tt.logFunc(sampler, strconv.Itoa(i))
 		}
@@ -104,7 +105,7 @@ func TestSampler(t *testing.T) {
 }
 
 func TestSampledDisabledLevels(t *testing.T) {
-	sampler, sink := fakeSampler(1, 100, false)
+	sampler, sink := fakeSampler(time.Minute, 1, 100, false)
 	sampler.SetLevel(zap.Info)
 
 	// Shouldn't be counted, because debug logging isn't enabled.
@@ -116,7 +117,7 @@ func TestSampledDisabledLevels(t *testing.T) {
 
 func TestSamplerWith(t *testing.T) {
 	// Check that child loggers are sampled and independent.
-	sampler, sink := fakeSampler(1, 100, false)
+	sampler, sink := fakeSampler(time.Minute, 1, 100, false)
 
 	expected := []spy.Log{
 		{
@@ -145,8 +146,22 @@ func TestSamplerWith(t *testing.T) {
 	assert.Equal(t, expected, sink.Logs(), "Expected child loggers to maintain separate counters.")
 }
 
+func TestSamplerTicks(t *testing.T) {
+	// Ensure that we're resetting the sampler's counter every tick.
+	sampler, sink := fakeSampler(time.Millisecond, 1, 1000, false)
+
+	sampler.Info("one")
+	// Starts the reset timer, but doesn't get logged.
+	sampler.Info("two")
+	time.Sleep(2 * time.Millisecond)
+	sampler.Info("three")
+
+	expected := buildExpectation(zap.Info, "one", "three")
+	assert.Equal(t, expected, sink.Logs(), "Expected sample counter to reset each tick.")
+}
+
 func TestSamplerRaces(t *testing.T) {
-	sampler, _ := fakeSampler(1, 1000, false)
+	sampler, _ := fakeSampler(time.Minute, 1, 1000, false)
 
 	var wg sync.WaitGroup
 	start := make(chan struct{})

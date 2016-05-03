@@ -127,7 +127,8 @@ func BenchmarkZapWithoutFields(b *testing.B) {
 }
 
 func BenchmarkZapSampleWithoutFields(b *testing.B) {
-	logger := zwrap.Sample(zap.NewJSON(zap.All, zap.Output(zap.Discard)), 10, 100)
+	base := zap.NewJSON(zap.All, zap.Output(zap.Discard))
+	logger := zwrap.Sample(base, time.Second, 10, 100)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
