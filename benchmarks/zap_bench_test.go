@@ -49,6 +49,16 @@ var _jane = user{
 	CreatedAt: time.Date(1980, 1, 1, 12, 0, 0, 0, time.UTC),
 }
 
+func BenchmarkZapDisabledLevels(b *testing.B) {
+	logger := zap.NewJSON(zap.Error, zap.Output(zap.Discard))
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Info("Should be discarded.")
+		}
+	})
+}
+
 func BenchmarkZapAddingFields(b *testing.B) {
 	logger := zap.NewJSON(zap.All, zap.Output(zap.Discard))
 	b.ResetTimer()
