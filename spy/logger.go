@@ -73,13 +73,14 @@ type Logger struct {
 	development bool
 }
 
-// New returns a new spy logger at the default level.
-func New(sink *Sink) *Logger {
+// New returns a new spy logger at the default level and its sink.
+func New() (*Logger, *Sink) {
+	s := &Sink{}
 	return &Logger{
 		// Use the same defaults as the core logger.
 		level: zap.NewJSON().Level(),
-		sink:  sink,
-	}
+		sink:  s,
+	}, s
 }
 
 // StubTime is a no-op, since the spy logger omits time entirely.

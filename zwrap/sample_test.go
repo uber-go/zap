@@ -33,8 +33,7 @@ import (
 )
 
 func fakeSampler(tick time.Duration, first, thereafter int, development bool) (zap.Logger, *spy.Sink) {
-	sink := &spy.Sink{}
-	base := spy.New(sink)
+	base, sink := spy.New()
 	base.SetLevel(zap.All)
 	base.SetDevelopment(development)
 	sampler := Sample(base, tick, first, thereafter)
