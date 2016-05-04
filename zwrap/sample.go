@@ -21,22 +21,26 @@
 package zwrap
 
 import (
+	"runtime"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/uber-common/zap"
 )
 
+var _callersPool = sync.Pool{
+	New: func() interface{} { return [1]uintptr{} },
+}
+
 // Sample returns a sampling logger. Each tick, the sampler records the first N
-// messages and every Mth message thereafter. Sampling loggers are safe for
-// concurrent use.
-//
-// The children of sampling loggers (i.e., the results of calls to the With method)
-// inherit their parent's sampling logic but maintain independent counters.
+// messages from each call site and every Mth message thereafter. Sampling
+// loggers are safe for concurrent use.
 func Sample(zl zap.Logger, tick time.Duration, first, thereafter int) zap.Logger {
 	return &sampler{
 		Logger:     zl,
 		tick:       tick,
+		counts:     make(map[uintptr]*uint64),
 		first:      uint64(first),
 		thereafter: uint64(thereafter),
 	}
@@ -44,9 +48,10 @@ func Sample(zl zap.Logger, tick time.Duration, first, thereafter int) zap.Logger
 
 type sampler struct {
 	zap.Logger
+	sync.RWMutex
 
 	tick       time.Duration
-	count      uint64
+	counts     map[uintptr]*uint64
 	first      uint64
 	thereafter uint64
 }
@@ -55,6 +60,7 @@ func (s *sampler) With(fields ...zap.Field) zap.Logger {
 	return &sampler{
 		Logger:     s.Logger.With(fields...),
 		tick:       s.tick,
+		counts:     make(map[uintptr]*uint64),
 		first:      s.first,
 		thereafter: s.thereafter,
 	}
@@ -107,17 +113,39 @@ func (s *sampler) check(lvl zap.Level) bool {
 	if !s.Enabled(lvl) {
 		return false
 	}
-	n := atomic.AddUint64(&s.count, 1)
+
+	// Allocate this on the stack, since it doesn't escape.
+	callers := [1]uintptr{}
+	// Note that the skip argument for runtime.Callers is subtly different from
+	// the skip argument for runtime.Caller.
+	runtime.Callers(3, callers[:])
+	caller := callers[0]
+
+	s.RLock()
+	if _, ok := s.counts[caller]; !ok {
+		s.RUnlock()
+		zero := uint64(0)
+		s.Lock()
+		s.counts[caller] = &zero
+		s.Unlock()
+		s.RLock()
+	}
+	count := s.counts[caller]
+	s.RUnlock()
+	n := atomic.AddUint64(count, 1)
 	if n <= s.first {
 		return true
 	}
 	if n == s.first+1 {
 		// We've started sampling, reset the counter in a tick.
-		time.AfterFunc(s.tick, func() { s.Reset() })
+		time.AfterFunc(s.tick, func() { s.Reset(caller) })
 	}
 	return (n-s.first)%s.thereafter == 0
 }
 
-func (s *sampler) Reset() {
-	atomic.StoreUint64(&s.count, 0)
+func (s *sampler) Reset(caller uintptr) {
+	s.Lock()
+	count := s.counts[caller]
+	s.Unlock()
+	atomic.StoreUint64(count, 0)
 }

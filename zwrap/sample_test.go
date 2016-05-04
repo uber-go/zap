@@ -149,14 +149,30 @@ func TestSamplerTicks(t *testing.T) {
 	// Ensure that we're resetting the sampler's counter every tick.
 	sampler, sink := fakeSampler(time.Millisecond, 1, 1000, false)
 
-	sampler.Info("one")
-	// Starts the reset timer, but doesn't get logged.
-	sampler.Info("two")
-	time.Sleep(2 * time.Millisecond)
-	sampler.Info("three")
+	// The first statement should be logged, the second should be skipped but
+	// start the reset timer, and then we sleep. After sleeping for more than a
+	// tick, the third statement should be logged.
+	for i := 1; i < 4; i++ {
+		if i == 3 {
+			time.Sleep(2 * time.Millisecond)
+		}
+		sampler.Info(strconv.Itoa(i))
+	}
 
-	expected := buildExpectation(zap.Info, "one", "three")
-	assert.Equal(t, expected, sink.Logs(), "Expected sample counter to reset each tick.")
+	expected := buildExpectation(zap.Info, "1", "3")
+	assert.Equal(t, expected, sink.Logs(), "Expected sleeping for a tick to reset sampler.")
+}
+
+func TestSamplerBucketsByCaller(t *testing.T) {
+	sampler, sink := fakeSampler(time.Minute, 1, 1000, false)
+	for i := 0; i < 5; i++ {
+		sampler.Info("First call site.")
+	}
+	for i := 0; i < 5; i++ {
+		sampler.Info("Second call site.")
+	}
+	expected := buildExpectation(zap.Info, "First call site.", "Second call site.")
+	assert.Equal(t, expected, sink.Logs(), "Expected to sample each call site separately.")
 }
 
 func TestSamplerRaces(t *testing.T) {
