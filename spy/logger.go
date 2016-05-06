@@ -117,9 +117,10 @@ func (l *Logger) SetLevel(new zap.Level) {
 // With creates a new Logger with additional fields added to the logging context.
 func (l *Logger) With(fields ...zap.Field) zap.Logger {
 	return &Logger{
-		level:   l.level,
-		sink:    l.sink,
-		context: append(l.context, fields...),
+		level:       l.level,
+		sink:        l.sink,
+		context:     append(l.context, fields...),
+		development: l.development,
 	}
 }
 

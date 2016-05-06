@@ -21,7 +21,6 @@
 package zwrap
 
 import (
-	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -32,6 +31,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func WithIter(l zap.Logger, n int) zap.Logger {
+	return l.With(zap.Int("iter", n))
+}
+
 func fakeSampler(tick time.Duration, first, thereafter int, development bool) (zap.Logger, *spy.Sink) {
 	base, sink := spy.New()
 	base.SetLevel(zap.All)
@@ -40,13 +43,13 @@ func fakeSampler(tick time.Duration, first, thereafter int, development bool) (z
 	return sampler, sink
 }
 
-func buildExpectation(level zap.Level, messages ...string) []spy.Log {
+func buildExpectation(level zap.Level, nums ...int) []spy.Log {
 	var expected []spy.Log
-	for _, m := range messages {
+	for _, n := range nums {
 		expected = append(expected, spy.Log{
 			Level:  level,
-			Msg:    m,
-			Fields: make([]zap.Field, 0),
+			Msg:    "sample",
+			Fields: []zap.Field{zap.Int("iter", n)},
 		})
 	}
 	return expected
@@ -55,40 +58,40 @@ func buildExpectation(level zap.Level, messages ...string) []spy.Log {
 func TestSampler(t *testing.T) {
 	tests := []struct {
 		level       zap.Level
-		logFunc     func(zap.Logger, string)
+		logFunc     func(zap.Logger, int)
 		development bool
 	}{
 		{
 			level:   zap.Debug,
-			logFunc: func(sampler zap.Logger, msg string) { sampler.Debug(msg) },
+			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Debug("sample") },
 		},
 		{
 			level:   zap.Info,
-			logFunc: func(sampler zap.Logger, msg string) { sampler.Info(msg) },
+			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Info("sample") },
 		},
 		{
 			level:   zap.Warn,
-			logFunc: func(sampler zap.Logger, msg string) { sampler.Warn(msg) },
+			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Warn("sample") },
 		},
 		{
 			level:   zap.Error,
-			logFunc: func(sampler zap.Logger, msg string) { sampler.Error(msg) },
+			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Error("sample") },
 		},
 		{
 			level:   zap.Panic,
-			logFunc: func(sampler zap.Logger, msg string) { sampler.Panic(msg) },
+			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Panic("sample") },
 		},
 		{
 			level:   zap.Fatal,
-			logFunc: func(sampler zap.Logger, msg string) { sampler.Fatal(msg) },
+			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Fatal("sample") },
 		},
 		{
 			level:   zap.Error,
-			logFunc: func(sampler zap.Logger, msg string) { sampler.DFatal(msg) },
+			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).DFatal("sample") },
 		},
 		{
 			level:       zap.Fatal,
-			logFunc:     func(sampler zap.Logger, msg string) { sampler.DFatal(msg) },
+			logFunc:     func(sampler zap.Logger, n int) { WithIter(sampler, n).DFatal("sample") },
 			development: true,
 		},
 	}
@@ -96,9 +99,9 @@ func TestSampler(t *testing.T) {
 	for _, tt := range tests {
 		sampler, sink := fakeSampler(time.Minute, 2, 3, tt.development)
 		for i := 1; i < 10; i++ {
-			tt.logFunc(sampler, strconv.Itoa(i))
+			tt.logFunc(sampler, i)
 		}
-		expected := buildExpectation(tt.level, "1", "2", "5", "8")
+		expected := buildExpectation(tt.level, 1, 2, 5, 8)
 		assert.Equal(t, expected, sink.Logs(), "Unexpected output from sampled logger.")
 	}
 }
@@ -108,41 +111,35 @@ func TestSampledDisabledLevels(t *testing.T) {
 	sampler.SetLevel(zap.Info)
 
 	// Shouldn't be counted, because debug logging isn't enabled.
-	sampler.Debug("1")
-	sampler.Info("2")
-	expected := buildExpectation(zap.Info, "2")
+	WithIter(sampler, 1).Debug("sample")
+	WithIter(sampler, 2).Info("sample")
+	expected := buildExpectation(zap.Info, 2)
 	assert.Equal(t, expected, sink.Logs(), "Expected to disregard disabled log levels.")
 }
 
-func TestSamplerWith(t *testing.T) {
-	// Check that child loggers are sampled and independent.
-	sampler, sink := fakeSampler(time.Minute, 1, 100, false)
+func TestSamplerWithSharesCounters(t *testing.T) {
+	logger, sink := fakeSampler(time.Minute, 1, 100, false)
 
 	expected := []spy.Log{
 		{
 			Level:  zap.Info,
-			Msg:    "1",
-			Fields: []zap.Field{zap.String("child", "first")},
-		},
-		{
-			Level:  zap.Info,
-			Msg:    "20",
-			Fields: []zap.Field{zap.String("child", "second")},
+			Msg:    "sample",
+			Fields: []zap.Field{zap.String("child", "first"), zap.Int("iter", 1)},
 		},
 	}
 
-	first := sampler.With(zap.String("child", "first"))
-	for i := 1; i < 100; i++ {
-		first.Info(strconv.Itoa(i))
+	first := logger.With(zap.String("child", "first"))
+	for i := 1; i < 10; i++ {
+		WithIter(first, i).Info("sample")
 	}
-	second := sampler.With(zap.String("child", "second"))
-	// Even though the first child already logged 20 messages, we should see the
-	// first message from this child.
-	for i := 20; i < 40; i++ {
-		second.Info(strconv.Itoa(i))
+	second := logger.With(zap.String("child", "second"))
+	// The new child logger should share the same counters, so we don't expect to
+	// write these logs.
+	for i := 10; i < 20; i++ {
+		WithIter(second, i).Info("sample")
 	}
 
-	assert.Equal(t, expected, sink.Logs(), "Expected child loggers to maintain separate counters.")
+	assert.Equal(t, expected, sink.Logs(), "Expected child loggers to share counters.")
 }
 
 func TestSamplerTicks(t *testing.T) {
@@ -156,23 +153,11 @@ func TestSamplerTicks(t *testing.T) {
 		if i == 3 {
 			time.Sleep(2 * time.Millisecond)
 		}
-		sampler.Info(strconv.Itoa(i))
+		WithIter(sampler, i).Info("sample")
 	}
 
-	expected := buildExpectation(zap.Info, "1", "3")
+	expected := buildExpectation(zap.Info, 1, 3)
 	assert.Equal(t, expected, sink.Logs(), "Expected sleeping for a tick to reset sampler.")
-}
-
-func TestSamplerBucketsByCaller(t *testing.T) {
-	sampler, sink := fakeSampler(time.Minute, 1, 1000, false)
-	for i := 0; i < 5; i++ {
-		sampler.Info("First call site.")
-	}
-	for i := 0; i < 5; i++ {
-		sampler.Info("Second call site.")
-	}
-	expected := buildExpectation(zap.Info, "First call site.", "Second call site.")
-	assert.Equal(t, expected, sink.Logs(), "Expected to sample each call site separately.")
 }
 
 func TestSamplerRaces(t *testing.T) {

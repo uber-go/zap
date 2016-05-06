@@ -132,7 +132,7 @@ func BenchmarkZapSampleWithoutFields(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			logger.Info("Sample the logs.")
+			logger.Info("Sample the logs, but use a somewhat realistic message length.")
 		}
 	})
 }

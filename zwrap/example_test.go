@@ -21,7 +21,6 @@
 package zwrap_test
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/uber-common/zap"
@@ -50,16 +49,18 @@ func Example_standardize() {
 }
 
 func Example_sample() {
-	// Every second, log the first message and every hundredth message thereafter.
 	sampledLogger := zwrap.Sample(zap.NewJSON(), time.Second, 1, 100)
 	// Stub the current time in tests.
 	sampledLogger.StubTime()
 
+	sampledLogger.Error("Unusual failure.")
+
 	for i := 1; i < 110; i++ {
-		sampledLogger.Error(strconv.Itoa(i))
+		sampledLogger.With(zap.Int("n", i)).Error("Common failure.")
 	}
 
 	// Output:
-	// {"msg":"1","level":"error","ts":0,"fields":{}}
-	// {"msg":"101","level":"error","ts":0,"fields":{}}
+	// {"msg":"Unusual failure.","level":"error","ts":0,"fields":{}}
+	// {"msg":"Common failure.","level":"error","ts":0,"fields":{"n":1}}
+	// {"msg":"Common failure.","level":"error","ts":0,"fields":{"n":101}}
 }
