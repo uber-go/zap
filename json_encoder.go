@@ -200,12 +200,12 @@ func (enc *jsonEncoder) safeAddString(s string) {
 	for i := 0; i < len(s); {
 		if b := s[i]; b < utf8.RuneSelf {
 			i++
-			if 0x20 <= b && b != '\\' && b != '/' && b != '"' {
+			if 0x20 <= b && b != '\\' && b != '"' {
 				enc.bytes = append(enc.bytes, b)
 				continue
 			}
 			switch b {
-			case '\\', '/', '"':
+			case '\\', '"':
 				enc.bytes = append(enc.bytes, '\\', b)
 			case '\n':
 				enc.bytes = append(enc.bytes, '\\', 'n')
