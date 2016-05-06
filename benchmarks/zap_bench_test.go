@@ -22,6 +22,7 @@ package benchmarks
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -127,12 +128,18 @@ func BenchmarkZapWithoutFields(b *testing.B) {
 }
 
 func BenchmarkZapSampleWithoutFields(b *testing.B) {
+	messages := make([]string, 1000)
+	for i := range messages {
+		messages[i] = fmt.Sprintf("Sample the logs, but use a somewhat realistic message length. (#%v)", i)
+	}
 	base := zap.NewJSON(zap.All, zap.Output(zap.Discard))
 	logger := zwrap.Sample(base, time.Second, 10, 100)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
+		i := 0
 		for pb.Next() {
-			logger.Info("Sample the logs, but use a somewhat realistic message length.")
+			i++
+			logger.Info(messages[i%1000])
 		}
 	})
 }
