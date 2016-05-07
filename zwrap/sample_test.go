@@ -151,7 +151,7 @@ func TestSamplerTicks(t *testing.T) {
 	// tick, the third statement should be logged.
 	for i := 1; i < 4; i++ {
 		if i == 3 {
-			time.Sleep(2 * time.Millisecond)
+			time.Sleep(5 * time.Millisecond)
 		}
 		WithIter(sampler, i).Info("sample")
 	}
