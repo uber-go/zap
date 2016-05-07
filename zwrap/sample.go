@@ -35,16 +35,16 @@ type counters struct {
 
 func (c *counters) Inc(key string) uint64 {
 	c.RLock()
-	if _, ok := c.counts[key]; !ok {
-		c.RUnlock()
-		zero := uint64(0)
-		c.Lock()
-		c.counts[key] = &zero
-		c.Unlock()
-		c.RLock()
-	}
-	count := c.counts[key]
+	count, ok := c.counts[key]
 	c.RUnlock()
+
+	if !ok {
+		one := uint64(1)
+		c.Lock()
+		c.counts[key] = &one
+		c.Unlock()
+		return 1
+	}
 	return atomic.AddUint64(count, 1)
 }
 
