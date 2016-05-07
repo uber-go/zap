@@ -49,29 +49,8 @@ var _jane = user{
 	CreatedAt: time.Date(1980, 1, 1, 12, 0, 0, 0, time.UTC),
 }
 
-func BenchmarkZapAddingFields(b *testing.B) {
-	logger := zap.NewJSON(zap.All, zap.Output(zap.Discard))
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Info("Go fast.",
-				zap.Int("int", 1),
-				zap.Int64("int64", 2),
-				zap.Float64("float", 3.0),
-				zap.String("string", "four!"),
-				zap.Bool("bool", true),
-				zap.Time("time", time.Unix(0, 0)),
-				zap.Err(errExample),
-				zap.Duration("duration", time.Second),
-				zap.Marshaler("user-defined type", _jane),
-				zap.String("another string", "done!"),
-			)
-		}
-	})
-}
-
-func BenchmarkZapWithAccumulatedContext(b *testing.B) {
-	logger := zap.NewJSON(zap.All, zap.Output(zap.Discard), zap.Fields(
+func fakeFields() []zap.Field {
+	return []zap.Field{
 		zap.Int("int", 1),
 		zap.Int64("int64", 2),
 		zap.Float64("float", 3.0),
@@ -82,7 +61,52 @@ func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 		zap.Duration("duration", time.Second),
 		zap.Marshaler("user-defined type", _jane),
 		zap.String("another string", "done!"),
-	))
+	}
+}
+
+func BenchmarkZapDisabledLevelsWithoutFields(b *testing.B) {
+	logger := zap.NewJSON(zap.Error, zap.Output(zap.Discard))
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Info("Should be discarded.")
+		}
+	})
+}
+
+func BenchmarkZapDisabledLevelsAccumulatedContext(b *testing.B) {
+	context := fakeFields()
+	logger := zap.NewJSON(zap.Error, zap.Output(zap.Discard), zap.Fields(context...))
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Info("Should be discarded.")
+		}
+	})
+}
+
+func BenchmarkZapDisabledLevelsAddingFields(b *testing.B) {
+	logger := zap.NewJSON(zap.Error, zap.Output(zap.Discard))
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Info("Should be discarded.", fakeFields()...)
+		}
+	})
+}
+func BenchmarkZapAddingFields(b *testing.B) {
+	logger := zap.NewJSON(zap.All, zap.Output(zap.Discard))
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Info("Go fast.", fakeFields()...)
+		}
+	})
+}
+
+func BenchmarkZapWithAccumulatedContext(b *testing.B) {
+	context := fakeFields()
+	logger := zap.NewJSON(zap.All, zap.Output(zap.Discard), zap.Fields(context...))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
