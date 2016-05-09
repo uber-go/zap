@@ -131,6 +131,17 @@ func TestJSONLoggerWith(t *testing.T) {
 	})
 }
 
+func TestJSONLoggerLog(t *testing.T) {
+	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
+		jl.Log(Debug, "foo")
+		assertMessage(t, "debug", "foo", output()[0])
+	})
+	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
+		assert.Panics(t, func() { jl.Log(Panic, "foo") }, "Expected logging at Panic level to panic.")
+		assertMessage(t, "panic", "foo", output()[0])
+	})
+}
+
 func TestJSONLoggerDebug(t *testing.T) {
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
 		jl.Debug("foo")

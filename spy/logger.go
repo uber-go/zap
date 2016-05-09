@@ -124,6 +124,11 @@ func (l *Logger) With(fields ...zap.Field) zap.Logger {
 	}
 }
 
+// Log writes a message at the specified level.
+func (l *Logger) Log(lvl zap.Level, msg string, fields ...zap.Field) {
+	l.sink.WriteLog(lvl, msg, l.allFields(fields))
+}
+
 // Debug logs at the Debug level.
 func (l *Logger) Debug(msg string, fields ...zap.Field) {
 	l.sink.WriteLog(zap.Debug, msg, l.allFields(fields))
