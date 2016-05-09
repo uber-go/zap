@@ -37,15 +37,21 @@ func (c *counters) Inc(key string) uint64 {
 	c.RLock()
 	count, ok := c.counts[key]
 	c.RUnlock()
-
-	if !ok {
-		one := uint64(1)
-		c.Lock()
-		c.counts[key] = &one
-		c.Unlock()
-		return 1
+	if ok {
+		return atomic.AddUint64(count, 1)
 	}
-	return atomic.AddUint64(count, 1)
+
+	c.Lock()
+	count, ok = c.counts[key]
+	if ok {
+		c.Unlock()
+		return atomic.AddUint64(count, 1)
+	}
+
+	one := uint64(1)
+	c.counts[key] = &one
+	c.Unlock()
+	return 1
 }
 
 func (c *counters) Reset(key string) {

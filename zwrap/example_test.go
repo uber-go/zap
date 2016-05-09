@@ -53,14 +53,14 @@ func Example_sample() {
 	// Stub the current time in tests.
 	sampledLogger.StubTime()
 
-	sampledLogger.Error("Unusual failure.")
-
 	for i := 1; i < 110; i++ {
 		sampledLogger.With(zap.Int("n", i)).Error("Common failure.")
 	}
 
+	sampledLogger.Error("Unusual failure.")
+
 	// Output:
-	// {"msg":"Unusual failure.","level":"error","ts":0,"fields":{}}
 	// {"msg":"Common failure.","level":"error","ts":0,"fields":{"n":1}}
 	// {"msg":"Common failure.","level":"error","ts":0,"fields":{"n":101}}
+	// {"msg":"Unusual failure.","level":"error","ts":0,"fields":{}}
 }
