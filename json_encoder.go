@@ -105,19 +105,16 @@ func (enc *jsonEncoder) AddInt64(key string, val int64) {
 // grade-school notation otherwise).
 func (enc *jsonEncoder) AddFloat64(key string, val float64) {
 	enc.addKey(key)
-	if math.IsNaN(val) {
+	switch {
+	case math.IsNaN(val):
 		enc.bytes = append(enc.bytes, `"NaN"`...)
-		return
-	}
-	if math.IsInf(val, 1) {
+	case math.IsInf(val, 1):
 		enc.bytes = append(enc.bytes, `"+Inf"`...)
-		return
-	}
-	if math.IsInf(val, -1) {
+	case math.IsInf(val, -1):
 		enc.bytes = append(enc.bytes, `"-Inf"`...)
-		return
+	default:
+		enc.bytes = strconv.AppendFloat(enc.bytes, val, 'g', -1, 64)
 	}
-	enc.bytes = strconv.AppendFloat(enc.bytes, val, 'g', -1, 64)
 }
 
 // Nest allows the caller to populate a nested object under the provided key.
