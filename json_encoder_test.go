@@ -23,6 +23,7 @@ package zap
 import (
 	"bytes"
 	"io"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -101,6 +102,19 @@ func TestJSONAddFloat64(t *testing.T) {
 		enc.truncate()
 		enc.AddFloat64(`foo\`, 1.0)
 		assertJSON(t, `"foo\\":1`, enc)
+
+		// Test floats that can't be represented in JSON.
+		enc.truncate()
+		enc.AddFloat64(`foo`, math.NaN())
+		assertJSON(t, `"foo":"NaN"`, enc)
+
+		enc.truncate()
+		enc.AddFloat64(`foo`, math.Inf(1))
+		assertJSON(t, `"foo":"+Inf"`, enc)
+
+		enc.truncate()
+		enc.AddFloat64(`foo`, math.Inf(-1))
+		assertJSON(t, `"foo":"-Inf"`, enc)
 	})
 }
 
