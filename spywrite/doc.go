@@ -18,5 +18,5 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package zwrap provides a variety of wrappers for the core zap logger.
-package zwrap
+// Package spywrite provides various I/O implementations with known errors.
+package spywrite

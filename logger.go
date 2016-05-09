@@ -43,6 +43,9 @@ type Logger interface {
 	// StubTime stops the logger from including the current time in each
 	// message. Instead, it always reports the time as Unix epoch 0. (This is
 	// useful in tests and examples.)
+	//
+	// TODO: remove this kludge in favor of a more comprehensive message-formatting
+	// option.
 	StubTime()
 
 	// Log a message at the given level. Messages include any context that's

@@ -27,7 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/uber-common/zap/spy"
+	"github.com/uber-common/zap/spywrite"
 )
 
 type testBuffer struct {
@@ -50,7 +50,7 @@ func requireWriteWorks(t testing.TB, ws WriteSyncer) {
 
 func TestAddSyncWriteSyncer(t *testing.T) {
 	buf := &bytes.Buffer{}
-	concrete := &spy.WriteSyncer{Writer: buf}
+	concrete := &spywrite.WriteSyncer{Writer: buf}
 	ws := AddSync(concrete)
 	requireWriteWorks(t, ws)
 
@@ -63,7 +63,7 @@ func TestAddSyncWriteSyncer(t *testing.T) {
 
 func TestAddSyncWriteFlusher(t *testing.T) {
 	buf := &bytes.Buffer{}
-	concrete := &spy.WriteFlusher{Writer: buf}
+	concrete := &spywrite.WriteFlusher{Writer: buf}
 	ws := AddSync(concrete)
 	requireWriteWorks(t, ws)
 
@@ -76,7 +76,7 @@ func TestAddSyncWriteFlusher(t *testing.T) {
 
 func TestAddSyncWriteFlushSyncer(t *testing.T) {
 	buf := &bytes.Buffer{}
-	concrete := &spy.WriteFlushSyncer{Writer: buf}
+	concrete := &spywrite.WriteFlushSyncer{Writer: buf}
 	ws := AddSync(concrete)
 	requireWriteWorks(t, ws)
 

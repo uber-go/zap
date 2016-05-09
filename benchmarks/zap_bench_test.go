@@ -22,10 +22,12 @@ package benchmarks
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/uber-common/zap"
+	"github.com/uber-common/zap/zwrap"
 )
 
 var errExample = errors.New("fail")
@@ -121,6 +123,23 @@ func BenchmarkZapWithoutFields(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			logger.Info("Go fast.")
+		}
+	})
+}
+
+func BenchmarkZapSampleWithoutFields(b *testing.B) {
+	messages := make([]string, 1000)
+	for i := range messages {
+		messages[i] = fmt.Sprintf("Sample the logs, but use a somewhat realistic message length. (#%v)", i)
+	}
+	base := zap.NewJSON(zap.All, zap.Output(zap.Discard))
+	logger := zwrap.Sample(base, time.Second, 10, 100)
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		i := 0
+		for pb.Next() {
+			i++
+			logger.Info(messages[i%1000])
 		}
 	})
 }

@@ -21,11 +21,13 @@
 package zwrap_test
 
 import (
+	"time"
+
 	"github.com/uber-common/zap"
 	"github.com/uber-common/zap/zwrap"
 )
 
-func Example() {
+func Example_standardize() {
 	zapLogger := zap.NewJSON()
 	// Stub the current time in tests.
 	zapLogger.StubTime()
@@ -44,4 +46,21 @@ func Example() {
 
 	// Output:
 	// {"msg":"Encountered 0 errors.","level":"warn","ts":0,"fields":{}}
+}
+
+func Example_sample() {
+	sampledLogger := zwrap.Sample(zap.NewJSON(), time.Second, 1, 100)
+	// Stub the current time in tests.
+	sampledLogger.StubTime()
+
+	for i := 1; i < 110; i++ {
+		sampledLogger.With(zap.Int("n", i)).Error("Common failure.")
+	}
+
+	sampledLogger.Error("Unusual failure.")
+
+	// Output:
+	// {"msg":"Common failure.","level":"error","ts":0,"fields":{"n":1}}
+	// {"msg":"Common failure.","level":"error","ts":0,"fields":{"n":101}}
+	// {"msg":"Unusual failure.","level":"error","ts":0,"fields":{}}
 }

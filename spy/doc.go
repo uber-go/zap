@@ -18,5 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package spy provides test spies for zap.
+// Package spy provides an implementation of zap.Logger that helps test
+// logging wrappers.
 package spy
