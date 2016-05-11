@@ -22,6 +22,7 @@ package zap
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"math"
 	"strings"
@@ -43,6 +44,12 @@ func withJSONEncoder(f func(*jsonEncoder)) {
 	enc.AddString("foo", "bar")
 	f(enc)
 	enc.Free()
+}
+
+type noJSON struct{}
+
+func (nj noJSON) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("no")
 }
 
 func TestJSONAddString(t *testing.T) {
@@ -177,8 +184,12 @@ func TestJSONAddObject(t *testing.T) {
 	})
 
 	withJSONEncoder(func(enc *jsonEncoder) {
-		enc.AddObject("nested", map[int]string{42: "yes"})
-		assertJSON(t, `"foo":"bar","nested":"json: unsupported type: map[int]string"`, enc)
+		enc.AddObject("nested", noJSON{})
+		assertJSON(
+			t,
+			`"foo":"bar","nested":"json: error calling MarshalJSON for type zap.noJSON: no"`,
+			enc,
+		)
 	})
 }
 

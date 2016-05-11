@@ -50,6 +50,7 @@ type Logger interface {
 
 	// Log a message at the given level. Messages include any context that's
 	// accumulated on the logger, as well as any fields added at the log site.
+	Log(Level, string, ...Field)
 	Debug(string, ...Field)
 	Info(string, ...Field)
 	Warn(string, ...Field)
@@ -127,6 +128,17 @@ func (jl *jsonLogger) With(fields ...Field) Logger {
 
 func (jl *jsonLogger) StubTime() {
 	jl.alwaysEpoch = true
+}
+
+func (jl *jsonLogger) Log(lvl Level, msg string, fields ...Field) {
+	switch lvl {
+	case Panic:
+		jl.Panic(msg, fields...)
+	case Fatal:
+		jl.Fatal(msg, fields...)
+	default:
+		jl.log(lvl, msg, fields)
+	}
 }
 
 func (jl *jsonLogger) Debug(msg string, fields ...Field) {

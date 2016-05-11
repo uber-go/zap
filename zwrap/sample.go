@@ -97,6 +97,12 @@ func (s *sampler) With(fields ...zap.Field) zap.Logger {
 	}
 }
 
+func (s *sampler) Log(lvl zap.Level, msg string, fields ...zap.Field) {
+	if s.check(lvl, msg) {
+		s.Logger.Log(lvl, msg, fields...)
+	}
+}
+
 func (s *sampler) Debug(msg string, fields ...zap.Field) {
 	if s.check(zap.Debug, msg) {
 		s.Logger.Debug(msg, fields...)

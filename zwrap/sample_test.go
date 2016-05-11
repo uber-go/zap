@@ -94,6 +94,10 @@ func TestSampler(t *testing.T) {
 			logFunc:     func(sampler zap.Logger, n int) { WithIter(sampler, n).DFatal("sample") },
 			development: true,
 		},
+		{
+			level:   zap.Error,
+			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Log(zap.Error, "sample") },
+		},
 	}
 
 	for _, tt := range tests {
