@@ -124,6 +124,14 @@ func (l *Logger) With(fields ...zap.Field) zap.Logger {
 	}
 }
 
+// Check returns a CheckedMessage if logging a particular message would succeed.
+func (l *Logger) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
+	if !l.Enabled(lvl) {
+		return nil
+	}
+	return zap.NewCheckedMessage(l, lvl, msg)
+}
+
 // Log writes a message at the specified level.
 func (l *Logger) Log(lvl zap.Level, msg string, fields ...zap.Field) {
 	l.sink.WriteLog(lvl, msg, l.allFields(fields))

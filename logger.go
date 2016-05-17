@@ -27,6 +27,37 @@ import (
 	"time"
 )
 
+// A CheckedMessage is the result of a call to Logger.Check, which allows
+// especially performance-sensitive applications to avoid allocations for disabled
+// or heavily sampled log levels.
+type CheckedMessage struct {
+	logger Logger
+	used   uint32
+	lvl    Level
+	msg    string
+}
+
+// NewCheckedMessage constructs a CheckedMessage. It's only intended for use by
+// wrapper libraries, and shouldn't be necessary in application code.
+func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
+	return &CheckedMessage{
+		logger: logger,
+		lvl:    lvl,
+		msg:    msg,
+	}
+}
+
+// Write logs the pre-checked message with the supplied fields. It panics if
+// called more than once.
+func (m *CheckedMessage) Write(fields ...Field) {
+	if n := atomic.AddUint32(&m.used, 1); n > 1 {
+		// We could call logger.Log at a (possibly large) performance cost, but it's
+		// better to make this an obvious user error.
+		panic("Can't use a CheckedMessage more than once.")
+	}
+	m.logger.Log(m.lvl, m.msg, fields...)
+}
+
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
 type Logger interface {
@@ -47,6 +78,13 @@ type Logger interface {
 	// TODO: remove this kludge in favor of a more comprehensive message-formatting
 	// option.
 	StubTime()
+
+	// Check returns a CheckedMessage if logging a message at the specified level
+	// is enabled. It's a completely optional optimization; in high-performance
+	// applications, Check can help avoid allocating a slice to hold fields.
+	//
+	// See CheckedMessage for an example.
+	Check(Level, string) *CheckedMessage
 
 	// Log a message at the given level. Messages include any context that's
 	// accumulated on the logger, as well as any fields added at the log site.
@@ -128,6 +166,13 @@ func (jl *jsonLogger) With(fields ...Field) Logger {
 
 func (jl *jsonLogger) StubTime() {
 	jl.alwaysEpoch = true
+}
+
+func (jl *jsonLogger) Check(lvl Level, msg string) *CheckedMessage {
+	if !jl.Enabled(lvl) {
+		return nil
+	}
+	return NewCheckedMessage(jl, lvl, msg)
 }
 
 func (jl *jsonLogger) Log(lvl Level, msg string, fields ...Field) {

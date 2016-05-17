@@ -27,8 +27,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/zap/spywrite"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func opts(opts ...Option) []Option {
@@ -247,4 +249,28 @@ func TestJSONLoggerSyncsOutput(t *testing.T) {
 
 	assert.Panics(t, func() { logger.Panic("foo") }, "Expected panic when logging at Panic level.")
 	assert.True(t, sink.Called(), "Expected logging at panic level to Sync underlying WriteSyncer.")
+}
+
+func TestJSONLoggerCheck(t *testing.T) {
+	withJSONLogger(t, opts(Info), func(jl *jsonLogger, output func() []string) {
+		assert.Nil(t, jl.Check(Debug, "Debug."), "Expected a nil CheckedMessage at disabled levels.")
+
+		cm := jl.Check(Info, "Info.")
+		require.NotNil(t, cm, "Expected non-nil CheckedMessage at enabled levels.")
+		cm.Write(Int("magic", 42))
+		assert.Equal(
+			t,
+			`{"msg":"Info.","level":"info","ts":0,"fields":{"magic":42}}`,
+			output()[0],
+			"Unexpected output after writing a CheckedMessage.",
+		)
+	})
+}
+
+func TestCheckedMessageIsSingleUse(t *testing.T) {
+	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
+		cm := jl.Check(Info, "Single-use.")
+		cm.Write()
+		assert.Panics(t, func() { cm.Write() }, "Expected re-using a CheckedMessage to panic.")
+	})
 }

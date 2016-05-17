@@ -164,6 +164,22 @@ func TestSamplerTicks(t *testing.T) {
 	assert.Equal(t, expected, sink.Logs(), "Expected sleeping for a tick to reset sampler.")
 }
 
+func TestSamplerCheck(t *testing.T) {
+	sampler, sink := fakeSampler(time.Millisecond, 1, 10, false)
+	sampler.SetLevel(zap.Info)
+
+	assert.Nil(t, sampler.Check(zap.Debug, "foo"), "Expected a nil CheckedMessage at disabled log levels.")
+
+	for i := 1; i < 12; i++ {
+		if cm := sampler.Check(zap.Info, "sample"); cm != nil {
+			cm.Write(zap.Int("iter", i))
+		}
+	}
+
+	expected := buildExpectation(zap.Info, 1, 11)
+	assert.Equal(t, expected, sink.Logs(), "Unexpected output when sampling with Check.")
+}
+
 func TestSamplerRaces(t *testing.T) {
 	sampler, _ := fakeSampler(time.Minute, 1, 1000, false)
 
