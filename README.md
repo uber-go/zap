@@ -78,7 +78,7 @@ Ready for adventurous users, but breaking API changes are likely.
 <hr>
 Released under the [MIT License](LICENSE.txt).
 
-<sup id="footnote-versions">1</sup> In particular, note that we may be
+<sup id="footnote-versions">1</sup> In particular, keep in mind that we may be
 benchmarking against slightly older versions of other libraries. Versions are
 pinned in zap's [glide.lock][] file. [↩](#anchor-versions)
 
