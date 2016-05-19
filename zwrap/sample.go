@@ -25,7 +25,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/uber-common/zap"
+	"github.com/uber-go/zap"
 )
 
 type counters struct {

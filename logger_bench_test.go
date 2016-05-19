@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/uber-common/zap"
+	"github.com/uber-go/zap"
 )
 
 type user struct {

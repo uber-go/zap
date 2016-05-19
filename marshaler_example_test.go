@@ -23,7 +23,7 @@ package zap_test
 import (
 	"time"
 
-	"github.com/uber-common/zap"
+	"github.com/uber-go/zap"
 )
 
 type Auth struct {

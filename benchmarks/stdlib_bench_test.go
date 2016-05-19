@@ -25,8 +25,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/uber-common/zap"
-	"github.com/uber-common/zap/zwrap"
+	"github.com/uber-go/zap"
+	"github.com/uber-go/zap/zwrap"
 )
 
 func BenchmarkStandardLibraryWithoutFields(b *testing.B) {

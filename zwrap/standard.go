@@ -24,7 +24,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/uber-common/zap"
+	"github.com/uber-go/zap"
 )
 
 // ErrInvalidLevel indicates that the user chose an invalid Level when

@@ -28,7 +28,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/uber-common/zap"
+	"github.com/uber-go/zap"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-common/bark"
