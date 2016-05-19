@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/uber-common/zap"
+	"github.com/uber-go/zap"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

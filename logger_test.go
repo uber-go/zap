@@ -28,7 +28,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-common/zap/spywrite"
+	"github.com/uber-go/zap/spywrite"
 )
 
 func opts(opts ...Option) []Option {

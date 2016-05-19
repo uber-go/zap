@@ -27,7 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/uber-common/zap/spywrite"
+	"github.com/uber-go/zap/spywrite"
 )
 
 type testBuffer struct {

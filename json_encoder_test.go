@@ -29,7 +29,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/uber-common/zap/spywrite"
+	"github.com/uber-go/zap/spywrite"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
