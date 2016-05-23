@@ -54,11 +54,9 @@ func (s *Sink) WriteLog(lvl zap.Level, msg string, fields []zap.Field) {
 
 // Logs returns a copy of the sink's accumulated logs.
 func (s *Sink) Logs() []Log {
-	logs := make([]Log, len(s.logs))
+	var logs []Log
 	s.Lock()
-	for i, log := range s.logs {
-		logs[i] = log
-	}
+	logs = append(logs, s.logs...)
 	s.Unlock()
 	return logs
 }
