@@ -52,7 +52,7 @@ type Field struct {
 
 // Bool constructs a Field with the given key and value.
 func Bool(key string, val bool) Field {
-	var ival int64 = 0
+	var ival int64
 	if val {
 		ival = 1
 	}
