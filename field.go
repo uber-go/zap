@@ -52,7 +52,12 @@ type Field struct {
 
 // Bool constructs a Field with the given key and value.
 func Bool(key string, val bool) Field {
-	return Field{key: key, fieldType: boolType, ival: 1}
+	var ival int64
+	if val {
+		ival = 1
+	}
+
+	return Field{key: key, fieldType: boolType, ival: ival}
 }
 
 // Float64 constructs a Field with the given key and value. The floating-point

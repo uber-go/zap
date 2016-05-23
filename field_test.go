@@ -51,6 +51,15 @@ func assertFieldJSON(t testing.TB, expected string, field Field) {
 		"Unexpected JSON output after applying field %+v.", field)
 }
 
+func assertNotEqualFieldJSON(t testing.TB, expected string, field Field) {
+	enc := newJSONEncoder()
+	defer enc.Free()
+
+	field.addTo(enc)
+	assert.NotEqual(t, expected, string(enc.bytes),
+		"Unexpected JSON output after applying field %+v.", field)
+}
+
 func assertCanBeReused(t testing.TB, field Field) {
 	var wg sync.WaitGroup
 
@@ -72,9 +81,19 @@ func assertCanBeReused(t testing.TB, field Field) {
 	wg.Wait()
 }
 
-func TestBoolField(t *testing.T) {
+func TestTrueBoolField(t *testing.T) {
 	assertFieldJSON(t, `"foo":true`, Bool("foo", true))
 	assertCanBeReused(t, Bool("foo", true))
+}
+
+func TestFalseBoolField(t *testing.T) {
+	assertFieldJSON(t, `"bar":false`, Bool("bar", false))
+	assertCanBeReused(t, Bool("bar", false))
+}
+
+func TestUnlikeBoolField(t *testing.T) {
+	assertNotEqualFieldJSON(t, `"foo":true`, Bool("foo", false))
+	assertNotEqualFieldJSON(t, `"bar":false`, Bool("bar", true))
 }
 
 func TestFloat64Field(t *testing.T) {
