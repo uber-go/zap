@@ -32,7 +32,7 @@ import (
 var _callerSkip = 3
 
 //Function to set Skip caller variable.
-func IncCallerSkip(i int) int{
+func IncCallerSkip(i int) int {
 	_callerSkip = i
 	return 0
 
