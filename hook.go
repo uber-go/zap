@@ -51,7 +51,8 @@ func (h hook) apply(jl *jsonLogger) error {
 
 // AddCaller configures the Logger to annotate each message with the filename
 // and line number of zap's caller.
-func AddCaller() Option {
+func AddCaller(callerSkip int) Option {
+	retSkip := IncCallerSkip(callerSkip)
 	return hook(func(_ Level, msg string, _ KeyValue) (string, error) {
 		_, filename, line, ok := runtime.Caller(_callerSkip)
 		if !ok {
