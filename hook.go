@@ -31,6 +31,13 @@ import (
 // runtime.Caller.
 var _callerSkip = 3
 
+//Function to set Skip caller variable.
+func IncCallerSkip(i int) int{
+	_callerSkip = i
+	return 0
+
+}
+
 // A hook is executed each time the Logger writes a message. It receives the
 // message's priority, the message itself, and the logging context, and it
 // returns a modified message and an error.
