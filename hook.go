@@ -32,10 +32,8 @@ import (
 var _callerSkip = 3
 
 //Function to set Skip caller variable.
-func IncCallerSkip(i int) int {
+func IncCallerSkip(i int) {
 	_callerSkip = i
-	return 0
-
 }
 
 // A hook is executed each time the Logger writes a message. It receives the
@@ -52,7 +50,7 @@ func (h hook) apply(jl *jsonLogger) error {
 // AddCaller configures the Logger to annotate each message with the filename
 // and line number of zap's caller.
 func AddCaller(callerSkip int) Option {
-	retSkip := IncCallerSkip(callerSkip)
+	IncCallerSkip(callerSkip)
 	return hook(func(_ Level, msg string, _ KeyValue) (string, error) {
 		_, filename, line, ok := runtime.Caller(_callerSkip)
 		if !ok {
