@@ -2,6 +2,9 @@
 
 Blazing fast, structured, leveled logging in Go.
 
+## Installation
+`go get -u github.com/uber-go/zap`
+
 ## Structure
 
 Zap takes an opinionated stance on logging and doesn't provide any
