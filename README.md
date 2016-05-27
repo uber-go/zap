@@ -51,29 +51,32 @@ Log a message and 10 fields:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 1241 ns/op | 705 B/op | 2 allocs/op |
-| logrus | 9713 ns/op | 5275 B/op | 78 allocs/op |
-| go-kit | 11632 ns/op | 3204 B/op | 70 allocs/op |
-| log15 | 23077 ns/op | 4783 B/op | 91 allocs/op |
+| :zap: zap | 1279 ns/op | 705 B/op | 2 allocs/op |
+| logrus | 10369 ns/op | 5275 B/op | 78 allocs/op |
+| go-kit | 6969 ns/op | 3204 B/op | 70 allocs/op |
+| log15 | 22246 ns/op | 4783 B/op | 91 allocs/op |
+| apex/log | 16379 ns/op | 3608 B/op | 63 allocs/op |
 
 Log a message using a logger that already has 10 fields of context:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 238 ns/op | 0 B/op | 0 allocs/op |
-| logrus | 7946 ns/op | 3438 B/op | 61 allocs/op |
-| go-kit | 6445 ns/op | 2486 B/op | 48 allocs/op |
-| log15 | 21728 ns/op | 4120 B/op | 70 allocs/op |
+| :zap: zap | 231 ns/op | 0 B/op | 0 allocs/op |
+| logrus | 8532 ns/op | 3438 B/op | 61 allocs/op |
+| go-kit | 6874 ns/op | 2486 B/op | 48 allocs/op |
+| log15 | 20462 ns/op | 4118 B/op | 70 allocs/op |
+| apex/log | 13886 ns/op | 2384 B/op | 48 allocs/op |
 
 Log a static string, without any context or `printf`-style formatting:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 219 ns/op | 0 B/op | 0 allocs/op |
-| standard library | 607 ns/op | 32 B/op | 2 allocs/op |
-| logrus | 3324 ns/op | 1336 B/op | 26 allocs/op |
-| go-kit | 1008 ns/op | 624 B/op | 13 allocs/op |
-| log15 | 5769 ns/op | 1351 B/op | 23 allocs/op |
+| :zap: zap | 222 ns/op | 0 B/op | 0 allocs/op |
+| standard library | 565 ns/op | 32 B/op | 2 allocs/op |
+| logrus | 3085 ns/op | 1336 B/op | 26 allocs/op |
+| go-kit | 1061 ns/op | 624 B/op | 13 allocs/op |
+| log15 | 5462 ns/op | 1351 B/op | 23 allocs/op |
+| apex/log | 3009 ns/op | 584 B/op | 11 allocs/op |
 
 ## Development Status: Beta
 Ready for adventurous users, but breaking API changes are likely.
