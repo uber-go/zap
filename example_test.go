@@ -107,13 +107,12 @@ func ExampleCheckedMessage() {
 	// logger.Debug will still allocate a slice to hold any passed fields.
 	// Particularly performance-sensitive applications can avoid paying this
 	// penalty by using checked messages.
-	if cm := logger.Check(zap.Debug, "This is a debug log."); cm != nil {
-		// We'll only get here if debug-level logging is enabled.
+	if cm := logger.Check(zap.Debug, "This is a debug log."); cm.OK() {
+		// Debug-level logging is disabled, so we won't get here.
 		cm.Write(zap.Int("foo", 42), zap.Stack())
-		// CheckedMessages are only good for one use! Calling Write again will panic.
 	}
 
-	if cm := logger.Check(zap.Info, "This is an info log."); cm != nil {
+	if cm := logger.Check(zap.Info, "This is an info log."); cm.OK() {
 		// Since info-level logging is enabled, we expect to write out this message.
 		cm.Write()
 	}
