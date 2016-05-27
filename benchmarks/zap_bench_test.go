@@ -66,6 +66,14 @@ func fakeFields() []zap.Field {
 	}
 }
 
+func fakeMessages(n int) []string {
+	messages := make([]string, n)
+	for i := range messages {
+		messages[i] = fmt.Sprintf("Test logging, but use a somewhat realistic message length. (#%v)", i)
+	}
+	return messages
+}
+
 func BenchmarkZapDisabledLevelsWithoutFields(b *testing.B) {
 	logger := zap.NewJSON(zap.Error, zap.Output(zap.Discard))
 	b.ResetTimer()
@@ -96,6 +104,19 @@ func BenchmarkZapDisabledLevelsAddingFields(b *testing.B) {
 		}
 	})
 }
+
+func BenchmarkZapDisabledLevelsCheckAddingFields(b *testing.B) {
+	logger := zap.NewJSON(zap.Error, zap.Output(zap.Discard))
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			if m := logger.Check(zap.Info, "Should be discarded."); m.OK() {
+				m.Write(fakeFields()...)
+			}
+		}
+	})
+}
+
 func BenchmarkZapAddingFields(b *testing.B) {
 	logger := zap.NewJSON(zap.All, zap.Output(zap.Discard))
 	b.ResetTimer()
@@ -128,18 +149,61 @@ func BenchmarkZapWithoutFields(b *testing.B) {
 }
 
 func BenchmarkZapSampleWithoutFields(b *testing.B) {
-	messages := make([]string, 1000)
-	for i := range messages {
-		messages[i] = fmt.Sprintf("Sample the logs, but use a somewhat realistic message length. (#%v)", i)
-	}
+	messages := fakeMessages(1000)
 	base := zap.NewJSON(zap.All, zap.Output(zap.Discard))
-	logger := zwrap.Sample(base, time.Second, 10, 100)
+	logger := zwrap.Sample(base, time.Second, 10, 10000)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
 		for pb.Next() {
 			i++
 			logger.Info(messages[i%1000])
+		}
+	})
+}
+
+func BenchmarkZapSampleAddingFields(b *testing.B) {
+	messages := fakeMessages(1000)
+	base := zap.NewJSON(zap.All, zap.Output(zap.Discard))
+	logger := zwrap.Sample(base, time.Second, 10, 10000)
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		i := 0
+		for pb.Next() {
+			i++
+			logger.Info(messages[i%1000], fakeFields()...)
+		}
+	})
+}
+
+func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
+	messages := fakeMessages(1000)
+	base := zap.NewJSON(zap.All, zap.Output(zap.Discard))
+	logger := zwrap.Sample(base, time.Second, 10, 10000)
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		i := 0
+		for pb.Next() {
+			i++
+			if cm := logger.Check(zap.Info, messages[i%1000]); cm.OK() {
+				cm.Write()
+			}
+		}
+	})
+}
+
+func BenchmarkZapSampleCheckAddingFields(b *testing.B) {
+	messages := fakeMessages(1000)
+	base := zap.NewJSON(zap.All, zap.Output(zap.Discard))
+	logger := zwrap.Sample(base, time.Second, 10, 10000)
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		i := 0
+		for pb.Next() {
+			i++
+			if m := logger.Check(zap.Info, messages[i%1000]); m.OK() {
+				m.Write(fakeFields()...)
+			}
 		}
 	})
 }

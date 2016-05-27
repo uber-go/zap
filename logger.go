@@ -51,6 +51,13 @@ type Logger interface {
 	// option.
 	StubTime()
 
+	// Check returns a CheckedMessage if logging a message at the specified level
+	// is enabled. It's a completely optional optimization; in high-performance
+	// applications, Check can help avoid allocating a slice to hold fields.
+	//
+	// See CheckedMessage for an example.
+	Check(Level, string) *CheckedMessage
+
 	// Log a message at the given level. Messages include any context that's
 	// accumulated on the logger, as well as any fields added at the log site.
 	Log(Level, string, ...Field)
@@ -131,6 +138,13 @@ func (jl *jsonLogger) With(fields ...Field) Logger {
 
 func (jl *jsonLogger) StubTime() {
 	jl.alwaysEpoch = true
+}
+
+func (jl *jsonLogger) Check(lvl Level, msg string) *CheckedMessage {
+	if !jl.Enabled(lvl) {
+		return nil
+	}
+	return NewCheckedMessage(jl, lvl, msg)
 }
 
 func (jl *jsonLogger) Log(lvl Level, msg string, fields ...Field) {

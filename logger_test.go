@@ -28,8 +28,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/zap/spywrite"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func opts(opts ...Option) []Option {
@@ -70,7 +71,10 @@ func withJSONLogger(t testing.TB, opts []Option, f func(*jsonLogger, func() []st
 	jl := NewJSON(allOpts...)
 	jl.StubTime()
 
-	f(jl.(*jsonLogger), func() []string { return strings.Split(sink.String(), "\n") })
+	f(jl.(*jsonLogger), func() []string {
+		output := strings.Split(sink.String(), "\n")
+		return output[:len(output)-1]
+	})
 	assert.Empty(t, errSink.String(), "Expected error sink to be empty")
 }
 
@@ -245,7 +249,7 @@ func TestJSONLoggerNoOpsDisabledLevels(t *testing.T) {
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
 		jl.SetLevel(Warn)
 		jl.Info("silence!")
-		assert.Equal(t, []string{""}, output(), "Expected logging at a disabled level to produce no output.")
+		assert.Equal(t, []string{}, output(), "Expected logging at a disabled level to produce no output.")
 	})
 }
 

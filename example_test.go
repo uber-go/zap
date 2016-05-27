@@ -97,3 +97,26 @@ func ExampleNewJSON_options() {
 	// {"msg":"This is a debug log.","level":"debug","ts":0,"fields":{"count":1}}
 	// {"msg":"This is an info log.","level":"info","ts":0,"fields":{"count":1}}
 }
+
+func ExampleCheckedMessage() {
+	logger := zap.NewJSON()
+	// Stub the current time in tests.
+	logger.StubTime()
+
+	// By default, the debug logging level is disabled. However, calls to
+	// logger.Debug will still allocate a slice to hold any passed fields.
+	// Particularly performance-sensitive applications can avoid paying this
+	// penalty by using checked messages.
+	if cm := logger.Check(zap.Debug, "This is a debug log."); cm.OK() {
+		// Debug-level logging is disabled, so we won't get here.
+		cm.Write(zap.Int("foo", 42), zap.Stack())
+	}
+
+	if cm := logger.Check(zap.Info, "This is an info log."); cm.OK() {
+		// Since info-level logging is enabled, we expect to write out this message.
+		cm.Write()
+	}
+
+	// Output:
+	// {"msg":"This is an info log.","level":"info","ts":0,"fields":{}}
+}
