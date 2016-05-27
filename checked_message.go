@@ -47,7 +47,12 @@ func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 // with the underlying logger's DFatal method.
 func (m *CheckedMessage) Write(fields ...Field) {
 	if n := atomic.AddUint32(&m.used, 1); n > 1 {
-		m.logger.DFatal("Shouldn't re-use a CheckedMessage.")
+		if n == 2 {
+			// Log an error on the first re-use. After that, skip the I/O and
+			// allocations and just return.
+			m.logger.DFatal("Shouldn't re-use a CheckedMessage.", String("original", m.msg))
+		}
+		return
 	}
 	m.logger.Log(m.lvl, m.msg, fields...)
 }

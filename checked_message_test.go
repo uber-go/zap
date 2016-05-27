@@ -46,13 +46,13 @@ func TestJSONLoggerCheck(t *testing.T) {
 func TestCheckedMessageIsSingleUse(t *testing.T) {
 	expected := []string{
 		`{"msg":"Single-use.","level":"info","ts":0,"fields":{}}`,
-		`{"msg":"Shouldn't re-use a CheckedMessage.","level":"error","ts":0,"fields":{}}`,
-		`{"msg":"Single-use.","level":"info","ts":0,"fields":{}}`,
+		`{"msg":"Shouldn't re-use a CheckedMessage.","level":"error","ts":0,"fields":{"original":"Single-use."}}`,
 	}
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
 		cm := jl.Check(Info, "Single-use.")
-		cm.Write()
-		cm.Write()
+		cm.Write() // ok
+		cm.Write() // first re-use logs error
+		cm.Write() // second re-use is silently ignored
 		assert.Equal(t, expected, output(), "Expected re-using a CheckedMessage to log an error.")
 	})
 }
