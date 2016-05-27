@@ -37,7 +37,7 @@ func opts(opts ...Option) []Option {
 }
 
 type stubbedExit struct {
-	Status int
+	Status *int
 }
 
 func (se *stubbedExit) Unstub() {
@@ -46,7 +46,7 @@ func (se *stubbedExit) Unstub() {
 
 func stubExit() *stubbedExit {
 	stub := &stubbedExit{}
-	_exit = func(s int) { stub.Status = s }
+	_exit = func(s int) { stub.Status = &s }
 	return stub
 }
 
@@ -162,7 +162,7 @@ func TestJSONLoggerLog(t *testing.T) {
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
 		jl.Log(Fatal, "foo")
 		assertMessage(t, "fatal", "foo", output()[0])
-		assert.Equal(t, 1, stub.Status, "Expected to call os.Exit with status 1.")
+		assert.Equal(t, 1, *stub.Status, "Expected to call os.Exit with status 1.")
 	})
 }
 
@@ -210,7 +210,7 @@ func TestJSONLoggerFatal(t *testing.T) {
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
 		jl.Fatal("foo")
 		assertMessage(t, "fatal", "foo", output()[0])
-		assert.Equal(t, 1, stub.Status, "Expected to call os.Exit with status 1.")
+		assert.Equal(t, 1, *stub.Status, "Expected to call os.Exit with status 1.")
 	})
 }
 
@@ -221,13 +221,13 @@ func TestJSONLoggerDFatal(t *testing.T) {
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
 		jl.DFatal("foo")
 		assertMessage(t, "error", "foo", output()[0])
-		assert.Equal(t, 0, stub.Status, "Shouldn't exit when using DFatal in production.")
+		assert.Nil(t, stub.Status, "Shouldn't exit when using DFatal in production.")
 	})
 
 	withJSONLogger(t, []Option{Development()}, func(jl *jsonLogger, output func() []string) {
 		jl.DFatal("foo")
 		assertMessage(t, "fatal", "foo", output()[0])
-		assert.Equal(t, 1, stub.Status, "Should exit when using DFatal in development.")
+		assert.Equal(t, 1, *stub.Status, "Should exit when using DFatal in development.")
 	})
 }
 
