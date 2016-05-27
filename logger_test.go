@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -33,6 +34,30 @@ import (
 
 func opts(opts ...Option) []Option {
 	return opts
+}
+
+type stubbedExit struct {
+	Status *int
+}
+
+func (se *stubbedExit) Unstub() {
+	_exit = os.Exit
+}
+
+func (se *stubbedExit) AssertNoExit(t testing.TB) {
+	assert.Nil(t, se.Status, "Unexpected exit.")
+}
+
+func (se *stubbedExit) AssertStatus(t testing.TB, expected int) {
+	if assert.NotNil(t, se.Status, "Expected to exit.") {
+		assert.Equal(t, expected, *se.Status, "Unexpected exit code.")
+	}
+}
+
+func stubExit() *stubbedExit {
+	stub := &stubbedExit{}
+	_exit = func(s int) { stub.Status = &s }
+	return stub
 }
 
 func withJSONLogger(t testing.TB, opts []Option, f func(*jsonLogger, func() []string)) {
@@ -136,9 +161,18 @@ func TestJSONLoggerLog(t *testing.T) {
 		jl.Log(Debug, "foo")
 		assertMessage(t, "debug", "foo", output()[0])
 	})
+
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
 		assert.Panics(t, func() { jl.Log(Panic, "foo") }, "Expected logging at Panic level to panic.")
 		assertMessage(t, "panic", "foo", output()[0])
+	})
+
+	stub := stubExit()
+	defer stub.Unstub()
+	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
+		jl.Log(Fatal, "foo")
+		assertMessage(t, "fatal", "foo", output()[0])
+		stub.AssertStatus(t, 1)
 	})
 }
 
@@ -179,10 +213,31 @@ func TestJSONLoggerPanic(t *testing.T) {
 	})
 }
 
+func TestJSONLoggerFatal(t *testing.T) {
+	stub := stubExit()
+	defer stub.Unstub()
+
+	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
+		jl.Fatal("foo")
+		assertMessage(t, "fatal", "foo", output()[0])
+		stub.AssertStatus(t, 1)
+	})
+}
+
 func TestJSONLoggerDFatal(t *testing.T) {
+	stub := stubExit()
+	defer stub.Unstub()
+
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
 		jl.DFatal("foo")
 		assertMessage(t, "error", "foo", output()[0])
+		stub.AssertNoExit(t)
+	})
+
+	withJSONLogger(t, []Option{Development()}, func(jl *jsonLogger, output func() []string) {
+		jl.DFatal("foo")
+		assertMessage(t, "fatal", "foo", output()[0])
+		stub.AssertStatus(t, 1)
 	})
 }
 
