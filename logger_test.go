@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -33,6 +34,20 @@ import (
 
 func opts(opts ...Option) []Option {
 	return opts
+}
+
+type stubbedExit struct {
+	Status int
+}
+
+func (se *stubbedExit) Unstub() {
+	_exit = os.Exit
+}
+
+func stubExit() *stubbedExit {
+	stub := &stubbedExit{}
+	_exit = func(s int) { stub.Status = s }
+	return stub
 }
 
 func withJSONLogger(t testing.TB, opts []Option, f func(*jsonLogger, func() []string)) {
@@ -136,9 +151,18 @@ func TestJSONLoggerLog(t *testing.T) {
 		jl.Log(Debug, "foo")
 		assertMessage(t, "debug", "foo", output()[0])
 	})
+
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
 		assert.Panics(t, func() { jl.Log(Panic, "foo") }, "Expected logging at Panic level to panic.")
 		assertMessage(t, "panic", "foo", output()[0])
+	})
+
+	stub := stubExit()
+	defer stub.Unstub()
+	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
+		jl.Log(Fatal, "foo")
+		assertMessage(t, "fatal", "foo", output()[0])
+		assert.Equal(t, 1, stub.Status, "Expected to call os.Exit with status 1.")
 	})
 }
 
@@ -179,10 +203,31 @@ func TestJSONLoggerPanic(t *testing.T) {
 	})
 }
 
+func TestJSONLoggerFatal(t *testing.T) {
+	stub := stubExit()
+	defer stub.Unstub()
+
+	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
+		jl.Fatal("foo")
+		assertMessage(t, "fatal", "foo", output()[0])
+		assert.Equal(t, 1, stub.Status, "Expected to call os.Exit with status 1.")
+	})
+}
+
 func TestJSONLoggerDFatal(t *testing.T) {
+	stub := stubExit()
+	defer stub.Unstub()
+
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
 		jl.DFatal("foo")
 		assertMessage(t, "error", "foo", output()[0])
+		assert.Equal(t, 0, stub.Status, "Shouldn't exit when using DFatal in production.")
+	})
+
+	withJSONLogger(t, []Option{Development()}, func(jl *jsonLogger, output func() []string) {
+		jl.DFatal("foo")
+		assertMessage(t, "fatal", "foo", output()[0])
+		assert.Equal(t, 1, stub.Status, "Should exit when using DFatal in development.")
 	})
 }
 

@@ -27,6 +27,9 @@ import (
 	"time"
 )
 
+// For tests.
+var _exit = os.Exit
+
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
 type Logger interface {
@@ -164,7 +167,7 @@ func (jl *jsonLogger) Panic(msg string, fields ...Field) {
 
 func (jl *jsonLogger) Fatal(msg string, fields ...Field) {
 	jl.log(Fatal, msg, fields)
-	os.Exit(1)
+	_exit(1)
 }
 
 func (jl *jsonLogger) DFatal(msg string, fields ...Field) {
