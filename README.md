@@ -79,7 +79,9 @@ Log a static string, without any context or `printf`-style formatting:
 | apex/log | 3009 ns/op | 584 B/op | 11 allocs/op |
 
 ## Development Status: Beta
-Ready for adventurous users, but breaking API changes are likely.
+Ready for adventurous users, but we're planning several breaking changes before
+releasing version 1.0. [This milestone][v1] tracks our progress toward a stable
+release.
 
 <hr>
 Released under the [MIT License](LICENSE.txt).
@@ -97,3 +99,4 @@ pinned in zap's [glide.lock][] file. [↩](#anchor-versions)
 [benchmarking suite]: https://github.com/uber-go/zap/tree/master/benchmarks
 [glide.lock]: https://github.com/uber-go/zap/blob/master/glide.lock
 [bark]: https://github.com/uber-common/bark
+[v1]: https://github.com/uber-go/zap/milestones
