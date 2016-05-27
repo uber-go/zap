@@ -6,7 +6,8 @@ go:
   - tip
 env:
   global:
-    - GO15VENDOREXPERIMENT=1 TEST_TIMEOUT_SCALE=10
+    - GO15VENDOREXPERIMENT=1
+    - TEST_TIMEOUT_SCALE=10
 cache:
   directories:
     - vendor
