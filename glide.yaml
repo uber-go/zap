@@ -24,3 +24,6 @@ import:
   - golint
 - package: github.com/mattn/go-colorable
 - package: github.com/uber-common/bark
+- package: github.com/apex/log
+  subpackages:
+  - handler/json
