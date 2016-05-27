@@ -37,6 +37,7 @@ const (
 	stringType
 	marshalerType
 	objectType
+	stringerType
 )
 
 // A Field is a deferred marshaling operation used to add a key-value pair to
@@ -85,7 +86,7 @@ func String(key string, val string) Field {
 // Stringer constructs a Field with the given key and value. The value
 // is the result of the String method.
 func Stringer(key string, val fmt.Stringer) Field {
-	return Field{key: key, fieldType: stringType, str: val.String()}
+	return Field{key: key, fieldType: stringerType, obj: val}
 }
 
 // Time constructs a Field with the given key and value. It represents a
@@ -157,6 +158,8 @@ func (f Field) addTo(kv KeyValue) error {
 		kv.AddInt64(f.key, f.ival)
 	case stringType:
 		kv.AddString(f.key, f.str)
+	case stringerType:
+		kv.AddString(f.key, f.obj.(fmt.Stringer).String())
 	case marshalerType:
 		return kv.AddMarshaler(f.key, f.obj.(LogMarshaler))
 	case objectType:
