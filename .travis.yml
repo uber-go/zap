@@ -1,4 +1,5 @@
 language: go
+sudo: false
 go:
   - 1.5
   - 1.6
@@ -6,6 +7,7 @@ go:
 env:
   global:
     - GO15VENDOREXPERIMENT=1
+    - TEST_TIMEOUT_SCALE=10
 cache:
   directories:
     - vendor
