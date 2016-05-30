@@ -23,40 +23,89 @@ package zap
 import (
 	"testing"
 
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestHTTPHandlerChangeLogLevel(t *testing.T) {
+func sampleHTTPClient(t *testing.T, method string, handler http.Handler, reader io.Reader) (int, []byte) {
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+	client := &http.Client{}
+
+	req, reqErr := http.NewRequest(method, ts.URL, reader)
+	require.NoError(t, reqErr, fmt.Sprintf("Error returning new %s request.", method))
+
+	res, resErr := client.Do(req)
+	require.NoError(t, resErr, fmt.Sprintf("Error making %s request.", method))
+
+	resString, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	require.NoError(t, err, "Error reading request body.")
+
+	return res.StatusCode, resString
+}
+
+func TestHTTPHandlerGetLevel(t *testing.T) {
 	withJSONLogger(t, nil, func(jl *jsonLogger, _ func() []string) {
-		assert.Equal(t, All, jl.Level(), "Unexpected initial level.")
-		assert.NotEqual(t, Debug, jl.Level(), "Unexpected initial level.")
+		handler := NewHTTPHandler(jl)
 
-		h := NewHTTPHandler(jl)
+		statusCode, responseStr := sampleHTTPClient(t, "GET", handler, nil)
 
-		// test server to handle the http.Handler
-		ts := httptest.NewServer(h.ChangeLogLevel(Debug))
-		defer ts.Close()
+		assert.Equal(t, http.StatusOK, statusCode, "Unexpected response status code.")
+		assert.Equal(t, fmt.Sprintf("%s", responseStr), fmt.Sprintf("{\"level\":\"%v\"}\n", jl.Level().String()), "Unexpected logger level.")
+	})
+}
 
-		res, err := http.Get(ts.URL)
-		if err != nil {
-			jl.Fatal("Error in GET request")
-		}
+func TestHTTPHandlerPutLevel(t *testing.T) {
+	withJSONLogger(t, nil, func(jl *jsonLogger, _ func() []string) {
+		handler := NewHTTPHandler(jl)
 
-		resString, err := ioutil.ReadAll(res.Body)
-		res.Body.Close()
-		if err != nil {
-			jl.Fatal("Error reading response body")
-		}
+		jsonStr := []byte(`{"level":"warn"}`)
+		statusCode, responseStr := sampleHTTPClient(t, "PUT", handler, bytes.NewReader(jsonStr))
 
-		// check equality of the response data
-		assert.Equal(t, "true", fmt.Sprintf("%s", resString), "Unexpected http.handler response")
+		assert.Equal(t, http.StatusOK, statusCode, "Unexpected response status code.")
+		assert.Equal(t, fmt.Sprintf("%s", responseStr), fmt.Sprintf("{\"level\":\"%v\"}\n", jl.Level().String()), "Unexpected logger level.")
+	})
+}
 
-		// log level changed to 'Debug' as expected
-		assert.Equal(t, Debug, jl.Level(), "Unexpected level after ChangeLogLevel.")
+func TestHTTPHandlerUnrecognizedLevel(t *testing.T) {
+	withJSONLogger(t, nil, func(jl *jsonLogger, _ func() []string) {
+		handler := NewHTTPHandler(jl)
+
+		jsonStr := []byte(`{"level":"unrecognized-level"}`)
+		statusCode, responseStr := sampleHTTPClient(t, "PUT", handler, bytes.NewReader(jsonStr))
+
+		assert.Equal(t, http.StatusBadRequest, statusCode, "Unexpected response status code.")
+		assert.Equal(t, fmt.Sprintf("%s", responseStr), "Unrecognized Level\n", "Unexpected response data.")
+	})
+}
+
+func TestHTTPHandlerBadRequest(t *testing.T) {
+	withJSONLogger(t, nil, func(jl *jsonLogger, _ func() []string) {
+		handler := NewHTTPHandler(jl)
+
+		statusCode, responseStr := sampleHTTPClient(t, "PUT", handler, nil)
+
+		assert.Equal(t, http.StatusBadRequest, statusCode, "Unexpected response status code.")
+		assert.Equal(t, fmt.Sprintf("%s", responseStr), "Bad Request\n", "Unexpected response data.")
+	})
+}
+
+func TestHTTPHandlerMethodNotAllowed(t *testing.T) {
+	withJSONLogger(t, nil, func(jl *jsonLogger, _ func() []string) {
+		handler := NewHTTPHandler(jl)
+
+		statusCode, responseStr := sampleHTTPClient(t, "POST", handler, nil)
+
+		assert.Equal(t, http.StatusMethodNotAllowed, statusCode, "Unexpected response status code.")
+		assert.Equal(t, fmt.Sprintf("%s", responseStr), "Method Not Allowed\n", "Unexpected response data.")
 	})
 }

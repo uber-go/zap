@@ -21,31 +21,52 @@
 package zap
 
 import (
+	"encoding/json"
 	"net/http"
 )
 
-// A HTTPHandler takes a logger instance and provides methods to enable
-// runtime changes to the logger via http.handler interface.
-type HTTPHandler struct {
-	logger Logger
+// payload struct defines the format of the request payload received
+type payload struct {
+	Level string `json:"level"`
 }
 
-// NewHTTPHandler constructs a new HTTPHandler.
-func NewHTTPHandler(logger Logger) *HTTPHandler {
-	return &HTTPHandler{logger}
-}
-
-// ChangeLogLevel enables changing the logger's log level at runtime.
-// It returns an http.Handler that your application can mount to custom routes.
-func (h *HTTPHandler) ChangeLogLevel(lvl Level) http.Handler {
+// NewHTTPHandler takes a logger instance and provides methods to enable
+// runtime changes to the logger level via http.handler interface.
+func NewHTTPHandler(logger Logger) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		h.logger.SetLevel(lvl)
+		var currentLevel string
 
-		var res = "false"
-		if h.logger.Enabled(lvl) {
-			res = "true"
+		switch r.Method {
+		case "GET":
+			currentLevel = logger.Level().String()
+		case "PUT":
+			decoder := json.NewDecoder(r.Body)
+			var p payload
+
+			err := decoder.Decode(&p)
+			if err != nil {
+				// received data in wrong format
+				http.Error(w, "Bad Request", 400)
+				return
+			}
+
+			var loggerLevel Level
+			err = loggerLevel.UnmarshalText([]byte(p.Level))
+			if err != nil {
+				// unrecognized level provided by the request
+				http.Error(w, "Unrecognized Level", 400)
+				return
+			}
+
+			logger.SetLevel(loggerLevel)
+			currentLevel = loggerLevel.String()
+		default:
+			http.Error(w, "Method Not Allowed", 405)
+			return
 		}
-		w.Write([]byte(res))
+
+		res := payload{currentLevel}
+		json.NewEncoder(w).Encode(res)
 	}
 
 	return http.HandlerFunc(fn)
