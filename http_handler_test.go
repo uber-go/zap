@@ -18,94 +18,114 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+package zap_test
 
 import (
-	"testing"
-
-	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"testing"
+
+	. "github.com/uber-go/zap"
+	"github.com/uber-go/zap/spy"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func sampleHTTPClient(t *testing.T, method string, handler http.Handler, reader io.Reader) (int, []byte) {
+func newHandler() (Logger, http.Handler) {
+	logger, _ := spy.New()
+	return logger, NewHTTPHandler(logger)
+}
+
+func assertCodeOK(t testing.TB, code int) {
+	assert.Equal(t, http.StatusOK, code, "Unexpected response status code.")
+}
+
+func assertCodeBadRequest(t testing.TB, code int) {
+	assert.Equal(t, http.StatusBadRequest, code, "Unexpected response status code.")
+}
+
+func assertCodeMethodNotAllowed(t testing.TB, code int) {
+	assert.Equal(t, http.StatusMethodNotAllowed, code, "Unexpected response status code.")
+}
+
+func assertResponse(t testing.TB, expectedLevel Level, actualBody string) {
+	assert.Equal(t, fmt.Sprintf(`{"level":"%s"}`, expectedLevel)+"\n", actualBody, "Unexpected response body.")
+}
+
+func assertJSONError(t testing.TB, body string) {
+	// Don't need to test exact error message, but one should be present.
+	var payload map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(body), &payload), "Expected error response to be JSON.")
+
+	msg, ok := payload["error"]
+	require.True(t, ok, "Error message is an unexpected type.")
+	assert.NotEqual(t, "", msg, "Expected an error message in response.")
+}
+
+func makeRequest(t testing.TB, method string, handler http.Handler, reader io.Reader) (int, string) {
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
+	req, err := http.NewRequest(method, ts.URL, reader)
+	require.NoError(t, err, "Error constructing %s request.", method)
+
 	client := &http.Client{}
+	res, err := client.Do(req)
+	require.NoError(t, err, "Error making %s request.", method)
+	defer res.Body.Close()
 
-	req, reqErr := http.NewRequest(method, ts.URL, reader)
-	require.NoError(t, reqErr, fmt.Sprintf("Error returning new %s request.", method))
-
-	res, resErr := client.Do(req)
-	require.NoError(t, resErr, fmt.Sprintf("Error making %s request.", method))
-
-	resString, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
 	require.NoError(t, err, "Error reading request body.")
 
-	return res.StatusCode, resString
+	return res.StatusCode, string(body)
 }
 
 func TestHTTPHandlerGetLevel(t *testing.T) {
-	withJSONLogger(t, nil, func(jl *jsonLogger, _ func() []string) {
-		handler := NewHTTPHandler(jl)
-
-		statusCode, responseStr := sampleHTTPClient(t, "GET", handler, nil)
-
-		assert.Equal(t, http.StatusOK, statusCode, "Unexpected response status code.")
-		assert.Equal(t, fmt.Sprintf("%s", responseStr), fmt.Sprintf("{\"level\":\"%v\"}\n", jl.Level().String()), "Unexpected logger level.")
-	})
+	logger, handler := newHandler()
+	code, body := makeRequest(t, "GET", handler, nil)
+	assertCodeOK(t, code)
+	assertResponse(t, logger.Level(), body)
 }
 
 func TestHTTPHandlerPutLevel(t *testing.T) {
-	withJSONLogger(t, nil, func(jl *jsonLogger, _ func() []string) {
-		handler := NewHTTPHandler(jl)
+	logger, handler := newHandler()
 
-		jsonStr := []byte(`{"level":"warn"}`)
-		statusCode, responseStr := sampleHTTPClient(t, "PUT", handler, bytes.NewReader(jsonStr))
+	code, body := makeRequest(t, "PUT", handler, strings.NewReader(`{"level":"warn"}`))
 
-		assert.Equal(t, http.StatusOK, statusCode, "Unexpected response status code.")
-		assert.Equal(t, fmt.Sprintf("%s", responseStr), fmt.Sprintf("{\"level\":\"%v\"}\n", jl.Level().String()), "Unexpected logger level.")
-	})
+	assertCodeOK(t, code)
+	assertResponse(t, logger.Level(), body)
 }
 
-func TestHTTPHandlerUnrecognizedLevel(t *testing.T) {
-	withJSONLogger(t, nil, func(jl *jsonLogger, _ func() []string) {
-		handler := NewHTTPHandler(jl)
-
-		jsonStr := []byte(`{"level":"unrecognized-level"}`)
-		statusCode, responseStr := sampleHTTPClient(t, "PUT", handler, bytes.NewReader(jsonStr))
-
-		assert.Equal(t, http.StatusBadRequest, statusCode, "Unexpected response status code.")
-		assert.Equal(t, fmt.Sprintf("%s", responseStr), "Unrecognized Level\n", "Unexpected response data.")
-	})
+func TestHTTPHandlerPutUnrecognizedLevel(t *testing.T) {
+	_, handler := newHandler()
+	code, body := makeRequest(t, "PUT", handler, strings.NewReader(`{"level":"unrecognized-level"}`))
+	assertCodeBadRequest(t, code)
+	assertJSONError(t, body)
 }
 
-func TestHTTPHandlerBadRequest(t *testing.T) {
-	withJSONLogger(t, nil, func(jl *jsonLogger, _ func() []string) {
-		handler := NewHTTPHandler(jl)
+func TestHTTPHandlerNotJSON(t *testing.T) {
+	_, handler := newHandler()
+	code, body := makeRequest(t, "PUT", handler, strings.NewReader(`{`))
+	assertCodeBadRequest(t, code)
+	assertJSONError(t, body)
+}
 
-		statusCode, responseStr := sampleHTTPClient(t, "PUT", handler, nil)
-
-		assert.Equal(t, http.StatusBadRequest, statusCode, "Unexpected response status code.")
-		assert.Equal(t, fmt.Sprintf("%s", responseStr), "Bad Request\n", "Unexpected response data.")
-	})
+func TestHTTPHandlerNoLevelSpecified(t *testing.T) {
+	_, handler := newHandler()
+	code, body := makeRequest(t, "PUT", handler, strings.NewReader(`{}`))
+	assertCodeBadRequest(t, code)
+	assertJSONError(t, body)
 }
 
 func TestHTTPHandlerMethodNotAllowed(t *testing.T) {
-	withJSONLogger(t, nil, func(jl *jsonLogger, _ func() []string) {
-		handler := NewHTTPHandler(jl)
-
-		statusCode, responseStr := sampleHTTPClient(t, "POST", handler, nil)
-
-		assert.Equal(t, http.StatusMethodNotAllowed, statusCode, "Unexpected response status code.")
-		assert.Equal(t, fmt.Sprintf("%s", responseStr), "Method Not Allowed\n", "Unexpected response data.")
-	})
+	_, handler := newHandler()
+	code, body := makeRequest(t, "POST", handler, strings.NewReader(`{`))
+	assertCodeMethodNotAllowed(t, code)
+	assertJSONError(t, body)
 }
