@@ -75,8 +75,7 @@ func makeRequest(t testing.TB, method string, handler http.Handler, reader io.Re
 	req, err := http.NewRequest(method, ts.URL, reader)
 	require.NoError(t, err, "Error constructing %s request.", method)
 
-	client := &http.Client{}
-	res, err := client.Do(req)
+	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err, "Error making %s request.", method)
 	defer res.Body.Close()
 

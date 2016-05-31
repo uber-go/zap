@@ -22,6 +22,7 @@ package zap
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -67,7 +68,11 @@ func (h *levelHandler) putLevel(w http.ResponseWriter, r *http.Request) {
 	var p httpPayload
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&p); err != nil {
-		h.error(w, "Request body must be well-formed JSON.", http.StatusBadRequest)
+		h.error(
+			w,
+			fmt.Sprintf("Request body must be well-formed JSON: %v", err),
+			http.StatusBadRequest,
+		)
 		return
 	}
 	if p.Level == nil {
