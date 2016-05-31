@@ -49,9 +49,9 @@ func NewHTTPHandler(logger Logger) http.Handler {
 
 func (h *levelHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case http.MethodGet:
+	case "GET":
 		h.getLevel(w, r)
-	case http.MethodPut:
+	case "PUT":
 		h.putLevel(w, r)
 	default:
 		h.error(w, "Only GET and PUT are supported.", http.StatusMethodNotAllowed)
