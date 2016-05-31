@@ -22,52 +22,68 @@ package zap
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
-// payload struct defines the format of the request payload received
-type payload struct {
-	Level string `json:"level"`
+type httpPayload struct {
+	Level *Level `json:"level"`
 }
 
-// NewHTTPHandler takes a logger instance and provides methods to enable
-// runtime changes to the logger level via http.handler interface.
+type errorResponse struct {
+	Error string `json:"error"`
+}
+
+type levelHandler struct {
+	logger Logger
+}
+
+// NewHTTPHandler returns an HTTP handler that can change the logging level at
+// runtime.
+//
+// GET requests return a JSON description of the current logging level. PUT
+// requests change the logging level and expect a payload like
+//   {"level":"info"}
 func NewHTTPHandler(logger Logger) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		var currentLevel string
+	return &levelHandler{logger: logger}
+}
 
-		switch r.Method {
-		case "GET":
-			currentLevel = logger.Level().String()
-		case "PUT":
-			decoder := json.NewDecoder(r.Body)
-			var p payload
-
-			err := decoder.Decode(&p)
-			if err != nil {
-				// received data in wrong format
-				http.Error(w, "Bad Request", 400)
-				return
-			}
-
-			var loggerLevel Level
-			err = loggerLevel.UnmarshalText([]byte(p.Level))
-			if err != nil {
-				// unrecognized level provided by the request
-				http.Error(w, "Unrecognized Level", 400)
-				return
-			}
-
-			logger.SetLevel(loggerLevel)
-			currentLevel = loggerLevel.String()
-		default:
-			http.Error(w, "Method Not Allowed", 405)
-			return
-		}
-
-		res := payload{currentLevel}
-		json.NewEncoder(w).Encode(res)
+func (h *levelHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		h.getLevel(w, r)
+	case "PUT":
+		h.putLevel(w, r)
+	default:
+		h.error(w, "Only GET and PUT are supported.", http.StatusMethodNotAllowed)
 	}
+}
 
-	return http.HandlerFunc(fn)
+func (h *levelHandler) getLevel(w http.ResponseWriter, r *http.Request) {
+	current := h.logger.Level()
+	json.NewEncoder(w).Encode(httpPayload{Level: &current})
+}
+
+func (h *levelHandler) putLevel(w http.ResponseWriter, r *http.Request) {
+	var p httpPayload
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&p); err != nil {
+		h.error(
+			w,
+			fmt.Sprintf("Request body must be well-formed JSON: %v", err),
+			http.StatusBadRequest,
+		)
+		return
+	}
+	if p.Level == nil {
+		h.error(w, "Must specify a logging level.", http.StatusBadRequest)
+		return
+	}
+	h.logger.SetLevel(*p.Level)
+	json.NewEncoder(w).Encode(p)
+}
+
+func (h *levelHandler) error(w http.ResponseWriter, msg string, status int) {
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(errorResponse{Error: msg})
 }
