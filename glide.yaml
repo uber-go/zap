@@ -27,3 +27,4 @@ import:
 - package: github.com/apex/log
   subpackages:
   - handler/json
+- package: github.com/uber-go/atomic

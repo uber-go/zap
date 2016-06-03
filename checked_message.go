@@ -20,14 +20,14 @@
 
 package zap
 
-import "sync/atomic"
+import "github.com/uber-go/atomic"
 
 // A CheckedMessage is the result of a call to Logger.Check, which allows
 // especially performance-sensitive applications to avoid allocations for disabled
 // or heavily sampled log levels.
 type CheckedMessage struct {
 	logger Logger
-	used   uint32
+	used   atomic.Uint32
 	lvl    Level
 	msg    string
 }
@@ -46,7 +46,7 @@ func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 // be used once; if a CheckedMessage is re-used, it also logs an error message
 // with the underlying logger's DFatal method.
 func (m *CheckedMessage) Write(fields ...Field) {
-	if n := atomic.AddUint32(&m.used, 1); n > 1 {
+	if n := m.used.Inc(); n > 1 {
 		if n == 2 {
 			// Log an error on the first re-use. After that, skip the I/O and
 			// allocations and just return.

@@ -1,5 +1,5 @@
-hash: 86ba3defb276434bb1c6dd1e222e67e081d4ac2b85507acc025b6fd0492053ad
-updated: 2016-05-26T16:19:43.051804352+09:00
+hash: 64d5a2692f570c258ae1c30e683872ea1f8e7f79595fef4f84517aed055dbb83
+updated: 2016-06-02T18:44:39.806767976-07:00
 imports:
 - name: github.com/apex/log
   version: a999c1b29c986b1972ec53b15092b63a8051ec83
@@ -38,6 +38,8 @@ imports:
   - require
 - name: github.com/uber-common/bark
   version: d52ffa061726911f47fcd3d9e8b9b55f22794772
+- name: github.com/uber-go/atomic
+  version: e682c1008ac17bf26d2e4b5ad6cdd08520ed0b22
 - name: golang.org/x/sys
   version: f64b50fbea64174967a8882830d621a18ee1548e
   subpackages:
