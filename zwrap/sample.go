@@ -22,15 +22,16 @@ package zwrap
 
 import (
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/uber-go/zap"
+
+	"github.com/uber-go/atomic"
 )
 
 type counters struct {
 	sync.RWMutex
-	counts map[string]*uint64
+	counts map[string]*atomic.Uint64
 }
 
 func (c *counters) Inc(key string) uint64 {
@@ -38,18 +39,17 @@ func (c *counters) Inc(key string) uint64 {
 	count, ok := c.counts[key]
 	c.RUnlock()
 	if ok {
-		return atomic.AddUint64(count, 1)
+		return count.Inc()
 	}
 
 	c.Lock()
 	count, ok = c.counts[key]
 	if ok {
 		c.Unlock()
-		return atomic.AddUint64(count, 1)
+		return count.Inc()
 	}
 
-	one := uint64(1)
-	c.counts[key] = &one
+	c.counts[key] = atomic.NewUint64(1)
 	c.Unlock()
 	return 1
 }
@@ -58,7 +58,7 @@ func (c *counters) Reset(key string) {
 	c.Lock()
 	count := c.counts[key]
 	c.Unlock()
-	atomic.StoreUint64(count, 0)
+	count.Store(0)
 }
 
 // Sample returns a sampling logger. The logger maintains a separate bucket
@@ -72,7 +72,7 @@ func Sample(zl zap.Logger, tick time.Duration, first, thereafter int) zap.Logger
 	return &sampler{
 		Logger:     zl,
 		tick:       tick,
-		counts:     &counters{counts: make(map[string]*uint64)},
+		counts:     &counters{counts: make(map[string]*atomic.Uint64)},
 		first:      uint64(first),
 		thereafter: uint64(thereafter),
 	}

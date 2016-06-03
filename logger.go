@@ -23,8 +23,9 @@ package zap
 import (
 	"fmt"
 	"os"
-	"sync/atomic"
 	"time"
+
+	"github.com/uber-go/atomic"
 )
 
 // For tests.
@@ -73,7 +74,7 @@ type Logger interface {
 }
 
 type jsonLogger struct {
-	level       *int32 // atomic
+	level       *atomic.Int32
 	enc         encoder
 	hooks       []hook
 	errW        WriteSyncer
@@ -91,10 +92,10 @@ type jsonLogger struct {
 // Options can change the log level, the output location, or the initial
 // fields that should be added as context.
 func NewJSON(options ...Option) Logger {
-	defaultLevel := int32(Info)
+	defaultLevel := atomic.NewInt32(int32(Info))
 	jl := &jsonLogger{
 		enc:   newJSONEncoder(),
-		level: &defaultLevel,
+		level: defaultLevel,
 		errW:  os.Stderr,
 		w:     os.Stdout,
 	}
@@ -109,11 +110,11 @@ func NewJSON(options ...Option) Logger {
 }
 
 func (jl *jsonLogger) Level() Level {
-	return Level(atomic.LoadInt32(jl.level))
+	return Level(jl.level.Load())
 }
 
 func (jl *jsonLogger) SetLevel(lvl Level) {
-	atomic.StoreInt32(jl.level, int32(lvl))
+	jl.level.Store(int32(lvl))
 }
 
 func (jl *jsonLogger) Enabled(lvl Level) bool {
