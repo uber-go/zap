@@ -128,8 +128,8 @@ func TestTimeField(t *testing.T) {
 }
 
 func TestErrField(t *testing.T) {
-	assertFieldJSON(t, `"error":"fail"`, Err(errors.New("fail")))
-	assertCanBeReused(t, Err(errors.New("fail")))
+	assertFieldJSON(t, `"error":"fail"`, Error(errors.New("fail")))
+	assertCanBeReused(t, Error(errors.New("fail")))
 }
 
 func TestDurationField(t *testing.T) {

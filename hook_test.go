@@ -30,7 +30,7 @@ import (
 
 func TestHookAddCaller(t *testing.T) {
 	buf := newTestBuffer()
-	logger := NewJSON(All, Output(buf), AddCaller())
+	logger := NewJSON(AllLevel, Output(buf), AddCaller())
 	logger.Info("Callers.")
 
 	re := regexp.MustCompile(`"msg":"hook_test.go:[\d]+: Callers\."`)
@@ -45,7 +45,7 @@ func TestHookAddCallerFail(t *testing.T) {
 	_callerSkip = 1e3
 	defer func() { _callerSkip = originalSkip }()
 
-	logger := NewJSON(All, Output(buf), ErrorOutput(errBuf), AddCaller())
+	logger := NewJSON(AllLevel, Output(buf), ErrorOutput(errBuf), AddCaller())
 	logger.Info("Failure.")
 	assert.Equal(t, "failed to get caller\n", errBuf.String(), "Didn't find expected failure message.")
 	assert.Contains(t, buf.String(), `"msg":"Failure."`, "Expected original message to survive failures in runtime.Caller.")
@@ -53,7 +53,7 @@ func TestHookAddCallerFail(t *testing.T) {
 
 func TestHookAddStacks(t *testing.T) {
 	buf := newTestBuffer()
-	logger := NewJSON(All, Output(buf), AddStacks(Info))
+	logger := NewJSON(AllLevel, Output(buf), AddStacks(InfoLevel))
 
 	logger.Info("Stacks.")
 	output := buf.String()

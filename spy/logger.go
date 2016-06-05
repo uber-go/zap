@@ -137,38 +137,38 @@ func (l *Logger) Log(lvl zap.Level, msg string, fields ...zap.Field) {
 
 // Debug logs at the Debug level.
 func (l *Logger) Debug(msg string, fields ...zap.Field) {
-	l.sink.WriteLog(zap.Debug, msg, l.allFields(fields))
+	l.sink.WriteLog(zap.DebugLevel, msg, l.allFields(fields))
 }
 
 // Info logs at the Info level.
 func (l *Logger) Info(msg string, fields ...zap.Field) {
-	l.sink.WriteLog(zap.Info, msg, l.allFields(fields))
+	l.sink.WriteLog(zap.InfoLevel, msg, l.allFields(fields))
 
 }
 
 // Warn logs at the Warn level.
 func (l *Logger) Warn(msg string, fields ...zap.Field) {
-	l.sink.WriteLog(zap.Warn, msg, l.allFields(fields))
+	l.sink.WriteLog(zap.WarnLevel, msg, l.allFields(fields))
 
 }
 
 // Error logs at the Error level.
 func (l *Logger) Error(msg string, fields ...zap.Field) {
-	l.sink.WriteLog(zap.Error, msg, l.allFields(fields))
+	l.sink.WriteLog(zap.ErrorLevel, msg, l.allFields(fields))
 
 }
 
 // Panic logs at the Panic level. Note that the spy Logger doesn't actually
 // panic.
 func (l *Logger) Panic(msg string, fields ...zap.Field) {
-	l.sink.WriteLog(zap.Panic, msg, l.allFields(fields))
+	l.sink.WriteLog(zap.PanicLevel, msg, l.allFields(fields))
 
 }
 
 // Fatal logs at the Fatal level. Note that the spy logger doesn't actuall call
 // os.Exit.
 func (l *Logger) Fatal(msg string, fields ...zap.Field) {
-	l.sink.WriteLog(zap.Fatal, msg, l.allFields(fields))
+	l.sink.WriteLog(zap.FatalLevel, msg, l.allFields(fields))
 
 }
 
@@ -176,9 +176,9 @@ func (l *Logger) Fatal(msg string, fields ...zap.Field) {
 // level otherwise.
 func (l *Logger) DFatal(msg string, fields ...zap.Field) {
 	if l.development {
-		l.sink.WriteLog(zap.Fatal, msg, l.allFields(fields))
+		l.sink.WriteLog(zap.FatalLevel, msg, l.allFields(fields))
 	} else {
-		l.sink.WriteLog(zap.Error, msg, l.allFields(fields))
+		l.sink.WriteLog(zap.ErrorLevel, msg, l.allFields(fields))
 	}
 }
 

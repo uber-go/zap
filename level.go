@@ -35,45 +35,46 @@ var errMarshalNilLevel = errors.New("can't marshal a nil *Level to text")
 type Level int32
 
 const (
-	// Debug logs are typically voluminous, and are usually disabled in
+	// DebugLevel logs are typically voluminous, and are usually disabled in
 	// production.
-	Debug Level = iota - 1
-	// Info is the default logging priority.
-	Info
-	// Warn logs are more important than Info, but don't need individual human review.
-	Warn
-	// Error logs are high-priority. If an application is running smoothly, it
-	// shouldn't generate any error-level logs.
-	Error
-	// Panic logs a message, then panics.
-	Panic
-	// Fatal logs a message, then calls os.Exit(1).
-	Fatal
+	DebugLevel Level = iota - 1
+	// InfoLevel is the default logging priority.
+	InfoLevel
+	// WarnLevel logs are more important than Info, but don't need individual
+	// human review.
+	WarnLevel
+	// ErrorLevel logs are high-priority. If an application is running smoothly,
+	// it shouldn't generate any error-level logs.
+	ErrorLevel
+	// PanicLevel logs a message, then panics.
+	PanicLevel
+	// FatalLevel logs a message, then calls os.Exit(1).
+	FatalLevel
 
-	// All logs everything.
-	All Level = math.MinInt32
-	// None silences logging completely.
-	None Level = math.MaxInt32
+	// AllLevel logs everything.
+	AllLevel Level = math.MinInt32
+	// NoneLevel silences logging completely.
+	NoneLevel Level = math.MaxInt32
 )
 
 // String returns a lower-case ASCII representation of the log level.
 func (l Level) String() string {
 	switch l {
-	case All:
+	case AllLevel:
 		return "all"
-	case Debug:
+	case DebugLevel:
 		return "debug"
-	case Info:
+	case InfoLevel:
 		return "info"
-	case Warn:
+	case WarnLevel:
 		return "warn"
-	case Error:
+	case ErrorLevel:
 		return "error"
-	case Panic:
+	case PanicLevel:
 		return "panic"
-	case Fatal:
+	case FatalLevel:
 		return "fatal"
-	case None:
+	case NoneLevel:
 		return "none"
 	default:
 		return fmt.Sprintf("Level(%d)", l)
@@ -95,21 +96,21 @@ func (l *Level) MarshalText() ([]byte, error) {
 func (l *Level) UnmarshalText(text []byte) error {
 	switch string(text) {
 	case "all":
-		*l = All
+		*l = AllLevel
 	case "debug":
-		*l = Debug
+		*l = DebugLevel
 	case "info":
-		*l = Info
+		*l = InfoLevel
 	case "warn":
-		*l = Warn
+		*l = WarnLevel
 	case "error":
-		*l = Error
+		*l = ErrorLevel
 	case "panic":
-		*l = Panic
+		*l = PanicLevel
 	case "fatal":
-		*l = Fatal
+		*l = FatalLevel
 	case "none":
-		*l = None
+		*l = NoneLevel
 	default:
 		return fmt.Errorf("unrecognized level: %v", string(text))
 	}

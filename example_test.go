@@ -84,7 +84,7 @@ func ExampleNewJSON_options() {
 	// We can pass multiple options to the NewJSON method to configure
 	// the logging level, output location, or even the initial context.
 	logger := zap.NewJSON(
-		zap.Debug,
+		zap.DebugLevel,
 		zap.Fields(zap.Int("count", 1)),
 	)
 	// Stub the current time in tests.
@@ -107,12 +107,12 @@ func ExampleCheckedMessage() {
 	// logger.Debug will still allocate a slice to hold any passed fields.
 	// Particularly performance-sensitive applications can avoid paying this
 	// penalty by using checked messages.
-	if cm := logger.Check(zap.Debug, "This is a debug log."); cm.OK() {
+	if cm := logger.Check(zap.DebugLevel, "This is a debug log."); cm.OK() {
 		// Debug-level logging is disabled, so we won't get here.
 		cm.Write(zap.Int("foo", 42), zap.Stack())
 	}
 
-	if cm := logger.Check(zap.Info, "This is an info log."); cm.OK() {
+	if cm := logger.Check(zap.InfoLevel, "This is an info log."); cm.OK() {
 		// Since info-level logging is enabled, we expect to write out this message.
 		cm.Write()
 	}

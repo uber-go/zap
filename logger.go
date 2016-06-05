@@ -92,7 +92,7 @@ type jsonLogger struct {
 // Options can change the log level, the output location, or the initial
 // fields that should be added as context.
 func NewJSON(options ...Option) Logger {
-	defaultLevel := atomic.NewInt32(int32(Info))
+	defaultLevel := atomic.NewInt32(int32(InfoLevel))
 	jl := &jsonLogger{
 		enc:   newJSONEncoder(),
 		level: defaultLevel,
@@ -150,9 +150,9 @@ func (jl *jsonLogger) Check(lvl Level, msg string) *CheckedMessage {
 
 func (jl *jsonLogger) Log(lvl Level, msg string, fields ...Field) {
 	switch lvl {
-	case Panic:
+	case PanicLevel:
 		jl.Panic(msg, fields...)
-	case Fatal:
+	case FatalLevel:
 		jl.Fatal(msg, fields...)
 	default:
 		jl.log(lvl, msg, fields)
@@ -160,28 +160,28 @@ func (jl *jsonLogger) Log(lvl Level, msg string, fields ...Field) {
 }
 
 func (jl *jsonLogger) Debug(msg string, fields ...Field) {
-	jl.log(Debug, msg, fields)
+	jl.log(DebugLevel, msg, fields)
 }
 
 func (jl *jsonLogger) Info(msg string, fields ...Field) {
-	jl.log(Info, msg, fields)
+	jl.log(InfoLevel, msg, fields)
 }
 
 func (jl *jsonLogger) Warn(msg string, fields ...Field) {
-	jl.log(Warn, msg, fields)
+	jl.log(WarnLevel, msg, fields)
 }
 
 func (jl *jsonLogger) Error(msg string, fields ...Field) {
-	jl.log(Error, msg, fields)
+	jl.log(ErrorLevel, msg, fields)
 }
 
 func (jl *jsonLogger) Panic(msg string, fields ...Field) {
-	jl.log(Panic, msg, fields)
+	jl.log(PanicLevel, msg, fields)
 	panic(msg)
 }
 
 func (jl *jsonLogger) Fatal(msg string, fields ...Field) {
-	jl.log(Fatal, msg, fields)
+	jl.log(FatalLevel, msg, fields)
 	_exit(1)
 }
 
@@ -219,7 +219,7 @@ func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
 	}
 	temp.Free()
 
-	if lvl > Error {
+	if lvl > ErrorLevel {
 		// Sync on Panic and Fatal, since they may crash the program.
 		jl.w.Sync()
 	}

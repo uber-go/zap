@@ -35,7 +35,7 @@ func Example_standardize() {
 	// Wrap our structured logger to mimic the standard library's log.Logger.
 	// We also specify that we want all calls to the standard logger's Print
 	// family of methods to log at zap's Warn level.
-	stdLogger, err := zwrap.Standardize(zapLogger, zap.Warn)
+	stdLogger, err := zwrap.Standardize(zapLogger, zap.WarnLevel)
 	if err != nil {
 		panic(err.Error())
 	}

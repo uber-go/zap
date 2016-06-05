@@ -36,7 +36,7 @@ func TestLevelFlag(t *testing.T) {
 	}{
 		{
 			args:      nil,
-			wantLevel: Info,
+			wantLevel: InfoLevel,
 		},
 		{
 			args:    []string{"--level", "unknown"},
@@ -44,7 +44,7 @@ func TestLevelFlag(t *testing.T) {
 		},
 		{
 			args:      []string{"--level", "error"},
-			wantLevel: Error,
+			wantLevel: ErrorLevel,
 		},
 	}
 
@@ -54,7 +54,7 @@ func TestLevelFlag(t *testing.T) {
 	for _, tt := range tests {
 		flag.CommandLine = flag.NewFlagSet("test", flag.ContinueOnError)
 		flag.CommandLine.SetOutput(ioutil.Discard)
-		level := LevelFlag("level", Info, "")
+		level := LevelFlag("level", InfoLevel, "")
 
 		err := flag.CommandLine.Parse(tt.args)
 		if tt.wantErr {

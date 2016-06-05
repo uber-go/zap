@@ -28,10 +28,10 @@ import (
 )
 
 func TestJSONLoggerCheck(t *testing.T) {
-	withJSONLogger(t, opts(Info), func(jl *jsonLogger, output func() []string) {
-		assert.False(t, jl.Check(Debug, "Debug.").OK(), "Expected CheckedMessage to be not OK at disabled levels.")
+	withJSONLogger(t, opts(InfoLevel), func(jl *jsonLogger, output func() []string) {
+		assert.False(t, jl.Check(DebugLevel, "Debug.").OK(), "Expected CheckedMessage to be not OK at disabled levels.")
 
-		cm := jl.Check(Info, "Info.")
+		cm := jl.Check(InfoLevel, "Info.")
 		require.True(t, cm.OK(), "Expected CheckedMessage to be OK at enabled levels.")
 		cm.Write(Int("magic", 42))
 		assert.Equal(
@@ -49,7 +49,7 @@ func TestCheckedMessageIsSingleUse(t *testing.T) {
 		`{"msg":"Shouldn't re-use a CheckedMessage.","level":"error","ts":0,"fields":{"original":"Single-use."}}`,
 	}
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
-		cm := jl.Check(Info, "Single-use.")
+		cm := jl.Check(InfoLevel, "Single-use.")
 		cm.Write() // ok
 		cm.Write() // first re-use logs error
 		cm.Write() // second re-use is silently ignored
