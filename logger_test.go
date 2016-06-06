@@ -66,7 +66,7 @@ func withJSONLogger(t testing.TB, opts []Option, f func(*jsonLogger, func() []st
 	errSink := newTestBuffer()
 
 	allOpts := make([]Option, 0, 3+len(opts))
-	allOpts = append(allOpts, All, Output(sink), ErrorOutput(errSink))
+	allOpts = append(allOpts, AllLevel, Output(sink), ErrorOutput(errSink))
 	allOpts = append(allOpts, opts...)
 	jl := NewJSON(allOpts...)
 	jl.StubTime()
@@ -94,25 +94,25 @@ func assertFields(t testing.TB, jl Logger, getOutput func() []string, expectedFi
 
 func TestJSONLoggerSetLevel(t *testing.T) {
 	withJSONLogger(t, nil, func(jl *jsonLogger, _ func() []string) {
-		assert.Equal(t, All, jl.Level(), "Unexpected initial level.")
-		jl.SetLevel(Debug)
-		assert.Equal(t, Debug, jl.Level(), "Unexpected level after SetLevel.")
+		assert.Equal(t, AllLevel, jl.Level(), "Unexpected initial level.")
+		jl.SetLevel(DebugLevel)
+		assert.Equal(t, DebugLevel, jl.Level(), "Unexpected level after SetLevel.")
 	})
 }
 
 func TestJSONLoggerEnabled(t *testing.T) {
-	withJSONLogger(t, opts(Info), func(jl *jsonLogger, _ func() []string) {
-		assert.False(t, jl.Enabled(Debug), "Debug logs shouldn't be enabled at Info level.")
-		assert.True(t, jl.Enabled(Info), "Info logs should be enabled at Info level.")
-		assert.True(t, jl.Enabled(Warn), "Warn logs should be enabled at Info level.")
-		assert.True(t, jl.Enabled(Error), "Error logs should be enabled at Info level.")
-		assert.True(t, jl.Enabled(Panic), "Panic logs should be enabled at Info level.")
-		assert.True(t, jl.Enabled(Fatal), "Fatal logs should be enabled at Info level.")
+	withJSONLogger(t, opts(InfoLevel), func(jl *jsonLogger, _ func() []string) {
+		assert.False(t, jl.Enabled(DebugLevel), "Debug logs shouldn't be enabled at Info level.")
+		assert.True(t, jl.Enabled(InfoLevel), "Info logs should be enabled at Info level.")
+		assert.True(t, jl.Enabled(WarnLevel), "Warn logs should be enabled at Info level.")
+		assert.True(t, jl.Enabled(ErrorLevel), "Error logs should be enabled at Info level.")
+		assert.True(t, jl.Enabled(PanicLevel), "Panic logs should be enabled at Info level.")
+		assert.True(t, jl.Enabled(FatalLevel), "Fatal logs should be enabled at Info level.")
 
-		for _, lvl := range []Level{Debug, Info, Warn, Error, Panic, Fatal} {
-			jl.SetLevel(None)
+		for _, lvl := range []Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, PanicLevel, FatalLevel} {
+			jl.SetLevel(NoneLevel)
 			assert.False(t, jl.Enabled(lvl), "No logging should be enabled at None level.")
-			jl.SetLevel(All)
+			jl.SetLevel(AllLevel)
 			assert.True(t, jl.Enabled(lvl), "All logging should be enabled at All level.")
 		}
 	})
@@ -130,7 +130,7 @@ func TestJSONLoggerConcurrentLevelMutation(t *testing.T) {
 		}(jl)
 		go func(l Logger) {
 			<-proceed
-			jl.SetLevel(Warn)
+			jl.SetLevel(WarnLevel)
 		}(jl)
 	}
 	close(proceed)
@@ -162,19 +162,19 @@ func TestJSONLoggerWith(t *testing.T) {
 
 func TestJSONLoggerLog(t *testing.T) {
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
-		jl.Log(Debug, "foo")
+		jl.Log(DebugLevel, "foo")
 		assertMessage(t, "debug", "foo", output()[0])
 	})
 
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
-		assert.Panics(t, func() { jl.Log(Panic, "foo") }, "Expected logging at Panic level to panic.")
+		assert.Panics(t, func() { jl.Log(PanicLevel, "foo") }, "Expected logging at Panic level to panic.")
 		assertMessage(t, "panic", "foo", output()[0])
 	})
 
 	stub := stubExit()
 	defer stub.Unstub()
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
-		jl.Log(Fatal, "foo")
+		jl.Log(FatalLevel, "foo")
 		assertMessage(t, "fatal", "foo", output()[0])
 		stub.AssertStatus(t, 1)
 	})
@@ -247,7 +247,7 @@ func TestJSONLoggerDFatal(t *testing.T) {
 
 func TestJSONLoggerNoOpsDisabledLevels(t *testing.T) {
 	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
-		jl.SetLevel(Warn)
+		jl.SetLevel(WarnLevel)
 		jl.Info("silence!")
 		assert.Equal(t, []string{}, output(), "Expected logging at a disabled level to produce no output.")
 	})
@@ -257,7 +257,7 @@ func TestJSONLoggerInternalErrorHandling(t *testing.T) {
 	buf := newTestBuffer()
 	errBuf := newTestBuffer()
 
-	jl := NewJSON(All, Output(buf), ErrorOutput(errBuf), Fields(Marshaler("user", fakeUser{"fail"})))
+	jl := NewJSON(AllLevel, Output(buf), ErrorOutput(errBuf), Fields(Marshaler("user", fakeUser{"fail"})))
 	jl.StubTime()
 	output := func() []string { return strings.Split(buf.String(), "\n") }
 
@@ -271,7 +271,7 @@ func TestJSONLoggerInternalErrorHandling(t *testing.T) {
 func TestJSONLoggerWriteMessageFailure(t *testing.T) {
 	errBuf := &bytes.Buffer{}
 	errSink := &spywrite.WriteSyncer{Writer: errBuf}
-	logger := NewJSON(All, Output(AddSync(spywrite.FailWriter{})), ErrorOutput(errSink))
+	logger := NewJSON(AllLevel, Output(AddSync(spywrite.FailWriter{})), ErrorOutput(errSink))
 
 	logger.Info("foo")
 	// Should log the error.
@@ -288,18 +288,18 @@ func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
 
 	all := []Logger{grandparent, parent, child}
 	for _, logger := range all {
-		assert.Equal(t, Info, logger.Level(), "Expected all loggers to start at Info level.")
+		assert.Equal(t, InfoLevel, logger.Level(), "Expected all loggers to start at Info level.")
 	}
 
-	parent.SetLevel(Debug)
+	parent.SetLevel(DebugLevel)
 	for _, logger := range all {
-		assert.Equal(t, Debug, logger.Level(), "Expected all loggers to switch to Debug level.")
+		assert.Equal(t, DebugLevel, logger.Level(), "Expected all loggers to switch to Debug level.")
 	}
 }
 
 func TestJSONLoggerSyncsOutput(t *testing.T) {
 	sink := &spywrite.WriteSyncer{Writer: ioutil.Discard}
-	logger := NewJSON(All, Output(sink))
+	logger := NewJSON(AllLevel, Output(sink))
 
 	logger.Error("foo")
 	assert.False(t, sink.Called(), "Didn't expect logging at error level to Sync underlying WriteCloser.")

@@ -95,10 +95,10 @@ func Time(key string, val time.Time) Field {
 	return Int64(key, val.UnixNano())
 }
 
-// Err constructs a Field that stores err.Error() under the key "error". This is
+// Error constructs a Field that stores err.Error() under the key "error". This is
 // just a convenient shortcut for a common pattern - apart from saving a few
 // keystrokes, it's no different from using zap.String.
-func Err(err error) Field {
+func Error(err error) Field {
 	return String("error", err.Error())
 }
 

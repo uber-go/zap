@@ -56,13 +56,13 @@ func Standardize(l zap.Logger, printAt zap.Level) (StandardLogger, error) {
 		fatal: l.Fatal,
 	}
 	switch printAt {
-	case zap.Debug:
+	case zap.DebugLevel:
 		s.write = l.Debug
-	case zap.Info:
+	case zap.InfoLevel:
 		s.write = l.Info
-	case zap.Warn:
+	case zap.WarnLevel:
 		s.write = l.Warn
-	case zap.Error:
+	case zap.ErrorLevel:
 		s.write = l.Error
 	default:
 		return nil, ErrInvalidLevel

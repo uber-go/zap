@@ -41,8 +41,8 @@ func BenchmarkStandardLibraryWithoutFields(b *testing.B) {
 
 func BenchmarkZapStandardizeWithoutFields(b *testing.B) {
 	logger, err := zwrap.Standardize(
-		zap.NewJSON(zap.All, zap.Output(zap.Discard)),
-		zap.Info,
+		zap.NewJSON(zap.AllLevel, zap.Output(zap.Discard)),
+		zap.InfoLevel,
 	)
 	if err != nil {
 		panic("Failed to Standardize a zap.Logger.")

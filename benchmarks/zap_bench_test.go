@@ -59,7 +59,7 @@ func fakeFields() []zap.Field {
 		zap.String("string", "four!"),
 		zap.Bool("bool", true),
 		zap.Time("time", time.Unix(0, 0)),
-		zap.Err(errExample),
+		zap.Error(errExample),
 		zap.Duration("duration", time.Second),
 		zap.Marshaler("user-defined type", _jane),
 		zap.String("another string", "done!"),
@@ -75,7 +75,7 @@ func fakeMessages(n int) []string {
 }
 
 func BenchmarkZapDisabledLevelsWithoutFields(b *testing.B) {
-	logger := zap.NewJSON(zap.Error, zap.Output(zap.Discard))
+	logger := zap.NewJSON(zap.ErrorLevel, zap.Output(zap.Discard))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -86,7 +86,7 @@ func BenchmarkZapDisabledLevelsWithoutFields(b *testing.B) {
 
 func BenchmarkZapDisabledLevelsAccumulatedContext(b *testing.B) {
 	context := fakeFields()
-	logger := zap.NewJSON(zap.Error, zap.Output(zap.Discard), zap.Fields(context...))
+	logger := zap.NewJSON(zap.ErrorLevel, zap.Output(zap.Discard), zap.Fields(context...))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -96,7 +96,7 @@ func BenchmarkZapDisabledLevelsAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapDisabledLevelsAddingFields(b *testing.B) {
-	logger := zap.NewJSON(zap.Error, zap.Output(zap.Discard))
+	logger := zap.NewJSON(zap.ErrorLevel, zap.Output(zap.Discard))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -106,11 +106,11 @@ func BenchmarkZapDisabledLevelsAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapDisabledLevelsCheckAddingFields(b *testing.B) {
-	logger := zap.NewJSON(zap.Error, zap.Output(zap.Discard))
+	logger := zap.NewJSON(zap.ErrorLevel, zap.Output(zap.Discard))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			if m := logger.Check(zap.Info, "Should be discarded."); m.OK() {
+			if m := logger.Check(zap.InfoLevel, "Should be discarded."); m.OK() {
 				m.Write(fakeFields()...)
 			}
 		}
@@ -118,7 +118,7 @@ func BenchmarkZapDisabledLevelsCheckAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapAddingFields(b *testing.B) {
-	logger := zap.NewJSON(zap.All, zap.Output(zap.Discard))
+	logger := zap.NewJSON(zap.AllLevel, zap.Output(zap.Discard))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -129,7 +129,7 @@ func BenchmarkZapAddingFields(b *testing.B) {
 
 func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 	context := fakeFields()
-	logger := zap.NewJSON(zap.All, zap.Output(zap.Discard), zap.Fields(context...))
+	logger := zap.NewJSON(zap.AllLevel, zap.Output(zap.Discard), zap.Fields(context...))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -139,7 +139,7 @@ func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapWithoutFields(b *testing.B) {
-	logger := zap.NewJSON(zap.All, zap.Output(zap.Discard))
+	logger := zap.NewJSON(zap.AllLevel, zap.Output(zap.Discard))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -150,7 +150,7 @@ func BenchmarkZapWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleWithoutFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	base := zap.NewJSON(zap.All, zap.Output(zap.Discard))
+	base := zap.NewJSON(zap.AllLevel, zap.Output(zap.Discard))
 	logger := zwrap.Sample(base, time.Second, 10, 10000)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -164,7 +164,7 @@ func BenchmarkZapSampleWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleAddingFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	base := zap.NewJSON(zap.All, zap.Output(zap.Discard))
+	base := zap.NewJSON(zap.AllLevel, zap.Output(zap.Discard))
 	logger := zwrap.Sample(base, time.Second, 10, 10000)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -178,14 +178,14 @@ func BenchmarkZapSampleAddingFields(b *testing.B) {
 
 func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	base := zap.NewJSON(zap.All, zap.Output(zap.Discard))
+	base := zap.NewJSON(zap.AllLevel, zap.Output(zap.Discard))
 	logger := zwrap.Sample(base, time.Second, 10, 10000)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
 		for pb.Next() {
 			i++
-			if cm := logger.Check(zap.Info, messages[i%1000]); cm.OK() {
+			if cm := logger.Check(zap.InfoLevel, messages[i%1000]); cm.OK() {
 				cm.Write()
 			}
 		}
@@ -194,14 +194,14 @@ func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleCheckAddingFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	base := zap.NewJSON(zap.All, zap.Output(zap.Discard))
+	base := zap.NewJSON(zap.AllLevel, zap.Output(zap.Discard))
 	logger := zwrap.Sample(base, time.Second, 10, 10000)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
 		for pb.Next() {
 			i++
-			if m := logger.Check(zap.Info, messages[i%1000]); m.OK() {
+			if m := logger.Check(zap.InfoLevel, messages[i%1000]); m.OK() {
 				m.Write(fakeFields()...)
 			}
 		}

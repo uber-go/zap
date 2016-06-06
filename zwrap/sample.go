@@ -111,43 +111,43 @@ func (s *sampler) Log(lvl zap.Level, msg string, fields ...zap.Field) {
 }
 
 func (s *sampler) Debug(msg string, fields ...zap.Field) {
-	if s.check(zap.Debug, msg) {
+	if s.check(zap.DebugLevel, msg) {
 		s.Logger.Debug(msg, fields...)
 	}
 }
 
 func (s *sampler) Info(msg string, fields ...zap.Field) {
-	if s.check(zap.Info, msg) {
+	if s.check(zap.InfoLevel, msg) {
 		s.Logger.Info(msg, fields...)
 	}
 }
 
 func (s *sampler) Warn(msg string, fields ...zap.Field) {
-	if s.check(zap.Warn, msg) {
+	if s.check(zap.WarnLevel, msg) {
 		s.Logger.Warn(msg, fields...)
 	}
 }
 
 func (s *sampler) Error(msg string, fields ...zap.Field) {
-	if s.check(zap.Error, msg) {
+	if s.check(zap.ErrorLevel, msg) {
 		s.Logger.Error(msg, fields...)
 	}
 }
 
 func (s *sampler) Panic(msg string, fields ...zap.Field) {
-	if s.check(zap.Panic, msg) {
+	if s.check(zap.PanicLevel, msg) {
 		s.Logger.Panic(msg, fields...)
 	}
 }
 
 func (s *sampler) Fatal(msg string, fields ...zap.Field) {
-	if s.check(zap.Fatal, msg) {
+	if s.check(zap.FatalLevel, msg) {
 		s.Logger.Fatal(msg, fields...)
 	}
 }
 
 func (s *sampler) DFatal(msg string, fields ...zap.Field) {
-	if s.check(zap.Error, msg) {
+	if s.check(zap.ErrorLevel, msg) {
 		s.Logger.DFatal(msg, fields...)
 	}
 }
