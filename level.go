@@ -81,7 +81,8 @@ func (l Level) String() string {
 	}
 }
 
-// MarshalText satisfies text.Marshaler.
+// MarshalText marshals the Level to text. Note that the text representation
+// drops the -Level suffix (see example).
 func (l *Level) MarshalText() ([]byte, error) {
 	if l == nil {
 		return nil, errMarshalNilLevel
@@ -89,7 +90,9 @@ func (l *Level) MarshalText() ([]byte, error) {
 	return []byte(l.String()), nil
 }
 
-// UnmarshalText satisfies text.Unmarshaler.
+// UnmarshalText unmarshals text to a level. Like MarshalText, UnmarshalText
+// expects the text representation of a Level to drop the -Level suffix (see
+// example).
 //
 // In particular, this makes it easy to configure logging levels using YAML,
 // TOML, or JSON files.

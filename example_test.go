@@ -21,6 +21,8 @@
 package zap_test
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/uber-go/zap"
@@ -119,4 +121,31 @@ func ExampleCheckedMessage() {
 
 	// Output:
 	// {"msg":"This is an info log.","level":"info","ts":0,"fields":{}}
+}
+
+func ExampleLevel_MarshalText() {
+	level := zap.ErrorLevel
+	s := struct {
+		Level *zap.Level `json:"level"`
+	}{&level}
+	bytes, _ := json.Marshal(s)
+	fmt.Println(string(bytes))
+
+	// Output:
+	// {"level":"error"}
+}
+
+func ExampleLevel_UnmarshalText() {
+	var s struct {
+		Level zap.Level `json:"level"`
+	}
+	// The zero value for a zap.Level is zap.InfoLevel.
+	fmt.Println(s.Level)
+
+	json.Unmarshal([]byte(`{"level":"error"}`), &s)
+	fmt.Println(s.Level)
+
+	// Output:
+	// info
+	// error
 }
