@@ -32,86 +32,89 @@ import (
 // Barkify wraps zap's JSON logger to make it compatible with the bark.Logger
 // interface.
 func Barkify(l zap.Logger) bark.Logger {
-	return &logger{
+	if wrapper, ok := l.(*zapper); ok {
+		return wrapper.bl
+	}
+	return &barker{
 		zl:     l,
 		fields: make(bark.Fields),
 	}
 }
 
-type logger struct {
+type barker struct {
 	zl     zap.Logger
 	fields bark.Fields
 }
 
-func (l *logger) Debug(args ...interface{}) {
+func (l *barker) Debug(args ...interface{}) {
 	l.zl.Debug(fmt.Sprint(args...))
 }
 
-func (l *logger) Debugf(format string, args ...interface{}) {
+func (l *barker) Debugf(format string, args ...interface{}) {
 	l.zl.Debug(fmt.Sprintf(format, args...))
 }
 
-func (l *logger) Info(args ...interface{}) {
+func (l *barker) Info(args ...interface{}) {
 	l.zl.Info(fmt.Sprint(args...))
 }
 
-func (l *logger) Infof(format string, args ...interface{}) {
+func (l *barker) Infof(format string, args ...interface{}) {
 	l.zl.Info(fmt.Sprintf(format, args...))
 }
 
-func (l *logger) Warn(args ...interface{}) {
+func (l *barker) Warn(args ...interface{}) {
 	l.zl.Warn(fmt.Sprint(args...))
 }
 
-func (l *logger) Warnf(format string, args ...interface{}) {
+func (l *barker) Warnf(format string, args ...interface{}) {
 	l.zl.Warn(fmt.Sprintf(format, args...))
 }
 
-func (l *logger) Error(args ...interface{}) {
+func (l *barker) Error(args ...interface{}) {
 	l.zl.Error(fmt.Sprint(args...))
 }
 
-func (l *logger) Errorf(format string, args ...interface{}) {
+func (l *barker) Errorf(format string, args ...interface{}) {
 	l.zl.Error(fmt.Sprintf(format, args...))
 }
 
-func (l *logger) Panic(args ...interface{}) {
+func (l *barker) Panic(args ...interface{}) {
 	l.zl.Panic(fmt.Sprint(args...))
 }
 
-func (l *logger) Panicf(format string, args ...interface{}) {
+func (l *barker) Panicf(format string, args ...interface{}) {
 	l.zl.Panic(fmt.Sprintf(format, args...))
 }
 
-func (l *logger) Fatal(args ...interface{}) {
+func (l *barker) Fatal(args ...interface{}) {
 	l.zl.Fatal(fmt.Sprint(args...))
 }
 
-func (l *logger) Fatalf(format string, args ...interface{}) {
+func (l *barker) Fatalf(format string, args ...interface{}) {
 	l.zl.Fatal(fmt.Sprintf(format, args...))
 }
 
-func (l *logger) WithField(key string, val interface{}) bark.Logger {
+func (l *barker) WithField(key string, val interface{}) bark.Logger {
 	newFields := bark.Fields{key: val}
-	return &logger{
+	return &barker{
 		zl:     l.addZapFields(newFields),
 		fields: l.addBarkFields(newFields),
 	}
 }
 
-func (l *logger) WithFields(fs bark.LogFields) bark.Logger {
+func (l *barker) WithFields(fs bark.LogFields) bark.Logger {
 	newFields := fs.Fields()
-	return &logger{
+	return &barker{
 		zl:     l.addZapFields(newFields),
 		fields: l.addBarkFields(newFields),
 	}
 }
 
-func (l *logger) Fields() bark.Fields {
+func (l *barker) Fields() bark.Fields {
 	return l.fields
 }
 
-func (l *logger) addBarkFields(fs bark.Fields) bark.Fields {
+func (l *barker) addBarkFields(fs bark.Fields) bark.Fields {
 	newFields := make(bark.Fields, len(l.fields)+len(fs))
 	for k, v := range l.fields {
 		newFields[k] = v
@@ -122,7 +125,7 @@ func (l *logger) addBarkFields(fs bark.Fields) bark.Fields {
 	return newFields
 }
 
-func (l *logger) addZapFields(fs bark.Fields) zap.Logger {
+func (l *barker) addZapFields(fs bark.Fields) zap.Logger {
 	zfs := make([]zap.Field, 0, len(fs))
 	for key, val := range fs {
 		switch v := val.(type) {

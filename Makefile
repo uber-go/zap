@@ -39,8 +39,9 @@ ifdef SHOULD_LINT
 	@rm -rf lint.log
 	@echo "Checking formatting..."
 	@gofmt -d -s $(PKG_FILES) 2>&1 | tee lint.log
-	@echo "Checking vet..."
+	@echo "Installing test dependencies for vet..."
 	@go test -i $(PKGS)
+	@echo "Checking vet..."
 	@$(foreach dir,$(PKG_FILES),go tool vet $(dir) 2>&1 | tee -a lint.log;)
 	@echo "Checking lint..."
 	@$(foreach dir,$(PKGS),golint $(dir) 2>&1 | tee -a lint.log;)
