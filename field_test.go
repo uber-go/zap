@@ -46,7 +46,7 @@ func assertFieldJSON(t testing.TB, expected string, field Field) {
 	enc := newJSONEncoder()
 	defer enc.Free()
 
-	field.addTo(enc)
+	field.AddTo(enc)
 	assert.Equal(t, expected, string(enc.bytes),
 		"Unexpected JSON output after applying field %+v.", field)
 }
@@ -55,7 +55,7 @@ func assertNotEqualFieldJSON(t testing.TB, expected string, field Field) {
 	enc := newJSONEncoder()
 	defer enc.Free()
 
-	field.addTo(enc)
+	field.AddTo(enc)
 	assert.NotEqual(t, expected, string(enc.bytes),
 		"Unexpected JSON output after applying field %+v.", field)
 }
@@ -73,7 +73,7 @@ func assertCanBeReused(t testing.TB, field Field) {
 		go func() {
 			defer wg.Done()
 			assert.NotPanics(t, func() {
-				field.addTo(enc)
+				field.AddTo(enc)
 			}, "Reusing a field should not cause issues")
 		}()
 	}
@@ -167,7 +167,7 @@ func TestStackField(t *testing.T) {
 	enc := newJSONEncoder()
 	defer enc.Free()
 
-	Stack().addTo(enc)
+	Stack().AddTo(enc)
 	output := string(enc.bytes)
 
 	require.True(t, strings.HasPrefix(output, `"stacktrace":`), "Stacktrace added under an unexpected key.")
@@ -180,6 +180,6 @@ func TestUnknownField(t *testing.T) {
 
 	for _, ft := range []fieldType{unknownType, -42} {
 		field := Field{fieldType: ft}
-		assert.Panics(t, func() { field.addTo(enc) }, "Expected panic when using a field of unknown type.")
+		assert.Panics(t, func() { field.AddTo(enc) }, "Expected panic when using a field of unknown type.")
 	}
 }
