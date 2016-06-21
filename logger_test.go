@@ -100,24 +100,6 @@ func TestJSONLoggerSetLevel(t *testing.T) {
 	})
 }
 
-func TestJSONLoggerEnabled(t *testing.T) {
-	withJSONLogger(t, opts(InfoLevel), func(jl *jsonLogger, _ func() []string) {
-		assert.False(t, jl.Enabled(DebugLevel), "Debug logs shouldn't be enabled at Info level.")
-		assert.True(t, jl.Enabled(InfoLevel), "Info logs should be enabled at Info level.")
-		assert.True(t, jl.Enabled(WarnLevel), "Warn logs should be enabled at Info level.")
-		assert.True(t, jl.Enabled(ErrorLevel), "Error logs should be enabled at Info level.")
-		assert.True(t, jl.Enabled(PanicLevel), "Panic logs should be enabled at Info level.")
-		assert.True(t, jl.Enabled(FatalLevel), "Fatal logs should be enabled at Info level.")
-
-		for _, lvl := range []Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, PanicLevel, FatalLevel} {
-			jl.SetLevel(NoneLevel)
-			assert.False(t, jl.Enabled(lvl), "No logging should be enabled at None level.")
-			jl.SetLevel(AllLevel)
-			assert.True(t, jl.Enabled(lvl), "All logging should be enabled at All level.")
-		}
-	})
-}
-
 func TestJSONLoggerConcurrentLevelMutation(t *testing.T) {
 	// Trigger races for non-atomic level mutations.
 	proceed := make(chan struct{})
