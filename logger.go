@@ -34,8 +34,6 @@ var _exit = os.Exit
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
 type Logger interface {
-	// Check if output at a specific level is enabled.
-	Enabled(Level) bool
 	// Check the minimum enabled log level.
 	Level() Level
 	// Change the level of this logger, as well as all its ancestors and
@@ -117,10 +115,6 @@ func (jl *jsonLogger) SetLevel(lvl Level) {
 	jl.level.Store(int32(lvl))
 }
 
-func (jl *jsonLogger) Enabled(lvl Level) bool {
-	return lvl >= jl.Level()
-}
-
 func (jl *jsonLogger) With(fields ...Field) Logger {
 	clone := &jsonLogger{
 		level:       jl.level,
@@ -142,7 +136,7 @@ func (jl *jsonLogger) StubTime() {
 }
 
 func (jl *jsonLogger) Check(lvl Level, msg string) *CheckedMessage {
-	if !jl.Enabled(lvl) {
+	if !(lvl >= jl.Level()) {
 		return nil
 	}
 	return NewCheckedMessage(jl, lvl, msg)
@@ -193,7 +187,7 @@ func (jl *jsonLogger) DFatal(msg string, fields ...Field) {
 }
 
 func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
-	if !jl.Enabled(lvl) {
+	if !(lvl >= jl.Level()) {
 		return
 	}
 

@@ -91,11 +91,6 @@ func (l *Logger) SetDevelopment(dev bool) {
 	l.Unlock()
 }
 
-// Enabled checks whether logging at the specified level is enabled.
-func (l *Logger) Enabled(lvl zap.Level) bool {
-	return lvl >= l.Level()
-}
-
 // Level returns the currently-enabled logging level.
 func (l *Logger) Level() zap.Level {
 	l.Lock()
@@ -124,7 +119,7 @@ func (l *Logger) With(fields ...zap.Field) zap.Logger {
 
 // Check returns a CheckedMessage if logging a particular message would succeed.
 func (l *Logger) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
-	if !l.Enabled(lvl) {
+	if !(lvl >= l.Level()) {
 		return nil
 	}
 	return zap.NewCheckedMessage(l, lvl, msg)
