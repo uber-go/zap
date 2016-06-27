@@ -34,7 +34,7 @@ type user struct {
 	CreatedAt time.Time
 }
 
-func (u user) MarshalLog(kv zap.KeyValue) error {
+func (u *user) MarshalLog(kv zap.KeyValue) error {
 	kv.AddString("name", u.Name)
 	kv.AddString("email", u.Email)
 	kv.AddInt64("created_at", u.CreatedAt.UnixNano())
