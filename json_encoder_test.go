@@ -149,19 +149,6 @@ func TestJSONWriteMessage(t *testing.T) {
 	})
 }
 
-func TestJSONNest(t *testing.T) {
-	withJSONEncoder(func(enc *jsonEncoder) {
-		err := enc.Nest("nested", func(kv KeyValue) error {
-			kv.AddString("sub-foo", "sub-bar")
-			return nil
-		})
-		require.NoError(t, err, "Unexpected error using Nest.")
-		enc.AddString("baz", "bing")
-
-		assertJSON(t, `"foo":"bar","nested":{"sub-foo":"sub-bar"},"baz":"bing"`, enc)
-	})
-}
-
 type loggable struct{}
 
 func (l loggable) MarshalLog(kv KeyValue) error {

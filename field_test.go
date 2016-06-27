@@ -163,6 +163,11 @@ func TestNestField(t *testing.T) {
 	assertCanBeReused(t, nest)
 }
 
+func TestLogMarshalerFunc(t *testing.T) {
+	assertFieldJSON(t, `"foo":{"name":"phil"}`,
+		Marshaler("foo", LogMarshalerFunc(fakeUser{"phil"}.MarshalLog)))
+}
+
 func TestStackField(t *testing.T) {
 	enc := newJSONEncoder()
 	defer enc.Free()

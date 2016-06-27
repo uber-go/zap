@@ -35,5 +35,4 @@ type KeyValue interface {
 	// allocation-heavy. Consider implementing the LogMarshaler interface instead.
 	AddObject(key string, value interface{})
 	AddString(key, value string)
-	Nest(key string, f func(KeyValue) error) error
 }

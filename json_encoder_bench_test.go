@@ -34,15 +34,20 @@ type logRecord struct {
 	Fields  map[string]interface{} `json:"fields"`
 }
 
-var s string
+// newEncoder returns the encoder interface, which is how end users would use
+// the LogMarshalerFunc type. Using the JSON encoder type directly allows
+// inlining which reduces allocs artificially.
+func newEncoder() encoder {
+	return newJSONEncoder()
+}
 
-func BenchmarkJSONEncoderNest(b *testing.B) {
+func BenchmarkLogMarshalerFunc(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		enc := newJSONEncoder()
-		enc.Nest("nested", func(kv KeyValue) error {
+		enc := newEncoder()
+		enc.AddMarshaler("nested", LogMarshalerFunc(func(kv KeyValue) error {
 			kv.AddInt("i", i)
 			return nil
-		})
+		}))
 		enc.Free()
 	}
 }
