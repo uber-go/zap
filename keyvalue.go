@@ -26,14 +26,14 @@ package zap
 //
 // See Marshaler for an example.
 type KeyValue interface {
-	AddBool(string, bool)
-	AddFloat64(string, float64)
-	AddInt(string, int)
-	AddInt64(string, int64)
-	AddMarshaler(string, LogMarshaler) error
+	AddBool(key string, value bool)
+	AddFloat64(key string, value float64)
+	AddInt(key string, value int)
+	AddInt64(key string, value int64)
+	AddMarshaler(key string, marshaler LogMarshaler) error
 	// AddObject uses reflection to serialize arbitrary objects, so it's slow and
 	// allocation-heavy. Consider implementing the LogMarshaler interface instead.
-	AddObject(string, interface{})
-	AddString(string, string)
-	Nest(string, func(KeyValue) error) error
+	AddObject(key string, value interface{})
+	AddString(key, value string)
+	Nest(key string, f func(KeyValue) error) error
 }
