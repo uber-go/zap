@@ -34,14 +34,15 @@ type logRecord struct {
 	Fields  map[string]interface{} `json:"fields"`
 }
 
+var s string
+
 func BenchmarkJSONEncoderNest(b *testing.B) {
-	f := func(kv KeyValue) error {
-		kv.AddString("s", "string")
-		return nil
-	}
 	for i := 0; i < b.N; i++ {
 		enc := newJSONEncoder()
-		enc.Nest("nested", f)
+		enc.Nest("nested", func(kv KeyValue) error {
+			kv.AddInt("i", i)
+			return nil
+		})
 		enc.Free()
 	}
 }
