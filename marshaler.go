@@ -26,3 +26,12 @@ package zap
 type LogMarshaler interface {
 	MarshalLog(KeyValue) error
 }
+
+// LogMarshalerFunc is a type adapter that allows using a function as a
+// LogMarshaler.
+type LogMarshalerFunc func(KeyValue) error
+
+// MarshalLog calls the underlying function.
+func (f LogMarshalerFunc) MarshalLog(kv KeyValue) error {
+	return f(kv)
+}

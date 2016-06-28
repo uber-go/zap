@@ -117,22 +117,15 @@ func (enc *jsonEncoder) AddFloat64(key string, val float64) {
 	}
 }
 
-// Nest allows the caller to populate a nested object under the provided key.
-func (enc *jsonEncoder) Nest(key string, f func(KeyValue) error) error {
-	enc.addKey(key)
-	enc.bytes = append(enc.bytes, '{')
-	err := f(enc)
-	enc.bytes = append(enc.bytes, '}')
-	return err
-}
-
 // AddMarshaler adds a LogMarshaler to the encoder's fields.
 //
 // TODO: Encode the error into the message instead of returning.
 func (enc *jsonEncoder) AddMarshaler(key string, obj LogMarshaler) error {
-	return enc.Nest(key, func(kv KeyValue) error {
-		return obj.MarshalLog(kv)
-	})
+	enc.addKey(key)
+	enc.bytes = append(enc.bytes, '{')
+	err := obj.MarshalLog(enc)
+	enc.bytes = append(enc.bytes, '}')
+	return err
 }
 
 // AddObject uses reflection to add an arbitrary object to the logging context.
