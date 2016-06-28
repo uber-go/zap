@@ -34,14 +34,14 @@ type user struct {
 	CreatedAt time.Time
 }
 
-func (u user) MarshalLog(kv zap.KeyValue) error {
+func (u *user) MarshalLog(kv zap.KeyValue) error {
 	kv.AddString("name", u.Name)
 	kv.AddString("email", u.Email)
 	kv.AddInt64("created_at", u.CreatedAt.UnixNano())
 	return nil
 }
 
-var _jane = user{
+var _jane = &user{
 	Name:      "Jane Doe",
 	Email:     "jane@test.com",
 	CreatedAt: time.Date(1980, 1, 1, 12, 0, 0, 0, time.UTC),
@@ -126,8 +126,6 @@ func BenchmarkStackField(b *testing.B) {
 }
 
 func BenchmarkMarshalerField(b *testing.B) {
-	// Expect an extra allocation here, since casting the user struct to the
-	// zap.Marshaler interface costs an alloc.
 	withBenchedLogger(b, func(log zap.Logger) {
 		log.Info("Arbitrary zap.LogMarshaler.", zap.Marshaler("user", _jane))
 	})
