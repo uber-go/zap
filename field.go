@@ -148,7 +148,8 @@ func Nest(key string, fields ...Field) Field {
 	return Field{key: key, fieldType: marshalerType, obj: multiFields(fields)}
 }
 
-func (f Field) addTo(kv KeyValue) error {
+// AddTo exports a field through the KeyValue interface.
+func (f Field) AddTo(kv KeyValue) error {
 	switch f.fieldType {
 	case boolType:
 		kv.AddBool(f.key, f.ival == 1)
@@ -181,7 +182,7 @@ func (fs multiFields) MarshalLog(kv KeyValue) error {
 func addFields(kv KeyValue, fields []Field) error {
 	var errs multiError
 	for _, f := range fields {
-		if err := f.addTo(kv); err != nil {
+		if err := f.AddTo(kv); err != nil {
 			errs = append(errs, err)
 		}
 	}

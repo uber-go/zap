@@ -72,7 +72,7 @@ func AddCaller() Option {
 func AddStacks(lvl Level) Option {
 	return hook(func(msgLevel Level, msg string, kv KeyValue) (string, error) {
 		if msgLevel >= lvl {
-			Stack().addTo(kv)
+			Stack().AddTo(kv)
 		}
 		return msg, nil
 	})
