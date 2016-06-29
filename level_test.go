@@ -21,6 +21,8 @@
 package zap
 
 import (
+	"fmt"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,14 +30,14 @@ import (
 
 func TestLevelString(t *testing.T) {
 	tests := map[Level]string{
-		AllLevel:   "all",
 		DebugLevel: "debug",
 		InfoLevel:  "info",
 		WarnLevel:  "warn",
 		ErrorLevel: "error",
 		PanicLevel: "panic",
 		FatalLevel: "fatal",
-		NoneLevel:  "none",
+		allLevel:   fmt.Sprintf("Level(%d)", math.MinInt32),
+		noneLevel:  fmt.Sprintf("Level(%d)", math.MaxInt32),
 		Level(-42): "Level(-42)",
 	}
 
@@ -49,14 +51,12 @@ func TestLevelText(t *testing.T) {
 		text  string
 		level Level
 	}{
-		{"all", AllLevel},
 		{"debug", DebugLevel},
 		{"info", InfoLevel},
 		{"warn", WarnLevel},
 		{"error", ErrorLevel},
 		{"panic", PanicLevel},
 		{"fatal", FatalLevel},
-		{"none", NoneLevel},
 	}
 	for _, tt := range tests {
 		lvl := tt.level

@@ -33,13 +33,13 @@ import (
 
 func newStd(lvl zap.Level) (StandardLogger, *bytes.Buffer, error) {
 	buf := &bytes.Buffer{}
-	logger := zap.NewJSON(zap.AllLevel, zap.Output(zap.AddSync(buf)))
+	logger := zap.NewJSON(zap.DebugLevel, zap.Output(zap.AddSync(buf)))
 	std, err := Standardize(logger, lvl)
 	return std, buf, err
 }
 
 func TestStandardizeInvalidLevels(t *testing.T) {
-	for _, level := range []zap.Level{zap.AllLevel, zap.PanicLevel, zap.FatalLevel, zap.NoneLevel, zap.Level(42)} {
+	for _, level := range []zap.Level{zap.PanicLevel, zap.FatalLevel, zap.Level(42)} {
 		_, _, err := newStd(level)
 		assert.Equal(t, ErrInvalidLevel, err, "Expected ErrInvalidLevel when passing an invalid level to Standardize.")
 	}
