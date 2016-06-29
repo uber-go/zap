@@ -129,6 +129,7 @@ func TestTimeField(t *testing.T) {
 
 func TestErrField(t *testing.T) {
 	assertFieldJSON(t, `"error":"fail"`, Error(errors.New("fail")))
+	assertFieldJSON(t, ``, Error(nil))
 	assertCanBeReused(t, Error(errors.New("fail")))
 }
 
