@@ -23,7 +23,6 @@ package zap
 import (
 	"errors"
 	"fmt"
-	"math"
 )
 
 var errMarshalNilLevel = errors.New("can't marshal a nil *Level to text")
@@ -50,18 +49,11 @@ const (
 	PanicLevel
 	// FatalLevel logs a message, then calls os.Exit(1).
 	FatalLevel
-
-	// AllLevel logs everything.
-	AllLevel Level = math.MinInt32
-	// NoneLevel silences logging completely.
-	NoneLevel Level = math.MaxInt32
 )
 
 // String returns a lower-case ASCII representation of the log level.
 func (l Level) String() string {
 	switch l {
-	case AllLevel:
-		return "all"
 	case DebugLevel:
 		return "debug"
 	case InfoLevel:
@@ -74,8 +66,6 @@ func (l Level) String() string {
 		return "panic"
 	case FatalLevel:
 		return "fatal"
-	case NoneLevel:
-		return "none"
 	default:
 		return fmt.Sprintf("Level(%d)", l)
 	}
@@ -98,8 +88,6 @@ func (l *Level) MarshalText() ([]byte, error) {
 // TOML, or JSON files.
 func (l *Level) UnmarshalText(text []byte) error {
 	switch string(text) {
-	case "all":
-		*l = AllLevel
 	case "debug":
 		*l = DebugLevel
 	case "info":
@@ -112,8 +100,6 @@ func (l *Level) UnmarshalText(text []byte) error {
 		*l = PanicLevel
 	case "fatal":
 		*l = FatalLevel
-	case "none":
-		*l = NoneLevel
 	default:
 		return fmt.Errorf("unrecognized level: %v", string(text))
 	}

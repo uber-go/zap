@@ -66,7 +66,7 @@ func withJSONLogger(t testing.TB, opts []Option, f func(*jsonLogger, func() []st
 	errSink := newTestBuffer()
 
 	allOpts := make([]Option, 0, 3+len(opts))
-	allOpts = append(allOpts, AllLevel, Output(sink), ErrorOutput(errSink))
+	allOpts = append(allOpts, DebugLevel, Output(sink), ErrorOutput(errSink))
 	allOpts = append(allOpts, opts...)
 	jl := NewJSON(allOpts...)
 	jl.StubTime()
@@ -94,7 +94,7 @@ func assertFields(t testing.TB, jl Logger, getOutput func() []string, expectedFi
 
 func TestJSONLoggerSetLevel(t *testing.T) {
 	withJSONLogger(t, nil, func(jl *jsonLogger, _ func() []string) {
-		assert.Equal(t, AllLevel, jl.Level(), "Unexpected initial level.")
+		assert.Equal(t, DebugLevel, jl.Level(), "Unexpected initial level.")
 		jl.SetLevel(DebugLevel)
 		assert.Equal(t, DebugLevel, jl.Level(), "Unexpected level after SetLevel.")
 	})
@@ -239,7 +239,7 @@ func TestJSONLoggerInternalErrorHandling(t *testing.T) {
 	buf := newTestBuffer()
 	errBuf := newTestBuffer()
 
-	jl := NewJSON(AllLevel, Output(buf), ErrorOutput(errBuf), Fields(Marshaler("user", fakeUser{"fail"})))
+	jl := NewJSON(DebugLevel, Output(buf), ErrorOutput(errBuf), Fields(Marshaler("user", fakeUser{"fail"})))
 	jl.StubTime()
 	output := func() []string { return strings.Split(buf.String(), "\n") }
 
@@ -253,7 +253,7 @@ func TestJSONLoggerInternalErrorHandling(t *testing.T) {
 func TestJSONLoggerWriteMessageFailure(t *testing.T) {
 	errBuf := &bytes.Buffer{}
 	errSink := &spywrite.WriteSyncer{Writer: errBuf}
-	logger := NewJSON(AllLevel, Output(AddSync(spywrite.FailWriter{})), ErrorOutput(errSink))
+	logger := NewJSON(DebugLevel, Output(AddSync(spywrite.FailWriter{})), ErrorOutput(errSink))
 
 	logger.Info("foo")
 	// Should log the error.
@@ -281,7 +281,7 @@ func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
 
 func TestJSONLoggerSyncsOutput(t *testing.T) {
 	sink := &spywrite.WriteSyncer{Writer: ioutil.Discard}
-	logger := NewJSON(AllLevel, Output(sink))
+	logger := NewJSON(DebugLevel, Output(sink))
 
 	logger.Error("foo")
 	assert.False(t, sink.Called(), "Didn't expect logging at error level to Sync underlying WriteCloser.")

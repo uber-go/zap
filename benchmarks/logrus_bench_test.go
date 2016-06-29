@@ -63,7 +63,7 @@ func BenchmarkLogrusAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapBarkifyAddingFields(b *testing.B) {
-	logger := zbark.Barkify(zap.NewJSON(zap.AllLevel, zap.Output(zap.Discard)))
+	logger := zbark.Barkify(zap.NewJSON(zap.DebugLevel, zap.Output(zap.Discard)))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -106,7 +106,7 @@ func BenchmarkLogrusWithAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapBarkifyWithAccumulatedContext(b *testing.B) {
-	baseLogger := zbark.Barkify(zap.NewJSON(zap.AllLevel, zap.Output(zap.Discard)))
+	baseLogger := zbark.Barkify(zap.NewJSON(zap.DebugLevel, zap.Output(zap.Discard)))
 	logger := baseLogger.WithFields(bark.Fields{
 		"int":               1,
 		"int64":             int64(1),

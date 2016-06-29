@@ -48,7 +48,7 @@ var _jane = &user{
 }
 
 func withBenchedLogger(b *testing.B, f func(zap.Logger)) {
-	logger := zap.NewJSON(zap.AllLevel, zap.Output(zap.Discard))
+	logger := zap.NewJSON(zap.DebugLevel, zap.Output(zap.Discard))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -169,7 +169,7 @@ func Benchmark10Fields(b *testing.B) {
 
 func Benchmark100Fields(b *testing.B) {
 	const batchSize = 50
-	logger := zap.NewJSON(zap.AllLevel, zap.Output(zap.Discard))
+	logger := zap.NewJSON(zap.DebugLevel, zap.Output(zap.Discard))
 
 	// Don't include allocating these helper slices in the benchmark. Since
 	// access to them isn't synchronized, we can't run the benchmark in
