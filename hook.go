@@ -37,9 +37,8 @@ var _callerSkip = 3
 type hook func(Level, string, KeyValue) (string, error)
 
 // apply implements the Option interface.
-func (h hook) apply(jl *jsonLogger) error {
+func (h hook) apply(jl *jsonLogger) {
 	jl.hooks = append(jl.hooks, h)
-	return nil
 }
 
 // AddCaller configures the Logger to annotate each message with the filename

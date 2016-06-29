@@ -139,8 +139,9 @@ func TestDurationField(t *testing.T) {
 }
 
 func TestMarshalerField(t *testing.T) {
-	// Marshaling the user failed, so we expect an empty object.
-	assertFieldJSON(t, `"foo":{}`, Marshaler("foo", fakeUser{"fail"}))
+	// Marshaling the user failed, so we expect an empty object and an error
+	// message.
+	assertFieldJSON(t, `"foo":{},"fooError":"fail"`, Marshaler("foo", fakeUser{"fail"}))
 
 	assertFieldJSON(t, `"foo":{"name":"phil"}`, Marshaler("foo", fakeUser{"phil"}))
 	assertCanBeReused(t, Marshaler("foo", fakeUser{"phil"}))
@@ -155,8 +156,9 @@ func TestNestField(t *testing.T) {
 	assertFieldJSON(t, `"foo":{"name":"phil","age":42}`,
 		Nest("foo", String("name", "phil"), Int("age", 42)),
 	)
-	// Marshaling the user failed, so we expect an empty object.
-	assertFieldJSON(t, `"foo":{"user":{}}`,
+	// Marshaling the user failed, so we expect an empty object and an error
+	// message.
+	assertFieldJSON(t, `"foo":{"user":{},"userError":"fail"}`,
 		Nest("foo", Marshaler("user", fakeUser{"fail"})),
 	)
 

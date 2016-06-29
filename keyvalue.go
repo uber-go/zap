@@ -33,6 +33,6 @@ type KeyValue interface {
 	AddMarshaler(key string, marshaler LogMarshaler) error
 	// AddObject uses reflection to serialize arbitrary objects, so it's slow and
 	// allocation-heavy. Consider implementing the LogMarshaler interface instead.
-	AddObject(key string, value interface{})
+	AddObject(key string, value interface{}) error
 	AddString(key, value string)
 }

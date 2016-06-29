@@ -99,9 +99,7 @@ func NewJSON(options ...Option) Logger {
 	}
 
 	for _, opt := range options {
-		if err := opt.apply(jl); err != nil {
-			jl.internalError(err.Error())
-		}
+		opt.apply(jl)
 	}
 
 	return jl
@@ -125,9 +123,7 @@ func (jl *jsonLogger) With(fields ...Field) Logger {
 		alwaysEpoch: jl.alwaysEpoch,
 		development: jl.development,
 	}
-	if err := clone.enc.AddFields(fields); err != nil {
-		jl.internalError(err.Error())
-	}
+	clone.enc.AddFields(fields)
 	return clone
 }
 
@@ -192,9 +188,7 @@ func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
 	}
 
 	temp := jl.enc.Clone()
-	if err := temp.AddFields(fields); err != nil {
-		jl.internalError(err.Error())
-	}
+	temp.AddFields(fields)
 
 	for _, hook := range jl.hooks {
 		newMsg, err := hook(lvl, msg, temp)

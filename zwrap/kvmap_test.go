@@ -54,8 +54,8 @@ func TestKeyValueMapAdd(t *testing.T) {
 	kv.AddInt("int", 5)
 	kv.AddInt64("i64", math.MaxInt64)
 	kv.AddString("s", "string")
-	kv.AddObject("obj", arbitraryObj)
 
+	assert.NoError(t, kv.AddObject("obj", arbitraryObj), "AddObject failed")
 	assert.NoError(t, kv.AddMarshaler("m1", loggable{}), "AddMarshaler failed")
 	assert.NoError(t, kv.Nest("m2", loggable{}.MarshalLog), "Nest failed")
 

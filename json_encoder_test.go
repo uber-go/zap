@@ -170,13 +170,10 @@ func TestJSONAddObject(t *testing.T) {
 		assertJSON(t, `"foo":"bar","nested":{"loggable":"yes"}`, enc)
 	})
 
+	// Serialization errors are handled by the field.
 	withJSONEncoder(func(enc *jsonEncoder) {
-		enc.AddObject("nested", noJSON{})
-		assertJSON(
-			t,
-			`"foo":"bar","nested":"json: error calling MarshalJSON for type zap.noJSON: no"`,
-			enc,
-		)
+		require.Error(t, enc.AddObject("nested", noJSON{}), "Unexpected success encoding non-JSON-serializable object.")
+		assertJSON(t, `"foo":"bar"`, enc)
 	})
 }
 
