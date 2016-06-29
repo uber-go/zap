@@ -21,8 +21,6 @@
 package zap
 
 import (
-	"fmt"
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -36,8 +34,6 @@ func TestLevelString(t *testing.T) {
 		ErrorLevel: "error",
 		PanicLevel: "panic",
 		FatalLevel: "fatal",
-		allLevel:   fmt.Sprintf("Level(%d)", math.MinInt32),
-		noneLevel:  fmt.Sprintf("Level(%d)", math.MaxInt32),
 		Level(-42): "Level(-42)",
 	}
 

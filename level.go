@@ -23,7 +23,6 @@ package zap
 import (
 	"errors"
 	"fmt"
-	"math"
 )
 
 var errMarshalNilLevel = errors.New("can't marshal a nil *Level to text")
@@ -50,11 +49,6 @@ const (
 	PanicLevel
 	// FatalLevel logs a message, then calls os.Exit(1).
 	FatalLevel
-
-	// allLevel logs everything.
-	allLevel Level = math.MinInt32
-	// noneLevel silences logging completely.
-	noneLevel Level = math.MaxInt32
 )
 
 // String returns a lower-case ASCII representation of the log level.
