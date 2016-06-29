@@ -38,6 +38,7 @@ const (
 	marshalerType
 	objectType
 	stringerType
+	skipType
 )
 
 // A Field is a deferred marshaling operation used to add a key-value pair to
@@ -99,6 +100,9 @@ func Time(key string, val time.Time) Field {
 // just a convenient shortcut for a common pattern - apart from saving a few
 // keystrokes, it's no different from using zap.String.
 func Error(err error) Field {
+	if err == nil {
+		return Field{fieldType: skipType}
+	}
 	return String("error", err.Error())
 }
 
@@ -167,6 +171,8 @@ func (f Field) AddTo(kv KeyValue) error {
 		return kv.AddMarshaler(f.key, f.obj.(LogMarshaler))
 	case objectType:
 		kv.AddObject(f.key, f.obj)
+	case skipType:
+		break
 	default:
 		panic(fmt.Sprintf("unknown field type found: %v", f))
 	}
