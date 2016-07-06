@@ -235,21 +235,6 @@ func TestJSONLoggerNoOpsDisabledLevels(t *testing.T) {
 	})
 }
 
-func TestJSONLoggerInternalErrorHandling(t *testing.T) {
-	buf := newTestBuffer()
-	errBuf := newTestBuffer()
-
-	jl := NewJSON(DebugLevel, Output(buf), ErrorOutput(errBuf), Fields(Marshaler("user", fakeUser{"fail"})))
-	jl.StubTime()
-	output := func() []string { return strings.Split(buf.String(), "\n") }
-
-	// Expect partial output, even if there's an error serializing
-	// user-defined types.
-	assertFields(t, jl, output, `{"user":{}}`)
-	// Internal errors go to stderr.
-	assert.Equal(t, "fail\n", errBuf.String(), "Expected internal errors to print to stderr.")
-}
-
 func TestJSONLoggerWriteMessageFailure(t *testing.T) {
 	errBuf := &bytes.Buffer{}
 	errSink := &spywrite.WriteSyncer{Writer: errBuf}

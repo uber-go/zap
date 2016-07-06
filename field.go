@@ -153,7 +153,9 @@ func Nest(key string, fields ...Field) Field {
 }
 
 // AddTo exports a field through the KeyValue interface.
-func (f Field) AddTo(kv KeyValue) error {
+func (f Field) AddTo(kv KeyValue) {
+	var err error
+
 	switch f.fieldType {
 	case boolType:
 		kv.AddBool(f.key, f.ival == 1)
@@ -168,32 +170,29 @@ func (f Field) AddTo(kv KeyValue) error {
 	case stringerType:
 		kv.AddString(f.key, f.obj.(fmt.Stringer).String())
 	case marshalerType:
-		return kv.AddMarshaler(f.key, f.obj.(LogMarshaler))
+		err = kv.AddMarshaler(f.key, f.obj.(LogMarshaler))
 	case objectType:
-		kv.AddObject(f.key, f.obj)
+		err = kv.AddObject(f.key, f.obj)
 	case skipType:
 		break
 	default:
 		panic(fmt.Sprintf("unknown field type found: %v", f))
 	}
-	return nil
+
+	if err != nil {
+		kv.AddString(fmt.Sprintf("%sError", f.key), err.Error())
+	}
 }
 
 type multiFields []Field
 
 func (fs multiFields) MarshalLog(kv KeyValue) error {
-	return addFields(kv, []Field(fs))
+	addFields(kv, []Field(fs))
+	return nil
 }
 
-func addFields(kv KeyValue, fields []Field) error {
-	var errs multiError
+func addFields(kv KeyValue, fields []Field) {
 	for _, f := range fields {
-		if err := f.AddTo(kv); err != nil {
-			errs = append(errs, err)
-		}
+		f.AddTo(kv)
 	}
-	if len(errs) > 0 {
-		return errs
-	}
-	return nil
 }

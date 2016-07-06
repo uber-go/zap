@@ -29,7 +29,7 @@ import (
 // safe for concurrent use.
 type encoder interface {
 	KeyValue
-	AddFields([]Field) error
+	AddFields([]Field)
 	Clone() encoder
 	Free()
 	WriteMessage(io.Writer, string, string, time.Time) error

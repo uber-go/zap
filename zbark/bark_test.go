@@ -112,11 +112,10 @@ func TestWithField(t *testing.T) {
 		{time.Unix(0, 0), "0"},
 		{time.Nanosecond, "1"},
 		// Interfaces.
-		{loggable("bar"), `{"foo":"bar"}`},                                          // zap.Marshaler
-		{errors.New("foo"), `"foo"`},                                                // error
-		{stringable("foo"), `"foo"`},                                                // fmt.Stringer
-		{user{"fred"}, `{"name":"fred"}`},                                           // json.Marshaler
-		{noJSON{}, `"json: error calling MarshalJSON for type zbark.noJSON: fail"`}, // json.Marshaler
+		{loggable("bar"), `{"foo":"bar"}`}, // zap.Marshaler
+		{errors.New("foo"), `"foo"`},       // error
+		{stringable("foo"), `"foo"`},       // fmt.Stringer
+		{user{"fred"}, `{"name":"fred"}`},  // json.Marshaler
 	}
 
 	for _, tt := range tests {
@@ -129,6 +128,17 @@ func TestWithField(t *testing.T) {
 			"Unexpected fields output. Expected %+v to serialize as %s.", tt.val, tt.expected,
 		)
 	}
+}
+
+func TestWithFieldSerializationError(t *testing.T) {
+	b, out := newBark()
+	b.WithField("thing", noJSON{}).Debug("")
+	assert.Contains(
+		t,
+		out.String(),
+		`"fields":{"thingError":"json: error calling MarshalJSON for type zbark.noJSON: fail"}`,
+		"Expected JSON serialization errors to be logged.",
+	)
 }
 
 func TestWithFields(t *testing.T) {
