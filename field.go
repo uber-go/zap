@@ -52,6 +52,11 @@ type Field struct {
 	obj       interface{}
 }
 
+// Skip constructs a no-op Field.
+func Skip() Field {
+	return Field{fieldType: skipType}
+}
+
 // Bool constructs a Field with the given key and value.
 func Bool(key string, val bool) Field {
 	var ival int64
@@ -101,7 +106,7 @@ func Time(key string, val time.Time) Field {
 // keystrokes, it's no different from using zap.String.
 func Error(err error) Field {
 	if err == nil {
-		return Field{fieldType: skipType}
+		return Skip()
 	}
 	return String("error", err.Error())
 }

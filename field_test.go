@@ -81,6 +81,11 @@ func assertCanBeReused(t testing.TB, field Field) {
 	wg.Wait()
 }
 
+func TestSkipField(t *testing.T) {
+	assertFieldJSON(t, ``, Skip())
+	assertCanBeReused(t, Skip())
+}
+
 func TestTrueBoolField(t *testing.T) {
 	assertFieldJSON(t, `"foo":true`, Bool("foo", true))
 	assertCanBeReused(t, Bool("foo", true))
