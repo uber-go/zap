@@ -24,8 +24,6 @@ import (
 	"fmt"
 	"os"
 	"time"
-
-	"github.com/uber-go/atomic"
 )
 
 // For tests.
@@ -40,6 +38,7 @@ type Logger interface {
 	// descendants. This makes it easy to change the log level at runtime
 	// without restarting your application.
 	SetLevel(Level)
+
 	// Create a child logger, and optionally add some context to that logger.
 	With(...Field) Logger
 	// StubTime stops the logger from including the current time in each
@@ -72,13 +71,9 @@ type Logger interface {
 }
 
 type jsonLogger struct {
-	level       *atomic.Int32
-	enc         encoder
-	hooks       []hook
-	errW        WriteSyncer
-	w           WriteSyncer
+	*Config
+
 	alwaysEpoch bool
-	development bool
 }
 
 // NewJSON returns a logger that formats its output as JSON. Zap uses a
@@ -90,40 +85,19 @@ type jsonLogger struct {
 // Options can change the log level, the output location, or the initial
 // fields that should be added as context.
 func NewJSON(options ...Option) Logger {
-	defaultLevel := atomic.NewInt32(int32(InfoLevel))
-	jl := &jsonLogger{
-		enc:   newJSONEncoder(),
-		level: defaultLevel,
-		errW:  os.Stderr,
-		w:     os.Stdout,
-	}
-
+	cfg := NewConfig()
 	for _, opt := range options {
-		opt.apply(jl)
+		opt.apply(cfg)
 	}
-
-	return jl
-}
-
-func (jl *jsonLogger) Level() Level {
-	return Level(jl.level.Load())
-}
-
-func (jl *jsonLogger) SetLevel(lvl Level) {
-	jl.level.Store(int32(lvl))
+	return &jsonLogger{Config: cfg}
 }
 
 func (jl *jsonLogger) With(fields ...Field) Logger {
 	clone := &jsonLogger{
-		level:       jl.level,
-		enc:         jl.enc.Clone(),
-		hooks:       jl.hooks,
-		w:           jl.w,
-		errW:        jl.errW,
+		Config:      jl.Config.Clone(),
 		alwaysEpoch: jl.alwaysEpoch,
-		development: jl.development,
 	}
-	clone.enc.AddFields(fields)
+	clone.Encoder.AddFields(fields)
 	return clone
 }
 
@@ -176,7 +150,7 @@ func (jl *jsonLogger) Fatal(msg string, fields ...Field) {
 }
 
 func (jl *jsonLogger) DFatal(msg string, fields ...Field) {
-	if jl.development {
+	if jl.Development {
 		jl.Fatal(msg, fields...)
 	}
 	jl.Error(msg, fields...)
@@ -187,33 +161,32 @@ func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
 		return
 	}
 
-	temp := jl.enc.Clone()
+	temp := jl.Encoder.Clone()
 	temp.AddFields(fields)
 
-	for _, hook := range jl.hooks {
-		newMsg, err := hook(lvl, msg, temp)
-		if err != nil {
+	entry := newEntry(lvl, msg, temp)
+	if jl.alwaysEpoch {
+		entry.Time = time.Unix(0, 0)
+	}
+	for _, hook := range jl.Hooks {
+		if err := hook(entry); err != nil {
 			jl.internalError(err.Error())
 		}
-		msg = newMsg
 	}
 
-	now := time.Now().UTC()
-	if jl.alwaysEpoch {
-		now = time.Unix(0, 0)
-	}
-	if err := temp.WriteMessage(jl.w, lvl.String(), msg, now); err != nil {
+	if err := temp.WriteEntry(jl.Output, entry); err != nil {
 		jl.internalError(err.Error())
 	}
 	temp.Free()
+	entry.free()
 
 	if lvl > ErrorLevel {
 		// Sync on Panic and Fatal, since they may crash the program.
-		jl.w.Sync()
+		jl.Output.Sync()
 	}
 }
 
 func (jl *jsonLogger) internalError(msg string) {
-	fmt.Fprintln(jl.errW, msg)
-	jl.errW.Sync()
+	fmt.Fprintln(jl.ErrorOutput, msg)
+	jl.ErrorOutput.Sync()
 }

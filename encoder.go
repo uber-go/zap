@@ -20,17 +20,16 @@
 
 package zap
 
-import (
-	"io"
-	"time"
-)
+import "io"
 
 // encoder is a format-agnostic interface for all log field encoders. It's not
 // safe for concurrent use.
 type encoder interface {
 	KeyValue
+
 	AddFields([]Field)
+	Bytes() []byte
 	Clone() encoder
 	Free()
-	WriteMessage(io.Writer, string, string, time.Time) error
+	WriteEntry(io.Writer, *Entry) error
 }

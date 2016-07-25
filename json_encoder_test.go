@@ -125,13 +125,18 @@ func TestJSONAddFloat64(t *testing.T) {
 	})
 }
 
-func TestJSONWriteMessage(t *testing.T) {
+func TestJSONWriteEntry(t *testing.T) {
 	withJSONEncoder(func(enc *jsonEncoder) {
 		sink := bytes.NewBuffer(nil)
 
+		assert.Equal(t, ErrNilSink, enc.WriteEntry(nil, &Entry{}), "Expected an error writing to a nil sink.")
+
+		assert.Equal(t, ErrNilEntry, enc.WriteEntry(sink, nil), "Expected an error writing a nil message.")
+		assert.Equal(t, "", sink.String(), "Unexpected output after writing nil message.")
+
 		// Messages should be escaped.
-		err := enc.WriteMessage(sink, "info", `hello\`, time.Unix(0, 0))
-		assert.NoError(t, err, "WriteMessage returned an unexpected error.")
+		err := enc.WriteEntry(sink, &Entry{Level: InfoLevel, Message: `hello\`, Time: time.Unix(0, 0), enc: enc})
+		assert.NoError(t, err, "WriteEntry returned an unexpected error.")
 		assert.Equal(t,
 			`{"msg":"hello\\","level":"info","ts":0,"fields":{"foo":"bar"}}`,
 			strings.TrimRight(sink.String(), "\n"),
@@ -140,8 +145,8 @@ func TestJSONWriteMessage(t *testing.T) {
 		// We should be able to re-use the encoder, preserving the accumulated
 		// fields.
 		sink.Reset()
-		err = enc.WriteMessage(sink, "debug", "fake msg", time.Unix(0, 100))
-		assert.NoError(t, err, "WriteMessage returned an unexpected error.")
+		err = enc.WriteEntry(sink, &Entry{Level: DebugLevel, Message: "fake msg", Time: time.Unix(100, 0), enc: enc})
+		assert.NoError(t, err, "WriteEntry returned an unexpected error.")
 		assert.Equal(t,
 			`{"msg":"fake msg","level":"debug","ts":100,"fields":{"foo":"bar"}}`,
 			strings.TrimRight(sink.String(), "\n"),
@@ -190,7 +195,7 @@ func TestJSONClone(t *testing.T) {
 	assertJSON(t, `"baz":"bing"`, clone.(*jsonEncoder))
 }
 
-func TestJSONWriteMessageFailure(t *testing.T) {
+func TestJSONWriteEntryFailure(t *testing.T) {
 	withJSONEncoder(func(enc *jsonEncoder) {
 		tests := []struct {
 			sink io.Writer
@@ -200,7 +205,7 @@ func TestJSONWriteMessageFailure(t *testing.T) {
 			{spywrite.ShortWriter{}, "Expected an error on partial writes to sink."},
 		}
 		for _, tt := range tests {
-			err := enc.WriteMessage(tt.sink, "info", "hello", time.Unix(0, 0))
+			err := enc.WriteEntry(tt.sink, &Entry{Level: InfoLevel, Message: "hello", Time: time.Unix(0, 0), enc: enc})
 			assert.Error(t, err, tt.msg)
 		}
 	})

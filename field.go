@@ -96,9 +96,9 @@ func Stringer(key string, val fmt.Stringer) Field {
 }
 
 // Time constructs a Field with the given key and value. It represents a
-// time.Time as nanoseconds since epoch.
+// time.Time as a floating-point number of seconds since epoch.
 func Time(key string, val time.Time) Field {
-	return Int64(key, val.UnixNano())
+	return Float64(key, timeToSeconds(val))
 }
 
 // Error constructs a Field that stores err.Error() under the key "error". This is

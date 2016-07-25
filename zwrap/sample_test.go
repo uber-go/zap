@@ -39,7 +39,7 @@ func WithIter(l zap.Logger, n int) zap.Logger {
 func fakeSampler(tick time.Duration, first, thereafter int, development bool) (zap.Logger, *spy.Sink) {
 	base, sink := spy.New()
 	base.SetLevel(zap.DebugLevel)
-	base.SetDevelopment(development)
+	base.Development = development
 	sampler := Sample(base, tick, first, thereafter)
 	return sampler, sink
 }

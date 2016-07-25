@@ -53,6 +53,7 @@ func BenchmarkLogMarshalerFunc(b *testing.B) {
 }
 
 func BenchmarkZapJSON(b *testing.B) {
+	e := &Entry{Level: DebugLevel, Message: "fake", Time: time.Unix(0, 0)}
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			enc := newJSONEncoder()
@@ -65,7 +66,7 @@ func BenchmarkZapJSON(b *testing.B) {
 			enc.AddString("string3", "🤔")
 			enc.AddString("string4", "🙊")
 			enc.AddBool("bool", true)
-			enc.WriteMessage(ioutil.Discard, "debug", "fake", time.Unix(0, 0))
+			enc.WriteEntry(ioutil.Discard, e)
 			enc.Free()
 		}
 	})
