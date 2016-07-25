@@ -26,12 +26,14 @@ import (
 	"github.com/uber-go/atomic"
 )
 
-// Config is implementation-agnostic configuration for Loggers. Most Logger
-// implementations can reduce the required boilerplate by embedding a *Config.
+// Meta is implementation-agnostic state management for Loggers. Most Logger
+// implementations can reduce the required boilerplate by embedding a *Meta.
 //
 // Note that while Level and SetLevel are safe for concurrent use, direct field
-// access and modification is not.
-type Config struct {
+// access and modification are not.
+//
+// TODO: Consider better names for this before releasing 1.0.
+type Meta struct {
 	Development bool
 	Encoder     encoder
 	Hooks       []hook
@@ -41,11 +43,11 @@ type Config struct {
 	lvl *atomic.Int32
 }
 
-// NewConfig returns a new configuration, initialized with the default values:
-// logging at InfoLevel, a JSON encoder, development mode off, and writing to
-// standard error and standard out.
-func NewConfig() *Config {
-	return &Config{
+// NewMeta returns a new meta struct with sensible defaults: logging at
+// InfoLevel, a JSON encoder, development mode off, and writing to standard error
+// and standard out.
+func NewMeta() *Meta {
+	return &Meta{
 		lvl:         atomic.NewInt32(int32(InfoLevel)),
 		Encoder:     newJSONEncoder(),
 		Output:      os.Stdout,
@@ -54,25 +56,25 @@ func NewConfig() *Config {
 }
 
 // Level returns the minimum enabled log level. It's safe to call concurrently.
-func (c *Config) Level() Level {
-	return Level(c.lvl.Load())
+func (m *Meta) Level() Level {
+	return Level(m.lvl.Load())
 }
 
 // SetLevel atomically alters the the logging level for this configuration and
 // all its clones.
-func (c *Config) SetLevel(lvl Level) {
-	c.lvl.Store(int32(lvl))
+func (m *Meta) SetLevel(lvl Level) {
+	m.lvl.Store(int32(lvl))
 }
 
-// Clone creates a copy of the configuration. It deep-copies the encoder, but
+// Clone creates a copy of the meta struct. It deep-copies the encoder, but
 // not the hooks (since they rarely change).
-func (c *Config) Clone() *Config {
-	return &Config{
-		lvl:         c.lvl,
-		Encoder:     c.Encoder.Clone(),
-		Development: c.Development,
-		Output:      c.Output,
-		ErrorOutput: c.ErrorOutput,
-		Hooks:       c.Hooks,
+func (m *Meta) Clone() *Meta {
+	return &Meta{
+		lvl:         m.lvl,
+		Encoder:     m.Encoder.Clone(),
+		Development: m.Development,
+		Output:      m.Output,
+		ErrorOutput: m.ErrorOutput,
+		Hooks:       m.Hooks,
 	}
 }

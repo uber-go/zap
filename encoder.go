@@ -28,7 +28,6 @@ type encoder interface {
 	KeyValue
 
 	AddFields([]Field)
-	Bytes() []byte
 	Clone() encoder
 	Free()
 	WriteEntry(io.Writer, *Entry) error

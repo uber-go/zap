@@ -39,18 +39,17 @@ const (
 )
 
 var (
-	// ErrNilEntry signals that Encoder.WriteEntry was called with a nil *Entry.
-	ErrNilEntry = errors.New("can't encode a nil *Entry")
-	// ErrNilSink signals that Encoder.WriteEntry was called with a nil WriteSyncer.
-	ErrNilSink = errors.New("can't write encoded message a nil WriteSyncer")
-	jsonPool   = sync.Pool{
-		New: func() interface{} {
-			return &jsonEncoder{
-				// Pre-allocate a reasonably-sized buffer for each encoder.
-				bytes: make([]byte, 0, _initialBufSize),
-			}
-		},
-	}
+	// errNilEntry signals that Encoder.WriteEntry was called with a nil *Entry.
+	errNilEntry = errors.New("can't encode a nil *Entry")
+	// errNilSink signals that Encoder.WriteEntry was called with a nil WriteSyncer.
+	errNilSink = errors.New("can't write encoded message a nil WriteSyncer")
+
+	jsonPool = sync.Pool{New: func() interface{} {
+		return &jsonEncoder{
+			// Pre-allocate a reasonably-sized buffer for each encoder.
+			bytes: make([]byte, 0, _initialBufSize),
+		}
+	}}
 )
 
 // jsonEncoder is a logging-optimized JSON encoder.
@@ -157,21 +156,16 @@ func (enc *jsonEncoder) AddFields(fields []Field) {
 	addFields(enc, fields)
 }
 
-// Bytes returns a mutable reference to the encoder's underlying bytes.
-func (enc jsonEncoder) Bytes() []byte {
-	return enc.bytes
-}
-
 // WriteEntry writes a complete log message to the supplied writer, including
 // the encoder's accumulated fields. It doesn't modify or lock the encoder's
 // underlying byte slice. It's safe to call from multiple goroutines, but it's
 // not safe to call WriteEntry while adding fields.
 func (enc *jsonEncoder) WriteEntry(sink io.Writer, e *Entry) error {
 	if sink == nil {
-		return ErrNilSink
+		return errNilSink
 	}
 	if e == nil {
-		return ErrNilEntry
+		return errNilEntry
 	}
 	// Grab an encoder from the pool so that we can re-use the underlying
 	// buffer.
@@ -186,7 +180,7 @@ func (enc *jsonEncoder) WriteEntry(sink io.Writer, e *Entry) error {
 	final.bytes = strconv.AppendFloat(final.bytes, timeToSeconds(e.Time), 'f', -1, 64)
 	final.bytes = append(final.bytes, `,"fields":{`...)
 	if e.enc != nil {
-		final.bytes = append(final.bytes, e.enc.Bytes()...)
+		final.bytes = append(final.bytes, e.enc.(*jsonEncoder).bytes...)
 	}
 	final.bytes = append(final.bytes, "}}\n"...)
 

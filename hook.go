@@ -29,19 +29,20 @@ import (
 
 var (
 	errHookNilEntry = errors.New("can't call a hook on a nil *Entry")
+	errCaller       = errors.New("failed to get caller")
 	// Skip Caller, Logger.log, and the leveled Logger method when using
 	// runtime.Caller.
 	_callerSkip = 3
 )
 
-// A hook is executed each time the logger writes a message. It can modify the
-// message, but must not retain references to the message or any of its
+// A hook is executed each time the logger writes an Entry. It can modify the
+// entry, but must not retain references to the entry or any of its
 // contents. Returned errors are written to the logger's error output.
 type hook func(*Entry) error
 
 // apply implements the Option interface.
-func (h hook) apply(cfg *Config) {
-	cfg.Hooks = append(cfg.Hooks, h)
+func (h hook) apply(m *Meta) {
+	m.Hooks = append(m.Hooks, h)
 }
 
 // AddCaller configures the Logger to annotate each message with the filename
@@ -53,7 +54,7 @@ func AddCaller() Option {
 		}
 		_, filename, line, ok := runtime.Caller(_callerSkip)
 		if !ok {
-			return errors.New("failed to get caller")
+			return errCaller
 		}
 
 		// Re-use a buffer from the pool.

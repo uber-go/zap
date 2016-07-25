@@ -129,9 +129,9 @@ func TestJSONWriteEntry(t *testing.T) {
 	withJSONEncoder(func(enc *jsonEncoder) {
 		sink := bytes.NewBuffer(nil)
 
-		assert.Equal(t, ErrNilSink, enc.WriteEntry(nil, &Entry{}), "Expected an error writing to a nil sink.")
+		assert.Equal(t, errNilSink, enc.WriteEntry(nil, &Entry{}), "Expected an error writing to a nil sink.")
 
-		assert.Equal(t, ErrNilEntry, enc.WriteEntry(sink, nil), "Expected an error writing a nil message.")
+		assert.Equal(t, errNilEntry, enc.WriteEntry(sink, nil), "Expected an error writing a nil message.")
 		assert.Equal(t, "", sink.String(), "Unexpected output after writing nil message.")
 
 		// Messages should be escaped.
