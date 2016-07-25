@@ -23,6 +23,8 @@ package zap_test
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/uber-go/zap"
@@ -52,6 +54,37 @@ func Example() {
 	// {"msg":"Log without structured data...","level":"warn","ts":0,"fields":{}}
 	// {"msg":"Or use strongly-typed wrappers to add structured context.","level":"warn","ts":0,"fields":{"library":"zap","latency":1}}
 	// {"msg":"Oh no!","level":"error","ts":0,"fields":{"user":"jane@test.com","visits":42}}
+}
+
+func Example_fileOutput() {
+	// Create a temporary file to output logs to.
+	f, err := ioutil.TempFile("", "log")
+	if err != nil {
+		panic("failed to create temporary file")
+	}
+	defer os.Remove(f.Name())
+
+	logger := zap.NewJSON(
+		// Write the logging output to the specified file instead of stdout.
+		// Any type implementing zap.WriteSyncer or zap.WriteFlusher can be used.
+		zap.Output(f),
+	)
+	// Stub the current time in tests.
+	logger.StubTime()
+
+	logger.Info("This is an info log.", zap.Int("foo", 42))
+
+	// Sync the file so logs are written to disk, and print the file contents.
+	// zap will call Sync when logging at FatalLevel or PanicLevel.
+	f.Sync()
+	contents, err := ioutil.ReadFile(f.Name())
+	if err != nil {
+		panic("failed to read temporary file")
+	}
+
+	fmt.Println(string(contents))
+	// Output:
+	// {"msg":"This is an info log.","level":"info","ts":0,"fields":{"foo":42}}
 }
 
 func ExampleNest() {
