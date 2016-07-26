@@ -103,7 +103,7 @@ func TestJSONAddInt64(t *testing.T) {
 func TestJSONAddFloat64(t *testing.T) {
 	withJSONEncoder(func(enc *jsonEncoder) {
 		enc.AddFloat64("baz", 1e10)
-		assertJSON(t, `"foo":"bar","baz":1e+10`, enc)
+		assertJSON(t, `"foo":"bar","baz":10000000000`, enc)
 
 		// Keys should be escaped.
 		enc.truncate()
