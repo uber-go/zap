@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"encoding/base64"
 	"fmt"
 	"math"
 	"time"
@@ -55,6 +56,12 @@ type Field struct {
 // Skip constructs a no-op Field.
 func Skip() Field {
 	return Field{fieldType: skipType}
+}
+
+// Base64 constructs a field that encodes the given value as a
+// padded base64 string.
+func Base64(key string, val []byte) Field {
+	return String(key, base64.StdEncoding.EncodeToString(val))
 }
 
 // Bool constructs a Field with the given key and value.
