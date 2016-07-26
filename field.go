@@ -59,7 +59,8 @@ func Skip() Field {
 }
 
 // Base64 constructs a field that encodes the given value as a
-// padded base64 string.
+// padded base64 string. The byte slice is converted to a base64
+// string immediately.
 func Base64(key string, val []byte) Field {
 	return String(key, base64.StdEncoding.EncodeToString(val))
 }
