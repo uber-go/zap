@@ -172,6 +172,13 @@ func TestNestField(t *testing.T) {
 	assertCanBeReused(t, nest)
 }
 
+func TestBase64Field(t *testing.T) {
+	assertFieldJSON(t, `"foo":"YWIxMg=="`,
+		Base64("foo", []byte("ab12")),
+	)
+	assertCanBeReused(t, Base64("foo", []byte("bar")))
+}
+
 func TestLogMarshalerFunc(t *testing.T) {
 	assertFieldJSON(t, `"foo":{"name":"phil"}`,
 		Marshaler("foo", LogMarshalerFunc(fakeUser{"phil"}.MarshalLog)))
