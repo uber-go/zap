@@ -106,8 +106,8 @@ func (enc *jsonEncoder) AddInt64(key string, val int64) {
 
 // AddFloat64 adds a string key and float64 value to the encoder's fields. The
 // key is JSON-escaped, and the floating-point value is encoded using
-// strconv.FormatFloat's 'g' option (exponential notation for large exponents,
-// grade-school notation otherwise).
+// strconv.FormatFloat's 'f' option (always use grade-school notation, even for
+// large exponents).
 func (enc *jsonEncoder) AddFloat64(key string, val float64) {
 	enc.addKey(key)
 	switch {
@@ -118,13 +118,11 @@ func (enc *jsonEncoder) AddFloat64(key string, val float64) {
 	case math.IsInf(val, -1):
 		enc.bytes = append(enc.bytes, `"-Inf"`...)
 	default:
-		enc.bytes = strconv.AppendFloat(enc.bytes, val, 'g', -1, 64)
+		enc.bytes = strconv.AppendFloat(enc.bytes, val, 'f', -1, 64)
 	}
 }
 
 // AddMarshaler adds a LogMarshaler to the encoder's fields.
-//
-// TODO: Encode the error into the message instead of returning.
 func (enc *jsonEncoder) AddMarshaler(key string, obj LogMarshaler) error {
 	enc.addKey(key)
 	enc.bytes = append(enc.bytes, '{')
