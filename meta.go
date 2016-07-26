@@ -29,8 +29,8 @@ import (
 // Meta is implementation-agnostic state management for Loggers. Most Logger
 // implementations can reduce the required boilerplate by embedding a *Meta.
 //
-// Note that while Level and SetLevel are safe for concurrent use, direct field
-// access and modification are not.
+// Note that while the level-related fields and methods are safe for concurrent
+// use, the remaining fields are not.
 //
 // TODO: Consider better names for this before releasing 1.0.
 type Meta struct {

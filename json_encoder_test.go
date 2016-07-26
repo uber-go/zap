@@ -154,6 +154,21 @@ func TestJSONWriteEntry(t *testing.T) {
 	})
 }
 
+func TestJSONWriteEntryLargeTimestamps(t *testing.T) {
+	// Ensure that we don't switch to exponential notation when encoding dates far in the future.
+	withJSONEncoder(func(enc *jsonEncoder) {
+		sink := &bytes.Buffer{}
+		future := time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC)
+		entry := &Entry{Level: DebugLevel, Message: "fake msg", Time: future, enc: enc}
+		require.NoError(t, enc.WriteEntry(sink, entry))
+		assert.Contains(t,
+			sink.String(),
+			`"ts":4102444800,`,
+			"Expected to encode large timestamps using grade-school notation.",
+		)
+	})
+}
+
 type loggable struct{}
 
 func (l loggable) MarshalLog(kv KeyValue) error {
