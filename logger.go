@@ -174,7 +174,7 @@ func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
 		}
 	}
 
-	if err := temp.WriteEntry(jl.Output, entry); err != nil {
+	if err := temp.WriteEntry(jl.Output, entry.Message, entry.Level, entry.Time); err != nil {
 		jl.internalError(err.Error())
 	}
 	temp.Free()

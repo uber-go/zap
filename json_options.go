@@ -71,7 +71,7 @@ func (lf LevelFormatter) Apply(enc *jsonEncoder) {
 	enc.levelF = lf
 }
 
-// LevelKey encodes the entry's level under the provided key. It uses the
+// LevelString encodes the entry's level under the provided key. It uses the
 // level's String method to serialize it.
 func LevelString(key string) LevelFormatter {
 	return LevelFormatter(func(l Level) Field {
