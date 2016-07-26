@@ -27,27 +27,34 @@ import (
 	"strconv"
 )
 
-// Skip Caller, Logger.log, and the leveled Logger method when using
-// runtime.Caller.
-var _callerSkip = 3
+var (
+	errHookNilEntry = errors.New("can't call a hook on a nil *Entry")
+	errCaller       = errors.New("failed to get caller")
+	// Skip Caller, Logger.log, and the leveled Logger method when using
+	// runtime.Caller.
+	_callerSkip = 3
+)
 
-// A hook is executed each time the Logger writes a message. It receives the
-// message's priority, the message itself, and the logging context, and it
-// returns a modified message and an error.
-type hook func(Level, string, KeyValue) (string, error)
+// A hook is executed each time the logger writes an Entry. It can modify the
+// entry, but must not retain references to the entry or any of its
+// contents. Returned errors are written to the logger's error output.
+type hook func(*Entry) error
 
 // apply implements the Option interface.
-func (h hook) apply(jl *jsonLogger) {
-	jl.hooks = append(jl.hooks, h)
+func (h hook) apply(m *Meta) {
+	m.Hooks = append(m.Hooks, h)
 }
 
 // AddCaller configures the Logger to annotate each message with the filename
 // and line number of zap's caller.
 func AddCaller() Option {
-	return hook(func(_ Level, msg string, _ KeyValue) (string, error) {
+	return hook(func(e *Entry) error {
+		if e == nil {
+			return errHookNilEntry
+		}
 		_, filename, line, ok := runtime.Caller(_callerSkip)
 		if !ok {
-			return msg, errors.New("failed to get caller")
+			return errCaller
 		}
 
 		// Re-use a buffer from the pool.
@@ -57,11 +64,12 @@ func AddCaller() Option {
 		buf = append(buf, ':')
 		buf = strconv.AppendInt(buf, int64(line), 10)
 		buf = append(buf, ':', ' ')
-		buf = append(buf, msg...)
+		buf = append(buf, e.Message...)
 
 		newMsg := string(buf)
 		enc.Free()
-		return newMsg, nil
+		e.Message = newMsg
+		return nil
 	})
 }
 
@@ -69,10 +77,13 @@ func AddCaller() Option {
 // or above a given level. Keep in mind that this is (relatively speaking) quite
 // expensive.
 func AddStacks(lvl Level) Option {
-	return hook(func(msgLevel Level, msg string, kv KeyValue) (string, error) {
-		if msgLevel >= lvl {
-			Stack().AddTo(kv)
+	return hook(func(e *Entry) error {
+		if e == nil {
+			return errHookNilEntry
 		}
-		return msg, nil
+		if e.Level >= lvl {
+			Stack().AddTo(e.Fields())
+		}
+		return nil
 	})
 }

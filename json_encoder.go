@@ -22,12 +22,12 @@ package zap
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
 	"strconv"
 	"sync"
-	"time"
 	"unicode/utf8"
 )
 
@@ -38,14 +38,19 @@ const (
 	_initialBufSize = 1024
 )
 
-var jsonPool = sync.Pool{
-	New: func() interface{} {
+var (
+	// errNilEntry signals that Encoder.WriteEntry was called with a nil *Entry.
+	errNilEntry = errors.New("can't encode a nil *Entry")
+	// errNilSink signals that Encoder.WriteEntry was called with a nil WriteSyncer.
+	errNilSink = errors.New("can't write encoded message a nil WriteSyncer")
+
+	jsonPool = sync.Pool{New: func() interface{} {
 		return &jsonEncoder{
 			// Pre-allocate a reasonably-sized buffer for each encoder.
 			bytes: make([]byte, 0, _initialBufSize),
 		}
-	},
-}
+	}}
+)
 
 // jsonEncoder is a logging-optimized JSON encoder.
 type jsonEncoder struct {
@@ -151,24 +156,32 @@ func (enc *jsonEncoder) AddFields(fields []Field) {
 	addFields(enc, fields)
 }
 
-// WriteMessage writes a complete log message to the supplied writer, including
+// WriteEntry writes a complete log message to the supplied writer, including
 // the encoder's accumulated fields. It doesn't modify or lock the encoder's
 // underlying byte slice. It's safe to call from multiple goroutines, but it's
-// not safe to call CreateMessage while adding fields.
-func (enc *jsonEncoder) WriteMessage(sink io.Writer, lvl string, msg string, ts time.Time) error {
+// not safe to call WriteEntry while adding fields.
+func (enc *jsonEncoder) WriteEntry(sink io.Writer, e *Entry) error {
+	if sink == nil {
+		return errNilSink
+	}
+	if e == nil {
+		return errNilEntry
+	}
 	// Grab an encoder from the pool so that we can re-use the underlying
 	// buffer.
 	final := newJSONEncoder()
 	defer final.Free()
 
 	final.bytes = append(final.bytes, `{"msg":"`...)
-	final.safeAddString(msg)
+	final.safeAddString(e.Message)
 	final.bytes = append(final.bytes, `","level":"`...)
-	final.bytes = append(final.bytes, lvl...)
+	final.bytes = append(final.bytes, e.Level.String()...)
 	final.bytes = append(final.bytes, `","ts":`...)
-	final.bytes = strconv.AppendInt(final.bytes, ts.UnixNano(), 10)
+	final.bytes = strconv.AppendFloat(final.bytes, timeToSeconds(e.Time), 'f', -1, 64)
 	final.bytes = append(final.bytes, `,"fields":{`...)
-	final.bytes = append(final.bytes, enc.bytes...)
+	if e.enc != nil {
+		final.bytes = append(final.bytes, e.enc.(*jsonEncoder).bytes...)
+	}
 	final.bytes = append(final.bytes, "}}\n"...)
 
 	n, err := sink.Write(final.bytes)

@@ -235,7 +235,7 @@ func TestJSONLoggerNoOpsDisabledLevels(t *testing.T) {
 	})
 }
 
-func TestJSONLoggerWriteMessageFailure(t *testing.T) {
+func TestJSONLoggerWriteEntryFailure(t *testing.T) {
 	errBuf := &bytes.Buffer{}
 	errSink := &spywrite.WriteSyncer{Writer: errBuf}
 	logger := NewJSON(DebugLevel, Output(AddSync(spywrite.FailWriter{})), ErrorOutput(errSink))
