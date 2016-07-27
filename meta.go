@@ -43,11 +43,11 @@ type Meta struct {
 	lvl *atomic.Int32
 }
 
-// NewMeta returns a new meta struct with sensible defaults: logging at
+// MakeMeta returns a new meta struct with sensible defaults: logging at
 // InfoLevel, a JSON encoder, development mode off, and writing to standard error
 // and standard out.
-func NewMeta() *Meta {
-	return &Meta{
+func MakeMeta() Meta {
+	return Meta{
 		lvl:         atomic.NewInt32(int32(InfoLevel)),
 		Encoder:     newJSONEncoder(),
 		Output:      newLockedWriteSyncer(os.Stdout),
@@ -56,25 +56,19 @@ func NewMeta() *Meta {
 }
 
 // Level returns the minimum enabled log level. It's safe to call concurrently.
-func (m *Meta) Level() Level {
+func (m Meta) Level() Level {
 	return Level(m.lvl.Load())
 }
 
 // SetLevel atomically alters the the logging level for this configuration and
 // all its clones.
-func (m *Meta) SetLevel(lvl Level) {
+func (m Meta) SetLevel(lvl Level) {
 	m.lvl.Store(int32(lvl))
 }
 
 // Clone creates a copy of the meta struct. It deep-copies the encoder, but
 // not the hooks (since they rarely change).
-func (m *Meta) Clone() *Meta {
-	return &Meta{
-		lvl:         m.lvl,
-		Encoder:     m.Encoder.Clone(),
-		Development: m.Development,
-		Output:      m.Output,
-		ErrorOutput: m.ErrorOutput,
-		Hooks:       m.Hooks,
-	}
+func (m Meta) Clone() Meta {
+	m.Encoder = m.Encoder.Clone()
+	return m
 }

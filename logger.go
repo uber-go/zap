@@ -71,7 +71,7 @@ type Logger interface {
 }
 
 type jsonLogger struct {
-	*Meta
+	Meta
 
 	alwaysEpoch bool
 }
@@ -85,11 +85,13 @@ type jsonLogger struct {
 // Options can change the log level, the output location, or the initial
 // fields that should be added as context.
 func NewJSON(options ...Option) Logger {
-	meta := NewMeta()
-	for _, opt := range options {
-		opt.apply(meta)
+	logger := jsonLogger{
+		Meta: MakeMeta(),
 	}
-	return &jsonLogger{Meta: meta}
+	for _, opt := range options {
+		opt.apply(&logger.Meta)
+	}
+	return &logger
 }
 
 func (jl *jsonLogger) With(fields ...Field) Logger {

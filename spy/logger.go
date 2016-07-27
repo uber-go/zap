@@ -64,7 +64,7 @@ func (s *Sink) Logs() []Log {
 // Logger satisfies zap.Logger, but makes testing convenient.
 type Logger struct {
 	sync.Mutex
-	*zap.Meta
+	zap.Meta
 
 	sink    *Sink
 	context []zap.Field
@@ -74,7 +74,7 @@ type Logger struct {
 func New() (*Logger, *Sink) {
 	s := &Sink{}
 	return &Logger{
-		Meta: zap.NewMeta(),
+		Meta: zap.MakeMeta(),
 		sink: s,
 	}, s
 }
