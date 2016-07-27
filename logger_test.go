@@ -283,33 +283,29 @@ func TestLoggerConcurrent(t *testing.T) {
 		jl2 := jl.With(String("foo", "bar"))
 
 		wg := &sync.WaitGroup{}
-		runNTimes(5, wg, func() {
-			for i := 0; i < 10; i++ {
-				jl.Info("info", String("foo", "bar"))
-				jl.Info("info", String("foo", "bar"))
-			}
+		runNTimes(5 /* goroutines */, 10 /* iterations */, wg, func() {
+			jl.Info("info", String("foo", "bar"))
 		})
-		runNTimes(5, wg, func() {
-			for i := 0; i < 10; i++ {
-				jl2.Info("info")
-				jl2.Info("info")
-			}
+		runNTimes(5 /* goroutines */, 10 /* iterations */, wg, func() {
+			jl2.Info("info")
 		})
 
 		wg.Wait()
 
 		// Make sure the output doesn't contain interspersed entries.
 		expected := `{"msg":"info","level":"info","ts":0,"fields":{"foo":"bar"}}` + "\n"
-		assert.Equal(t, strings.Repeat(expected, 200), buf.String())
+		assert.Equal(t, strings.Repeat(expected, 100), buf.String())
 	})
 }
 
-func runNTimes(n int, wg *sync.WaitGroup, f func()) {
-	wg.Add(n)
-	for i := 0; i < n; i++ {
+func runNTimes(goroutines, iterations int, wg *sync.WaitGroup, f func()) {
+	wg.Add(goroutines)
+	for g := 0; g < goroutines; g++ {
 		go func() {
 			defer wg.Done()
-			f()
+			for i := 0; i < iterations; i++ {
+				f()
+			}
 		}()
 	}
 }
