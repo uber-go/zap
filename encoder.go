@@ -20,7 +20,10 @@
 
 package zap
 
-import "io"
+import (
+	"io"
+	"time"
+)
 
 // encoder is a format-agnostic interface for all log field encoders. It's not
 // safe for concurrent use.
@@ -30,5 +33,5 @@ type encoder interface {
 	AddFields([]Field)
 	Clone() encoder
 	Free()
-	WriteEntry(io.Writer, *Entry) error
+	WriteEntry(io.Writer, string, Level, time.Time) error
 }

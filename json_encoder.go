@@ -28,6 +28,7 @@ import (
 	"math"
 	"strconv"
 	"sync"
+	"time"
 	"unicode/utf8"
 )
 
@@ -39,10 +40,13 @@ const (
 )
 
 var (
-	// errNilEntry signals that Encoder.WriteEntry was called with a nil *Entry.
-	errNilEntry = errors.New("can't encode a nil *Entry")
 	// errNilSink signals that Encoder.WriteEntry was called with a nil WriteSyncer.
 	errNilSink = errors.New("can't write encoded message a nil WriteSyncer")
+
+	// Default formatters for JSON encoders.
+	defaultMessageF = MessageKey("msg")
+	defaultTimeF    = EpochFormatter("ts")
+	defaultLevelF   = LevelString("level")
 
 	jsonPool = sync.Pool{New: func() interface{} {
 		return &jsonEncoder{
@@ -54,14 +58,25 @@ var (
 
 // jsonEncoder is a logging-optimized JSON encoder.
 type jsonEncoder struct {
-	bytes []byte
+	bytes    []byte
+	messageF MessageFormatter
+	timeF    TimeFormatter
+	levelF   LevelFormatter
 }
 
 // newJSONEncoder creates an encoder, re-using one from the pool if possible. The
 // returned encoder is initialized and ready for use.
-func newJSONEncoder() *jsonEncoder {
+func newJSONEncoder(options ...JSONOption) *jsonEncoder {
 	enc := jsonPool.Get().(*jsonEncoder)
 	enc.truncate()
+
+	enc.messageF = defaultMessageF
+	enc.timeF = defaultTimeF
+	enc.levelF = defaultLevelF
+	for _, opt := range options {
+		opt.apply(enc)
+	}
+
 	return enc
 }
 
@@ -144,8 +159,12 @@ func (enc *jsonEncoder) AddObject(key string, obj interface{}) error {
 
 // Clone copies the current encoder, including any data already encoded.
 func (enc *jsonEncoder) Clone() encoder {
-	clone := newJSONEncoder()
+	clone := jsonPool.Get().(*jsonEncoder)
+	clone.truncate()
 	clone.bytes = append(clone.bytes, enc.bytes...)
+	clone.messageF = enc.messageF
+	clone.timeF = enc.timeF
+	clone.levelF = enc.levelF
 	return clone
 }
 
@@ -158,36 +177,33 @@ func (enc *jsonEncoder) AddFields(fields []Field) {
 // the encoder's accumulated fields. It doesn't modify or lock the encoder's
 // underlying byte slice. It's safe to call from multiple goroutines, but it's
 // not safe to call WriteEntry while adding fields.
-func (enc *jsonEncoder) WriteEntry(sink io.Writer, e *Entry) error {
+func (enc *jsonEncoder) WriteEntry(sink io.Writer, msg string, lvl Level, t time.Time) error {
 	if sink == nil {
 		return errNilSink
 	}
-	if e == nil {
-		return errNilEntry
-	}
-	// Grab an encoder from the pool so that we can re-use the underlying
-	// buffer.
-	final := newJSONEncoder()
-	defer final.Free()
 
-	final.bytes = append(final.bytes, `{"msg":"`...)
-	final.safeAddString(e.Message)
-	final.bytes = append(final.bytes, `","level":"`...)
-	final.bytes = append(final.bytes, e.Level.String()...)
-	final.bytes = append(final.bytes, `","ts":`...)
-	final.bytes = strconv.AppendFloat(final.bytes, timeToSeconds(e.Time), 'f', -1, 64)
+	final := enc.Clone().(*jsonEncoder)
+
+	// TODO: When we flatten the serialized messages, remove the extra truncate
+	// and copy below. This will change the shape of the serialized message, which
+	// will require updating many tests.
+	final.truncate()
+	final.bytes = append(final.bytes, '{')
+	final.messageF(msg).AddTo(final)
+	final.levelF(lvl).AddTo(final)
+	final.timeF(t).AddTo(final)
 	final.bytes = append(final.bytes, `,"fields":{`...)
-	if e.enc != nil {
-		final.bytes = append(final.bytes, e.enc.(*jsonEncoder).bytes...)
-	}
+	final.bytes = append(final.bytes, enc.bytes...)
 	final.bytes = append(final.bytes, "}}\n"...)
 
+	expectedBytes := len(final.bytes)
 	n, err := sink.Write(final.bytes)
+	final.Free()
 	if err != nil {
 		return err
 	}
-	if n != len(final.bytes) {
-		return fmt.Errorf("incomplete write: only wrote %v of %v bytes", n, len(final.bytes))
+	if n != expectedBytes {
+		return fmt.Errorf("incomplete write: only wrote %v of %v bytes", n, expectedBytes)
 	}
 	return nil
 }

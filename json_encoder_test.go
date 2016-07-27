@@ -128,14 +128,17 @@ func TestJSONAddFloat64(t *testing.T) {
 func TestJSONWriteEntry(t *testing.T) {
 	withJSONEncoder(func(enc *jsonEncoder) {
 		sink := bytes.NewBuffer(nil)
+		entry := &Entry{Level: InfoLevel, Message: `hello\`, Time: time.Unix(0, 0)}
 
-		assert.Equal(t, errNilSink, enc.WriteEntry(nil, &Entry{}), "Expected an error writing to a nil sink.")
-
-		assert.Equal(t, errNilEntry, enc.WriteEntry(sink, nil), "Expected an error writing a nil message.")
-		assert.Equal(t, "", sink.String(), "Unexpected output after writing nil message.")
+		assert.Equal(t, errNilSink, enc.WriteEntry(
+			nil,
+			entry.Message,
+			entry.Level,
+			entry.Time,
+		), "Expected an error writing to a nil sink.")
 
 		// Messages should be escaped.
-		err := enc.WriteEntry(sink, &Entry{Level: InfoLevel, Message: `hello\`, Time: time.Unix(0, 0), enc: enc})
+		err := enc.WriteEntry(sink, entry.Message, entry.Level, entry.Time)
 		assert.NoError(t, err, "WriteEntry returned an unexpected error.")
 		assert.Equal(t,
 			`{"msg":"hello\\","level":"info","ts":0,"fields":{"foo":"bar"}}`,
@@ -145,10 +148,10 @@ func TestJSONWriteEntry(t *testing.T) {
 		// We should be able to re-use the encoder, preserving the accumulated
 		// fields.
 		sink.Reset()
-		err = enc.WriteEntry(sink, &Entry{Level: DebugLevel, Message: "fake msg", Time: time.Unix(100, 0), enc: enc})
+		err = enc.WriteEntry(sink, entry.Message, entry.Level, time.Unix(100, 0))
 		assert.NoError(t, err, "WriteEntry returned an unexpected error.")
 		assert.Equal(t,
-			`{"msg":"fake msg","level":"debug","ts":100,"fields":{"foo":"bar"}}`,
+			`{"msg":"hello\\","level":"info","ts":100,"fields":{"foo":"bar"}}`,
 			strings.TrimRight(sink.String(), "\n"),
 		)
 	})
@@ -159,8 +162,7 @@ func TestJSONWriteEntryLargeTimestamps(t *testing.T) {
 	withJSONEncoder(func(enc *jsonEncoder) {
 		sink := &bytes.Buffer{}
 		future := time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC)
-		entry := &Entry{Level: DebugLevel, Message: "fake msg", Time: future, enc: enc}
-		require.NoError(t, enc.WriteEntry(sink, entry))
+		require.NoError(t, enc.WriteEntry(sink, "fake msg", DebugLevel, future))
 		assert.Contains(t,
 			sink.String(),
 			`"ts":4102444800,`,
@@ -220,7 +222,7 @@ func TestJSONWriteEntryFailure(t *testing.T) {
 			{spywrite.ShortWriter{}, "Expected an error on partial writes to sink."},
 		}
 		for _, tt := range tests {
-			err := enc.WriteEntry(tt.sink, &Entry{Level: InfoLevel, Message: "hello", Time: time.Unix(0, 0), enc: enc})
+			err := enc.WriteEntry(tt.sink, "hello", InfoLevel, time.Unix(0, 0))
 			assert.Error(t, err, tt.msg)
 		}
 	})
@@ -264,5 +266,24 @@ func TestJSONJSONEscaping(t *testing.T) {
 		enc.truncate()
 		enc.safeAddString(input)
 		assertJSON(t, output, enc)
+	}
+}
+
+func TestJSONOptions(t *testing.T) {
+	root := newJSONEncoder(
+		MessageKey("the-message"),
+		LevelString("the-level"),
+		RFC3339Formatter("the-timestamp"),
+	)
+
+	for _, enc := range []encoder{root, root.Clone()} {
+		buf := &bytes.Buffer{}
+		enc.WriteEntry(buf, "fake msg", DebugLevel, time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC))
+		assert.Equal(
+			t,
+			`{"the-message":"fake msg","the-level":"debug","the-timestamp":"1970-01-01T00:00:00Z","fields":{}}`+"\n",
+			buf.String(),
+			"Unexpected log output with non-default encoder options.",
+		)
 	}
 }
