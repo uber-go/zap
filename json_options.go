@@ -4,14 +4,13 @@ import "time"
 
 // JSONOption is used to set options for a JSON encoder.
 type JSONOption interface {
-	Apply(*jsonEncoder)
+	apply(*jsonEncoder)
 }
 
 // A MessageFormatter defines how to convert a log message into a Field.
 type MessageFormatter func(string) Field
 
-// Apply implements JSONOption.
-func (mf MessageFormatter) Apply(enc *jsonEncoder) {
+func (mf MessageFormatter) apply(enc *jsonEncoder) {
 	enc.messageF = mf
 }
 
@@ -22,19 +21,10 @@ func MessageKey(key string) MessageFormatter {
 	})
 }
 
-// NoMessage drops the message field altogether. It's sometimes useful for
-// testing.
-func NoMessage() MessageFormatter {
-	return MessageFormatter(func(_ string) Field {
-		return Skip()
-	})
-}
-
 // A TimeFormatter defines how to convert the time of a log entry into a Field.
 type TimeFormatter func(time.Time) Field
 
-// Apply implements JSONOption.
-func (tf TimeFormatter) Apply(enc *jsonEncoder) {
+func (tf TimeFormatter) apply(enc *jsonEncoder) {
 	enc.timeF = tf
 }
 
@@ -66,8 +56,7 @@ func NoTime() TimeFormatter {
 // Field.
 type LevelFormatter func(Level) Field
 
-// Apply implements JSONOption.
-func (lf LevelFormatter) Apply(enc *jsonEncoder) {
+func (lf LevelFormatter) apply(enc *jsonEncoder) {
 	enc.levelF = lf
 }
 
@@ -76,13 +65,5 @@ func (lf LevelFormatter) Apply(enc *jsonEncoder) {
 func LevelString(key string) LevelFormatter {
 	return LevelFormatter(func(l Level) Field {
 		return String(key, l.String())
-	})
-}
-
-// NoLevel drops the entry's log level altogether. It's occasionally useful in
-// testing.
-func NoLevel() LevelFormatter {
-	return LevelFormatter(func(_ Level) Field {
-		return Skip()
 	})
 }

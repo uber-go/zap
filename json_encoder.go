@@ -74,7 +74,7 @@ func newJSONEncoder(options ...JSONOption) *jsonEncoder {
 	enc.timeF = defaultTimeF
 	enc.levelF = defaultLevelF
 	for _, opt := range options {
-		opt.Apply(enc)
+		opt.apply(enc)
 	}
 
 	return enc
@@ -189,25 +189,22 @@ func (enc *jsonEncoder) WriteEntry(sink io.Writer, msg string, lvl Level, t time
 	// will require updating many tests.
 	final.truncate()
 	final.bytes = append(final.bytes, '{')
-	final.AddFields([]Field{
-		final.messageF(msg),
-		final.levelF(lvl),
-		final.timeF(t),
-	})
+	final.messageF(msg).AddTo(final)
+	final.levelF(lvl).AddTo(final)
+	final.timeF(t).AddTo(final)
 	final.bytes = append(final.bytes, `,"fields":{`...)
 	final.bytes = append(final.bytes, enc.bytes...)
 	final.bytes = append(final.bytes, "}}\n"...)
 
+	expectedBytes := len(final.bytes)
 	n, err := sink.Write(final.bytes)
+	final.Free()
 	if err != nil {
-		final.Free()
 		return err
 	}
-	if n != len(final.bytes) {
-		final.Free()
-		return fmt.Errorf("incomplete write: only wrote %v of %v bytes", n, len(final.bytes))
+	if n != expectedBytes {
+		return fmt.Errorf("incomplete write: only wrote %v of %v bytes", n, expectedBytes)
 	}
-	final.Free()
 	return nil
 }
 

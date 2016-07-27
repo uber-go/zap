@@ -270,17 +270,20 @@ func TestJSONJSONEscaping(t *testing.T) {
 }
 
 func TestJSONOptions(t *testing.T) {
-	enc := newJSONEncoder(
+	root := newJSONEncoder(
 		MessageKey("the-message"),
 		LevelString("the-level"),
 		RFC3339Formatter("the-timestamp"),
 	)
-	buf := &bytes.Buffer{}
-	enc.WriteEntry(buf, "fake msg", DebugLevel, time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC))
-	assert.Equal(
-		t,
-		`{"the-message":"fake msg","the-level":"debug","the-timestamp":"1970-01-01T00:00:00Z","fields":{}}`+"\n",
-		buf.String(),
-		"Unexpected log output with non-default encoder options.",
-	)
+
+	for _, enc := range []encoder{root, root.Clone()} {
+		buf := &bytes.Buffer{}
+		enc.WriteEntry(buf, "fake msg", DebugLevel, time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC))
+		assert.Equal(
+			t,
+			`{"the-message":"fake msg","the-level":"debug","the-timestamp":"1970-01-01T00:00:00Z","fields":{}}`+"\n",
+			buf.String(),
+			"Unexpected log output with non-default encoder options.",
+		)
+	}
 }

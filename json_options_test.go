@@ -16,7 +16,6 @@ func TestMessageFormatters(t *testing.T) {
 		expected  Field
 	}{
 		{"MessageKey", MessageKey("the-message"), String("the-message", msg)},
-		{"NoMessage", NoMessage(), Skip()},
 		{"Default", defaultMessageF, String("msg", msg)},
 	}
 
@@ -52,7 +51,6 @@ func TestLevelFormatters(t *testing.T) {
 		expected  Field
 	}{
 		{"LevelString", LevelString("the-level"), String("the-level", "info")},
-		{"NoLevel", NoLevel(), Skip()},
 		{"Default", defaultLevelF, String("level", "info")},
 	}
 
