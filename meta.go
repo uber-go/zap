@@ -50,8 +50,8 @@ func NewMeta() *Meta {
 	return &Meta{
 		lvl:         atomic.NewInt32(int32(InfoLevel)),
 		Encoder:     newJSONEncoder(),
-		Output:      os.Stdout,
-		ErrorOutput: os.Stderr,
+		Output:      newLockedWriteSyncer(os.Stdout),
+		ErrorOutput: newLockedWriteSyncer(os.Stderr),
 	}
 }
 
