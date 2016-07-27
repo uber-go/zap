@@ -26,6 +26,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/uber-go/zap/spywrite"
@@ -273,4 +274,38 @@ func TestJSONLoggerSyncsOutput(t *testing.T) {
 
 	assert.Panics(t, func() { logger.Panic("foo") }, "Expected panic when logging at Panic level.")
 	assert.True(t, sink.Called(), "Expected logging at panic level to Sync underlying WriteSyncer.")
+}
+
+func TestLoggerConcurrent(t *testing.T) {
+	buf := &bytes.Buffer{}
+	withJSONLogger(t, []Option{Output(AddSync(buf))}, func(jl *jsonLogger, output func() []string) {
+		jl.StubTime()
+		jl2 := jl.With(String("foo", "bar"))
+
+		wg := &sync.WaitGroup{}
+		runNTimes(5 /* goroutines */, 10 /* iterations */, wg, func() {
+			jl.Info("info", String("foo", "bar"))
+		})
+		runNTimes(5 /* goroutines */, 10 /* iterations */, wg, func() {
+			jl2.Info("info")
+		})
+
+		wg.Wait()
+
+		// Make sure the output doesn't contain interspersed entries.
+		expected := `{"msg":"info","level":"info","ts":0,"fields":{"foo":"bar"}}` + "\n"
+		assert.Equal(t, strings.Repeat(expected, 100), buf.String())
+	})
+}
+
+func runNTimes(goroutines, iterations int, wg *sync.WaitGroup, f func()) {
+	wg.Add(goroutines)
+	for g := 0; g < goroutines; g++ {
+		go func() {
+			defer wg.Done()
+			for i := 0; i < iterations; i++ {
+				f()
+			}
+		}()
+	}
 }
