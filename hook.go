@@ -58,7 +58,8 @@ func AddCaller() Option {
 		}
 
 		// Re-use a buffer from the pool.
-		enc := newJSONEncoder()
+		enc := jsonPool.Get().(*jsonEncoder)
+		enc.truncate()
 		buf := enc.bytes
 		buf = append(buf, filepath.Base(filename)...)
 		buf = append(buf, ':')

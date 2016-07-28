@@ -182,19 +182,17 @@ func (enc *jsonEncoder) WriteEntry(sink io.Writer, msg string, lvl Level, t time
 		return errNilSink
 	}
 
-	final := enc.Clone().(*jsonEncoder)
-
-	// TODO: When we flatten the serialized messages, remove the extra truncate
-	// and copy below. This will change the shape of the serialized message, which
-	// will require updating many tests.
+	final := jsonPool.Get().(*jsonEncoder)
 	final.truncate()
 	final.bytes = append(final.bytes, '{')
-	final.messageF(msg).AddTo(final)
-	final.levelF(lvl).AddTo(final)
-	final.timeF(t).AddTo(final)
-	final.bytes = append(final.bytes, `,"fields":{`...)
-	final.bytes = append(final.bytes, enc.bytes...)
-	final.bytes = append(final.bytes, "}}\n"...)
+	enc.levelF(lvl).AddTo(final)
+	enc.timeF(t).AddTo(final)
+	enc.messageF(msg).AddTo(final)
+	if len(enc.bytes) > 0 {
+		final.bytes = append(final.bytes, ',')
+		final.bytes = append(final.bytes, enc.bytes...)
+	}
+	final.bytes = append(final.bytes, "}\n"...)
 
 	expectedBytes := len(final.bytes)
 	n, err := sink.Write(final.bytes)
