@@ -30,18 +30,6 @@ import (
 	"github.com/uber-go/zap/spywrite"
 )
 
-type testBuffer struct {
-	*bytes.Buffer
-}
-
-func newTestBuffer() testBuffer {
-	return testBuffer{&bytes.Buffer{}}
-}
-
-func (t testBuffer) Sync() error {
-	return nil
-}
-
 func requireWriteWorks(t testing.TB, ws WriteSyncer) {
 	n, err := ws.Write([]byte("foo"))
 	require.NoError(t, err, "Unexpected error writing to WriteSyncer.")

@@ -51,9 +51,9 @@ func Example() {
 	child.Error("Oh no!")
 
 	// Output:
-	// {"msg":"Log without structured data...","level":"warn","ts":0,"fields":{}}
-	// {"msg":"Or use strongly-typed wrappers to add structured context.","level":"warn","ts":0,"fields":{"library":"zap","latency":1}}
-	// {"msg":"Oh no!","level":"error","ts":0,"fields":{"user":"jane@test.com","visits":42}}
+	// {"level":"warn","ts":0,"msg":"Log without structured data..."}
+	// {"level":"warn","ts":0,"msg":"Or use strongly-typed wrappers to add structured context.","library":"zap","latency":1}
+	// {"level":"error","ts":0,"msg":"Oh no!","user":"jane@test.com","visits":42}
 }
 
 func Example_fileOutput() {
@@ -75,7 +75,7 @@ func Example_fileOutput() {
 	logger.Info("This is an info log.", zap.Int("foo", 42))
 
 	// Sync the file so logs are written to disk, and print the file contents.
-	// zap will call Sync when logging at FatalLevel or PanicLevel.
+	// zap will call Sync automatically when logging at FatalLevel or PanicLevel.
 	f.Sync()
 	contents, err := ioutil.ReadFile(f.Name())
 	if err != nil {
@@ -84,7 +84,7 @@ func Example_fileOutput() {
 
 	fmt.Println(string(contents))
 	// Output:
-	// {"msg":"This is an info log.","level":"info","ts":0,"fields":{"foo":42}}
+	// {"level":"info","ts":0,"msg":"This is an info log.","foo":42}
 }
 
 func ExampleNest() {
@@ -97,7 +97,7 @@ func ExampleNest() {
 	logger.Info("Logging a nested field.", nest)
 
 	// Output:
-	// {"msg":"Logging a nested field.","level":"info","ts":0,"fields":{"outer":{"inner":42}}}
+	// {"level":"info","ts":0,"msg":"Logging a nested field.","outer":{"inner":42}}
 }
 
 func ExampleNewJSON() {
@@ -112,7 +112,7 @@ func ExampleNewJSON() {
 	logger.Info("This is an info log.")
 
 	// Output:
-	// {"msg":"This is an info log.","level":"info","ts":0,"fields":{}}
+	// {"level":"info","ts":0,"msg":"This is an info log."}
 }
 
 func ExampleNewJSON_options() {
@@ -129,8 +129,8 @@ func ExampleNewJSON_options() {
 	logger.Info("This is an info log.")
 
 	// Output:
-	// {"msg":"This is a debug log.","level":"debug","ts":0,"fields":{"count":1}}
-	// {"msg":"This is an info log.","level":"info","ts":0,"fields":{"count":1}}
+	// {"level":"debug","ts":0,"msg":"This is a debug log.","count":1}
+	// {"level":"info","ts":0,"msg":"This is an info log.","count":1}
 }
 
 func ExampleCheckedMessage() {
@@ -153,7 +153,7 @@ func ExampleCheckedMessage() {
 	}
 
 	// Output:
-	// {"msg":"This is an info log.","level":"info","ts":0,"fields":{}}
+	// {"level":"info","ts":0,"msg":"This is an info log."}
 }
 
 func ExampleLevel_MarshalText() {

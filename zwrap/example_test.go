@@ -45,7 +45,7 @@ func Example_standardize() {
 	stdLogger.Printf("Encountered %d errors.", 0)
 
 	// Output:
-	// {"msg":"Encountered 0 errors.","level":"warn","ts":0,"fields":{}}
+	// {"level":"warn","ts":0,"msg":"Encountered 0 errors."}
 }
 
 func Example_sample() {
@@ -60,7 +60,7 @@ func Example_sample() {
 	sampledLogger.Error("Unusual failure.")
 
 	// Output:
-	// {"msg":"Common failure.","level":"error","ts":0,"fields":{"n":1}}
-	// {"msg":"Common failure.","level":"error","ts":0,"fields":{"n":101}}
-	// {"msg":"Unusual failure.","level":"error","ts":0,"fields":{}}
+	// {"level":"error","ts":0,"msg":"Common failure.","n":1}
+	// {"level":"error","ts":0,"msg":"Common failure.","n":101}
+	// {"level":"error","ts":0,"msg":"Unusual failure."}
 }

@@ -28,16 +28,20 @@ import (
 )
 
 func TestJSONLoggerCheck(t *testing.T) {
-	withJSONLogger(t, opts(InfoLevel), func(jl *jsonLogger, output func() []string) {
-		assert.False(t, jl.Check(DebugLevel, "Debug.").OK(), "Expected CheckedMessage to be not OK at disabled levels.")
+	withJSONLogger(t, opts(InfoLevel), func(logger Logger, buf *testBuffer) {
+		assert.False(
+			t,
+			logger.Check(DebugLevel, "Debug.").OK(),
+			"Expected CheckedMessage to be not OK at disabled levels.",
+		)
 
-		cm := jl.Check(InfoLevel, "Info.")
+		cm := logger.Check(InfoLevel, "Info.")
 		require.True(t, cm.OK(), "Expected CheckedMessage to be OK at enabled levels.")
 		cm.Write(Int("magic", 42))
 		assert.Equal(
 			t,
-			`{"msg":"Info.","level":"info","ts":0,"fields":{"magic":42}}`,
-			output()[0],
+			`{"level":"info","msg":"Info.","magic":42}`,
+			buf.Stripped(),
 			"Unexpected output after writing a CheckedMessage.",
 		)
 	})
@@ -45,14 +49,14 @@ func TestJSONLoggerCheck(t *testing.T) {
 
 func TestCheckedMessageIsSingleUse(t *testing.T) {
 	expected := []string{
-		`{"msg":"Single-use.","level":"info","ts":0,"fields":{}}`,
-		`{"msg":"Shouldn't re-use a CheckedMessage.","level":"error","ts":0,"fields":{"original":"Single-use."}}`,
+		`{"level":"info","msg":"single-use"}`,
+		`{"level":"error","msg":"Shouldn't re-use a CheckedMessage.","original":"single-use"}`,
 	}
-	withJSONLogger(t, nil, func(jl *jsonLogger, output func() []string) {
-		cm := jl.Check(InfoLevel, "Single-use.")
+	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
+		cm := logger.Check(InfoLevel, "single-use")
 		cm.Write() // ok
 		cm.Write() // first re-use logs error
 		cm.Write() // second re-use is silently ignored
-		assert.Equal(t, expected, output(), "Expected re-using a CheckedMessage to log an error.")
+		assert.Equal(t, expected, buf.Lines(), "Expected re-using a CheckedMessage to log an error.")
 	})
 }

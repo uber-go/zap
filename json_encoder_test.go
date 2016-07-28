@@ -41,9 +41,25 @@ func assertJSON(t *testing.T, expected string, enc *jsonEncoder) {
 
 func withJSONEncoder(f func(*jsonEncoder)) {
 	enc := newJSONEncoder()
-	enc.AddString("foo", "bar")
 	f(enc)
 	enc.Free()
+}
+
+type testBuffer struct {
+	bytes.Buffer
+}
+
+func (b *testBuffer) Sync() error {
+	return nil
+}
+
+func (b *testBuffer) Lines() []string {
+	output := strings.Split(b.String(), "\n")
+	return output[:len(output)-1]
+}
+
+func (b *testBuffer) Stripped() string {
+	return strings.TrimRight(b.String(), "\n")
 }
 
 type noJSON struct{}
@@ -52,151 +68,127 @@ func (nj noJSON) MarshalJSON() ([]byte, error) {
 	return nil, errors.New("no")
 }
 
-func TestJSONAddString(t *testing.T) {
-	withJSONEncoder(func(enc *jsonEncoder) {
-		enc.AddString("baz", "bing")
-		assertJSON(t, `"foo":"bar","baz":"bing"`, enc)
-
-		// Keys and values should be escaped.
-		enc.truncate()
-		enc.AddString(`foo\`, `bar\`)
-		assertJSON(t, `"foo\\":"bar\\"`, enc)
-	})
-}
-
-func TestJSONAddBool(t *testing.T) {
-	withJSONEncoder(func(enc *jsonEncoder) {
-		enc.AddBool("baz", true)
-		assertJSON(t, `"foo":"bar","baz":true`, enc)
-
-		// Keys should be escaped.
-		enc.truncate()
-		enc.AddBool(`foo\`, false)
-		assertJSON(t, `"foo\\":false`, enc)
-	})
-}
-
-func TestJSONAddInt(t *testing.T) {
-	withJSONEncoder(func(enc *jsonEncoder) {
-		enc.AddInt("baz", 2)
-		assertJSON(t, `"foo":"bar","baz":2`, enc)
-
-		// Keys should be escaped.
-		enc.truncate()
-		enc.AddInt(`foo\`, 1)
-		assertJSON(t, `"foo\\":1`, enc)
-	})
-}
-
-func TestJSONAddInt64(t *testing.T) {
-	withJSONEncoder(func(enc *jsonEncoder) {
-		enc.AddInt64("baz", 2)
-		assertJSON(t, `"foo":"bar","baz":2`, enc)
-
-		// Keys should be escaped.
-		enc.truncate()
-		enc.AddInt64(`foo\`, 1)
-		assertJSON(t, `"foo\\":1`, enc)
-	})
-}
-
-func TestJSONAddFloat64(t *testing.T) {
-	withJSONEncoder(func(enc *jsonEncoder) {
-		enc.AddFloat64("baz", 1e10)
-		assertJSON(t, `"foo":"bar","baz":10000000000`, enc)
-
-		// Keys should be escaped.
-		enc.truncate()
-		enc.AddFloat64(`foo\`, 1.0)
-		assertJSON(t, `"foo\\":1`, enc)
-
-		// Test floats that can't be represented in JSON.
-		enc.truncate()
-		enc.AddFloat64(`foo`, math.NaN())
-		assertJSON(t, `"foo":"NaN"`, enc)
-
-		enc.truncate()
-		enc.AddFloat64(`foo`, math.Inf(1))
-		assertJSON(t, `"foo":"+Inf"`, enc)
-
-		enc.truncate()
-		enc.AddFloat64(`foo`, math.Inf(-1))
-		assertJSON(t, `"foo":"-Inf"`, enc)
-	})
-}
-
-func TestJSONWriteEntry(t *testing.T) {
-	withJSONEncoder(func(enc *jsonEncoder) {
-		sink := bytes.NewBuffer(nil)
-		entry := &Entry{Level: InfoLevel, Message: `hello\`, Time: time.Unix(0, 0)}
-
-		assert.Equal(t, errNilSink, enc.WriteEntry(
-			nil,
-			entry.Message,
-			entry.Level,
-			entry.Time,
-		), "Expected an error writing to a nil sink.")
-
-		// Messages should be escaped.
-		err := enc.WriteEntry(sink, entry.Message, entry.Level, entry.Time)
-		assert.NoError(t, err, "WriteEntry returned an unexpected error.")
-		assert.Equal(t,
-			`{"msg":"hello\\","level":"info","ts":0,"fields":{"foo":"bar"}}`,
-			strings.TrimRight(sink.String(), "\n"),
-		)
-
-		// We should be able to re-use the encoder, preserving the accumulated
-		// fields.
-		sink.Reset()
-		err = enc.WriteEntry(sink, entry.Message, entry.Level, time.Unix(100, 0))
-		assert.NoError(t, err, "WriteEntry returned an unexpected error.")
-		assert.Equal(t,
-			`{"msg":"hello\\","level":"info","ts":100,"fields":{"foo":"bar"}}`,
-			strings.TrimRight(sink.String(), "\n"),
-		)
-	})
-}
-
-func TestJSONWriteEntryLargeTimestamps(t *testing.T) {
-	// Ensure that we don't switch to exponential notation when encoding dates far in the future.
-	withJSONEncoder(func(enc *jsonEncoder) {
-		sink := &bytes.Buffer{}
-		future := time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC)
-		require.NoError(t, enc.WriteEntry(sink, "fake msg", DebugLevel, future))
-		assert.Contains(t,
-			sink.String(),
-			`"ts":4102444800,`,
-			"Expected to encode large timestamps using grade-school notation.",
-		)
-	})
-}
-
-type loggable struct{}
+type loggable struct{ bool }
 
 func (l loggable) MarshalLog(kv KeyValue) error {
+	if !l.bool {
+		return errors.New("can't marshal")
+	}
 	kv.AddString("loggable", "yes")
 	return nil
 }
 
-func TestJSONAddMarshaler(t *testing.T) {
+func assertOutput(t testing.TB, desc string, expected string, f func(encoder)) {
 	withJSONEncoder(func(enc *jsonEncoder) {
-		err := enc.AddMarshaler("nested", loggable{})
-		require.NoError(t, err, "Unexpected error using AddMarshaler.")
-		assertJSON(t, `"foo":"bar","nested":{"loggable":"yes"}`, enc)
+		f(enc)
+		assert.Equal(t, expected, string(enc.bytes), "Unexpected encoder output after adding a %s.", desc)
+	})
+	withJSONEncoder(func(enc *jsonEncoder) {
+		enc.AddString("foo", "bar")
+		f(enc)
+		expectedPrefix := `"foo":"bar"`
+		if expected != "" {
+			// If we expect output, it should be comma-separated from the previous
+			// field.
+			expectedPrefix += ","
+		}
+		assert.Equal(t, expectedPrefix+expected, string(enc.bytes), "Unexpected encoder output after adding a %s as a second field.", desc)
 	})
 }
 
-func TestJSONAddObject(t *testing.T) {
-	withJSONEncoder(func(enc *jsonEncoder) {
-		enc.AddObject("nested", map[string]string{"loggable": "yes"})
-		assertJSON(t, `"foo":"bar","nested":{"loggable":"yes"}`, enc)
-	})
+func TestJSONEncoderFields(t *testing.T) {
+	tests := []struct {
+		desc     string
+		expected string
+		f        func(encoder)
+	}{
+		{"string", `"k":"v"`, func(e encoder) { e.AddString("k", "v") }},
+		{"string", `"k":""`, func(e encoder) { e.AddString("k", "") }},
+		{"string", `"k\\":"v\\"`, func(e encoder) { e.AddString(`k\`, `v\`) }},
+		{"bool", `"k":true`, func(e encoder) { e.AddBool("k", true) }},
+		{"bool", `"k":false`, func(e encoder) { e.AddBool("k", false) }},
+		{"bool", `"k\\":true`, func(e encoder) { e.AddBool(`k\`, true) }},
+		{"int", `"k":42`, func(e encoder) { e.AddInt("k", 42) }},
+		{"int", `"k\\":42`, func(e encoder) { e.AddInt(`k\`, 42) }},
+		{"int64", `"k":42`, func(e encoder) { e.AddInt64("k", 42) }},
+		{"int64", `"k\\":42`, func(e encoder) { e.AddInt64(`k\`, 42) }},
+		{"float64", `"k":1`, func(e encoder) { e.AddFloat64("k", 1.0) }},
+		{"float64", `"k\\":1`, func(e encoder) { e.AddFloat64(`k\`, 1.0) }},
+		{"float64", `"k":10000000000`, func(e encoder) { e.AddFloat64("k", 1e10) }},
+		{"float64", `"k":"NaN"`, func(e encoder) { e.AddFloat64("k", math.NaN()) }},
+		{"float64", `"k":"+Inf"`, func(e encoder) { e.AddFloat64("k", math.Inf(1)) }},
+		{"float64", `"k":"-Inf"`, func(e encoder) { e.AddFloat64("k", math.Inf(-1)) }},
+		{"marshaler", `"k":{"loggable":"yes"}`, func(e encoder) {
+			assert.NoError(t, e.AddMarshaler("k", loggable{true}), "Unexpected error calling MarshalLog.")
+		}},
+		{"marshaler", `"k\\":{"loggable":"yes"}`, func(e encoder) {
+			assert.NoError(t, e.AddMarshaler(`k\`, loggable{true}), "Unexpected error calling MarshalLog.")
+		}},
+		{"marshaler", `"k":{}`, func(e encoder) {
+			assert.Error(t, e.AddMarshaler("k", loggable{false}), "Expected an error calling MarshalLog.")
+		}},
+		{"arbitrary object", `"k":{"loggable":"yes"}`, func(e encoder) {
+			assert.NoError(t, e.AddObject("k", map[string]string{"loggable": "yes"}), "Unexpected error JSON-serializing a map.")
+		}},
+		{"arbitrary object", `"k\\":{"loggable":"yes"}`, func(e encoder) {
+			assert.NoError(t, e.AddObject(`k\`, map[string]string{"loggable": "yes"}), "Unexpected error JSON-serializing a map.")
+		}},
+		{"arbitrary object", "", func(e encoder) {
+			assert.Error(t, e.AddObject("k", noJSON{}), "Unexpected success JSON-serializing a noJSON.")
+		}},
+	}
 
-	// Serialization errors are handled by the field.
-	withJSONEncoder(func(enc *jsonEncoder) {
-		require.Error(t, enc.AddObject("nested", noJSON{}), "Unexpected success encoding non-JSON-serializable object.")
-		assertJSON(t, `"foo":"bar"`, enc)
-	})
+	for _, tt := range tests {
+		assertOutput(t, tt.desc, tt.expected, tt.f)
+	}
+}
+
+func TestJSONWriteEntry(t *testing.T) {
+	entry := &Entry{Level: InfoLevel, Message: `hello\`, Time: time.Unix(0, 0)}
+	enc := newJSONEncoder()
+
+	assert.Equal(t, errNilSink, enc.WriteEntry(
+		nil,
+		entry.Message,
+		entry.Level,
+		entry.Time,
+	), "Expected an error writing to a nil sink.")
+
+	// Messages should be escaped.
+	sink := &testBuffer{}
+	enc.AddString("foo", "bar")
+	err := enc.WriteEntry(sink, entry.Message, entry.Level, entry.Time)
+	assert.NoError(t, err, "WriteEntry returned an unexpected error.")
+	assert.Equal(
+		t,
+		`{"level":"info","ts":0,"msg":"hello\\","foo":"bar"}`,
+		sink.Stripped(),
+	)
+
+	// We should be able to re-use the encoder, preserving the accumulated
+	// fields.
+	sink.Reset()
+	err = enc.WriteEntry(sink, entry.Message, entry.Level, time.Unix(100, 0))
+	assert.NoError(t, err, "WriteEntry returned an unexpected error.")
+	assert.Equal(
+		t,
+		`{"level":"info","ts":100,"msg":"hello\\","foo":"bar"}`,
+		sink.Stripped(),
+	)
+}
+
+func TestJSONWriteEntryLargeTimestamps(t *testing.T) {
+	// Ensure that we don't switch to exponential notation when encoding dates far in the future.
+	sink := &testBuffer{}
+	enc := newJSONEncoder()
+	future := time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC)
+	require.NoError(t, enc.WriteEntry(sink, "fake msg", DebugLevel, future))
+	assert.Contains(
+		t,
+		sink.Stripped(),
+		`"ts":4102444800,`,
+		"Expected to encode large timestamps using grade-school notation.",
+	)
 }
 
 func TestJSONClone(t *testing.T) {
@@ -228,7 +220,7 @@ func TestJSONWriteEntryFailure(t *testing.T) {
 	})
 }
 
-func TestJSONJSONEscaping(t *testing.T) {
+func TestJSONEscaping(t *testing.T) {
 	// Test all the edge cases of JSON escaping directly.
 	cases := map[string]string{
 		// ASCII.
@@ -281,7 +273,7 @@ func TestJSONOptions(t *testing.T) {
 		enc.WriteEntry(buf, "fake msg", DebugLevel, time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC))
 		assert.Equal(
 			t,
-			`{"the-message":"fake msg","the-level":"debug","the-timestamp":"1970-01-01T00:00:00Z","fields":{}}`+"\n",
+			`{"the-level":"debug","the-timestamp":"1970-01-01T00:00:00Z","the-message":"fake msg"}`+"\n",
 			buf.String(),
 			"Unexpected log output with non-default encoder options.",
 		)
