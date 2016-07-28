@@ -37,8 +37,8 @@ type Meta struct {
 	Development bool
 	Encoder     encoder
 	Hooks       []hook
-	Output      WriteSyncer
-	ErrorOutput WriteSyncer
+	Output      lockedWriteSyncer
+	ErrorOutput lockedWriteSyncer
 
 	lvl *atomic.Int32
 }
@@ -50,8 +50,8 @@ func NewMeta() *Meta {
 	return &Meta{
 		lvl:         atomic.NewInt32(int32(InfoLevel)),
 		Encoder:     newJSONEncoder(),
-		Output:      newLockedWriteSyncer(os.Stdout),
-		ErrorOutput: newLockedWriteSyncer(os.Stderr),
+		Output:      lockedWriteSyncer{ws: os.Stdout},
+		ErrorOutput: lockedWriteSyncer{ws: os.Stderr},
 	}
 }
 

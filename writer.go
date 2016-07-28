@@ -62,10 +62,6 @@ type lockedWriteSyncer struct {
 	ws WriteSyncer
 }
 
-func newLockedWriteSyncer(ws WriteSyncer) WriteSyncer {
-	return &lockedWriteSyncer{ws: ws}
-}
-
 func (s *lockedWriteSyncer) Write(bs []byte) (int, error) {
 	s.Lock()
 	n, err := s.ws.Write(bs)
