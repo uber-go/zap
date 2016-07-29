@@ -195,7 +195,7 @@ func (enc *jsonEncoder) WriteEntry(sink io.Writer, msg string, lvl Level, t time
 		}
 		final.bytes = append(final.bytes, enc.bytes...)
 	}
-	final.bytes = append(final.bytes, "}\n"...)
+	final.bytes = append(final.bytes, '}', '\n')
 
 	expectedBytes := len(final.bytes)
 	n, err := sink.Write(final.bytes)
