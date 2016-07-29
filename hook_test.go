@@ -29,17 +29,17 @@ import (
 )
 
 func TestHookAddCaller(t *testing.T) {
-	buf := newTestBuffer()
+	buf := &testBuffer{}
 	logger := NewJSON(DebugLevel, Output(buf), AddCaller())
 	logger.Info("Callers.")
 
 	re := regexp.MustCompile(`"msg":"hook_test.go:[\d]+: Callers\."`)
-	assert.Regexp(t, re, buf.String(), "Expected to find package name and file name in output.")
+	assert.Regexp(t, re, buf.Stripped(), "Expected to find package name and file name in output.")
 }
 
 func TestHookAddCallerFail(t *testing.T) {
-	buf := newTestBuffer()
-	errBuf := newTestBuffer()
+	buf := &testBuffer{}
+	errBuf := &testBuffer{}
 
 	originalSkip := _callerSkip
 	_callerSkip = 1e3
@@ -52,7 +52,7 @@ func TestHookAddCallerFail(t *testing.T) {
 }
 
 func TestHookAddStacks(t *testing.T) {
-	buf := newTestBuffer()
+	buf := &testBuffer{}
 	logger := NewJSON(DebugLevel, Output(buf), AddStacks(InfoLevel))
 
 	logger.Info("Stacks.")

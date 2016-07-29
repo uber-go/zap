@@ -68,5 +68,5 @@ func ExampleMarshaler() {
 	logger.Info("Successful login.", zap.Marshaler("user", jane))
 
 	// Output:
-	// {"msg":"Successful login.","level":"info","ts":0,"fields":{"user":{"name":"Jane Doe","age":42,"auth":{"expires_at":100,"token":"---"}}}}
+	// {"level":"info","ts":0,"msg":"Successful login.","user":{"name":"Jane Doe","age":42,"auth":{"expires_at":100,"token":"---"}}}
 }

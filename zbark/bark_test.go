@@ -124,7 +124,7 @@ func TestWithField(t *testing.T) {
 		assert.Contains(
 			t,
 			out.String(),
-			fmt.Sprintf(`"fields":{"thing":%s}`, tt.expected),
+			fmt.Sprintf(`,"thing":%s}`, tt.expected),
 			"Unexpected fields output. Expected %+v to serialize as %s.", tt.val, tt.expected,
 		)
 	}
@@ -136,7 +136,7 @@ func TestWithFieldSerializationError(t *testing.T) {
 	assert.Contains(
 		t,
 		out.String(),
-		`"fields":{"thingError":"json: error calling MarshalJSON for type zbark.noJSON: fail"}`,
+		`,"thingError":"json: error calling MarshalJSON for type zbark.noJSON: fail"}`,
 		"Expected JSON serialization errors to be logged.",
 	)
 }
@@ -150,8 +150,8 @@ func TestWithFields(t *testing.T) {
 
 	output := out.String()
 	// Map iteration order is random.
-	orderSame := `"fields":{"foo":"bar","baz":42}`
-	orderReversed := `"fields":{"baz":42,"foo":"bar"}`
+	orderSame := `,"foo":"bar","baz":42}`
+	orderReversed := `,"baz":42,"foo":"bar"}`
 	if !strings.Contains(output, orderSame) {
 		assert.Contains(t, output, orderReversed, "Expected output to contain both fields.")
 	}

@@ -94,6 +94,18 @@ func NewJSON(options ...Option) Logger {
 	return &logger
 }
 
+// TODO: export as New and replace NewJSON.
+func newLogger(enc encoder, options ...Option) Logger {
+	logger := jsonLogger{
+		Meta: MakeMeta(),
+	}
+	logger.Meta.Encoder = enc
+	for _, opt := range options {
+		opt.apply(&logger.Meta)
+	}
+	return &logger
+}
+
 func (jl *jsonLogger) With(fields ...Field) Logger {
 	clone := &jsonLogger{
 		Meta:        jl.Meta.Clone(),
@@ -154,6 +166,7 @@ func (jl *jsonLogger) Fatal(msg string, fields ...Field) {
 func (jl *jsonLogger) DFatal(msg string, fields ...Field) {
 	if jl.Development {
 		jl.Fatal(msg, fields...)
+		return
 	}
 	jl.Error(msg, fields...)
 }

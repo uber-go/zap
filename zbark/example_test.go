@@ -37,5 +37,5 @@ func Example() {
 	logger.WithField("errors", 0).Infof("%v accepts arbitrary types.", "Bark")
 
 	// Output:
-	// {"msg":"Bark accepts arbitrary types.","level":"info","ts":0,"fields":{"errors":0}}
+	// {"level":"info","ts":0,"msg":"Bark accepts arbitrary types.","errors":0}
 }
