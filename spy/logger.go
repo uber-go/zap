@@ -74,7 +74,7 @@ type Logger struct {
 func New() (*Logger, *Sink) {
 	s := &Sink{}
 	return &Logger{
-		Meta: zap.MakeMeta(),
+		Meta: zap.MakeMeta(nil),
 		sink: s,
 	}, s
 }
