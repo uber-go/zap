@@ -96,12 +96,14 @@ func NewJSON(options ...Option) Logger {
 
 // TODO: export as New and replace NewJSON.
 func newLogger(enc encoder, options ...Option) Logger {
-	meta := NewMeta()
-	meta.Encoder = enc
-	for _, opt := range options {
-		opt.apply(meta)
+	logger := jsonLogger{
+		Meta: MakeMeta(),
 	}
-	return &jsonLogger{Meta: meta}
+	logger.Meta.Encoder = enc
+	for _, opt := range options {
+		opt.apply(&logger.Meta)
+	}
+	return &logger
 }
 
 func (jl *jsonLogger) With(fields ...Field) Logger {
