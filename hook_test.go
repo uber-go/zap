@@ -72,10 +72,10 @@ func TestHookAddStacks(t *testing.T) {
 func TestHooksNilEntry(t *testing.T) {
 	tests := []struct {
 		name string
-		hook hook
+		hook Hook
 	}{
-		{"AddStacks", AddStacks(InfoLevel).(hook)},
-		{"AddCaller", AddCaller().(hook)},
+		{"AddStacks", AddStacks(InfoLevel).(Hook)},
+		{"AddCaller", AddCaller().(Hook)},
 	}
 	for _, tt := range tests {
 		assert.NotPanics(t, func() {
