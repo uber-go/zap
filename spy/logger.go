@@ -79,9 +79,6 @@ func New() (*Logger, *Sink) {
 	}, s
 }
 
-// StubTime is a no-op, since the spy logger omits time entirely.
-func (l *Logger) StubTime() {}
-
 // With creates a new Logger with additional fields added to the logging context.
 func (l *Logger) With(fields ...zap.Field) zap.Logger {
 	return &Logger{
