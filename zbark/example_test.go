@@ -26,9 +26,9 @@ import (
 )
 
 func Example() {
-	zapLogger := zap.NewJSON()
-	// Stub the current time in tests.
-	zapLogger.StubTime()
+	zapLogger := zap.NewLogger(zap.NewJSONEncoder(
+		zap.NoTime(), // discard timestamps in tests
+	))
 
 	// Wrap our structured logger to mimic bark.Logger.
 	logger := zbark.Barkify(zapLogger)
@@ -37,5 +37,5 @@ func Example() {
 	logger.WithField("errors", 0).Infof("%v accepts arbitrary types.", "Bark")
 
 	// Output:
-	// {"level":"info","ts":0,"msg":"Bark accepts arbitrary types.","errors":0}
+	// {"level":"info","msg":"Bark accepts arbitrary types.","errors":0}
 }
