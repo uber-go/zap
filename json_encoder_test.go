@@ -35,6 +35,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func newJSONEncoder(opts ...JSONOption) *jsonEncoder {
+	return NewJSONEncoder(opts...).(*jsonEncoder)
+}
+
 func assertJSON(t *testing.T, expected string, enc *jsonEncoder) {
 	assert.Equal(t, expected, string(enc.bytes), "Encoded JSON didn't match expectations.")
 }
@@ -145,7 +149,7 @@ func TestJSONEncoderFields(t *testing.T) {
 
 func TestJSONWriteEntry(t *testing.T) {
 	entry := &Entry{Level: InfoLevel, Message: `hello\`, Time: time.Unix(0, 0)}
-	enc := newJSONEncoder()
+	enc := NewJSONEncoder()
 
 	assert.Equal(t, errNilSink, enc.WriteEntry(
 		nil,
@@ -180,7 +184,7 @@ func TestJSONWriteEntry(t *testing.T) {
 func TestJSONWriteEntryLargeTimestamps(t *testing.T) {
 	// Ensure that we don't switch to exponential notation when encoding dates far in the future.
 	sink := &testBuffer{}
-	enc := newJSONEncoder()
+	enc := NewJSONEncoder()
 	future := time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC)
 	require.NoError(t, enc.WriteEntry(sink, "fake msg", DebugLevel, future))
 	assert.Contains(
@@ -262,7 +266,7 @@ func TestJSONEscaping(t *testing.T) {
 }
 
 func TestJSONOptions(t *testing.T) {
-	root := newJSONEncoder(
+	root := NewJSONEncoder(
 		MessageKey("the-message"),
 		LevelString("the-level"),
 		RFC3339Formatter("the-timestamp"),
