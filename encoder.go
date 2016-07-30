@@ -25,13 +25,13 @@ import (
 	"time"
 )
 
-// encoder is a format-agnostic interface for all log field encoders. It's not
+// Encoder is a format-agnostic interface for all log field encoders. It's not
 // safe for concurrent use.
-type encoder interface {
+type Encoder interface {
 	KeyValue
 
 	AddFields([]Field)
-	Clone() encoder
+	Clone() Encoder
 	Free()
 	WriteEntry(io.Writer, string, Level, time.Time) error
 }
