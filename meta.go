@@ -34,7 +34,7 @@ import (
 type Meta struct {
 	Development bool
 	Encoder     Encoder
-	Hooks       []hook
+	Hooks       []Hook
 	Output      WriteSyncer
 	ErrorOutput WriteSyncer
 

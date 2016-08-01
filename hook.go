@@ -35,20 +35,22 @@ var (
 	_callerSkip = 3
 )
 
-// A hook is executed each time the logger writes an Entry. It can modify the
+// A Hook is executed each time the logger writes an Entry. It can modify the
 // entry, but must not retain references to the entry or any of its
 // contents. Returned errors are written to the logger's error output.
-type hook func(*Entry) error
+//
+// Hooks implement the Option interface.
+type Hook func(*Entry) error
 
 // apply implements the Option interface.
-func (h hook) apply(m *Meta) {
+func (h Hook) apply(m *Meta) {
 	m.Hooks = append(m.Hooks, h)
 }
 
 // AddCaller configures the Logger to annotate each message with the filename
 // and line number of zap's caller.
 func AddCaller() Option {
-	return hook(func(e *Entry) error {
+	return Hook(func(e *Entry) error {
 		if e == nil {
 			return errHookNilEntry
 		}
@@ -78,7 +80,7 @@ func AddCaller() Option {
 // or above a given level. Keep in mind that this is (relatively speaking) quite
 // expensive.
 func AddStacks(lvl Level) Option {
-	return hook(func(e *Entry) error {
+	return Hook(func(e *Entry) error {
 		if e == nil {
 			return errHookNilEntry
 		}
