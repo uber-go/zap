@@ -28,9 +28,9 @@ import (
 )
 
 func Example_standardize() {
-	zapLogger := zap.NewJSON()
-	// Stub the current time in tests.
-	zapLogger.StubTime()
+	zapLogger := zap.New(zap.NewJSONEncoder(
+		zap.NoTime(), // discard timestamps in tests
+	))
 
 	// Wrap our structured logger to mimic the standard library's log.Logger.
 	// We also specify that we want all calls to the standard logger's Print
@@ -45,13 +45,14 @@ func Example_standardize() {
 	stdLogger.Printf("Encountered %d errors.", 0)
 
 	// Output:
-	// {"level":"warn","ts":0,"msg":"Encountered 0 errors."}
+	// {"level":"warn","msg":"Encountered 0 errors."}
 }
 
 func Example_sample() {
-	sampledLogger := zwrap.Sample(zap.NewJSON(), time.Second, 1, 100)
-	// Stub the current time in tests.
-	sampledLogger.StubTime()
+	zapLogger := zap.New(zap.NewJSONEncoder(
+		zap.NoTime(), // discard timestamps in tests
+	))
+	sampledLogger := zwrap.Sample(zapLogger, time.Second, 1, 100)
 
 	for i := 1; i < 110; i++ {
 		sampledLogger.With(zap.Int("n", i)).Error("Common failure.")
@@ -60,7 +61,7 @@ func Example_sample() {
 	sampledLogger.Error("Unusual failure.")
 
 	// Output:
-	// {"level":"error","ts":0,"msg":"Common failure.","n":1}
-	// {"level":"error","ts":0,"msg":"Common failure.","n":101}
-	// {"level":"error","ts":0,"msg":"Unusual failure."}
+	// {"level":"error","msg":"Common failure.","n":1}
+	// {"level":"error","msg":"Common failure.","n":101}
+	// {"level":"error","msg":"Unusual failure."}
 }
