@@ -86,7 +86,7 @@ type jsonLogger struct {
 // fields that should be added as context.
 func NewJSON(options ...Option) Logger {
 	logger := jsonLogger{
-		Meta: MakeMeta(),
+		Meta: MakeMeta(newJSONEncoder()),
 	}
 	for _, opt := range options {
 		opt.apply(&logger.Meta)
@@ -97,9 +97,8 @@ func NewJSON(options ...Option) Logger {
 // TODO: export as New and replace NewJSON.
 func newLogger(enc encoder, options ...Option) Logger {
 	logger := jsonLogger{
-		Meta: MakeMeta(),
+		Meta: MakeMeta(enc),
 	}
-	logger.Meta.Encoder = enc
 	for _, opt := range options {
 		opt.apply(&logger.Meta)
 	}
