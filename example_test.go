@@ -99,7 +99,7 @@ func ExampleNest() {
 	// {"level":"info","msg":"Logging a nested field.","outer":{"inner":42}}
 }
 
-func ExampleNewJSON() {
+func ExampleNewLogger() {
 	// The default logger outputs to standard out and only writes logs that are
 	// Info level or higher.
 	logger := zap.NewLogger(
@@ -114,7 +114,7 @@ func ExampleNewJSON() {
 	// {"level":"info","msg":"This is an info log."}
 }
 
-func ExampleNewJSON_options() {
+func ExampleNewLogger_options() {
 	// We can pass multiple options to the NewJSON method to configure
 	// the logging level, output location, or even the initial context.
 	logger := zap.NewLogger(
