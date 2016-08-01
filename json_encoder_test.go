@@ -23,6 +23,7 @@ package zap
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"strings"
@@ -114,12 +115,12 @@ func TestJSONEncoderFields(t *testing.T) {
 		{"bool", `"k\\":true`, func(e Encoder) { e.AddBool(`k\`, true) }},
 		{"int", `"k":42`, func(e Encoder) { e.AddInt("k", 42) }},
 		{"int", `"k\\":42`, func(e Encoder) { e.AddInt(`k\`, 42) }},
-		{"int64", `"k":42`, func(e Encoder) { e.AddInt64("k", 42) }},
-		{"int64", `"k\\":42`, func(e Encoder) { e.AddInt64(`k\`, 42) }},
+		{"int64", fmt.Sprintf(`"k":%d`, math.MaxInt64), func(e Encoder) { e.AddInt64("k", math.MaxInt64) }},
+		{"int64", fmt.Sprintf(`"k\\":%d`, math.MaxInt64), func(e Encoder) { e.AddInt64(`k\`, math.MaxInt64) }},
 		{"uint", `"k":42`, func(e Encoder) { e.AddUInt("k", 42) }},
 		{"uint", `"k\\":42`, func(e Encoder) { e.AddUInt(`k\`, 42) }},
-		{"uint64", `"k":42`, func(e Encoder) { e.AddUInt64("k", 42) }},
-		{"uint64", `"k\\":42`, func(e Encoder) { e.AddUInt64(`k\`, 42) }},
+		{"uint64", fmt.Sprintf(`"k":%d`, uint64(math.MaxUint64)), func(e Encoder) { e.AddUInt64("k", math.MaxUint64) }},
+		{"uint64", fmt.Sprintf(`"k\\":%d`, uint64(math.MaxUint64)), func(e Encoder) { e.AddUInt64(`k\`, math.MaxUint64) }},
 		{"float64", `"k":1`, func(e Encoder) { e.AddFloat64("k", 1.0) }},
 		{"float64", `"k\\":1`, func(e Encoder) { e.AddFloat64(`k\`, 1.0) }},
 		{"float64", `"k":10000000000`, func(e Encoder) { e.AddFloat64("k", 1e10) }},
