@@ -64,9 +64,19 @@ type jsonEncoder struct {
 	levelF   LevelFormatter
 }
 
-// newJSONEncoder creates an encoder, re-using one from the pool if possible. The
-// returned encoder is initialized and ready for use.
-func newJSONEncoder(options ...JSONOption) *jsonEncoder {
+// NewJSONEncoder creates a logging-optimized JSON encoder. By default, JSON
+// encoders put the log message under the "msg" key, the timestamp (as
+// floating-point seconds since epoch) under the "ts" key, and the log level
+// under the "level" key.
+//
+// Note that the encoder doesn't deduplicate keys, so it's possible to produce a
+// message like
+//   {"foo":"bar","foo":"baz"}
+// This is permitted by the JSON specification, but not encouraged. Many
+// libraries will ignore duplicate key-value pairs (typically keeping the last
+// pair) when unmarshaling, but it's the user's responsibility to avoid duplicate
+// keys.
+func NewJSONEncoder(options ...JSONOption) Encoder {
 	enc := jsonPool.Get().(*jsonEncoder)
 	enc.truncate()
 

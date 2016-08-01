@@ -45,10 +45,6 @@ type Meta struct {
 // InfoLevel, a JSON encoder, development mode off, and writing to standard error
 // and standard out.
 func MakeMeta(enc Encoder) Meta {
-	if enc == nil {
-		// TODO: remove once we export the encoder constructors.
-		enc = newJSONEncoder()
-	}
 	return Meta{
 		lvl:         atomic.NewInt32(int32(InfoLevel)),
 		Encoder:     enc,

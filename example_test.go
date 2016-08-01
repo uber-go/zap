@@ -182,3 +182,19 @@ func ExampleLevel_UnmarshalText() {
 	// info
 	// error
 }
+
+func ExampleNewJSONEncoder() {
+	// An encoder with the default settings.
+	zap.NewJSONEncoder()
+
+	// Dropping timestamps is often useful in tests.
+	zap.NewJSONEncoder(zap.NoTime())
+
+	// In production, customize the encoder to work with your log aggregation
+	// system.
+	zap.NewJSONEncoder(
+		zap.RFC3339Formatter("@timestamp"), // human-readable timestamps
+		zap.MessageKey("@message"),         // customize the message key
+		zap.LevelString("@level"),          // stringify the log level
+	)
+}
