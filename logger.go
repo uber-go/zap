@@ -84,7 +84,7 @@ func (log *logger) With(fields ...Field) Logger {
 	clone := &logger{
 		Meta: log.Meta.Clone(),
 	}
-	clone.Encoder.AddFields(fields)
+	addFields(clone.Encoder, fields)
 	return clone
 }
 
@@ -146,7 +146,7 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 	}
 
 	temp := log.Encoder.Clone()
-	temp.AddFields(fields)
+	addFields(temp, fields)
 
 	entry := newEntry(lvl, msg, temp)
 	for _, hook := range log.Hooks {

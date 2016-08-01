@@ -40,7 +40,7 @@ func (l Level) apply(m *Meta) {
 // Fields sets the initial fields for the logger.
 func Fields(fields ...Field) Option {
 	return optionFunc(func(m *Meta) {
-		m.Encoder.AddFields(fields)
+		addFields(m.Encoder, fields)
 	})
 }
 
