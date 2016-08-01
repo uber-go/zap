@@ -40,10 +40,10 @@ type Entry struct {
 	Level   Level
 	Time    time.Time
 	Message string
-	enc     encoder
+	enc     Encoder
 }
 
-func newEntry(lvl Level, msg string, enc encoder) *Entry {
+func newEntry(lvl Level, msg string, enc Encoder) *Entry {
 	e := _entryPool.Get().(*Entry)
 	e.Level = lvl
 	e.Message = msg

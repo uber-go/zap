@@ -78,7 +78,7 @@ func (l loggable) MarshalLog(kv KeyValue) error {
 	return nil
 }
 
-func assertOutput(t testing.TB, desc string, expected string, f func(encoder)) {
+func assertOutput(t testing.TB, desc string, expected string, f func(Encoder)) {
 	withJSONEncoder(func(enc *jsonEncoder) {
 		f(enc)
 		assert.Equal(t, expected, string(enc.bytes), "Unexpected encoder output after adding a %s.", desc)
@@ -100,40 +100,40 @@ func TestJSONEncoderFields(t *testing.T) {
 	tests := []struct {
 		desc     string
 		expected string
-		f        func(encoder)
+		f        func(Encoder)
 	}{
-		{"string", `"k":"v"`, func(e encoder) { e.AddString("k", "v") }},
-		{"string", `"k":""`, func(e encoder) { e.AddString("k", "") }},
-		{"string", `"k\\":"v\\"`, func(e encoder) { e.AddString(`k\`, `v\`) }},
-		{"bool", `"k":true`, func(e encoder) { e.AddBool("k", true) }},
-		{"bool", `"k":false`, func(e encoder) { e.AddBool("k", false) }},
-		{"bool", `"k\\":true`, func(e encoder) { e.AddBool(`k\`, true) }},
-		{"int", `"k":42`, func(e encoder) { e.AddInt("k", 42) }},
-		{"int", `"k\\":42`, func(e encoder) { e.AddInt(`k\`, 42) }},
-		{"int64", `"k":42`, func(e encoder) { e.AddInt64("k", 42) }},
-		{"int64", `"k\\":42`, func(e encoder) { e.AddInt64(`k\`, 42) }},
-		{"float64", `"k":1`, func(e encoder) { e.AddFloat64("k", 1.0) }},
-		{"float64", `"k\\":1`, func(e encoder) { e.AddFloat64(`k\`, 1.0) }},
-		{"float64", `"k":10000000000`, func(e encoder) { e.AddFloat64("k", 1e10) }},
-		{"float64", `"k":"NaN"`, func(e encoder) { e.AddFloat64("k", math.NaN()) }},
-		{"float64", `"k":"+Inf"`, func(e encoder) { e.AddFloat64("k", math.Inf(1)) }},
-		{"float64", `"k":"-Inf"`, func(e encoder) { e.AddFloat64("k", math.Inf(-1)) }},
-		{"marshaler", `"k":{"loggable":"yes"}`, func(e encoder) {
+		{"string", `"k":"v"`, func(e Encoder) { e.AddString("k", "v") }},
+		{"string", `"k":""`, func(e Encoder) { e.AddString("k", "") }},
+		{"string", `"k\\":"v\\"`, func(e Encoder) { e.AddString(`k\`, `v\`) }},
+		{"bool", `"k":true`, func(e Encoder) { e.AddBool("k", true) }},
+		{"bool", `"k":false`, func(e Encoder) { e.AddBool("k", false) }},
+		{"bool", `"k\\":true`, func(e Encoder) { e.AddBool(`k\`, true) }},
+		{"int", `"k":42`, func(e Encoder) { e.AddInt("k", 42) }},
+		{"int", `"k\\":42`, func(e Encoder) { e.AddInt(`k\`, 42) }},
+		{"int64", `"k":42`, func(e Encoder) { e.AddInt64("k", 42) }},
+		{"int64", `"k\\":42`, func(e Encoder) { e.AddInt64(`k\`, 42) }},
+		{"float64", `"k":1`, func(e Encoder) { e.AddFloat64("k", 1.0) }},
+		{"float64", `"k\\":1`, func(e Encoder) { e.AddFloat64(`k\`, 1.0) }},
+		{"float64", `"k":10000000000`, func(e Encoder) { e.AddFloat64("k", 1e10) }},
+		{"float64", `"k":"NaN"`, func(e Encoder) { e.AddFloat64("k", math.NaN()) }},
+		{"float64", `"k":"+Inf"`, func(e Encoder) { e.AddFloat64("k", math.Inf(1)) }},
+		{"float64", `"k":"-Inf"`, func(e Encoder) { e.AddFloat64("k", math.Inf(-1)) }},
+		{"marshaler", `"k":{"loggable":"yes"}`, func(e Encoder) {
 			assert.NoError(t, e.AddMarshaler("k", loggable{true}), "Unexpected error calling MarshalLog.")
 		}},
-		{"marshaler", `"k\\":{"loggable":"yes"}`, func(e encoder) {
+		{"marshaler", `"k\\":{"loggable":"yes"}`, func(e Encoder) {
 			assert.NoError(t, e.AddMarshaler(`k\`, loggable{true}), "Unexpected error calling MarshalLog.")
 		}},
-		{"marshaler", `"k":{}`, func(e encoder) {
+		{"marshaler", `"k":{}`, func(e Encoder) {
 			assert.Error(t, e.AddMarshaler("k", loggable{false}), "Expected an error calling MarshalLog.")
 		}},
-		{"arbitrary object", `"k":{"loggable":"yes"}`, func(e encoder) {
+		{"arbitrary object", `"k":{"loggable":"yes"}`, func(e Encoder) {
 			assert.NoError(t, e.AddObject("k", map[string]string{"loggable": "yes"}), "Unexpected error JSON-serializing a map.")
 		}},
-		{"arbitrary object", `"k\\":{"loggable":"yes"}`, func(e encoder) {
+		{"arbitrary object", `"k\\":{"loggable":"yes"}`, func(e Encoder) {
 			assert.NoError(t, e.AddObject(`k\`, map[string]string{"loggable": "yes"}), "Unexpected error JSON-serializing a map.")
 		}},
-		{"arbitrary object", "", func(e encoder) {
+		{"arbitrary object", "", func(e Encoder) {
 			assert.Error(t, e.AddObject("k", noJSON{}), "Unexpected success JSON-serializing a noJSON.")
 		}},
 	}
@@ -268,7 +268,7 @@ func TestJSONOptions(t *testing.T) {
 		RFC3339Formatter("the-timestamp"),
 	)
 
-	for _, enc := range []encoder{root, root.Clone()} {
+	for _, enc := range []Encoder{root, root.Clone()} {
 		buf := &bytes.Buffer{}
 		enc.WriteEntry(buf, "fake msg", DebugLevel, time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC))
 		assert.Equal(

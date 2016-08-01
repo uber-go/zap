@@ -158,7 +158,7 @@ func (enc *jsonEncoder) AddObject(key string, obj interface{}) error {
 }
 
 // Clone copies the current encoder, including any data already encoded.
-func (enc *jsonEncoder) Clone() encoder {
+func (enc *jsonEncoder) Clone() Encoder {
 	clone := jsonPool.Get().(*jsonEncoder)
 	clone.truncate()
 	clone.bytes = append(clone.bytes, enc.bytes...)

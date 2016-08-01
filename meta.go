@@ -33,7 +33,7 @@ import (
 // use, the remaining fields are not.
 type Meta struct {
 	Development bool
-	Encoder     encoder
+	Encoder     Encoder
 	Hooks       []hook
 	Output      WriteSyncer
 	ErrorOutput WriteSyncer
@@ -44,7 +44,7 @@ type Meta struct {
 // MakeMeta returns a new meta struct with sensible defaults: logging at
 // InfoLevel, a JSON encoder, development mode off, and writing to standard error
 // and standard out.
-func MakeMeta(enc encoder) Meta {
+func MakeMeta(enc Encoder) Meta {
 	if enc == nil {
 		// TODO: remove once we export the encoder constructors.
 		enc = newJSONEncoder()

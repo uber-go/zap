@@ -37,7 +37,7 @@ type logRecord struct {
 // newEncoder returns the encoder interface, which is how end users would use
 // the LogMarshalerFunc type. Using the JSON encoder type directly allows
 // inlining which reduces allocs artificially.
-func newEncoder() encoder {
+func newEncoder() Encoder {
 	return newJSONEncoder()
 }
 

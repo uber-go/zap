@@ -95,7 +95,7 @@ func NewJSON(options ...Option) Logger {
 }
 
 // TODO: export as New and replace NewJSON.
-func newLogger(enc encoder, options ...Option) Logger {
+func newLogger(enc Encoder, options ...Option) Logger {
 	logger := jsonLogger{
 		Meta: MakeMeta(enc),
 	}
