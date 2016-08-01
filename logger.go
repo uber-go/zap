@@ -23,7 +23,6 @@ package zap
 import (
 	"fmt"
 	"os"
-	"time"
 )
 
 // For tests.
@@ -41,13 +40,6 @@ type Logger interface {
 
 	// Create a child logger, and optionally add some context to that logger.
 	With(...Field) Logger
-	// StubTime stops the logger from including the current time in each
-	// message. Instead, it always reports the time as Unix epoch 0. (This is
-	// useful in tests and examples.)
-	//
-	// TODO: remove this kludge in favor of a more comprehensive message-formatting
-	// option.
-	StubTime()
 
 	// Check returns a CheckedMessage if logging a message at the specified level
 	// is enabled. It's a completely optional optimization; in high-performance
@@ -70,11 +62,7 @@ type Logger interface {
 	DFatal(string, ...Field)
 }
 
-type logger struct {
-	Meta
-
-	alwaysEpoch bool
-}
+type logger struct{ Meta }
 
 // New constructs a logger that uses the provided encoder. By default, the
 // logger will write Info logs or higher to standard out. Any errors during logging
@@ -94,15 +82,10 @@ func New(enc Encoder, options ...Option) Logger {
 
 func (log *logger) With(fields ...Field) Logger {
 	clone := &logger{
-		Meta:        log.Meta.Clone(),
-		alwaysEpoch: log.alwaysEpoch,
+		Meta: log.Meta.Clone(),
 	}
 	clone.Encoder.AddFields(fields)
 	return clone
-}
-
-func (log *logger) StubTime() {
-	log.alwaysEpoch = true
 }
 
 func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
@@ -166,9 +149,6 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 	temp.AddFields(fields)
 
 	entry := newEntry(lvl, msg, temp)
-	if log.alwaysEpoch {
-		entry.Time = time.Unix(0, 0)
-	}
 	for _, hook := range log.Hooks {
 		if err := hook(entry); err != nil {
 			log.internalError(err.Error())
