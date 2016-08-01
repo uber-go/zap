@@ -33,7 +33,7 @@ import (
 func Example() {
 	// Log in JSON, using zap's reflection-free JSON encoder.
 	// The default options will log any Info or higher logs to standard out.
-	logger := zap.NewLogger(
+	logger := zap.New(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 	)
 
@@ -64,7 +64,7 @@ func Example_fileOutput() {
 	}
 	defer os.Remove(f.Name())
 
-	logger := zap.NewLogger(
+	logger := zap.New(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 		// Write the logging output to the specified file instead of stdout.
 		// Any type implementing zap.WriteSyncer or zap.WriteFlusher can be used.
@@ -87,7 +87,7 @@ func Example_fileOutput() {
 }
 
 func ExampleNest() {
-	logger := zap.NewLogger(
+	logger := zap.New(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 	)
 
@@ -99,10 +99,10 @@ func ExampleNest() {
 	// {"level":"info","msg":"Logging a nested field.","outer":{"inner":42}}
 }
 
-func ExampleNewLogger() {
+func ExampleNew() {
 	// The default logger outputs to standard out and only writes logs that are
 	// Info level or higher.
-	logger := zap.NewLogger(
+	logger := zap.New(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 	)
 
@@ -114,10 +114,10 @@ func ExampleNewLogger() {
 	// {"level":"info","msg":"This is an info log."}
 }
 
-func ExampleNewLogger_options() {
+func ExampleNew_options() {
 	// We can pass multiple options to the NewJSON method to configure
 	// the logging level, output location, or even the initial context.
-	logger := zap.NewLogger(
+	logger := zap.New(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 		zap.DebugLevel,
 		zap.Fields(zap.Int("count", 1)),
@@ -132,7 +132,7 @@ func ExampleNewLogger_options() {
 }
 
 func ExampleCheckedMessage() {
-	logger := zap.NewLogger(
+	logger := zap.New(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 	)
 

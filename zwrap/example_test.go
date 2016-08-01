@@ -28,7 +28,7 @@ import (
 )
 
 func Example_standardize() {
-	zapLogger := zap.NewLogger(zap.NewJSONEncoder(
+	zapLogger := zap.New(zap.NewJSONEncoder(
 		zap.NoTime(), // discard timestamps in tests
 	))
 
@@ -49,7 +49,7 @@ func Example_standardize() {
 }
 
 func Example_sample() {
-	zapLogger := zap.NewLogger(zap.NewJSONEncoder(
+	zapLogger := zap.New(zap.NewJSONEncoder(
 		zap.NoTime(), // discard timestamps in tests
 	))
 	sampledLogger := zwrap.Sample(zapLogger, time.Second, 1, 100)

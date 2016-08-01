@@ -63,7 +63,7 @@ func BenchmarkLogrusAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapBarkifyAddingFields(b *testing.B) {
-	logger := zbark.Barkify(zap.NewLogger(
+	logger := zbark.Barkify(zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
 		zap.Output(zap.Discard),
@@ -110,7 +110,7 @@ func BenchmarkLogrusWithAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapBarkifyWithAccumulatedContext(b *testing.B) {
-	baseLogger := zbark.Barkify(zap.NewLogger(
+	baseLogger := zbark.Barkify(zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
 		zap.Output(zap.Discard),

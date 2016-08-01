@@ -68,7 +68,7 @@ func withJSONLogger(t testing.TB, opts []Option, f func(Logger, *testBuffer)) {
 	allOpts := make([]Option, 0, 3+len(opts))
 	allOpts = append(allOpts, DebugLevel, Output(sink), ErrorOutput(errSink))
 	allOpts = append(allOpts, opts...)
-	logger := NewLogger(newJSONEncoder(NoTime()), allOpts...)
+	logger := New(newJSONEncoder(NoTime()), allOpts...)
 
 	f(logger, sink)
 	assert.Empty(t, errSink.String(), "Expected error sink to be empty.")
@@ -85,7 +85,7 @@ func TestJSONLoggerSetLevel(t *testing.T) {
 func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
 	// Test that changing a logger's level also changes the level of all
 	// ancestors and descendants.
-	grandparent := NewLogger(newJSONEncoder(), Fields(Int("generation", 1)))
+	grandparent := New(newJSONEncoder(), Fields(Int("generation", 1)))
 	parent := grandparent.With(Int("generation", 2))
 	child := parent.With(Int("generation", 3))
 
@@ -102,7 +102,7 @@ func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
 
 func TestJSONLoggerConcurrentLevelMutation(t *testing.T) {
 	// Trigger races for non-atomic level mutations.
-	logger := NewLogger(newJSONEncoder())
+	logger := New(newJSONEncoder())
 
 	proceed := make(chan struct{})
 	wg := &sync.WaitGroup{}
@@ -231,7 +231,7 @@ func TestJSONLoggerNoOpsDisabledLevels(t *testing.T) {
 func TestJSONLoggerWriteEntryFailure(t *testing.T) {
 	errBuf := &testBuffer{}
 	errSink := &spywrite.WriteSyncer{Writer: errBuf}
-	logger := NewLogger(
+	logger := New(
 		newJSONEncoder(),
 		DebugLevel,
 		Output(AddSync(spywrite.FailWriter{})),
@@ -246,7 +246,7 @@ func TestJSONLoggerWriteEntryFailure(t *testing.T) {
 
 func TestJSONLoggerSyncsOutput(t *testing.T) {
 	sink := &spywrite.WriteSyncer{Writer: ioutil.Discard}
-	logger := NewLogger(newJSONEncoder(), DebugLevel, Output(sink))
+	logger := New(newJSONEncoder(), DebugLevel, Output(sink))
 
 	logger.Error("foo")
 	assert.False(t, sink.Called(), "Didn't expect logging at error level to Sync underlying WriteCloser.")

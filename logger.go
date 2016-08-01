@@ -76,13 +76,13 @@ type logger struct {
 	alwaysEpoch bool
 }
 
-// NewLogger constructs a logger that uses the provided encoder. By default, the
+// New constructs a logger that uses the provided encoder. By default, the
 // logger will write Info logs or higher to standard out. Any errors during logging
 // will be written to standard error.
 //
 // Options can change the log level, the output location, the initial fields
 // that should be added as context, and many other behaviors.
-func NewLogger(enc Encoder, options ...Option) Logger {
+func New(enc Encoder, options ...Option) Logger {
 	logger := logger{
 		Meta: MakeMeta(enc),
 	}

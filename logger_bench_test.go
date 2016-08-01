@@ -48,7 +48,7 @@ var _jane = &user{
 }
 
 func withBenchedLogger(b *testing.B, f func(zap.Logger)) {
-	logger := zap.NewLogger(
+	logger := zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
 		zap.Output(zap.Discard),
@@ -142,7 +142,7 @@ func BenchmarkObjectField(b *testing.B) {
 }
 
 func BenchmarkAddCallerHook(b *testing.B) {
-	logger := zap.NewLogger(
+	logger := zap.New(
 		zap.NewJSONEncoder(),
 		zap.Output(zap.Discard),
 		zap.AddCaller(),
@@ -174,7 +174,7 @@ func Benchmark10Fields(b *testing.B) {
 
 func Benchmark100Fields(b *testing.B) {
 	const batchSize = 50
-	logger := zap.NewLogger(
+	logger := zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
 		zap.Output(zap.Discard),

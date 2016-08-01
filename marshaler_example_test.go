@@ -62,7 +62,7 @@ func ExampleMarshaler() {
 		},
 	}
 
-	logger := zap.NewLogger(zap.NewJSONEncoder(zap.NoTime()))
+	logger := zap.New(zap.NewJSONEncoder(zap.NoTime()))
 	logger.Info("Successful login.", zap.Marshaler("user", jane))
 
 	// Output:

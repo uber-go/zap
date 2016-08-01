@@ -26,7 +26,7 @@ import (
 )
 
 func Example() {
-	zapLogger := zap.NewLogger(zap.NewJSONEncoder(
+	zapLogger := zap.New(zap.NewJSONEncoder(
 		zap.NoTime(), // discard timestamps in tests
 	))
 
