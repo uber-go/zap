@@ -136,7 +136,8 @@ func Error(err error) Field {
 // allocation and takes ~10 microseconds.
 func Stack() Field {
 	// Try to avoid allocating a buffer.
-	enc := newJSONEncoder()
+	enc := jsonPool.Get().(*jsonEncoder)
+	enc.truncate()
 	bs := enc.bytes[:cap(enc.bytes)]
 	// Returning the stacktrace as a string costs an allocation, but saves us
 	// from expanding the Field union struct to include a byte slice. Since

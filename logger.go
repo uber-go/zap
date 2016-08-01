@@ -82,11 +82,11 @@ type jsonLogger struct {
 // By default, the logger will write Info logs or higher to standard
 // out. Any errors during logging will be written to standard error.
 //
-// Options can change the log level, the output location, or the initial
-// fields that should be added as context.
+// Options can change the log level, the output location, the initial
+// fields that should be added as context, and many other behaviors.
 func NewJSON(options ...Option) Logger {
 	logger := jsonLogger{
-		Meta: MakeMeta(),
+		Meta: MakeMeta(NewJSONEncoder()),
 	}
 	for _, opt := range options {
 		opt.apply(&logger.Meta)
@@ -95,11 +95,10 @@ func NewJSON(options ...Option) Logger {
 }
 
 // TODO: export as New and replace NewJSON.
-func newLogger(enc encoder, options ...Option) Logger {
+func newLogger(enc Encoder, options ...Option) Logger {
 	logger := jsonLogger{
-		Meta: MakeMeta(),
+		Meta: MakeMeta(enc),
 	}
-	logger.Meta.Encoder = enc
 	for _, opt := range options {
 		opt.apply(&logger.Meta)
 	}

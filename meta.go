@@ -27,15 +27,13 @@ import (
 )
 
 // Meta is implementation-agnostic state management for Loggers. Most Logger
-// implementations can reduce the required boilerplate by embedding a *Meta.
+// implementations can reduce the required boilerplate by embedding a Meta.
 //
 // Note that while the level-related fields and methods are safe for concurrent
 // use, the remaining fields are not.
-//
-// TODO: Consider better names for this before releasing 1.0.
 type Meta struct {
 	Development bool
-	Encoder     encoder
+	Encoder     Encoder
 	Hooks       []hook
 	Output      WriteSyncer
 	ErrorOutput WriteSyncer
@@ -46,10 +44,10 @@ type Meta struct {
 // MakeMeta returns a new meta struct with sensible defaults: logging at
 // InfoLevel, a JSON encoder, development mode off, and writing to standard error
 // and standard out.
-func MakeMeta() Meta {
+func MakeMeta(enc Encoder) Meta {
 	return Meta{
 		lvl:         atomic.NewInt32(int32(InfoLevel)),
-		Encoder:     newJSONEncoder(),
+		Encoder:     enc,
 		Output:      newLockedWriteSyncer(os.Stdout),
 		ErrorOutput: newLockedWriteSyncer(os.Stderr),
 	}

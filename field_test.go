@@ -64,7 +64,7 @@ func assertCanBeReused(t testing.TB, field Field) {
 	var wg sync.WaitGroup
 
 	for i := 0; i < 100; i++ {
-		enc := newJSONEncoder()
+		enc := NewJSONEncoder()
 		defer enc.Free()
 
 		// Ensure using the field in multiple encoders in separate goroutines
@@ -206,7 +206,7 @@ func TestStackField(t *testing.T) {
 }
 
 func TestUnknownField(t *testing.T) {
-	enc := newJSONEncoder()
+	enc := NewJSONEncoder()
 	defer enc.Free()
 
 	for _, ft := range []fieldType{unknownType, -42} {
