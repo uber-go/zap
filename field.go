@@ -43,8 +43,7 @@ const (
 )
 
 // A Field is a deferred marshaling operation used to add a key-value pair to
-// a logger's context. Keys and values are appropriately escaped for the current
-// encoding scheme (e.g., JSON).
+// a logger's context.
 type Field struct {
 	key       string
 	fieldType fieldType
@@ -96,8 +95,8 @@ func String(key string, val string) Field {
 	return Field{key: key, fieldType: stringType, str: val}
 }
 
-// Stringer constructs a Field with the given key and value. The value
-// is the result of the String method.
+// Stringer constructs a Field with the given key and the output of the value's
+// String method.
 func Stringer(key string, val fmt.Stringer) Field {
 	return Field{key: key, fieldType: stringerType, obj: val}
 }
@@ -108,9 +107,11 @@ func Time(key string, val time.Time) Field {
 	return Float64(key, timeToSeconds(val))
 }
 
-// Error constructs a Field that stores err.Error() under the key "error". This is
-// just a convenient shortcut for a common pattern - apart from saving a few
-// keystrokes, it's no different from using zap.String.
+// Error constructs a Field that stores err.Error() under the key "error". If
+// passed a nil error, it returns a no-op field.
+//
+// This is just a convenient shortcut for a common pattern - apart from saving a
+// few keystrokes, it's no different from a nil check and zap.String.
 func Error(err error) Field {
 	if err == nil {
 		return Skip()
@@ -165,7 +166,8 @@ func Nest(key string, fields ...Field) Field {
 	return Field{key: key, fieldType: marshalerType, obj: multiFields(fields)}
 }
 
-// AddTo exports a field through the KeyValue interface.
+// AddTo exports a field through the KeyValue interface. It's primarily useful
+// to library authors, and shouldn't be necessary in most applications.
 func (f Field) AddTo(kv KeyValue) {
 	var err error
 

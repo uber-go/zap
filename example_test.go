@@ -31,8 +31,8 @@ import (
 )
 
 func Example() {
-	// Log in JSON, using zap's reflection-free JSON encoder.
-	// The default options will log any Info or higher logs to standard out.
+	// Log in JSON, using zap's reflection-free JSON encoder. By default, loggers
+	// write all InfoLevel and above logs to standard out.
 	logger := zap.New(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 	)
@@ -47,7 +47,10 @@ func Example() {
 	// Avoid re-serializing the same data repeatedly by creating a child logger
 	// with some attached context. That context is added to all the child's
 	// log output, but doesn't affect the parent.
-	child := logger.With(zap.String("user", "jane@test.com"), zap.Int("visits", 42))
+	child := logger.With(
+		zap.String("user", "jane@test.com"),
+		zap.Int("visits", 42),
+	)
 	child.Error("Oh no!")
 
 	// Output:

@@ -2,12 +2,14 @@ package zap
 
 import "time"
 
-// JSONOption is used to set options for a JSON encoder.
+// JSONOption is used to set options for a JSON encoder. MessageFormatters,
+// TimeFormatters, and LevelFormatters all implement the JSONOption interface.
 type JSONOption interface {
 	apply(*jsonEncoder)
 }
 
 // A MessageFormatter defines how to convert a log message into a Field.
+// MessageFormatters implement the JSONOption interface.
 type MessageFormatter func(string) Field
 
 func (mf MessageFormatter) apply(enc *jsonEncoder) {
@@ -22,6 +24,7 @@ func MessageKey(key string) MessageFormatter {
 }
 
 // A TimeFormatter defines how to convert the time of a log entry into a Field.
+// TimeFormatters implement the JSONOption interface.
 type TimeFormatter func(time.Time) Field
 
 func (tf TimeFormatter) apply(enc *jsonEncoder) {
@@ -53,7 +56,7 @@ func NoTime() TimeFormatter {
 }
 
 // A LevelFormatter defines how to convert an entry's logging level into a
-// Field.
+// Field. LevelFormatters implement the JSONOption interface.
 type LevelFormatter func(Level) Field
 
 func (lf LevelFormatter) apply(enc *jsonEncoder) {

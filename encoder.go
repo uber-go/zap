@@ -25,12 +25,33 @@ import (
 	"time"
 )
 
-// Encoder is a format-agnostic interface for all log field encoders. It's not
-// safe for concurrent use.
+// Encoder is a format-agnostic interface for all log entry marshalers. Since
+// log encoders don't need to support the same wide range of use cases as
+// general-purpose marshalers, it's possible to make them much faster and
+// lower-allocation.
+//
+// Encoders need not be fully safe for concurrent use, but it should be safe to
+// call the Clone and WriteEntry methods concurrently (as long as fields aren't
+// simultaneously being added). Concretely, the following code should be safe:
+//   enc := NewExoticEncoder() // your Encoder implementation
+//   enc.AddString("foo", "bar")
+//   for i := 0; i < 10; i++ {
+//     go func() {
+//       enc.WriteEntry(os.Stdout, "Safe!", zap.InfoLevel, time.Now().UTC())
+//       enc.Clone()
+//     }()
+//   }
+// See the JSON encoder for an example implementation.
 type Encoder interface {
 	KeyValue
 
+	// Copy the encoder, ensuring that adding fields to the copy doesn't affect
+	// the original.
 	Clone() Encoder
+	// Return the encoder to the appropriate sync.Pool. Unpooled encoder
+	// implementations can no-op this method.
 	Free()
+	// Write the supplied message, level, and timestamp to the writer, along with
+	// any accumulated context.
 	WriteEntry(io.Writer, string, Level, time.Time) error
 }
