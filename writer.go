@@ -31,8 +31,6 @@ var (
 	Discard = AddSync(ioutil.Discard)
 	// DiscardOutput is an Option that discards logger output.
 	DiscardOutput = Output(Discard)
-	// DiscardErrorOutput is an Option that discards logger error output.
-	DiscardErrorOutput = ErrorOutput(Discard)
 )
 
 // A WriteFlusher is an io.Writer that can also flush any buffered data.
