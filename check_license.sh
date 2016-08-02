@@ -1,6 +1,6 @@
 #!/bin/bash
 
-text=`cat LICENSE.txt | head -1`
+text=`head -1 LICENSE.txt`
 
 ERROR_COUNT=0
 while read file
