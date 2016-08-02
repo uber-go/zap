@@ -93,13 +93,13 @@ func Int64(key string, val int64) Field {
 	return Field{key: key, fieldType: int64Type, ival: val}
 }
 
-// UInt constructs a Field with the given key and value.
-func UInt(key string, val uint) Field {
+// Uint constructs a Field with the given key and value.
+func Uint(key string, val uint) Field {
 	return Field{key: key, fieldType: uintType, ival: int64(val)}
 }
 
-// UInt64 constructs a Field with the given key and value.
-func UInt64(key string, val uint64) Field {
+// Uint64 constructs a Field with the given key and value.
+func Uint64(key string, val uint64) Field {
 	return Field{key: key, fieldType: uint64Type, ival: int64(val)}
 }
 
@@ -191,9 +191,9 @@ func (f Field) AddTo(kv KeyValue) {
 	case int64Type:
 		kv.AddInt64(f.key, f.ival)
 	case uintType:
-		kv.AddUInt(f.key, uint(f.ival))
+		kv.AddUint(f.key, uint(f.ival))
 	case uint64Type:
-		kv.AddUInt64(f.key, uint64(f.ival))
+		kv.AddUint64(f.key, uint64(f.ival))
 	case stringType:
 		kv.AddString(f.key, f.str)
 	case stringerType:

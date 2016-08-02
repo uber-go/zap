@@ -129,15 +129,15 @@ func (enc *jsonEncoder) AddInt64(key string, val int64) {
 	enc.bytes = strconv.AppendInt(enc.bytes, val, 10)
 }
 
-// AddUInt adds a string key and integer value to the encoder's fields. The key
+// AddUint adds a string key and integer value to the encoder's fields. The key
 // is JSON-escaped.
-func (enc *jsonEncoder) AddUInt(key string, val uint) {
-	enc.AddUInt64(key, uint64(val))
+func (enc *jsonEncoder) AddUint(key string, val uint) {
+	enc.AddUint64(key, uint64(val))
 }
 
-// AddUInt64 adds a string key and integer value to the encoder's fields. The key
+// AddUint64 adds a string key and integer value to the encoder's fields. The key
 // is JSON-escaped.
-func (enc *jsonEncoder) AddUInt64(key string, val uint64) {
+func (enc *jsonEncoder) AddUint64(key string, val uint64) {
 	enc.addKey(key)
 	enc.bytes = strconv.AppendUint(enc.bytes, val, 10)
 }
