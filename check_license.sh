@@ -10,6 +10,6 @@ do
         echo "$file is missing license header."
         ERROR_COUNT+=1
     fi
-done < <(git grep -l "" | grep "\.go")
+done < <(git ls-files "\.go")
 
 exit $ERROR_COUNT
