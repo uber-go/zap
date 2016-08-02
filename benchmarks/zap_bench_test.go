@@ -75,7 +75,7 @@ func fakeMessages(n int) []string {
 }
 
 func BenchmarkZapDisabledLevelsWithoutFields(b *testing.B) {
-	logger := zap.New(zap.NewJSONEncoder(), zap.ErrorLevel, zap.Output(zap.Discard))
+	logger := zap.New(zap.NewJSONEncoder(), zap.ErrorLevel, zap.DiscardOutput)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -89,7 +89,7 @@ func BenchmarkZapDisabledLevelsAccumulatedContext(b *testing.B) {
 	logger := zap.New(
 		zap.NewJSONEncoder(),
 		zap.ErrorLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 		zap.Fields(context...),
 	)
 	b.ResetTimer()
@@ -104,7 +104,7 @@ func BenchmarkZapDisabledLevelsAddingFields(b *testing.B) {
 	logger := zap.New(
 		zap.NewJSONEncoder(),
 		zap.ErrorLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 	)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -118,7 +118,7 @@ func BenchmarkZapDisabledLevelsCheckAddingFields(b *testing.B) {
 	logger := zap.New(
 		zap.NewJSONEncoder(),
 		zap.ErrorLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 	)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -134,7 +134,7 @@ func BenchmarkZapAddingFields(b *testing.B) {
 	logger := zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 	)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -149,7 +149,7 @@ func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 	logger := zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 		zap.Fields(context...),
 	)
 	b.ResetTimer()
@@ -164,7 +164,7 @@ func BenchmarkZapWithoutFields(b *testing.B) {
 	logger := zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 	)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -179,7 +179,7 @@ func BenchmarkZapSampleWithoutFields(b *testing.B) {
 	base := zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 	)
 	logger := zwrap.Sample(base, time.Second, 10, 10000)
 	b.ResetTimer()
@@ -197,7 +197,7 @@ func BenchmarkZapSampleAddingFields(b *testing.B) {
 	base := zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 	)
 	logger := zwrap.Sample(base, time.Second, 10, 10000)
 	b.ResetTimer()
@@ -215,7 +215,7 @@ func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
 	base := zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 	)
 	logger := zwrap.Sample(base, time.Second, 10, 10000)
 	b.ResetTimer()
@@ -235,7 +235,7 @@ func BenchmarkZapSampleCheckAddingFields(b *testing.B) {
 	base := zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 	)
 	logger := zwrap.Sample(base, time.Second, 10, 10000)
 	b.ResetTimer()

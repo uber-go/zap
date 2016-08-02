@@ -66,7 +66,7 @@ func BenchmarkZapBarkifyAddingFields(b *testing.B) {
 	logger := zbark.Barkify(zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 	))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -113,7 +113,7 @@ func BenchmarkZapBarkifyWithAccumulatedContext(b *testing.B) {
 	baseLogger := zbark.Barkify(zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 	))
 	logger := baseLogger.WithFields(bark.Fields{
 		"int":               1,
