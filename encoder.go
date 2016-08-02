@@ -30,7 +30,6 @@ import (
 type Encoder interface {
 	KeyValue
 
-	AddFields([]Field)
 	Clone() Encoder
 	Free()
 	WriteEntry(io.Writer, string, Level, time.Time) error

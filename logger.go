@@ -23,7 +23,6 @@ package zap
 import (
 	"fmt"
 	"os"
-	"time"
 )
 
 // For tests.
@@ -41,13 +40,6 @@ type Logger interface {
 
 	// Create a child logger, and optionally add some context to that logger.
 	With(...Field) Logger
-	// StubTime stops the logger from including the current time in each
-	// message. Instead, it always reports the time as Unix epoch 0. (This is
-	// useful in tests and examples.)
-	//
-	// TODO: remove this kludge in favor of a more comprehensive message-formatting
-	// option.
-	StubTime()
 
 	// Check returns a CheckedMessage if logging a message at the specified level
 	// is enabled. It's a completely optional optimization; in high-performance
@@ -70,33 +62,16 @@ type Logger interface {
 	DFatal(string, ...Field)
 }
 
-type jsonLogger struct {
-	Meta
+type logger struct{ Meta }
 
-	alwaysEpoch bool
-}
-
-// NewJSON returns a logger that formats its output as JSON. Zap uses a
-// customized JSON encoder to avoid reflection and minimize allocations.
+// New constructs a logger that uses the provided encoder. By default, the
+// logger will write Info logs or higher to standard out. Any errors during logging
+// will be written to standard error.
 //
-// By default, the logger will write Info logs or higher to standard
-// out. Any errors during logging will be written to standard error.
-//
-// Options can change the log level, the output location, the initial
-// fields that should be added as context, and many other behaviors.
-func NewJSON(options ...Option) Logger {
-	logger := jsonLogger{
-		Meta: MakeMeta(NewJSONEncoder()),
-	}
-	for _, opt := range options {
-		opt.apply(&logger.Meta)
-	}
-	return &logger
-}
-
-// TODO: export as New and replace NewJSON.
-func newLogger(enc Encoder, options ...Option) Logger {
-	logger := jsonLogger{
+// Options can change the log level, the output location, the initial fields
+// that should be added as context, and many other behaviors.
+func New(enc Encoder, options ...Option) Logger {
+	logger := logger{
 		Meta: MakeMeta(enc),
 	}
 	for _, opt := range options {
@@ -105,102 +80,94 @@ func newLogger(enc Encoder, options ...Option) Logger {
 	return &logger
 }
 
-func (jl *jsonLogger) With(fields ...Field) Logger {
-	clone := &jsonLogger{
-		Meta:        jl.Meta.Clone(),
-		alwaysEpoch: jl.alwaysEpoch,
+func (log *logger) With(fields ...Field) Logger {
+	clone := &logger{
+		Meta: log.Meta.Clone(),
 	}
-	clone.Encoder.AddFields(fields)
+	addFields(clone.Encoder, fields)
 	return clone
 }
 
-func (jl *jsonLogger) StubTime() {
-	jl.alwaysEpoch = true
-}
-
-func (jl *jsonLogger) Check(lvl Level, msg string) *CheckedMessage {
-	if !(lvl >= jl.Level()) {
+func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
+	if !(lvl >= log.Level()) {
 		return nil
 	}
-	return NewCheckedMessage(jl, lvl, msg)
+	return NewCheckedMessage(log, lvl, msg)
 }
 
-func (jl *jsonLogger) Log(lvl Level, msg string, fields ...Field) {
+func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 	switch lvl {
 	case PanicLevel:
-		jl.Panic(msg, fields...)
+		log.Panic(msg, fields...)
 	case FatalLevel:
-		jl.Fatal(msg, fields...)
+		log.Fatal(msg, fields...)
 	default:
-		jl.log(lvl, msg, fields)
+		log.log(lvl, msg, fields)
 	}
 }
 
-func (jl *jsonLogger) Debug(msg string, fields ...Field) {
-	jl.log(DebugLevel, msg, fields)
+func (log *logger) Debug(msg string, fields ...Field) {
+	log.log(DebugLevel, msg, fields)
 }
 
-func (jl *jsonLogger) Info(msg string, fields ...Field) {
-	jl.log(InfoLevel, msg, fields)
+func (log *logger) Info(msg string, fields ...Field) {
+	log.log(InfoLevel, msg, fields)
 }
 
-func (jl *jsonLogger) Warn(msg string, fields ...Field) {
-	jl.log(WarnLevel, msg, fields)
+func (log *logger) Warn(msg string, fields ...Field) {
+	log.log(WarnLevel, msg, fields)
 }
 
-func (jl *jsonLogger) Error(msg string, fields ...Field) {
-	jl.log(ErrorLevel, msg, fields)
+func (log *logger) Error(msg string, fields ...Field) {
+	log.log(ErrorLevel, msg, fields)
 }
 
-func (jl *jsonLogger) Panic(msg string, fields ...Field) {
-	jl.log(PanicLevel, msg, fields)
+func (log *logger) Panic(msg string, fields ...Field) {
+	log.log(PanicLevel, msg, fields)
 	panic(msg)
 }
 
-func (jl *jsonLogger) Fatal(msg string, fields ...Field) {
-	jl.log(FatalLevel, msg, fields)
+func (log *logger) Fatal(msg string, fields ...Field) {
+	log.log(FatalLevel, msg, fields)
 	_exit(1)
 }
 
-func (jl *jsonLogger) DFatal(msg string, fields ...Field) {
-	if jl.Development {
-		jl.Fatal(msg, fields...)
+func (log *logger) DFatal(msg string, fields ...Field) {
+	if log.Development {
+		log.Fatal(msg, fields...)
 		return
 	}
-	jl.Error(msg, fields...)
+	log.Error(msg, fields...)
 }
 
-func (jl *jsonLogger) log(lvl Level, msg string, fields []Field) {
-	if !(lvl >= jl.Level()) {
+func (log *logger) log(lvl Level, msg string, fields []Field) {
+	if !(lvl >= log.Level()) {
 		return
 	}
 
-	temp := jl.Encoder.Clone()
-	temp.AddFields(fields)
+	temp := log.Encoder.Clone()
+	addFields(temp, fields)
 
 	entry := newEntry(lvl, msg, temp)
-	if jl.alwaysEpoch {
-		entry.Time = time.Unix(0, 0)
-	}
-	for _, hook := range jl.Hooks {
+	for _, hook := range log.Hooks {
 		if err := hook(entry); err != nil {
-			jl.internalError(err.Error())
+			log.internalError(err.Error())
 		}
 	}
 
-	if err := temp.WriteEntry(jl.Output, entry.Message, entry.Level, entry.Time); err != nil {
-		jl.internalError(err.Error())
+	if err := temp.WriteEntry(log.Output, entry.Message, entry.Level, entry.Time); err != nil {
+		log.internalError(err.Error())
 	}
 	temp.Free()
 	entry.free()
 
 	if lvl > ErrorLevel {
 		// Sync on Panic and Fatal, since they may crash the program.
-		jl.Output.Sync()
+		log.Output.Sync()
 	}
 }
 
-func (jl *jsonLogger) internalError(msg string) {
-	fmt.Fprintln(jl.ErrorOutput, msg)
-	jl.ErrorOutput.Sync()
+func (log *logger) internalError(msg string) {
+	fmt.Fprintln(log.ErrorOutput, msg)
+	log.ErrorOutput.Sync()
 }

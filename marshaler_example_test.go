@@ -62,11 +62,9 @@ func ExampleMarshaler() {
 		},
 	}
 
-	logger := zap.NewJSON()
-	// Stub time in tests.
-	logger.StubTime()
+	logger := zap.New(zap.NewJSONEncoder(zap.NoTime()))
 	logger.Info("Successful login.", zap.Marshaler("user", jane))
 
 	// Output:
-	// {"level":"info","ts":0,"msg":"Successful login.","user":{"name":"Jane Doe","age":42,"auth":{"expires_at":100,"token":"---"}}}
+	// {"level":"info","msg":"Successful login.","user":{"name":"Jane Doe","age":42,"auth":{"expires_at":100,"token":"---"}}}
 }
