@@ -51,7 +51,7 @@ func withBenchedLogger(b *testing.B, f func(zap.Logger)) {
 	logger := zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 	)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -144,7 +144,7 @@ func BenchmarkObjectField(b *testing.B) {
 func BenchmarkAddCallerHook(b *testing.B) {
 	logger := zap.New(
 		zap.NewJSONEncoder(),
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 		zap.AddCaller(),
 	)
 	b.ResetTimer()
@@ -177,7 +177,7 @@ func Benchmark100Fields(b *testing.B) {
 	logger := zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
-		zap.Output(zap.Discard),
+		zap.DiscardOutput,
 	)
 
 	// Don't include allocating these helper slices in the benchmark. Since
