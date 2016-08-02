@@ -30,18 +30,9 @@ import (
 // general-purpose marshalers, it's possible to make them much faster and
 // lower-allocation.
 //
-// Encoders need not be fully safe for concurrent use, but it should be safe to
-// call the Clone and WriteEntry methods concurrently (as long as fields aren't
-// simultaneously being added). Concretely, the following code should be safe:
-//   enc := NewExoticEncoder() // your Encoder implementation
-//   enc.AddString("foo", "bar")
-//   for i := 0; i < 10; i++ {
-//     go func() {
-//       enc.WriteEntry(os.Stdout, "Safe!", zap.InfoLevel, time.Now().UTC())
-//       enc.Clone()
-//     }()
-//   }
-// See the JSON encoder for an example implementation.
+// Implementations of the KeyValue interface's methods can, of course, freely
+// modify the receiver. However, the Clone, Free, and WriteEntry methods will be
+// called concurrently and shouldn't modify the receiver.
 type Encoder interface {
 	KeyValue
 
