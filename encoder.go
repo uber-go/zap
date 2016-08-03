@@ -31,7 +31,7 @@ import (
 // lower-allocation.
 //
 // Implementations of the KeyValue interface's methods can, of course, freely
-// modify the receiver. However, the Clone, Free, and WriteEntry methods will be
+// modify the receiver. However, the Clone and WriteEntry methods will be
 // called concurrently and shouldn't modify the receiver.
 type Encoder interface {
 	KeyValue
