@@ -35,7 +35,7 @@ import (
 const (
 	// For JSON-escaping; see jsonEncoder.safeAddString below.
 	_hex = "0123456789abcdef"
-	// Initial buffer size.
+	// Initial buffer size for encoders.
 	_initialBufSize = 1024
 )
 
@@ -56,7 +56,7 @@ var (
 	}}
 )
 
-// jsonEncoder is a logging-optimized JSON encoder.
+// jsonEncoder is an Encoder implementation that writes JSON.
 type jsonEncoder struct {
 	bytes    []byte
 	messageF MessageFormatter
@@ -64,17 +64,18 @@ type jsonEncoder struct {
 	levelF   LevelFormatter
 }
 
-// NewJSONEncoder creates a logging-optimized JSON encoder. By default, JSON
+// NewJSONEncoder creates a fast, low-allocation JSON encoder. By default, JSON
 // encoders put the log message under the "msg" key, the timestamp (as
 // floating-point seconds since epoch) under the "ts" key, and the log level
-// under the "level" key.
+// under the "level" key. The encoder appropriately escapes all field keys and
+// values.
 //
 // Note that the encoder doesn't deduplicate keys, so it's possible to produce a
 // message like
 //   {"foo":"bar","foo":"baz"}
 // This is permitted by the JSON specification, but not encouraged. Many
 // libraries will ignore duplicate key-value pairs (typically keeping the last
-// pair) when unmarshaling, but it's the user's responsibility to avoid duplicate
+// pair) when unmarshaling, but users should attempt to avoid adding duplicate
 // keys.
 func NewJSONEncoder(options ...JSONOption) Encoder {
 	enc := jsonPool.Get().(*jsonEncoder)
@@ -90,8 +91,6 @@ func NewJSONEncoder(options ...JSONOption) Encoder {
 	return enc
 }
 
-// Free returns the encoder to the pool. Callers should not retain any
-// references to the freed object.
 func (enc *jsonEncoder) Free() {
 	jsonPool.Put(enc)
 }

@@ -41,12 +41,13 @@ const (
 	marshalerType
 	objectType
 	stringerType
+	errorType
 	skipType
 )
 
-// A Field is a deferred marshaling operation used to add a key-value pair to
-// a logger's context. Keys and values are appropriately escaped for the current
-// encoding scheme (e.g., JSON).
+// A Field is a marshaling operation used to add a key-value pair to a logger's
+// context. Most fields are lazily marshaled, so it's inexpensive to add fields to
+// disabled debug-level log statements.
 type Field struct {
 	key       string
 	fieldType fieldType
@@ -60,14 +61,14 @@ func Skip() Field {
 	return Field{fieldType: skipType}
 }
 
-// Base64 constructs a field that encodes the given value as a
-// padded base64 string. The byte slice is converted to a base64
-// string immediately.
+// Base64 constructs a field that encodes the given value as a padded base64
+// string. The byte slice is converted to a base64 string eagerly.
 func Base64(key string, val []byte) Field {
 	return String(key, base64.StdEncoding.EncodeToString(val))
 }
 
-// Bool constructs a Field with the given key and value.
+// Bool constructs a Field with the given key and value. Bools are marshaled
+// lazily.
 func Bool(key string, val bool) Field {
 	var ival int64
 	if val {
@@ -78,17 +79,19 @@ func Bool(key string, val bool) Field {
 }
 
 // Float64 constructs a Field with the given key and value. The way the
-// floating-point value is represented is encoder-dependent.
+// floating-point value is represented is encoder-dependent, so marshaling is
+// necessarily lazy.
 func Float64(key string, val float64) Field {
 	return Field{key: key, fieldType: floatType, ival: int64(math.Float64bits(val))}
 }
 
-// Int constructs a Field with the given key and value.
+// Int constructs a Field with the given key and value. Marshaling ints is lazy.
 func Int(key string, val int) Field {
 	return Field{key: key, fieldType: intType, ival: int64(val)}
 }
 
-// Int64 constructs a Field with the given key and value.
+// Int64 constructs a Field with the given key and value. Like ints, int64s are
+// marshaled lazily.
 func Int64(key string, val int64) Field {
 	return Field{key: key, fieldType: int64Type, ival: val}
 }
@@ -108,31 +111,31 @@ func String(key string, val string) Field {
 	return Field{key: key, fieldType: stringType, str: val}
 }
 
-// Stringer constructs a Field with the given key and value. The value
-// is the result of the String method.
+// Stringer constructs a Field with the given key and the output of the value's
+// String method. The Stringer's String method is called lazily.
 func Stringer(key string, val fmt.Stringer) Field {
 	return Field{key: key, fieldType: stringerType, obj: val}
 }
 
 // Time constructs a Field with the given key and value. It represents a
-// time.Time as a floating-point number of seconds since epoch.
+// time.Time as a floating-point number of seconds since epoch. Conversion to a
+// float64 happens eagerly.
 func Time(key string, val time.Time) Field {
 	return Float64(key, timeToSeconds(val))
 }
 
-// Error constructs a Field that stores err.Error() under the key "error". This is
-// just a convenient shortcut for a common pattern - apart from saving a few
-// keystrokes, it's no different from using zap.String.
+// Error constructs a Field that lazily stores err.Error() under the key
+// "error". If passed a nil error, the field is a no-op.
 func Error(err error) Field {
 	if err == nil {
 		return Skip()
 	}
-	return String("error", err.Error())
+	return Field{key: "error", fieldType: errorType, obj: err}
 }
 
 // Stack constructs a Field that stores a stacktrace of the current goroutine
-// under the key "stacktrace". Keep in mind that taking a stacktrace is
-// extremely expensive (relatively speaking); this function both makes an
+// under the key "stacktrace". Keep in mind that taking a stacktrace is eager
+// and extremely expensive (relatively speaking); this function both makes an
 // allocation and takes ~10 microseconds.
 func Stack() Field {
 	// Try to avoid allocating a buffer.
@@ -156,14 +159,16 @@ func Duration(key string, val time.Duration) Field {
 
 // Marshaler constructs a field with the given key and zap.LogMarshaler. It
 // provides a flexible, but still type-safe and efficient, way to add
-// user-defined types to the logging context.
+// user-defined types to the logging context. The LogMarshaler's MarshalLog
+// method is called lazily.
 func Marshaler(key string, val LogMarshaler) Field {
 	return Field{key: key, fieldType: marshalerType, obj: val}
 }
 
 // Object constructs a field with the given key and an arbitrary object. It uses
-// an encoding-appropriate, reflection-based function to serialize nearly any
-// object into the logging context, but it's relatively slow and allocation-heavy.
+// an encoding-appropriate, reflection-based function to lazily serialize nearly
+// any object into the logging context, but it's relatively slow and
+// allocation-heavy.
 //
 // If encoding fails (e.g., trying to serialize a map[int]string to JSON), Object
 // includes the error message in the final log output.
@@ -177,7 +182,8 @@ func Nest(key string, fields ...Field) Field {
 	return Field{key: key, fieldType: marshalerType, obj: multiFields(fields)}
 }
 
-// AddTo exports a field through the KeyValue interface.
+// AddTo exports a field through the KeyValue interface. It's primarily useful
+// to library authors, and shouldn't be necessary in most applications.
 func (f Field) AddTo(kv KeyValue) {
 	var err error
 
@@ -202,6 +208,8 @@ func (f Field) AddTo(kv KeyValue) {
 		err = kv.AddMarshaler(f.key, f.obj.(LogMarshaler))
 	case objectType:
 		err = kv.AddObject(f.key, f.obj)
+	case errorType:
+		kv.AddString(f.key, f.obj.(error).Error())
 	case skipType:
 		break
 	default:

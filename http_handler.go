@@ -38,11 +38,12 @@ type levelHandler struct {
 	logger Logger
 }
 
-// NewHTTPHandler returns an HTTP handler that can change the logging level at
-// runtime.
+// NewHTTPHandler returns an HTTP handler that can atomically change the logging
+// level at runtime. Keep in mind that changing a logger's level also affects that
+// logger's ancestors and descendants.
 //
 // GET requests return a JSON description of the current logging level. PUT
-// requests change the logging level and expect a payload like
+// requests change the logging level and expect a payload like:
 //   {"level":"info"}
 func NewHTTPHandler(logger Logger) http.Handler {
 	return &levelHandler{logger: logger}
