@@ -79,14 +79,6 @@ func TestSampler(t *testing.T) {
 			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Error("sample") },
 		},
 		{
-			level:   zap.PanicLevel,
-			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Panic("sample") },
-		},
-		{
-			level:   zap.FatalLevel,
-			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Fatal("sample") },
-		},
-		{
 			level:   zap.ErrorLevel,
 			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).DFatal("sample") },
 		},
@@ -179,6 +171,23 @@ func TestSamplerCheck(t *testing.T) {
 
 	expected := buildExpectation(zap.InfoLevel, 1, 11)
 	assert.Equal(t, expected, sink.Logs(), "Unexpected output when sampling with Check.")
+}
+
+func TestSamplerCheckPanicFatal(t *testing.T) {
+	for _, level := range []zap.Level{zap.FatalLevel, zap.PanicLevel} {
+		sampler, sink := fakeSampler(time.Millisecond, 1, 10, false)
+		sampler.SetLevel(zap.FatalLevel + 1)
+
+		assert.Nil(t, sampler.Check(zap.DebugLevel, "foo"), "Expected a nil CheckedMessage at disabled log levels.")
+		for i := 0; i < 5; i++ {
+			if cm := sampler.Check(level, "sample"); cm.OK() {
+				cm.Write(zap.Int("iter", i))
+			}
+		}
+
+		expected := buildExpectation(level, 0, 1, 2, 3, 4)
+		assert.Equal(t, expected, sink.Logs(), "Unexpected output when sampling with Check.")
+	}
 }
 
 func TestSamplerRaces(t *testing.T) {

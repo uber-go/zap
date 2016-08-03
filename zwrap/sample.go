@@ -153,7 +153,13 @@ func (s *sampler) DFatal(msg string, fields ...zap.Field) {
 }
 
 func (s *sampler) check(lvl zap.Level, msg string) bool {
-	if !(lvl >= s.Level()) {
+	switch lvl {
+	case zap.PanicLevel, zap.FatalLevel:
+		// Ignore sampling for Panic and Fatal, since it should always
+		// cause a panic or exit.
+		return true
+	}
+	if lvl < s.Level() {
 		return false
 	}
 	n := s.counts.Inc(msg)
