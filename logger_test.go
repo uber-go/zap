@@ -193,6 +193,35 @@ func TestJSONLoggerPanic(t *testing.T) {
 	})
 }
 
+func TestJSONLoggerCheckPanic(t *testing.T) {
+	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
+		assert.Panics(t, func() {
+			if cm := logger.Check(PanicLevel, "foo"); cm.OK() {
+				cm.Write()
+			}
+		})
+		assert.Equal(t, `{"level":"panic","msg":"foo"}`, buf.Stripped(), "Unexpected output from Logger.Panic.")
+	})
+}
+
+func TestJSONLoggerAlwaysPanics(t *testing.T) {
+	withJSONLogger(t, []Option{FatalLevel}, func(logger Logger, buf *testBuffer) {
+		assert.Panics(t, func() { logger.Panic("foo") }, "logger.Panics should panic")
+		assert.Empty(t, buf.String(), "Panic should not be logged")
+	})
+}
+
+func TestJSONLoggerCheckAlwaysPanics(t *testing.T) {
+	withJSONLogger(t, []Option{FatalLevel}, func(logger Logger, buf *testBuffer) {
+		assert.Panics(t, func() {
+			if cm := logger.Check(PanicLevel, "foo"); cm.OK() {
+				cm.Write()
+			}
+		}, "CheckedMessage should panic")
+		assert.Empty(t, buf.String(), "Panic should not be logged")
+	})
+}
+
 func TestJSONLoggerFatal(t *testing.T) {
 	stub := stubExit()
 	defer stub.Unstub()
@@ -201,6 +230,43 @@ func TestJSONLoggerFatal(t *testing.T) {
 		logger.Fatal("foo")
 		assert.Equal(t, `{"level":"fatal","msg":"foo"}`, buf.Stripped(), "Unexpected output from Logger.Fatal.")
 		stub.AssertStatus(t, 1)
+	})
+}
+
+func TestJSONLoggerCheckFatal(t *testing.T) {
+	stub := stubExit()
+	defer stub.Unstub()
+
+	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
+		if cm := logger.Check(FatalLevel, "foo"); cm.OK() {
+			cm.Write()
+		}
+		assert.Equal(t, `{"level":"fatal","msg":"foo"}`, buf.Stripped(), "Unexpected output from Logger.Fatal.")
+		stub.AssertStatus(t, 1)
+	})
+}
+
+func TestJSONLoggerAlwaysFatals(t *testing.T) {
+	stub := stubExit()
+	defer stub.Unstub()
+
+	withJSONLogger(t, []Option{FatalLevel + 1}, func(logger Logger, buf *testBuffer) {
+		logger.Fatal("foo")
+		stub.AssertStatus(t, 1)
+		assert.Empty(t, buf.String(), "Fatal should not be logged")
+	})
+}
+
+func TestJSONLoggerCheckAlwaysFatals(t *testing.T) {
+	stub := stubExit()
+	defer stub.Unstub()
+
+	withJSONLogger(t, []Option{FatalLevel + 1}, func(logger Logger, buf *testBuffer) {
+		if cm := logger.Check(FatalLevel, "foo"); cm.OK() {
+			cm.Write()
+		}
+		stub.AssertStatus(t, 1)
+		assert.Empty(t, buf.String(), "Fatal should not be logged")
 	})
 }
 

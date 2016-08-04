@@ -89,8 +89,15 @@ func (log *logger) With(fields ...Field) Logger {
 }
 
 func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
-	if !(lvl >= log.Level()) {
-		return nil
+	switch lvl {
+	case PanicLevel, FatalLevel:
+		// Panic and Fatal should always cause a panic/exit, even if the level
+		// is disabled.
+		break
+	default:
+		if lvl < log.Level() {
+			return nil
+		}
 	}
 	return NewCheckedMessage(log, lvl, msg)
 }
