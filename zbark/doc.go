@@ -19,7 +19,8 @@
 // THE SOFTWARE.
 
 // Package zbark provides a wrapper to make zap.Loggers compatible with the
-// bark.Logger interface.
+// bark.Logger interface and a wrapper to make bark.Loggers compatible with
+// zap.Logger interface.
 //
 // This package is only of interest to users of github.com/uber-common/bark.
 package zbark
