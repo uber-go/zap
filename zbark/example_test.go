@@ -25,7 +25,7 @@ import (
 	"github.com/uber-go/zap/zbark"
 )
 
-func Example() {
+func ExampleBarkify() {
 	zapLogger := zap.New(zap.NewJSONEncoder(
 		zap.NoTime(), // discard timestamps in tests
 	))
