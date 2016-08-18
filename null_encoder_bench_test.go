@@ -21,22 +21,14 @@
 package zap
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"testing"
 	"time"
 )
 
-type logRecord struct {
-	Level   string                 `json:"level"`
-	Message string                 `json:"msg"`
-	Time    time.Time              `json:"ts"`
-	Fields  map[string]interface{} `json:"fields"`
-}
-
-func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
+func BenchmarkNullLogMarshalerFunc(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		enc := NewJSONEncoder()
+		enc := NullEncoder()
 		enc.AddMarshaler("nested", LogMarshalerFunc(func(kv KeyValue) error {
 			kv.AddInt("i", i)
 			return nil
@@ -45,11 +37,11 @@ func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
 	}
 }
 
-func BenchmarkZapJSON(b *testing.B) {
+func BenchmarkZapNull(b *testing.B) {
 	ts := time.Unix(0, 0)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			enc := NewJSONEncoder()
+			enc := NullEncoder()
 			enc.AddString("str", "foo")
 			enc.AddInt("int", 1)
 			enc.AddInt64("int64", 1)
@@ -61,31 +53,6 @@ func BenchmarkZapJSON(b *testing.B) {
 			enc.AddBool("bool", true)
 			enc.WriteEntry(ioutil.Discard, "fake", DebugLevel, ts)
 			enc.Free()
-		}
-	})
-}
-
-func BenchmarkStandardJSON(b *testing.B) {
-	record := logRecord{
-		Level:   "debug",
-		Message: "fake",
-		Time:    time.Unix(0, 0),
-		Fields: map[string]interface{}{
-			"str":     "foo",
-			"int":     int(1),
-			"int64":   int64(1),
-			"float64": float64(1.0),
-			"string1": "\n",
-			"string2": "💩",
-			"string3": "🤔",
-			"string4": "🙊",
-			"bool":    true,
-		},
-	}
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			json.Marshal(record)
 		}
 	})
 }
