@@ -32,7 +32,7 @@ func newKit() *log.Context {
 	return log.NewContext(log.NewJSONLogger(ioutil.Discard))
 }
 
-func BenchmarkGoKitAddingFields(b *testing.B) {
+func goKitAddingFields(b *testing.B) {
 	logger := newKit()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -53,7 +53,7 @@ func BenchmarkGoKitAddingFields(b *testing.B) {
 	})
 }
 
-func BenchmarkGoKitWithAccumulatedContext(b *testing.B) {
+func goKitWithAccumulatedContext(b *testing.B) {
 	logger := newKit().With(
 		"int", 1,
 		"int64", int64(1),
@@ -74,7 +74,7 @@ func BenchmarkGoKitWithAccumulatedContext(b *testing.B) {
 	})
 }
 
-func BenchmarkGoKitWithoutFields(b *testing.B) {
+func goKitWithoutFields(b *testing.B) {
 	logger := newKit()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

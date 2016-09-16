@@ -41,7 +41,7 @@ func newLogrus() *logrus.Logger {
 	}
 }
 
-func BenchmarkLogrusAddingFields(b *testing.B) {
+func logrusAddingFields(b *testing.B) {
 	logger := newLogrus()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -62,7 +62,7 @@ func BenchmarkLogrusAddingFields(b *testing.B) {
 	})
 }
 
-func BenchmarkZapBarkifyAddingFields(b *testing.B) {
+func zapBarkifyAddingFields(b *testing.B) {
 	logger := zbark.Barkify(zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
@@ -87,7 +87,7 @@ func BenchmarkZapBarkifyAddingFields(b *testing.B) {
 	})
 }
 
-func BenchmarkLogrusWithAccumulatedContext(b *testing.B) {
+func logrusWithAccumulatedContext(b *testing.B) {
 	baseLogger := newLogrus()
 	logger := baseLogger.WithFields(logrus.Fields{
 		"int":               1,
@@ -109,7 +109,7 @@ func BenchmarkLogrusWithAccumulatedContext(b *testing.B) {
 	})
 }
 
-func BenchmarkZapBarkifyWithAccumulatedContext(b *testing.B) {
+func zapBarkifyWithAccumulatedContext(b *testing.B) {
 	baseLogger := zbark.Barkify(zap.New(
 		zap.NewJSONEncoder(),
 		zap.DebugLevel,
@@ -135,8 +135,22 @@ func BenchmarkZapBarkifyWithAccumulatedContext(b *testing.B) {
 	})
 }
 
-func BenchmarkLogrusWithoutFields(b *testing.B) {
+func logrusWithoutFields(b *testing.B) {
 	logger := newLogrus()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Info("Go fast.")
+		}
+	})
+}
+
+func zapBarkifyWithoutFields(b *testing.B) {
+	logger := zbark.Barkify(zap.New(
+		zap.NewJSONEncoder(),
+		zap.DebugLevel,
+		zap.DiscardOutput,
+	))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
