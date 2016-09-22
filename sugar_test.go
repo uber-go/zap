@@ -145,6 +145,11 @@ func TestSugarDFatal(t *testing.T) {
 		assert.Equal(t, `{"level":"error","msg":"foo"}`, buf.Stripped(), "Unexpected output from dfatal")
 	})
 
+	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+		err := logger.DFatal("foo", "a")
+		assert.Error(t, err, "DFatal should fail with invalid arguments")
+	})
+
 	stub := stubExit()
 	defer stub.Unstub()
 	opts := opts(Development())
