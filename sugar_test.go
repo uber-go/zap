@@ -22,6 +22,7 @@ package zap
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -54,6 +55,17 @@ func TestSugarGetSugarFields(t *testing.T) {
 	assert.Equal(t, 2, len(fields), "Should return 2 fields")
 }
 
+func TestSugarLevel(t *testing.T) {
+	assert.Equal(t, DebugLevel, NewSugar(New(NewJSONEncoder(), DebugLevel)).Level())
+	assert.Equal(t, FatalLevel, NewSugar(New(NewJSONEncoder(), FatalLevel)).Level())
+}
+
+func TestSugarSetLevel(t *testing.T) {
+	sugar := NewSugar(New(NewJSONEncoder()))
+	sugar.SetLevel(FatalLevel)
+	assert.Equal(t, FatalLevel, sugar.Level())
+}
+
 func withSugarLogger(t testing.TB, opts []Option, f func(Sugar, *testBuffer)) {
 	sink := &testBuffer{}
 	errSink := &testBuffer{}
@@ -83,6 +95,71 @@ func TestSugarLog(t *testing.T) {
 	})
 }
 
+func TestSugarLogTypes(t *testing.T) {
+	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+		logger.Debug("", "bool", true)
+		logger.Debug("", "float64", float64(1.23456789))
+		logger.Debug("", "int", int(-1))
+		logger.Debug("", "int64", int64(-1))
+		logger.Debug("", "uint", uint(1))
+		logger.Debug("", "uint64", uint64(1))
+		logger.Debug("", "string", "")
+		logger.Debug("", "time", time.Unix(0, 0))
+		logger.Debug("", "duration", time.Second)
+		logger.Debug("", "stringer", DebugLevel)
+		assert.Equal(t, []string{
+			`{"level":"debug","msg":"","bool":true}`,
+			`{"level":"debug","msg":"","float64":1.23456789}`,
+			`{"level":"debug","msg":"","int":-1}`,
+			`{"level":"debug","msg":"","int64":-1}`,
+			`{"level":"debug","msg":"","uint":1}`,
+			`{"level":"debug","msg":"","uint64":1}`,
+			`{"level":"debug","msg":"","string":""}`,
+			`{"level":"debug","msg":"","time":0}`,
+			`{"level":"debug","msg":"","duration":1000000000}`,
+			`{"level":"debug","msg":"","stringer":"debug"}`,
+		}, buf.Lines(), "Incorrect output from logger")
+	})
+}
+
+func TestSugarPanic(t *testing.T) {
+	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+		assert.Panics(t, func() { logger.Panic("foo") }, "Expected logging at Panic level to panic.")
+		assert.Equal(t, `{"level":"panic","msg":"foo"}`, buf.Stripped(), "Unexpected output from panic-level Log.")
+	})
+}
+
+func TestSugarFatal(t *testing.T) {
+	stub := stubExit()
+	defer stub.Unstub()
+	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+		logger.Fatal("foo")
+		assert.Equal(t, `{"level":"fatal","msg":"foo"}`, buf.Stripped(), "Unexpected output from fatal-level Log.")
+		stub.AssertStatus(t, 1)
+	})
+}
+
+func TestSugarDFatal(t *testing.T) {
+	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+		logger.DFatal("foo")
+		assert.Equal(t, `{"level":"error","msg":"foo"}`, buf.Stripped(), "Unexpected output from dfatal")
+	})
+
+	stub := stubExit()
+	defer stub.Unstub()
+	opts := opts(Development())
+	withSugarLogger(t, opts, func(logger Sugar, buf *testBuffer) {
+		logger.DFatal("foo")
+		assert.Equal(t, `{"level":"fatal","msg":"foo"}`, buf.Stripped(), "Unexpected output from DFatal in dev mode")
+		stub.AssertStatus(t, 1)
+	})
+}
+
+func TestSugarLogFails(t *testing.T) {
+	sugar := NewSugar(New(NewJSONEncoder()))
+	assert.Error(t, sugar.Log(DebugLevel, "message", "a"), "Should fail with invalid args")
+}
+
 func TestSugarWith(t *testing.T) {
 	opts := opts()
 	withSugarLogger(t, opts, func(logger Sugar, buf *testBuffer) {
@@ -92,4 +169,10 @@ func TestSugarWith(t *testing.T) {
 			`{"level":"debug","msg":"debug message","a":"b","c":"d"}`,
 		}, buf.Lines(), "Incorrect output from logger")
 	})
+}
+
+func TestSugarWithFails(t *testing.T) {
+	sugar := NewSugar(New(NewJSONEncoder()))
+	_, err := sugar.With("a")
+	assert.Error(t, err, "Should fail with invalid args")
 }
