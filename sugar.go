@@ -145,11 +145,13 @@ func getSugarFields(args ...interface{}) ([]Field, error) {
 
 // Log ...
 func (s *sugar) Log(lvl Level, msg string, args ...interface{}) error {
-	fields, err := getSugarFields(args...)
-	if err != nil {
-		return err
+	if cm := s.core.Check(lvl, msg); cm.OK() {
+		fields, err := getSugarFields(args...)
+		if err != nil {
+			return err
+		}
+		cm.Write(fields...)
 	}
-	s.core.Log(lvl, msg, fields...)
 	return nil
 }
 
@@ -178,10 +180,9 @@ func (s *sugar) Fatal(msg string, args ...interface{}) error {
 }
 
 func (s *sugar) DFatal(msg string, args ...interface{}) error {
-	fields, err := getSugarFields(args...)
-	if err != nil {
-		return err
+	lvl := ErrorLevel
+	if s.core.(*logger).Development {
+		lvl = FatalLevel
 	}
-	s.core.DFatal(msg, fields...)
-	return nil
+	return s.Log(lvl, msg, args...)
 }
