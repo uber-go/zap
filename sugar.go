@@ -77,17 +77,39 @@ func (s *sugar) With(args ...interface{}) (Sugar, error) {
 	return NewSugar(s.core.With(fields...)), nil
 }
 
+const (
+	expectFirst = iota
+	expectString
+	expectValue
+)
+
 func getSugarFields(args ...interface{}) ([]Field, error) {
-	if (len(args) % 2) != 0 {
+	var (
+		noErrArgs []interface{}
+		fields    []Field
+
+		ii    int
+		key   string
+		value interface{}
+	)
+
+	if len(args) == 0 {
+		return fields, nil
+	}
+
+	switch args[0].(type) {
+	case error:
+		fields = append(fields, Error(args[0].(error)))
+		noErrArgs = args[1:]
+	default:
+		noErrArgs = args
+	}
+
+	if (len(noErrArgs) % 2) != 0 {
 		return nil, errors.New("invalid number of arguments")
 	}
-	var (
-		fields []Field
-		ii     int
-		key    string
-		value  interface{}
-	)
-	for ii, value = range args {
+
+	for ii, value = range noErrArgs {
 		if (ii % 2) == 0 {
 			switch value.(type) {
 			case string:
@@ -117,6 +139,8 @@ func getSugarFields(args ...interface{}) ([]Field, error) {
 				fields = append(fields, Duration(key, value.(time.Duration)))
 			case fmt.Stringer:
 				fields = append(fields, Stringer(key, value.(fmt.Stringer)))
+			case error:
+				return nil, errors.New("error can only be the first argument")
 			default:
 				return nil, errors.New("invalid argument type")
 			}

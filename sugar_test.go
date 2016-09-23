@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -52,6 +53,9 @@ func TestSugarGetSugarFields(t *testing.T) {
 	assert.Equal(t, 1, len(fields), "Should return 1 field")
 
 	fields, _ = getSugarFields("test1", 1, "test2", 2)
+	assert.Equal(t, 2, len(fields), "Should return 2 fields")
+
+	fields, _ = getSugarFields(errors.New("error"), "test1", 1)
 	assert.Equal(t, 2, len(fields), "Should return 2 fields")
 }
 
@@ -118,6 +122,24 @@ func TestSugarLogTypes(t *testing.T) {
 			`{"level":"debug","msg":"","time":0}`,
 			`{"level":"debug","msg":"","duration":1000000000}`,
 			`{"level":"debug","msg":"","stringer":"debug"}`,
+		}, buf.Lines(), "Incorrect output from logger")
+	})
+}
+
+func TestSugarLogNoArgs(t *testing.T) {
+	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+		logger.Debug("no args message")
+		assert.Equal(t, []string{
+			`{"level":"debug","msg":"no args message"}`,
+		}, buf.Lines(), "Incorrect output from logger")
+	})
+}
+
+func TestSugarLogError(t *testing.T) {
+	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+		logger.Debug("with error", errors.New("this is a error"))
+		assert.Equal(t, []string{
+			`{"level":"debug","msg":"with error","error":"this is a error"}`,
 		}, buf.Lines(), "Incorrect output from logger")
 	})
 }
