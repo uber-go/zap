@@ -46,6 +46,9 @@ func TestSugarGetSugarFields(t *testing.T) {
 	_, err = getSugarFields("test1", nil)
 	assert.Error(t, err, "Should return error on argument of unknown type")
 
+	_, err = getSugarFields("test1", 1, "error", errors.New(""))
+	assert.Error(t, err, "Should return error when error passed as value (special case of unknown type)")
+
 	_, err = getSugarFields(1, 1)
 	assert.Error(t, err, "Should return error on non-string field name")
 
