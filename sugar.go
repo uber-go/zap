@@ -77,12 +77,6 @@ func (s *sugar) With(args ...interface{}) (Sugar, error) {
 	return NewSugar(s.core.With(fields...)), nil
 }
 
-const (
-	expectFirst = iota
-	expectString
-	expectValue
-)
-
 func getSugarFields(args ...interface{}) ([]Field, error) {
 	var (
 		noErrArgs []interface{}
