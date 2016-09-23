@@ -186,8 +186,20 @@ func TestSugarDFatal(t *testing.T) {
 }
 
 func TestSugarLogFails(t *testing.T) {
-	sugar := NewSugar(New(NewJSONEncoder()))
-	assert.Error(t, sugar.Log(DebugLevel, "message", "a"), "Should fail with invalid args")
+	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+		assert.Error(t, logger.Log(DebugLevel, "message", "a"), "Should fail with invalid args")
+	})
+}
+
+func TestSugarLogDiscards(t *testing.T) {
+	withSugarLogger(t, opts(InfoLevel), func(logger Sugar, buf *testBuffer) {
+		logger.Debug("should be discarded")
+		logger.Debug("should be discarded even with invalid arg count", "bla")
+		logger.Info("should be logged")
+		assert.Equal(t, []string{
+			`{"level":"info","msg":"should be logged"}`,
+		}, buf.Lines(), "")
+	})
 }
 
 func TestSugarWith(t *testing.T) {
