@@ -36,6 +36,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var epoch = time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
+
 func newJSONEncoder(opts ...JSONOption) *jsonEncoder {
 	return NewJSONEncoder(opts...).(*jsonEncoder)
 }
@@ -280,7 +282,7 @@ func TestJSONOptions(t *testing.T) {
 
 	for _, enc := range []Encoder{root, root.Clone()} {
 		buf := &bytes.Buffer{}
-		enc.WriteEntry(buf, "fake msg", DebugLevel, time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC))
+		enc.WriteEntry(buf, "fake msg", DebugLevel, epoch)
 		assert.Equal(
 			t,
 			`{"the-level":"debug","the-timestamp":"1970-01-01T00:00:00Z","the-message":"fake msg"}`+"\n",
