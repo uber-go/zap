@@ -53,6 +53,7 @@ func TestKeyValueMapAdd(t *testing.T) {
 	kv.AddFloat64("f64", 1.56)
 	kv.AddInt("int", 5)
 	kv.AddInt64("i64", math.MaxInt64)
+	kv.AddUintptr("uintptr", uintptr(0xdeadbeef))
 	kv.AddString("s", "string")
 
 	assert.NoError(t, kv.AddObject("obj", arbitraryObj), "AddObject failed")
@@ -60,12 +61,13 @@ func TestKeyValueMapAdd(t *testing.T) {
 	assert.NoError(t, kv.Nest("m2", loggable{}.MarshalLog), "Nest failed")
 
 	want := KeyValueMap{
-		"b":   true,
-		"f64": 1.56,
-		"int": 5,
-		"i64": int64(math.MaxInt64),
-		"s":   "string",
-		"obj": arbitraryObj,
+		"b":       true,
+		"f64":     1.56,
+		"int":     5,
+		"i64":     int64(math.MaxInt64),
+		"uintptr": uintptr(0xdeadbeef),
+		"s":       "string",
+		"obj":     arbitraryObj,
 		"m1": KeyValueMap{
 			"loggable": "yes",
 		},

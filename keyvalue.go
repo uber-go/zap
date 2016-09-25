@@ -32,6 +32,7 @@ type KeyValue interface {
 	AddInt64(key string, value int64)
 	AddUint(key string, value uint)
 	AddUint64(key string, value uint64)
+	AddUintptr(key string, value uintptr)
 	AddMarshaler(key string, marshaler LogMarshaler) error
 	// AddObject uses reflection to serialize arbitrary objects, so it's slow and
 	// allocation-heavy. Consider implementing the LogMarshaler interface instead.
