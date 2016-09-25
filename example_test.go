@@ -122,39 +122,11 @@ func ExampleNew_textEncoder() {
 	textLogger := zap.New(zap.NewTextEncoder(
 		zap.TextNoTime(), // drop timestamps in tests.
 	))
-	textLogger.Info("This is a text log.")
+
+	textLogger.Info("This is a text log.", zap.Int("foo", 42))
 
 	// Output:
-	// [I] This is a text log.
-}
-
-func ExampleNew_textEncoderSingleCurlyBrace() {
-	textLogger := zap.New(zap.NewTextEncoder(
-		zap.TextNoTime(), // drop timestamps in tests.
-	))
-	textLogger.Info("Test 1.")
-	textLogger.Info("With fields", zap.String("f1", "v1"), zap.String("f2", "v2"))
-	textLogger.Info("With fields", zap.String("f1", "{"), zap.String("f2", "v2"))
-
-	// Output:
-	// [I] Test 1.
-	// [I] With fields f1=v1 f2=v2
-	// [I] With fields f1={ f2=v2
-}
-
-func ExampleNew_textEncoderNestedObject() {
-	m := func(kv zap.KeyValue) error {
-		kv.AddString("loggable", "yes")
-		kv.AddInt("number", 1)
-		return nil
-	}
-	textLogger := zap.New(zap.NewTextEncoder(
-		zap.TextNoTime(), // drop timestamps in tests.
-	))
-	textLogger.Info("With Marshaler", zap.Marshaler("m", zap.LogMarshalerFunc(m)))
-
-	// Output:
-	// [I] With Marshaler m={loggable=yes number=1}
+	// [I] This is a text log. foo=42
 }
 
 func ExampleNew_options() {
