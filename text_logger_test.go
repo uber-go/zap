@@ -58,3 +58,11 @@ func TestTextLoggerNestedMarshal(t *testing.T) {
 		assert.Equal(t, "[I] Fields f1={ m={loggable=yes number=1}", buf.Stripped(), "Unexpected output from logger")
 	})
 }
+
+func TestTextLoggerAddMarshalEmpty(t *testing.T) {
+	empty := LogMarshalerFunc(func(_ KeyValue) error { return nil })
+	withTextLogger(t, nil, func(logger Logger, buf *testBuffer) {
+		logger.Info("Empty", Marshaler("m", empty), String("something", "val"))
+		assert.Equal(t, "[I] Empty m={} something=val", buf.Stripped(), "Unexpected output from logger")
+	})
+}

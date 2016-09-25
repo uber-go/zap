@@ -23,7 +23,6 @@ package zap
 import (
 	"fmt"
 	"io"
-	"math"
 	"strconv"
 	"sync"
 	"time"
@@ -65,11 +64,7 @@ func (enc *textEncoder) AddString(key, val string) {
 
 func (enc *textEncoder) AddBool(key string, val bool) {
 	enc.addKey(key)
-	if val {
-		enc.bytes = append(enc.bytes, "true"...)
-		return
-	}
-	enc.bytes = append(enc.bytes, "false"...)
+	enc.bytes = strconv.AppendBool(enc.bytes, val)
 }
 
 func (enc *textEncoder) AddInt(key string, val int) {
@@ -92,16 +87,7 @@ func (enc *textEncoder) AddUint64(key string, val uint64) {
 
 func (enc *textEncoder) AddFloat64(key string, val float64) {
 	enc.addKey(key)
-	switch {
-	case math.IsNaN(val):
-		enc.bytes = append(enc.bytes, "NaN"...)
-	case math.IsInf(val, 1):
-		enc.bytes = append(enc.bytes, "+Inf"...)
-	case math.IsInf(val, -1):
-		enc.bytes = append(enc.bytes, "-Inf"...)
-	default:
-		enc.bytes = strconv.AppendFloat(enc.bytes, val, 'f', -1, 64)
-	}
+	enc.bytes = strconv.AppendFloat(enc.bytes, val, 'f', -1, 64)
 }
 
 func (enc *textEncoder) AddMarshaler(key string, obj LogMarshaler) error {
@@ -110,6 +96,7 @@ func (enc *textEncoder) AddMarshaler(key string, obj LogMarshaler) error {
 	enc.bytes = append(enc.bytes, '{')
 	err := obj.MarshalLog(enc)
 	enc.bytes = append(enc.bytes, '}')
+	enc.firstNested = false
 	return err
 }
 
