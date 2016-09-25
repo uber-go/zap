@@ -36,9 +36,9 @@ var textPool = sync.Pool{New: func() interface{} {
 }}
 
 type textEncoder struct {
-	bytes   []byte
-	timeFmt string
-	nested  bool
+	bytes       []byte
+	timeFmt     string
+	firstNested bool
 }
 
 // NewTextEncoder creates a line-oriented text encoder whose output is optimized
@@ -106,7 +106,7 @@ func (enc *textEncoder) AddFloat64(key string, val float64) {
 
 func (enc *textEncoder) AddMarshaler(key string, obj LogMarshaler) error {
 	enc.addKey(key)
-	enc.nested = true
+	enc.firstNested = true
 	enc.bytes = append(enc.bytes, '{')
 	err := obj.MarshalLog(enc)
 	enc.bytes = append(enc.bytes, '}')
@@ -123,7 +123,7 @@ func (enc *textEncoder) Clone() Encoder {
 	clone.truncate()
 	clone.bytes = append(clone.bytes, enc.bytes...)
 	clone.timeFmt = enc.timeFmt
-	clone.nested = enc.nested
+	clone.firstNested = enc.firstNested
 	return clone
 }
 
@@ -162,10 +162,10 @@ func (enc *textEncoder) truncate() {
 
 func (enc *textEncoder) addKey(key string) {
 	lastIdx := len(enc.bytes) - 1
-	if lastIdx >= 0 && !enc.nested {
+	if lastIdx >= 0 && !enc.firstNested {
 		enc.bytes = append(enc.bytes, ' ')
 	} else {
-		enc.nested = false
+		enc.firstNested = false
 	}
 	enc.bytes = append(enc.bytes, key...)
 	enc.bytes = append(enc.bytes, '=')
