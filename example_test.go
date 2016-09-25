@@ -151,10 +151,10 @@ func ExampleNew_textEncoderNestedObject() {
 	textLogger := zap.New(zap.NewTextEncoder(
 		zap.TextNoTime(), // drop timestamps in tests.
 	))
-	textLogger.Info("With Marshaler", zap.String("fake", "{"), zap.Marshaler("m", zap.LogMarshalerFunc(m)))
+	textLogger.Info("With Marshaler", zap.Marshaler("m", zap.LogMarshalerFunc(m)))
 
 	// Output:
-	// [I] With Marshaler fake={ m={loggable=yes number=1}
+	// [I] With Marshaler m={loggable=yes number=1}
 }
 
 func ExampleNew_options() {

@@ -31,8 +31,12 @@ import (
 	"github.com/uber-go/zap/spywrite"
 )
 
+func newTextEncoder(opts ...TextOption) *textEncoder {
+	return NewTextEncoder(opts...).(*textEncoder)
+}
+
 func withTextEncoder(f func(*textEncoder)) {
-	enc := NewTextEncoder().(*textEncoder)
+	enc := newTextEncoder()
 	f(enc)
 	enc.Free()
 }
