@@ -85,6 +85,12 @@ func (enc *textEncoder) AddUint64(key string, val uint64) {
 	enc.bytes = strconv.AppendUint(enc.bytes, val, 10)
 }
 
+func (enc *textEncoder) AddUintptr(key string, val uintptr) {
+	enc.addKey(key)
+	enc.bytes = append(enc.bytes, "0x"...)
+	enc.bytes = strconv.AppendUint(enc.bytes, uint64(val), 16)
+}
+
 func (enc *textEncoder) AddFloat64(key string, val float64) {
 	enc.addKey(key)
 	enc.bytes = strconv.AppendFloat(enc.bytes, val, 'f', -1, 64)

@@ -75,6 +75,7 @@ func TestTextEncoderFields(t *testing.T) {
 		{"uint", "k=42", func(e Encoder) { e.AddUint("k", 42) }},
 		{"uint64", "k=42", func(e Encoder) { e.AddUint64("k", 42) }},
 		{"uint64", fmt.Sprintf("k=%d", uint64(math.MaxUint64)), func(e Encoder) { e.AddUint64("k", math.MaxUint64) }},
+		{"uintptr", "k=0xdeadbeef", func(e Encoder) { e.AddUintptr("k", 0xdeadbeef) }},
 		{"float64", "k=1", func(e Encoder) { e.AddFloat64("k", 1.0) }},
 		{"float64", "k=10000000000", func(e Encoder) { e.AddFloat64("k", 1e10) }},
 		{"float64", "k=NaN", func(e Encoder) { e.AddFloat64("k", math.NaN()) }},
