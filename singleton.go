@@ -28,7 +28,7 @@ var (
 	configLock      sync.Mutex
 )
 
-// Standard returns the standard, singleton logger. Although this behavior is discouraged in many settings
+// Standard returns the standard, singleton logger. Although this behavior is discouraged in many settings,
 // many projects use it regardless and we'd prefer a reference implementation to each service doing it differently.
 func Standard() Logger {
 	if singletonLogger == nil {
