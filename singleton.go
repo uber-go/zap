@@ -20,30 +20,20 @@
 
 package zap
 
-import "sync"
+var singletonLogger Logger
 
-var (
-	singletonLogger *logger
-	initOnce        sync.Once
-	configLock      sync.Mutex
-)
+func init() {
+	ConfigureStandard(NewJSONEncoder())
+}
 
 // Standard returns the standard, singleton logger. Although this behavior is discouraged in many settings,
 // many projects use it regardless and we'd prefer a reference implementation to each service doing it differently.
 func Standard() Logger {
-	if singletonLogger == nil {
-		// If the singleton logger hasn't been configured via ConfigureStandard, give it some default options
-		initOnce.Do(func() {
-			ConfigureStandard(NewJSONEncoder())
-		})
-	}
 	return singletonLogger
 }
 
 // ConfigureStandard configures the singleton logger
 func ConfigureStandard(enc Encoder, options ...Option) Logger {
-	configLock.Lock()
-	singletonLogger = New(enc, options...).(*logger)
-	configLock.Unlock()
+	singletonLogger = New(enc, options...)
 	return singletonLogger
 }
