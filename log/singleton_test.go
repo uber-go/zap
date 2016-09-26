@@ -18,25 +18,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+package log
 
 import (
 	"bytes"
 	"testing"
+
+	"github.com/uber-go/zap"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestUseSingleton_WithoutConfig(t *testing.T) {
 	l := Standard()
-	assert.Equal(t, Level(0), l.Level())
+	assert.Equal(t, zap.Level(0), l.Level())
 }
 
 func TestConfigureSingleton_AfterUser(t *testing.T) {
 	buf := &bytes.Buffer{}
 	_ = Standard()
 
-	l := ConfigureStandard(NewTextEncoder(TextNoTime()), Output(AddSync(buf)))
+	l := ConfigureStandard(zap.NewTextEncoder(zap.TextNoTime()), zap.Output(zap.AddSync(buf)))
 	l.Info("Hi")
 	assert.Equal(t, "[I] Hi\n", string(buf.Bytes()))
 }
