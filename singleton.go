@@ -32,7 +32,9 @@ func Standard() Logger {
 	return singletonLogger
 }
 
-// ConfigureStandard configures the singleton logger
+// ConfigureStandard configures the singleton logger. Note that this does not provide any
+// synchronization guarantees -- it is up to you to configure your logger before calling Standard()
+// and using it if you want to customize the options.
 func ConfigureStandard(enc Encoder, options ...Option) Logger {
 	singletonLogger = New(enc, options...)
 	return singletonLogger
