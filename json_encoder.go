@@ -137,6 +137,10 @@ func (enc *jsonEncoder) AddUint64(key string, val uint64) {
 	enc.bytes = strconv.AppendUint(enc.bytes, val, 10)
 }
 
+func (enc *jsonEncoder) AddUintptr(key string, val uintptr) {
+	enc.AddUint64(key, uint64(val))
+}
+
 // AddFloat64 adds a string key and float64 value to the encoder's fields. The
 // key is JSON-escaped, and the floating-point value is encoded using
 // strconv.FormatFloat's 'f' option (always use grade-school notation, even for

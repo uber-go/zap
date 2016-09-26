@@ -37,6 +37,7 @@ const (
 	int64Type
 	uintType
 	uint64Type
+	uintptrType
 	stringType
 	marshalerType
 	objectType
@@ -104,6 +105,11 @@ func Uint(key string, val uint) Field {
 // Uint64 constructs a Field with the given key and value.
 func Uint64(key string, val uint64) Field {
 	return Field{key: key, fieldType: uint64Type, ival: int64(val)}
+}
+
+// Uintptr constructs a Field with the given key and value.
+func Uintptr(key string, val uintptr) Field {
+	return Field{key: key, fieldType: uintptrType, ival: int64(val)}
 }
 
 // String constructs a Field with the given key and value.
@@ -200,6 +206,8 @@ func (f Field) AddTo(kv KeyValue) {
 		kv.AddUint(f.key, uint(f.ival))
 	case uint64Type:
 		kv.AddUint64(f.key, uint64(f.ival))
+	case uintptrType:
+		kv.AddUintptr(f.key, uintptr(f.ival))
 	case stringType:
 		kv.AddString(f.key, f.str)
 	case stringerType:
