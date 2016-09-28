@@ -23,7 +23,7 @@ package zap
 import "io"
 
 // Tee creates a WriteSyncer that duplicates its writes and
-// sync calls. It is similar to io.MultiWriter
+// sync calls. It is similar to io.MultiWriter.
 func Tee(writeSyncers ...WriteSyncer) WriteSyncer {
 	// Copy to protect against https://github.com/golang/go/issues/7809
 	ws := make([]WriteSyncer, len(writeSyncers))
