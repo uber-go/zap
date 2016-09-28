@@ -25,6 +25,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/uber-go/zap/spywrite"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -44,7 +46,7 @@ func TestTeeWritesBoth(t *testing.T) {
 }
 
 func TestTeeFailsWrite(t *testing.T) {
-	failer := failingWriter{err: errors.New("can't touch this")}
+	failer := spywrite.FailWriter{}
 	ws := Tee(AddSync(failer))
 
 	_, err := ws.Write([]byte("test"))
@@ -52,16 +54,17 @@ func TestTeeFailsWrite(t *testing.T) {
 }
 
 func TestTeeFailsShortWrite(t *testing.T) {
-	shorter := failingWriter{nBytes: 1}
+	shorter := spywrite.ShortWriter{}
 	ws := Tee(AddSync(shorter))
 
 	n, err := ws.Write([]byte("test"))
 	assert.Error(t, err, "Expected error from short write")
-	assert.Equal(t, 1, n, "Expected byte count to return from underlying writer")
+	assert.Equal(t, 3, n, "Expected byte count to return from underlying writer")
 }
 
 func TestTeeSync_PropagatesErrors(t *testing.T) {
 	badsink := &unsyncable{}
+	badsink.SetError(errors.New("sink is full"))
 	ws := Tee(Discard, badsink)
 
 	assert.Error(t, ws.Sync(), "Expected sync error to propagate")
@@ -72,17 +75,7 @@ func TestTeeSync_NoErrorsOnDiscard(t *testing.T) {
 	assert.NoError(t, ws.Sync(), "Expected error-free sync to /dev/null")
 }
 
-type failingWriter struct {
-	err    error
-	nBytes int
-}
-
-func (f failingWriter) Write(p []byte) (int, error) {
-	return f.nBytes, f.err
-}
-
 type unsyncable struct {
 	bytes.Buffer
+	spywrite.Syncer
 }
-
-func (unsyncable) Sync() error { return errors.New("can't sink") }
