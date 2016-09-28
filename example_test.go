@@ -129,6 +129,19 @@ func ExampleNew_textEncoder() {
 	// [I] This is a text log. foo=42
 }
 
+func ExampleNew_tee() {
+	// To send output to multiple sources, use Tee.
+	textLogger := zap.New(
+		zap.NewTextEncoder(zap.TextNoTime()),
+		zap.Output(zap.Tee(os.Stdout, os.Stdout)),
+	)
+
+	textLogger.Info("One becomes two")
+	// Output:
+	// [I] One becomes two
+	// [I] One becomes two
+}
+
 func ExampleNew_options() {
 	// We can pass multiple options to the NewJSON method to configure
 	// the logging level, output location, or even the initial context.
