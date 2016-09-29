@@ -58,8 +58,18 @@ func TestTeeFailsShortWrite(t *testing.T) {
 	ws := Tee(AddSync(shorter))
 
 	n, err := ws.Write([]byte("test"))
-	assert.Error(t, err, "Expected error from short write")
+	assert.NoError(t, err, "Expected fake-success from short write")
 	assert.Equal(t, 3, n, "Expected byte count to return from underlying writer")
+}
+
+func TestWritestoAllSyns_EvenIfFirstErrors(t *testing.T) {
+	failer := spywrite.FailWriter{}
+	shortWriter := spywrite.ShortWriter{}
+	ws := Tee(AddSync(failer), AddSync(shortWriter))
+
+	n, err := ws.Write([]byte("fail"))
+	assert.Error(t, err, "Expected error from call to a writer that failed")
+	assert.Equal(t, 3, n, "Short writer should drop a byte")
 }
 
 func TestTeeSync_PropagatesErrors(t *testing.T) {
@@ -73,6 +83,17 @@ func TestTeeSync_PropagatesErrors(t *testing.T) {
 func TestTeeSync_NoErrorsOnDiscard(t *testing.T) {
 	ws := Tee(Discard)
 	assert.NoError(t, ws.Sync(), "Expected error-free sync to /dev/null")
+}
+
+func TestMultiError_NilForNoArgs(t *testing.T) {
+	assert.NoError(t, newMultiError(), "no errors should cause a nil error")
+}
+
+func TestNewMultiError_WrapsStrings(t *testing.T) {
+	err := newMultiError(errors.New("battlestar"), errors.New("galactaca"))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "battlestar")
+	assert.Contains(t, err.Error(), "galactaca")
 }
 
 type unsyncable struct {
