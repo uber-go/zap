@@ -8,8 +8,8 @@ do
     head -1 ${file} | grep -q "${text}"
     if [ $? -ne 0 ]; then
         echo "$file is missing license header."
-        ERROR_COUNT+=1
+        (( ERROR_COUNT++ ))
     fi
-done < <(git ls-files "\.go")
+done < <(git ls-files "*\.go")
 
 exit $ERROR_COUNT
