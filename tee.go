@@ -37,7 +37,7 @@ func Tee(writeSyncers ...WriteSyncer) WriteSyncer {
 // In the case where not all underlying syncs writer all bytes, we return the smallest number of bytes wtirren
 // but still call Write() on all the underlying syncs.
 func (t *teeWriteSyncer) Write(p []byte) (int, error) {
-	errs := make([]error, 0, len(t.writeSyncers))
+	var errs multiError
 	nWritten := 0
 	for _, w := range t.writeSyncers {
 		n, err := w.Write(p)
@@ -50,7 +50,10 @@ func (t *teeWriteSyncer) Write(p []byte) (int, error) {
 			nWritten = n
 		}
 	}
-	return nWritten, newMultiError(errs...)
+	if len(errs) > 0 {
+		return nWritten, errs
+	}
+	return nWritten, nil
 }
 
 func (t *teeWriteSyncer) Sync() error {
@@ -59,31 +62,23 @@ func (t *teeWriteSyncer) Sync() error {
 
 // Run a series of `f`s, collecting and aggregating errors if presents
 func wrapMutiError(fs ...WriteSyncer) error {
-	errs := make([]error, 0, len(fs))
+	var errs multiError
 	for _, f := range fs {
 		if err := f.Sync(); err != nil {
 			errs = append(errs, err)
 		}
 	}
-	return newMultiError(errs...)
+	if len(errs) > 0 {
+		return errs
+	}
+	return nil
 }
 
-func newMultiError(errs ...error) error {
-	if len(errs) == 0 {
-		return nil
-	}
-	return multiError{
-		errs: errs,
-	}
-}
-
-type multiError struct {
-	errs []error
-}
+type multiError []error
 
 func (m multiError) Error() string {
 	sb := bytes.Buffer{}
-	for _, err := range m.errs {
+	for _, err := range m {
 		sb.WriteString(err.Error())
 		sb.WriteString(" ")
 	}
