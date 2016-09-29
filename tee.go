@@ -35,7 +35,7 @@ func Tee(writeSyncers ...WriteSyncer) WriteSyncer {
 
 // See https://golang.org/src/io/multi.go
 // In the case where not all underlying syncs writer all bytes, we return the smallest number of bytes wtirren
-// but still call Write() on allthe underlying syncs.
+// but still call Write() on all the underlying syncs.
 func (t *teeWriteSyncer) Write(p []byte) (int, error) {
 	errs := make([]error, 0, len(t.writeSyncers))
 	nWritten := 0
@@ -57,7 +57,7 @@ func (t *teeWriteSyncer) Sync() error {
 	return wrapMutiError(t.writeSyncers...)
 }
 
-// Run a series of `f`s, collecting and aggregating errors ig presenta`
+// Run a series of `f`s, collecting and aggregating errors if presents
 func wrapMutiError(fs ...WriteSyncer) error {
 	errs := make([]error, 0, len(fs))
 	for _, f := range fs {
