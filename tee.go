@@ -50,10 +50,7 @@ func (t *teeWriteSyncer) Write(p []byte) (int, error) {
 			nWritten = n
 		}
 	}
-	if len(errs) > 0 {
-		return nWritten, errs
-	}
-	return nWritten, nil
+	return nWritten, errs.asError()
 }
 
 func (t *teeWriteSyncer) Sync() error {
@@ -68,13 +65,17 @@ func wrapMutiError(fs ...WriteSyncer) error {
 			errs = append(errs, err)
 		}
 	}
-	if len(errs) > 0 {
-		return errs
-	}
-	return nil
+	return errs.asError()
 }
 
 type multiError []error
+
+func (m multiError) asError() error {
+	if len(m) > 0 {
+		return m
+	}
+	return nil
+}
 
 func (m multiError) Error() string {
 	sb := bytes.Buffer{}
