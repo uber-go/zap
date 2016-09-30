@@ -127,6 +127,11 @@ func TestUintField(t *testing.T) {
 	assertCanBeReused(t, Uint("foo", 1))
 }
 
+func TestUint32Field(t *testing.T) {
+	assertFieldJSON(t, `"foo":1`, Uint32("foo", uint32(1)))
+	assertCanBeReused(t, Uint32("foo", uint32(1)))
+}
+
 func TestUint64Field(t *testing.T) {
 	assertFieldJSON(t, `"foo":1`, Uint64("foo", uint64(1)))
 	assertCanBeReused(t, Uint64("foo", uint64(1)))

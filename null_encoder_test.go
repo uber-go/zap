@@ -48,6 +48,7 @@ func TestNullEncoderFields(t *testing.T) {
 		{"int64", func(e Encoder) { e.AddInt64("k", math.MaxInt64) }},
 		{"int64", func(e Encoder) { e.AddInt64("k", math.MinInt64) }},
 		{"uint", func(e Encoder) { e.AddUint("k", 42) }},
+		{"uint32", func(e Encoder) { e.AddUint32("k", math.MaxUint32) }},
 		{"uint64", func(e Encoder) { e.AddUint64("k", math.MaxUint64) }},
 		{"uintptr", func(e Encoder) { e.AddUintptr("k", uintptr(math.MaxUint64)) }},
 		{"float64", func(e Encoder) { e.AddFloat64("k", 1.0) }},

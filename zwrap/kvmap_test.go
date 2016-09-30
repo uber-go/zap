@@ -53,6 +53,7 @@ func TestKeyValueMapAdd(t *testing.T) {
 	kv.AddFloat64("f64", 1.56)
 	kv.AddInt("int", 5)
 	kv.AddInt64("i64", math.MaxInt64)
+	kv.AddUint32("ui32", math.MaxUint32)
 	kv.AddUintptr("uintptr", uintptr(0xdeadbeef))
 	kv.AddString("s", "string")
 
@@ -65,6 +66,7 @@ func TestKeyValueMapAdd(t *testing.T) {
 		"f64":     1.56,
 		"int":     5,
 		"i64":     int64(math.MaxInt64),
+		"ui32":    uint32(math.MaxUint32),
 		"uintptr": uintptr(0xdeadbeef),
 		"s":       "string",
 		"obj":     arbitraryObj,

@@ -36,6 +36,7 @@ const (
 	intType
 	int64Type
 	uintType
+	uint32Type
 	uint64Type
 	uintptrType
 	stringType
@@ -100,6 +101,11 @@ func Int64(key string, val int64) Field {
 // Uint constructs a Field with the given key and value.
 func Uint(key string, val uint) Field {
 	return Field{key: key, fieldType: uintType, ival: int64(val)}
+}
+
+// Uint32 constructs a Field with the given key and value.
+func Uint32(key string, val uint32) Field {
+	return Field{key: key, fieldType: uint32Type, ival: int64(val)}
 }
 
 // Uint64 constructs a Field with the given key and value.
@@ -204,6 +210,8 @@ func (f Field) AddTo(kv KeyValue) {
 		kv.AddInt64(f.key, f.ival)
 	case uintType:
 		kv.AddUint(f.key, uint(f.ival))
+	case uint32Type:
+		kv.AddUint32(f.key, uint32(f.ival))
 	case uint64Type:
 		kv.AddUint64(f.key, uint64(f.ival))
 	case uintptrType:
