@@ -26,7 +26,7 @@ import (
 	"time"
 )
 
-// Sugar is a wrapper around core logger whith less verbose API
+// Sugar is a wrapper around core logger with less verbose API
 type Sugar interface {
 	// Check the minimum enabled log level.
 	Level() Level
