@@ -112,27 +112,27 @@ func getSugarFields(args ...interface{}) ([]Field, error) {
 				return nil, errors.New("field name must be string")
 			}
 		} else {
-			switch value.(type) {
+			switch value := value.(type) {
 			case bool:
-				fields = append(fields, Bool(key, value.(bool)))
+				fields = append(fields, Bool(key, value))
 			case float64:
-				fields = append(fields, Float64(key, value.(float64)))
+				fields = append(fields, Float64(key, value))
 			case int:
-				fields = append(fields, Int(key, value.(int)))
+				fields = append(fields, Int(key, value))
 			case int64:
-				fields = append(fields, Int64(key, value.(int64)))
+				fields = append(fields, Int64(key, value))
 			case uint:
-				fields = append(fields, Uint(key, value.(uint)))
+				fields = append(fields, Uint(key, value))
 			case uint64:
-				fields = append(fields, Uint64(key, value.(uint64)))
+				fields = append(fields, Uint64(key, value))
 			case string:
-				fields = append(fields, String(key, value.(string)))
+				fields = append(fields, String(key, value))
 			case time.Time:
-				fields = append(fields, Time(key, value.(time.Time)))
+				fields = append(fields, Time(key, value))
 			case time.Duration:
-				fields = append(fields, Duration(key, value.(time.Duration)))
+				fields = append(fields, Duration(key, value))
 			case fmt.Stringer:
-				fields = append(fields, Stringer(key, value.(fmt.Stringer)))
+				fields = append(fields, Stringer(key, value))
 			case error:
 				return nil, errors.New("error can only be the first argument")
 			default:
