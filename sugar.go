@@ -80,12 +80,12 @@ func (s *sugar) With(args ...interface{}) (Sugar, error) {
 func getSugarFields(args ...interface{}) ([]Field, error) {
 	var (
 		noErrArgs []interface{}
-		fields    []Field
 
 		ii    int
 		key   string
 		value interface{}
 	)
+	fields := make([]Field, 0, len(args)/2)
 
 	if len(args) == 0 {
 		return fields, nil
