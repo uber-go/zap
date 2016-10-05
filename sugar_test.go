@@ -81,13 +81,13 @@ func withSugarLogger(t testing.TB, opts []Option, f func(Sugar, *testBuffer)) {
 }
 
 type m9e struct {
-	Foo int  `json:"foo"`
-	Bar bool `json:"bar"`
+	foo int
+	bar bool
 }
 
 func (m *m9e) MarshalLog(kv KeyValue) error {
-	kv.AddInt("foo", m.Foo)
-	kv.AddBool("bar", m.Bar)
+	kv.AddInt("foo", m.foo)
+	kv.AddBool("bar", m.bar)
 	return nil
 }
 
