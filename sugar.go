@@ -112,31 +112,33 @@ func getSugarFields(args ...interface{}) ([]Field, error) {
 				return nil, errors.New("field name must be string")
 			}
 		} else {
-			switch value := value.(type) {
-			case bool:
-				fields = append(fields, Bool(key, value))
-			case float64:
-				fields = append(fields, Float64(key, value))
-			case int:
-				fields = append(fields, Int(key, value))
-			case int64:
-				fields = append(fields, Int64(key, value))
-			case uint:
-				fields = append(fields, Uint(key, value))
-			case uint64:
-				fields = append(fields, Uint64(key, value))
-			case string:
-				fields = append(fields, String(key, value))
-			case time.Time:
-				fields = append(fields, Time(key, value))
-			case time.Duration:
-				fields = append(fields, Duration(key, value))
-			case fmt.Stringer:
-				fields = append(fields, Stringer(key, value))
+			switch v := value.(type) {
 			case error:
 				return nil, errors.New("error can only be the first argument")
+			case bool:
+				fields = append(fields, Bool(key, v))
+			case float64:
+				fields = append(fields, Float64(key, v))
+			case int:
+				fields = append(fields, Int(key, v))
+			case int64:
+				fields = append(fields, Int64(key, v))
+			case uint:
+				fields = append(fields, Uint(key, v))
+			case uint64:
+				fields = append(fields, Uint64(key, v))
+			case string:
+				fields = append(fields, String(key, v))
+			case time.Time:
+				fields = append(fields, Time(key, v))
+			case time.Duration:
+				fields = append(fields, Duration(key, v))
+			case fmt.Stringer:
+				fields = append(fields, Stringer(key, v))
+			case LogMarshaler:
+				fields = append(fields, Marshaler(key, v))
 			default:
-				return nil, errors.New("invalid argument type")
+				fields = append(fields, Object(key, value))
 			}
 		}
 	}
