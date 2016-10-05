@@ -29,9 +29,6 @@ import (
 )
 
 func TestSugarGetSugarFields(t *testing.T) {
-	// logger := NewSugar(New(NewJSONEncoder()))
-	// assert.Error(t, logger.getFields("test"), )
-
 	var (
 		fields []Field
 		err    error
@@ -170,11 +167,6 @@ func TestSugarDFatal(t *testing.T) {
 		assert.Equal(t, `{"level":"error","msg":"foo"}`, buf.Stripped(), "Unexpected output from dfatal")
 	})
 
-	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
-		err := logger.DFatal("foo", "a")
-		assert.Error(t, err, "DFatal should fail with invalid arguments")
-	})
-
 	stub := stubExit()
 	defer stub.Unstub()
 	opts := opts(Development())
@@ -185,9 +177,22 @@ func TestSugarDFatal(t *testing.T) {
 	})
 }
 
-func TestSugarLogFails(t *testing.T) {
+func TestSugarLogErrors(t *testing.T) {
 	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
-		assert.Error(t, logger.Log(DebugLevel, "message", "a"), "Should fail with invalid args")
+		logger.Log(InfoLevel, "foo", "a")
+		assert.Equal(t, `{"level":"info","msg":"foo","error":"invalid number of arguments"}`, buf.Stripped(), "Should log invalid number of arguments")
+	})
+	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+		logger.Log(InfoLevel, "foo", 1, "foo")
+		assert.Equal(t, `{"level":"info","msg":"foo","error":"field name must be string"}`, buf.Stripped(), "Should log invalid name type")
+	})
+	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+		logger.Log(InfoLevel, "foo", "foo", errors.New("b"))
+		assert.Equal(t, `{"level":"info","msg":"foo","error":"error can only be the first argument"}`, buf.Stripped(), "Should log error argument position is invalid")
+	})
+	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+		logger.Log(InfoLevel, "foo", "bar", nil)
+		assert.Equal(t, `{"level":"info","msg":"foo","error":"invalid argument type"}`, buf.Stripped(), "Should log invalid argument type")
 	})
 }
 
