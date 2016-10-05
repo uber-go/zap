@@ -40,16 +40,16 @@ type Sugar interface {
 
 	// Log a message at the given level. Messages include any context that's
 	// accumulated on the logger, as well as any fields added at the log site.
-	Log(Level, string, ...interface{}) error
-	Debug(string, ...interface{}) error
-	Info(string, ...interface{}) error
-	Warn(string, ...interface{}) error
-	Error(string, ...interface{}) error
-	Panic(string, ...interface{}) error
-	Fatal(string, ...interface{}) error
+	Log(Level, string, ...interface{})
+	Debug(string, ...interface{})
+	Info(string, ...interface{})
+	Warn(string, ...interface{})
+	Error(string, ...interface{})
+	Panic(string, ...interface{})
+	Fatal(string, ...interface{})
 	// If the logger is in development mode (via the Development option), DFatal
 	// logs at the Fatal level. Otherwise, it logs at the Error level.
-	DFatal(string, ...interface{}) error
+	DFatal(string, ...interface{})
 }
 
 type sugar struct {
@@ -91,9 +91,9 @@ func getSugarFields(args ...interface{}) ([]Field, error) {
 		return fields, nil
 	}
 
-	switch args[0].(type) {
+	switch err := args[0].(type) {
 	case error:
-		fields = append(fields, Error(args[0].(error)))
+		fields = append(fields, Error(err))
 		noErrArgs = args[1:]
 	default:
 		noErrArgs = args
@@ -144,45 +144,48 @@ func getSugarFields(args ...interface{}) ([]Field, error) {
 }
 
 // Log ...
-func (s *sugar) Log(lvl Level, msg string, args ...interface{}) error {
+func (s *sugar) Log(lvl Level, msg string, args ...interface{}) {
+	var (
+		fields []Field
+		err    error
+	)
 	if cm := s.core.Check(lvl, msg); cm.OK() {
-		fields, err := getSugarFields(args...)
+		fields, err = getSugarFields(args...)
 		if err != nil {
-			return err
+			fields = []Field{Error(err)}
 		}
 		cm.Write(fields...)
 	}
-	return nil
 }
 
-func (s *sugar) Debug(msg string, args ...interface{}) error {
-	return s.Log(DebugLevel, msg, args...)
+func (s *sugar) Debug(msg string, args ...interface{}) {
+	s.Log(DebugLevel, msg, args...)
 }
 
-func (s *sugar) Info(msg string, args ...interface{}) error {
-	return s.Log(InfoLevel, msg, args...)
+func (s *sugar) Info(msg string, args ...interface{}) {
+	s.Log(InfoLevel, msg, args...)
 }
 
-func (s *sugar) Warn(msg string, args ...interface{}) error {
-	return s.Log(WarnLevel, msg, args...)
+func (s *sugar) Warn(msg string, args ...interface{}) {
+	s.Log(WarnLevel, msg, args...)
 }
 
-func (s *sugar) Error(msg string, args ...interface{}) error {
-	return s.Log(ErrorLevel, msg, args...)
+func (s *sugar) Error(msg string, args ...interface{}) {
+	s.Log(ErrorLevel, msg, args...)
 }
 
-func (s *sugar) Panic(msg string, args ...interface{}) error {
-	return s.Log(PanicLevel, msg, args...)
+func (s *sugar) Panic(msg string, args ...interface{}) {
+	s.Log(PanicLevel, msg, args...)
 }
 
-func (s *sugar) Fatal(msg string, args ...interface{}) error {
-	return s.Log(FatalLevel, msg, args...)
+func (s *sugar) Fatal(msg string, args ...interface{}) {
+	s.Log(FatalLevel, msg, args...)
 }
 
-func (s *sugar) DFatal(msg string, args ...interface{}) error {
+func (s *sugar) DFatal(msg string, args ...interface{}) {
 	lvl := ErrorLevel
 	if s.core.(*logger).Development {
 		lvl = FatalLevel
 	}
-	return s.Log(lvl, msg, args...)
+	s.Log(lvl, msg, args...)
 }
