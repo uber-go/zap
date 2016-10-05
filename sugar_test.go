@@ -40,9 +40,6 @@ func TestSugarGetSugarFields(t *testing.T) {
 	_, err = getSugarFields("test1", 1, "test2")
 	assert.Error(t, err, "Should return error on invalid number of arguments")
 
-	_, err = getSugarFields("test1", nil)
-	assert.Error(t, err, "Should return error on argument of unknown type")
-
 	_, err = getSugarFields("test1", 1, "error", errors.New(""))
 	assert.Error(t, err, "Should return error when error passed as value (special case of unknown type)")
 
@@ -50,13 +47,13 @@ func TestSugarGetSugarFields(t *testing.T) {
 	assert.Error(t, err, "Should return error on non-string field name")
 
 	fields, _ = getSugarFields("test", 1)
-	assert.Equal(t, 1, len(fields), "Should return 1 field")
+	assert.Len(t, fields, 1, "Should return 1 field")
 
 	fields, _ = getSugarFields("test1", 1, "test2", 2)
-	assert.Equal(t, 2, len(fields), "Should return 2 fields")
+	assert.Len(t, fields, 2, "Should return 2 fields")
 
 	fields, _ = getSugarFields(errors.New("error"), "test1", 1)
-	assert.Equal(t, 2, len(fields), "Should return 2 fields")
+	assert.Len(t, fields, 2, "Should return 2 fields")
 }
 
 func TestSugarLevel(t *testing.T) {
@@ -83,6 +80,17 @@ func withSugarLogger(t testing.TB, opts []Option, f func(Sugar, *testBuffer)) {
 	f(sugar, sink)
 }
 
+type m9e struct {
+	Foo int  `json:"foo"`
+	Bar bool `json:"bar"`
+}
+
+func (m *m9e) MarshalLog(kv KeyValue) error {
+	kv.AddInt("foo", m.Foo)
+	kv.AddBool("bar", m.Bar)
+	return nil
+}
+
 func TestSugarLog(t *testing.T) {
 	opts := opts(Fields(Int("foo", 42)))
 	withSugarLogger(t, opts, func(logger Sugar, buf *testBuffer) {
@@ -101,6 +109,7 @@ func TestSugarLog(t *testing.T) {
 
 func TestSugarLogTypes(t *testing.T) {
 	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+		logger.Debug("")
 		logger.Debug("", "bool", true)
 		logger.Debug("", "float64", float64(1.23456789))
 		logger.Debug("", "int", int(-1))
@@ -111,7 +120,10 @@ func TestSugarLogTypes(t *testing.T) {
 		logger.Debug("", "time", time.Unix(0, 0))
 		logger.Debug("", "duration", time.Second)
 		logger.Debug("", "stringer", DebugLevel)
+		logger.Debug("", "marshaler", m9e{1, true})
+		logger.Debug("", "object", []string{"foo", "bar"})
 		assert.Equal(t, []string{
+			`{"level":"debug","msg":""}`,
 			`{"level":"debug","msg":"","bool":true}`,
 			`{"level":"debug","msg":"","float64":1.23456789}`,
 			`{"level":"debug","msg":"","int":-1}`,
@@ -122,15 +134,8 @@ func TestSugarLogTypes(t *testing.T) {
 			`{"level":"debug","msg":"","time":0}`,
 			`{"level":"debug","msg":"","duration":1000000000}`,
 			`{"level":"debug","msg":"","stringer":"debug"}`,
-		}, buf.Lines(), "Incorrect output from logger")
-	})
-}
-
-func TestSugarLogNoArgs(t *testing.T) {
-	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
-		logger.Debug("no args message")
-		assert.Equal(t, []string{
-			`{"level":"debug","msg":"no args message"}`,
+			`{"level":"debug","msg":"","marshaler":{"foo":1,"bar":true}}`,
+			`{"level":"debug","msg":"","object":["foo","bar"]}`,
 		}, buf.Lines(), "Incorrect output from logger")
 	})
 }
@@ -189,10 +194,6 @@ func TestSugarLogErrors(t *testing.T) {
 	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
 		logger.Log(InfoLevel, "foo", "foo", errors.New("b"))
 		assert.Equal(t, `{"level":"info","msg":"foo","error":"error can only be the first argument"}`, buf.Stripped(), "Should log error argument position is invalid")
-	})
-	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
-		logger.Log(InfoLevel, "foo", "bar", nil)
-		assert.Equal(t, `{"level":"info","msg":"foo","error":"invalid argument type"}`, buf.Stripped(), "Should log invalid argument type")
 	})
 }
 
