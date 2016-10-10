@@ -43,8 +43,22 @@ func fakeSugarFields() []interface{} {
 	}
 }
 
+var newCoreLoggerDefaults = []zap.Option{
+	zap.ErrorLevel,
+	zap.DiscardOutput,
+}
+
+func newCoreLogger(options ...zap.Option) zap.Logger {
+	options = append(newCoreLoggerDefaults, options...)
+	return zap.New(zap.NewJSONEncoder(), options...)
+}
+
+func newSugarLogger(options ...zap.Option) zap.Sugar {
+	return zap.NewSugar(newCoreLogger(options...))
+}
+
 func BenchmarkZapSugarDisabledLevelsWithoutFields(b *testing.B) {
-	logger := zap.NewSugar(zap.New(zap.NewJSONEncoder(), zap.ErrorLevel, zap.DiscardOutput))
+	logger := newSugarLogger()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -55,12 +69,7 @@ func BenchmarkZapSugarDisabledLevelsWithoutFields(b *testing.B) {
 
 func BenchmarkZapSugarDisabledLevelsAccumulatedContext(b *testing.B) {
 	context := fakeFields()
-	logger := zap.NewSugar(zap.New(
-		zap.NewJSONEncoder(),
-		zap.ErrorLevel,
-		zap.DiscardOutput,
-		zap.Fields(context...),
-	))
+	logger := newSugarLogger(zap.Fields(context...))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -70,11 +79,7 @@ func BenchmarkZapSugarDisabledLevelsAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapSugarDisabledLevelsAddingFields(b *testing.B) {
-	logger := zap.NewSugar(zap.New(
-		zap.NewJSONEncoder(),
-		zap.ErrorLevel,
-		zap.DiscardOutput,
-	))
+	logger := newSugarLogger()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -84,11 +89,7 @@ func BenchmarkZapSugarDisabledLevelsAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapSugarAddingFields(b *testing.B) {
-	logger := zap.NewSugar(zap.New(
-		zap.NewJSONEncoder(),
-		zap.DebugLevel,
-		zap.DiscardOutput,
-	))
+	logger := newSugarLogger()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -98,11 +99,7 @@ func BenchmarkZapSugarAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapSugarWithAccumulatedContext(b *testing.B) {
-	logger, _ := zap.NewSugar(zap.New(
-		zap.NewJSONEncoder(),
-		zap.DebugLevel,
-		zap.DiscardOutput,
-	)).With(fakeSugarFields()...)
+	logger, _ := newSugarLogger().With(fakeSugarFields()...)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -112,11 +109,7 @@ func BenchmarkZapSugarWithAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapSugarWithoutFields(b *testing.B) {
-	logger := zap.New(
-		zap.NewJSONEncoder(),
-		zap.DebugLevel,
-		zap.DiscardOutput,
-	)
+	logger := newSugarLogger()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -127,12 +120,8 @@ func BenchmarkZapSugarWithoutFields(b *testing.B) {
 
 func BenchmarkZapSugarSampleWithoutFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	base := zap.New(
-		zap.NewJSONEncoder(),
-		zap.DebugLevel,
-		zap.DiscardOutput,
-	)
-	logger := zap.NewSugar(zwrap.Sample(base, time.Second, 10, 10000))
+	core := newCoreLogger()
+	logger := zap.NewSugar(zwrap.Sample(core, time.Second, 10, 10000))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -145,12 +134,8 @@ func BenchmarkZapSugarSampleWithoutFields(b *testing.B) {
 
 func BenchmarkZapSugarSampleAddingFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	base := zap.New(
-		zap.NewJSONEncoder(),
-		zap.DebugLevel,
-		zap.DiscardOutput,
-	)
-	logger := zap.NewSugar(zwrap.Sample(base, time.Second, 10, 10000))
+	core := newCoreLogger()
+	logger := zap.NewSugar(zwrap.Sample(core, time.Second, 10, 10000))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
