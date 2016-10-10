@@ -169,6 +169,14 @@ func TestSugarDFatal(t *testing.T) {
 	})
 }
 
+func TestSugarDFatalErrors(t *testing.T) {
+	opts := opts()
+	withSugarLogger(t, opts, func(logger Sugar, _ *testBuffer, err *testBuffer) {
+		logger.DFatal("foo", "bar")
+		assert.Equal(t, "invalid number of arguments", err.Stripped(), "Should log invalid number of arguments")
+	})
+}
+
 func TestSugarLogErrors(t *testing.T) {
 	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, err *testBuffer) {
 		logger.Log(InfoLevel, "foo", "a")

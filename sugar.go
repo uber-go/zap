@@ -192,9 +192,9 @@ func (s *sugar) Fatal(msg string, args ...interface{}) {
 }
 
 func (s *sugar) DFatal(msg string, args ...interface{}) {
-	lvl := ErrorLevel
-	if s.core.(*logger).Development {
-		lvl = FatalLevel
+	fields, err := getSugarFields(args...)
+	if err != nil {
+		s.internalError(err.Error())
 	}
-	s.Log(lvl, msg, args...)
+	s.core.DFatal(msg, fields...)
 }
