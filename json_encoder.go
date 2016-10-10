@@ -108,11 +108,7 @@ func (enc *jsonEncoder) AddString(key, val string) {
 // key is JSON-escaped.
 func (enc *jsonEncoder) AddBool(key string, val bool) {
 	enc.addKey(key)
-	if val {
-		enc.bytes = append(enc.bytes, "true"...)
-		return
-	}
-	enc.bytes = append(enc.bytes, "false"...)
+	enc.bytes = strconv.AppendBool(enc.bytes, val)
 }
 
 // AddInt adds a string key and integer value to the encoder's fields. The key
@@ -139,6 +135,10 @@ func (enc *jsonEncoder) AddUint(key string, val uint) {
 func (enc *jsonEncoder) AddUint64(key string, val uint64) {
 	enc.addKey(key)
 	enc.bytes = strconv.AppendUint(enc.bytes, val, 10)
+}
+
+func (enc *jsonEncoder) AddUintptr(key string, val uintptr) {
+	enc.AddUint64(key, uint64(val))
 }
 
 // AddFloat64 adds a string key and float64 value to the encoder's fields. The

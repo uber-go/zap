@@ -22,7 +22,6 @@ package zap
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -45,8 +44,6 @@ func TestMessageFormatters(t *testing.T) {
 }
 
 func TestTimeFormatters(t *testing.T) {
-	ts := time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
-
 	tests := []struct {
 		name      string
 		formatter TimeFormatter
@@ -59,7 +56,7 @@ func TestTimeFormatters(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		assert.Equal(t, tt.expected, tt.formatter(ts), "Unexpected output from TimeFormatter %s.", tt.name)
+		assert.Equal(t, tt.expected, tt.formatter(epoch), "Unexpected output from TimeFormatter %s.", tt.name)
 	}
 }
 
