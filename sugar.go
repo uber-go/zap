@@ -28,14 +28,16 @@ import (
 
 // Sugar is a wrapper around core logger with less verbose API
 type Sugar interface {
-	// Check the minimum enabled log level.
+	// Level returns the minimum enabled log level
 	Level() Level
-	// Change the level of this logger, as well as all its ancestors and
-	// descendants. This makes it easy to change the log level at runtime
+
+	// SetLevel changes the level of this logger, as well as all its ancestors
+	// and descendants. This makes it easy to change the log level at runtime
 	// without restarting your application.
 	SetLevel(Level)
 
-	// Create a child logger, and optionally add some context to that logger.
+	// With creates a child logger, and optionally add some context to that
+	// logger
 	With(...interface{}) (Sugar, error)
 
 	// Log a message at the given level. Messages include any context that's
@@ -47,8 +49,9 @@ type Sugar interface {
 	Error(string, ...interface{})
 	Panic(string, ...interface{})
 	Fatal(string, ...interface{})
-	// If the logger is in development mode (via the Development option), DFatal
-	// logs at the Fatal level. Otherwise, it logs at the Error level.
+
+	// DFatal logs at the Fatal level if the logger is in development mode (via
+	// the Development option), otherwise it logs at the Error level.
 	DFatal(string, ...interface{})
 }
 
@@ -146,7 +149,6 @@ func getSugarFields(args ...interface{}) ([]Field, error) {
 	return fields, nil
 }
 
-// Log ...
 func (s *sugar) Log(lvl Level, msg string, args ...interface{}) {
 	var (
 		fields []Field
