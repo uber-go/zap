@@ -99,7 +99,7 @@ func BenchmarkZapSugarAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapSugarWithAccumulatedContext(b *testing.B) {
-	logger, _ := newSugarLogger().With(fakeSugarFields()...)
+	logger := newSugarLogger().With(fakeSugarFields()...)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
