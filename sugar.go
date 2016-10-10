@@ -38,7 +38,7 @@ type Sugar interface {
 
 	// With creates a child logger, and optionally add some context to that
 	// logger
-	With(...interface{}) (Sugar, error)
+	With(...interface{}) Sugar
 
 	// Log a message at the given level. Messages include any context that's
 	// accumulated on the logger, as well as any fields added at the log site.
@@ -59,6 +59,10 @@ type sugar struct {
 	core Logger
 }
 
+func (s *sugar) internalError(msg string) {
+	s.core.(*logger).internalError(msg)
+}
+
 // NewSugar is a constructor for Sugar
 func NewSugar(core Logger) Sugar {
 	return &sugar{core}
@@ -72,12 +76,12 @@ func (s *sugar) SetLevel(lvl Level) {
 	s.core.SetLevel(lvl)
 }
 
-func (s *sugar) With(args ...interface{}) (Sugar, error) {
+func (s *sugar) With(args ...interface{}) Sugar {
 	fields, err := getSugarFields(args...)
 	if err != nil {
-		return nil, err
+		s.internalError(err.Error())
 	}
-	return NewSugar(s.core.With(fields...)), nil
+	return NewSugar(s.core.With(fields...))
 }
 
 func getSugarFields(args ...interface{}) ([]Field, error) {
@@ -157,7 +161,7 @@ func (s *sugar) Log(lvl Level, msg string, args ...interface{}) {
 	if cm := s.core.Check(lvl, msg); cm.OK() {
 		fields, err = getSugarFields(args...)
 		if err != nil {
-			fields = []Field{Error(err)}
+			s.internalError(err.Error())
 		}
 		cm.Write(fields...)
 	}

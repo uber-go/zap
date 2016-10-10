@@ -67,7 +67,7 @@ func TestSugarSetLevel(t *testing.T) {
 	assert.Equal(t, FatalLevel, sugar.Level())
 }
 
-func withSugarLogger(t testing.TB, opts []Option, f func(Sugar, *testBuffer)) {
+func withSugarLogger(t testing.TB, opts []Option, f func(Sugar, *testBuffer, *testBuffer)) {
 	sink := &testBuffer{}
 	errSink := &testBuffer{}
 
@@ -77,12 +77,12 @@ func withSugarLogger(t testing.TB, opts []Option, f func(Sugar, *testBuffer)) {
 	logger := New(newJSONEncoder(NoTime()), allOpts...)
 	sugar := NewSugar(logger)
 
-	f(sugar, sink)
+	f(sugar, sink, errSink)
 }
 
 func TestSugarLog(t *testing.T) {
 	opts := opts(Fields(Int("foo", 42)))
-	withSugarLogger(t, opts, func(logger Sugar, buf *testBuffer) {
+	withSugarLogger(t, opts, func(logger Sugar, out *testBuffer, _ *testBuffer) {
 		logger.Debug("debug message", "a", "b")
 		logger.Info("info message", "c", "d")
 		logger.Warn("warn message", "e", "f")
@@ -92,12 +92,12 @@ func TestSugarLog(t *testing.T) {
 			`{"level":"info","msg":"info message","foo":42,"c":"d"}`,
 			`{"level":"warn","msg":"warn message","foo":42,"e":"f"}`,
 			`{"level":"error","msg":"error message","foo":42,"g":"h"}`,
-		}, buf.Lines(), "Incorrect output from logger")
+		}, out.Lines(), "Incorrect output from logger")
 	})
 }
 
 func TestSugarLogTypes(t *testing.T) {
-	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, _ *testBuffer) {
 		logger.Debug("")
 		logger.Debug("", "bool", true)
 		logger.Debug("", "float64", float64(1.23456789))
@@ -123,69 +123,72 @@ func TestSugarLogTypes(t *testing.T) {
 			`{"level":"debug","msg":"","duration":1000000000}`,
 			`{"level":"debug","msg":"","stringer":"debug"}`,
 			`{"level":"debug","msg":"","object":["foo","bar"]}`,
-		}, buf.Lines(), "Incorrect output from logger")
+		}, out.Lines(), "Incorrect output from logger")
 	})
 }
 
 func TestSugarLogError(t *testing.T) {
-	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, _ *testBuffer) {
 		logger.Debug("with error", errors.New("this is a error"))
 		assert.Equal(t, []string{
 			`{"level":"debug","msg":"with error","error":"this is a error"}`,
-		}, buf.Lines(), "Incorrect output from logger")
+		}, out.Lines(), "Incorrect output from logger")
 	})
 }
 
 func TestSugarPanic(t *testing.T) {
-	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, _ *testBuffer) {
 		assert.Panics(t, func() { logger.Panic("foo") }, "Expected logging at Panic level to panic.")
-		assert.Equal(t, `{"level":"panic","msg":"foo"}`, buf.Stripped(), "Unexpected output from panic-level Log.")
+		assert.Equal(t, `{"level":"panic","msg":"foo"}`, out.Stripped(), "Unexpected output from panic-level Log.")
 	})
 }
 
 func TestSugarFatal(t *testing.T) {
 	stub := stubExit()
 	defer stub.Unstub()
-	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, _ *testBuffer) {
 		logger.Fatal("foo")
-		assert.Equal(t, `{"level":"fatal","msg":"foo"}`, buf.Stripped(), "Unexpected output from fatal-level Log.")
+		assert.Equal(t, `{"level":"fatal","msg":"foo"}`, out.Stripped(), "Unexpected output from fatal-level Log.")
 		stub.AssertStatus(t, 1)
 	})
 }
 
 func TestSugarDFatal(t *testing.T) {
-	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, _ *testBuffer) {
 		logger.DFatal("foo")
-		assert.Equal(t, `{"level":"error","msg":"foo"}`, buf.Stripped(), "Unexpected output from dfatal")
+		assert.Equal(t, `{"level":"error","msg":"foo"}`, out.Stripped(), "Unexpected output from dfatal")
 	})
 
 	stub := stubExit()
 	defer stub.Unstub()
 	opts := opts(Development())
-	withSugarLogger(t, opts, func(logger Sugar, buf *testBuffer) {
+	withSugarLogger(t, opts, func(logger Sugar, out *testBuffer, _ *testBuffer) {
 		logger.DFatal("foo")
-		assert.Equal(t, `{"level":"fatal","msg":"foo"}`, buf.Stripped(), "Unexpected output from DFatal in dev mode")
+		assert.Equal(t, `{"level":"fatal","msg":"foo"}`, out.Stripped(), "Unexpected output from DFatal in dev mode")
 		stub.AssertStatus(t, 1)
 	})
 }
 
 func TestSugarLogErrors(t *testing.T) {
-	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, err *testBuffer) {
 		logger.Log(InfoLevel, "foo", "a")
-		assert.Equal(t, `{"level":"info","msg":"foo","error":"invalid number of arguments"}`, buf.Stripped(), "Should log invalid number of arguments")
+		assert.Equal(t, `{"level":"info","msg":"foo"}`, out.Stripped(), "Should log invalid number of arguments")
+		assert.Equal(t, `invalid number of arguments`, err.Stripped(), "Should log invalid number of arguments")
 	})
-	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, err *testBuffer) {
 		logger.Log(InfoLevel, "foo", 1, "foo")
-		assert.Equal(t, `{"level":"info","msg":"foo","error":"field name must be string"}`, buf.Stripped(), "Should log invalid name type")
+		assert.Equal(t, `{"level":"info","msg":"foo"}`, out.Stripped(), "Should log invalid name type")
+		assert.Equal(t, `field name must be string`, err.Stripped(), "Should log invalid name type")
 	})
-	withSugarLogger(t, nil, func(logger Sugar, buf *testBuffer) {
+	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, err *testBuffer) {
 		logger.Log(InfoLevel, "foo", "foo", errors.New("b"))
-		assert.Equal(t, `{"level":"info","msg":"foo","error":"error can only be the first argument"}`, buf.Stripped(), "Should log error argument position is invalid")
+		assert.Equal(t, `{"level":"info","msg":"foo"}`, out.Stripped(), "Should log error argument position is invalid")
+		assert.Equal(t, `error can only be the first argument`, err.Stripped(), "Should log error argument position is invalid")
 	})
 }
 
 func TestSugarLogDiscards(t *testing.T) {
-	withSugarLogger(t, opts(InfoLevel), func(logger Sugar, buf *testBuffer) {
+	withSugarLogger(t, opts(InfoLevel), func(logger Sugar, buf *testBuffer, _ *testBuffer) {
 		logger.Debug("should be discarded")
 		logger.Debug("should be discarded even with invalid arg count", "bla")
 		logger.Info("should be logged")
@@ -197,17 +200,19 @@ func TestSugarLogDiscards(t *testing.T) {
 
 func TestSugarWith(t *testing.T) {
 	opts := opts()
-	withSugarLogger(t, opts, func(logger Sugar, buf *testBuffer) {
-		child, _ := logger.With("a", "b")
+	withSugarLogger(t, opts, func(logger Sugar, out *testBuffer, _ *testBuffer) {
+		child := logger.With("a", "b")
 		child.Debug("debug message", "c", "d")
 		assert.Equal(t, []string{
 			`{"level":"debug","msg":"debug message","a":"b","c":"d"}`,
-		}, buf.Lines(), "Incorrect output from logger")
+		}, out.Lines(), "Incorrect output from logger")
 	})
 }
 
-func TestSugarWithFails(t *testing.T) {
-	sugar := NewSugar(New(NewJSONEncoder()))
-	_, err := sugar.With("a")
-	assert.Error(t, err, "Should fail with invalid args")
+func TestSugarWithErrors(t *testing.T) {
+	opts := opts()
+	withSugarLogger(t, opts, func(logger Sugar, _ *testBuffer, err *testBuffer) {
+		logger.With("a")
+		assert.Equal(t, "invalid number of arguments", err.Stripped(), "Should log invalid number of arguments")
+	})
 }
