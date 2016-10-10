@@ -112,6 +112,9 @@ func getSugarFields(args ...interface{}) ([]Field, error) {
 				return nil, errors.New("field name must be string")
 			}
 		} else {
+			// TODO: Add LogMarshaler support, it once been here, but
+			//       had to be removed because type switch won't catch
+			//       this intarface properly for some mystical reason.
 			switch v := value.(type) {
 			case error:
 				return nil, errors.New("error can only be the first argument")
@@ -135,8 +138,6 @@ func getSugarFields(args ...interface{}) ([]Field, error) {
 				fields = append(fields, Duration(key, v))
 			case fmt.Stringer:
 				fields = append(fields, Stringer(key, v))
-			case LogMarshaler:
-				fields = append(fields, Marshaler(key, v))
 			default:
 				fields = append(fields, Object(key, value))
 			}

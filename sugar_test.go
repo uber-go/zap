@@ -80,17 +80,6 @@ func withSugarLogger(t testing.TB, opts []Option, f func(Sugar, *testBuffer)) {
 	f(sugar, sink)
 }
 
-type m9e struct {
-	foo int
-	bar bool
-}
-
-func (m *m9e) MarshalLog(kv KeyValue) error {
-	kv.AddInt("foo", m.foo)
-	kv.AddBool("bar", m.bar)
-	return nil
-}
-
 func TestSugarLog(t *testing.T) {
 	opts := opts(Fields(Int("foo", 42)))
 	withSugarLogger(t, opts, func(logger Sugar, buf *testBuffer) {
@@ -120,7 +109,6 @@ func TestSugarLogTypes(t *testing.T) {
 		logger.Debug("", "time", time.Unix(0, 0))
 		logger.Debug("", "duration", time.Second)
 		logger.Debug("", "stringer", DebugLevel)
-		logger.Debug("", "marshaler", m9e{1, true})
 		logger.Debug("", "object", []string{"foo", "bar"})
 		assert.Equal(t, []string{
 			`{"level":"debug","msg":""}`,
@@ -134,7 +122,6 @@ func TestSugarLogTypes(t *testing.T) {
 			`{"level":"debug","msg":"","time":0}`,
 			`{"level":"debug","msg":"","duration":1000000000}`,
 			`{"level":"debug","msg":"","stringer":"debug"}`,
-			`{"level":"debug","msg":"","marshaler":{"foo":1,"bar":true}}`,
 			`{"level":"debug","msg":"","object":["foo","bar"]}`,
 		}, buf.Lines(), "Incorrect output from logger")
 	})
