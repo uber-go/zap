@@ -143,8 +143,8 @@ func ExampleNew_tee() {
 }
 
 func ExampleNew_options() {
-	// We can pass multiple options to the NewJSON method to configure
-	// the logging level, output location, or even the initial context.
+	// We can pass multiple options to the New method to configure the logging
+	// level, output location, or even the initial context.
 	logger := zap.New(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 		zap.DebugLevel,
