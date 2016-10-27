@@ -12,7 +12,7 @@ Zap takes an opinionated stance on logging and doesn't provide any
 (attempt %v), sleeping %s before retry.", url, tryNum, sleepFor)`, zap
 encourages the more structured
 
-```
+```go
 logger.Info("Failed to fetch URL.",
   zap.String("url", url),
   zap.Int("attempt", tryNum),
