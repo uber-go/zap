@@ -137,7 +137,7 @@ func (l *Logger) Fatal(msg string, fields ...zap.Field) {
 	l.log(zap.FatalLevel, msg, fields)
 }
 
-// DFatal logs at the Fatal level if the development flag is set, and the Fatal
+// DFatal logs at the Fatal level if the development flag is set, and the Error
 // level otherwise.
 func (l *Logger) DFatal(msg string, fields ...zap.Field) {
 	if l.Development {
