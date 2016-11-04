@@ -20,6 +20,8 @@
 
 package zap
 
+import "github.com/uber-go/atomic"
+
 // TeeLogger creates a Logger that duplicates its log calls to two or
 // more loggers. It is similar to io.MultiWriter.
 //
@@ -43,24 +45,27 @@ func TeeLogger(logs ...Logger) Logger {
 			}
 		}
 		ml := &multiLogger{
-			Meta: MakeMeta(nil),
 			logs: logs,
+			lvl:  atomic.NewInt32(int32(lvl)),
 		}
-		ml.Meta.SetLevel(lvl)
 		return ml
 	}
 }
 
 type multiLogger struct {
-	Meta
 	logs []Logger
+	lvl  *atomic.Int32
+}
+
+func (ml multiLogger) Level() Level {
+	return Level(ml.lvl.Load())
 }
 
 func (ml multiLogger) SetLevel(lvl Level) {
 	for _, log := range ml.logs {
 		log.SetLevel(lvl)
 	}
-	ml.Meta.SetLevel(lvl)
+	ml.lvl.Store(int32(lvl))
 }
 
 func (ml multiLogger) Log(lvl Level, msg string, fields ...Field) {
@@ -112,8 +117,6 @@ func (ml multiLogger) DFatal(msg string, fields ...Field) {
 }
 
 func (ml multiLogger) With(fields ...Field) Logger {
-	ml.Meta = ml.Meta.Clone()
-	addFields(ml.Encoder, fields)
 	ml.logs = append([]Logger(nil), ml.logs...)
 	for i, log := range ml.logs {
 		ml.logs[i] = log.With(fields...)
