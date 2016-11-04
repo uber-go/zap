@@ -112,12 +112,9 @@ func (ml multiLogger) DFatal(msg string, fields ...Field) {
 }
 
 func (ml multiLogger) With(fields ...Field) Logger {
-	clone := &multiLogger{
-		Meta: ml.Meta.Clone(),
-		logs: ml.logs,
-	}
-	addFields(clone.Encoder, fields)
-	return clone
+	ml.Meta = ml.Meta.Clone()
+	addFields(ml.Encoder, fields)
+	return ml
 }
 
 func (ml multiLogger) Check(lvl Level, msg string) *CheckedMessage {
