@@ -125,15 +125,19 @@ func (ml multiLogger) With(fields ...Field) Logger {
 }
 
 func (ml multiLogger) Check(lvl Level, msg string) *CheckedMessage {
+lvlSwitch:
 	switch lvl {
 	case PanicLevel, FatalLevel:
 		// Panic and Fatal should always cause a panic/exit, even if the level
 		// is disabled.
 		break
 	default:
-		if lvl < ml.Level() {
-			return nil
+		for _, log := range ml.logs {
+			if cm := log.Check(lvl, msg); cm.OK() {
+				break lvlSwitch
+			}
 		}
+		return nil
 	}
 	return NewCheckedMessage(ml, lvl, msg)
 }
