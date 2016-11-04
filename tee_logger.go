@@ -114,6 +114,10 @@ func (ml multiLogger) DFatal(msg string, fields ...Field) {
 func (ml multiLogger) With(fields ...Field) Logger {
 	ml.Meta = ml.Meta.Clone()
 	addFields(ml.Encoder, fields)
+	ml.logs = append([]Logger(nil), ml.logs...)
+	for i, log := range ml.logs {
+		ml.logs[i] = log.With(fields...)
+	}
 	return ml
 }
 
