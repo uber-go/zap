@@ -179,7 +179,7 @@ func TestSamplerCheckPanicFatal(t *testing.T) {
 
 		assert.Nil(t, sampler.Check(zap.DebugLevel, "foo"), "Expected a nil CheckedMessage at disabled log levels.")
 		for i := 0; i < 5; i++ {
-			if cm := sampler.Check(level, "sample"); cm.OK() {
+			if cm := sampler.Check(level, "sample"); assert.True(t, cm.OK(), "expected fatal level to always be OK") {
 				cm.Write(zap.Int("iter", i))
 			}
 		}
