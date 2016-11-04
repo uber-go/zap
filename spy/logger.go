@@ -94,8 +94,15 @@ func (l *Logger) With(fields ...zap.Field) zap.Logger {
 
 // Check returns a CheckedMessage if logging a particular message would succeed.
 func (l *Logger) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
-	if !(lvl >= l.Level()) {
-		return nil
+	switch lvl {
+	case zap.PanicLevel, zap.FatalLevel:
+		// Panic and Fatal should always cause a panic/exit, even if the level
+		// is disabled.
+		break
+	default:
+		if !(lvl >= l.Level()) {
+			return nil
+		}
 	}
 	return zap.NewCheckedMessage(l, lvl, msg)
 }
@@ -148,8 +155,15 @@ func (l *Logger) DFatal(msg string, fields ...zap.Field) {
 }
 
 func (l *Logger) log(lvl zap.Level, msg string, fields []zap.Field) {
-	if !(lvl >= l.Level()) {
-		return
+	switch lvl {
+	case zap.PanicLevel, zap.FatalLevel:
+		// Panic and Fatal should always cause a panic/exit, even if the level
+		// is disabled.
+		break
+	default:
+		if !(lvl >= l.Level()) {
+			return
+		}
 	}
 	l.sink.WriteLog(lvl, msg, l.allFields(fields))
 }
