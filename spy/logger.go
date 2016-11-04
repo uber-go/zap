@@ -70,11 +70,15 @@ type Logger struct {
 	context []zap.Field
 }
 
-// New returns a new spy logger at the default level and its sink.
-func New() (*Logger, *Sink) {
+// New constructs a spy logger that collects spy.Log records to a Sink. It
+// returns the logger and its sink.
+//
+// Options can change things like log level and initial fields, but any output
+// related options will not be honored.
+func New(options ...zap.Option) (*Logger, *Sink) {
 	s := &Sink{}
 	return &Logger{
-		Meta: zap.MakeMeta(zap.NewJSONEncoder(zap.NoTime())),
+		Meta: zap.MakeMeta(zap.NewJSONEncoder(zap.NoTime()), options...),
 		sink: s,
 	}, s
 }
