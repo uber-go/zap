@@ -29,8 +29,20 @@ import "github.com/uber-go/atomic"
 // loggers. Changing the returned logger's level will change the level on all
 // wrapped loggers.
 //
-// NOTE: Panic and Fatal may not work as expected, since the first core logger
-// will itself Panic or Fatal (interrupting the TeeLogger loop).
+// For each logging level methad (.Debug, .Info, etc), the TeeLogger calls each
+// sub-logger's level method.
+//
+// Exceptions are made for the Fatal and Panic methods: the returned logger
+// calls .Log(FatalLevel, ...) and .Log(PanicLevel, ...). Only after all
+// sub-loggers have received the message, then the TeeLogger terminates the
+// process (using os.Exit or panic() per usual semantics).
+//
+// DFatal is handled similarly to Fatal and Panic, since it is not actually a
+// level; each sub-logger's DFatal method dynamically chooses to either cal
+// Error or Fatal.
+//
+// Check returns a CheckedMessage against the TeeLogger itself if at least one
+// of the sub-logger Checks returns an OK CheckedMessage.
 func TeeLogger(logs ...Logger) Logger {
 	switch len(logs) {
 	case 0:
@@ -69,44 +81,46 @@ func (ml multiLogger) SetLevel(lvl Level) {
 }
 
 func (ml multiLogger) Log(lvl Level, msg string, fields ...Field) {
-	for _, log := range ml.logs {
-		log.Log(lvl, msg, fields...)
-	}
+	ml.log(lvl, msg, fields)
 }
 
 func (ml multiLogger) Debug(msg string, fields ...Field) {
-	for _, log := range ml.logs {
+	for _, log := range ml {
 		log.Debug(msg, fields...)
 	}
 }
 
 func (ml multiLogger) Info(msg string, fields ...Field) {
-	for _, log := range ml.logs {
+	for _, log := range ml {
 		log.Info(msg, fields...)
 	}
 }
 
 func (ml multiLogger) Warn(msg string, fields ...Field) {
-	for _, log := range ml.logs {
+	for _, log := range ml {
 		log.Warn(msg, fields...)
 	}
 }
 
 func (ml multiLogger) Error(msg string, fields ...Field) {
-	for _, log := range ml.logs {
+	for _, log := range ml {
 		log.Error(msg, fields...)
 	}
 }
 
 func (ml multiLogger) Panic(msg string, fields ...Field) {
-	for _, log := range ml.logs {
-		log.Panic(msg, fields...)
-	}
+	ml.log(PanicLevel, msg, fields)
+	panic(msg)
 }
 
 func (ml multiLogger) Fatal(msg string, fields ...Field) {
+	ml.log(FatalLevel, msg, fields)
+	_exit(1)
+}
+
+func (ml multiLogger) log(lvl Level, msg string, fields []Field) {
 	for _, log := range ml.logs {
-		log.Fatal(msg, fields...)
+		log.Log(lvl, msg, fields...)
 	}
 }
 

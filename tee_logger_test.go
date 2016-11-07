@@ -30,10 +30,8 @@ import (
 )
 
 func TestTeeLoggerLogsBoth(t *testing.T) {
-	log1, sink1 := spy.New()
-	log2, sink2 := spy.New()
-	log1.SetLevel(zap.DebugLevel)
-	log2.SetLevel(zap.WarnLevel)
+	log1, sink1 := spy.New(zap.DebugLevel)
+	log2, sink2 := spy.New(zap.WarnLevel)
 	log := zap.TeeLogger(log1, log2)
 
 	log.Log(zap.InfoLevel, "log @info")
@@ -95,3 +93,53 @@ func TestTeeLoggerLogsBoth(t *testing.T) {
 		},
 	}, sink2.Logs())
 }
+
+func TestTeeLogger_Panic(t *testing.T) {
+	log1, sink1 := spy.New(zap.DebugLevel)
+	log2, sink2 := spy.New(zap.WarnLevel)
+	log := zap.TeeLogger(log1, log2)
+
+	assert.Panics(t, func() { log.Panic("foo") }, "tee logger.Panic panics")
+	assert.Panics(t, func() { log.Check(zap.PanicLevel, "bar").Write() }, "tee logger.Check(PanicLevel).Write() panics")
+	assert.NotPanics(t, func() { log.Log(zap.PanicLevel, "baz") }, "tee logger.Log(PanicLevel) does not panic")
+
+	assert.Equal(t, []spy.Log{
+		{
+			Level:  zap.PanicLevel,
+			Msg:    "foo",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.PanicLevel,
+			Msg:    "bar",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.PanicLevel,
+			Msg:    "baz",
+			Fields: []zap.Field{},
+		},
+	}, sink1.Logs())
+
+	assert.Equal(t, []spy.Log{
+		{
+			Level:  zap.PanicLevel,
+			Msg:    "foo",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.PanicLevel,
+			Msg:    "bar",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.PanicLevel,
+			Msg:    "baz",
+			Fields: []zap.Field{},
+		},
+	}, sink2.Logs())
+}
+
+// XXX: we cannot presently write `func TestTeeLogger_Fatal(t *testing.T)`,
+// because we can't have both a spy logger and an exit stub without a
+// dependency cycle.
