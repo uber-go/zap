@@ -1,5 +1,8 @@
 package: github.com/uber-go/zap
 import:
+- package: github.com/uber-common/bark
+- package: github.com/uber-go/atomic
+testImport:
 - package: github.com/stretchr/testify
   subpackages:
   - assert
@@ -22,9 +25,6 @@ import:
 - package: github.com/golang/lint
   subpackages:
   - golint
-- package: github.com/mattn/go-colorable
-- package: github.com/uber-common/bark
 - package: github.com/apex/log
   subpackages:
-  - handler/json
-- package: github.com/uber-go/atomic
+  - handlers/json
