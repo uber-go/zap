@@ -186,15 +186,41 @@ func TestJSONLoggerLog(t *testing.T) {
 	})
 
 	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
-		assert.Panics(t, func() { logger.Log(PanicLevel, "foo") }, "Expected logging at Panic level to panic.")
+		assert.NotPanics(t, func() { logger.Log(PanicLevel, "foo") }, "Expected logging at Panic level to not panic.")
 		assert.Equal(t, `{"level":"panic","msg":"foo"}`, buf.Stripped(), "Unexpected output from panic-level Log.")
 	})
 
-	stub := stubExit()
-	defer stub.Unstub()
 	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
+		assert.Panics(t, func() { logger.Panic("bar") }, "Expected logger.Panic to panic.")
+		assert.Equal(t, `{"level":"panic","msg":"bar"}`, buf.Stripped(), "Unexpected output from panic-level Log.")
+	})
+
+	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
+		assert.Panics(t, func() { logger.Check(PanicLevel, "baz").Write() }, "Expected checked logging at Panic level to panic.")
+		assert.Equal(t, `{"level":"panic","msg":"baz"}`, buf.Stripped(), "Unexpected output from panic-level Log.")
+	})
+
+	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
+		stub := stubExit()
+		defer stub.Unstub()
 		logger.Log(FatalLevel, "foo")
 		assert.Equal(t, `{"level":"fatal","msg":"foo"}`, buf.Stripped(), "Unexpected output from fatal-level Log.")
+		stub.AssertNoExit(t)
+	})
+
+	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
+		stub := stubExit()
+		defer stub.Unstub()
+		logger.Check(FatalLevel, "bar").Write()
+		assert.Equal(t, `{"level":"fatal","msg":"bar"}`, buf.Stripped(), "Unexpected output from fatal-level Log.")
+		stub.AssertStatus(t, 1)
+	})
+
+	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
+		stub := stubExit()
+		defer stub.Unstub()
+		logger.Fatal("baz")
+		assert.Equal(t, `{"level":"fatal","msg":"baz"}`, buf.Stripped(), "Unexpected output from fatal-level Log.")
 		stub.AssertStatus(t, 1)
 	})
 }

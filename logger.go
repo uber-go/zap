@@ -50,6 +50,11 @@ type Logger interface {
 
 	// Log a message at the given level. Messages include any context that's
 	// accumulated on the logger, as well as any fields added at the log site.
+	//
+	// Calling Panic should panic(), calling Fatal() should terminate the
+	// process, but calling Log(PanicLevel, ...) or Log(FatalLevel, ...) should
+	// not. It may not be possible for compatibility wrappers to comply with
+	// this last part (e.g. the bark wrapper).
 	Log(Level, string, ...Field)
 	Debug(string, ...Field)
 	Info(string, ...Field)
@@ -99,14 +104,7 @@ func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
 }
 
 func (log *logger) Log(lvl Level, msg string, fields ...Field) {
-	switch lvl {
-	case PanicLevel:
-		log.Panic(msg, fields...)
-	case FatalLevel:
-		log.Fatal(msg, fields...)
-	default:
-		log.log(lvl, msg, fields)
-	}
+	log.log(lvl, msg, fields)
 }
 
 func (log *logger) Debug(msg string, fields ...Field) {
