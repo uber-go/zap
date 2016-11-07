@@ -1,55 +1,70 @@
-hash: 64d5a2692f570c258ae1c30e683872ea1f8e7f79595fef4f84517aed055dbb83
-updated: 2016-06-02T18:44:39.806767976-07:00
+hash: 8aeb29a35adb31f8b46a792ae1b304c2c55f2d10bfe0ca1a4b8ac5330e22decc
+updated: 2016-11-09T16:14:48.657534669+09:00
 imports:
-- name: github.com/apex/log
-  version: a999c1b29c986b1972ec53b15092b63a8051ec83
-  subpackages:
-  - handler/json
-- name: github.com/axw/gocov
-  version: f5b2b5cf8644b8b432436eaee1c8a73d2f4cf86e
-  subpackages:
-  - gocov
 - name: github.com/cactus/go-statsd-client
-  version: 5517f304319b9a066354b84860cb264c89655f69
+  version: d8eabe07bc70ff9ba6a56836cde99d1ea3d005f7
   subpackages:
   - statsd
+- name: github.com/Sirupsen/logrus
+  version: 1445b7a38228c041834afc69231b7966b9943397
+- name: github.com/uber-common/bark
+  version: 8841a0f8e7ca869284ccb29c08a14cf3f4310f46
+- name: github.com/uber-go/atomic
+  version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
+- name: golang.org/x/sys
+  version: 9a2e24c3733eddc63871eda99f253e2db29bd3b9
+  subpackages:
+  - unix
+testImports:
+- name: github.com/apex/log
+  version: 4ea85e918cc8389903d5f12d7ccac5c23ab7d89b
+  subpackages:
+  - handlers/json
+- name: github.com/axw/gocov
+  version: 54b98cfcac0c63fb3f9bd8e7ad241b724d4e985b
+  subpackages:
+  - gocov
+- name: github.com/davecgh/go-spew
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  subpackages:
+  - spew
 - name: github.com/go-kit/kit
-  version: 2ecaaad4b9ff04d9da92fe4babb270c54d88841f
+  version: 9f5c614cd1e70102f80b644edbc760805ebf16d5
   subpackages:
   - log
 - name: github.com/go-logfmt/logfmt
-  version: 08ab82a63ef462ac643ec79e659f023891f588f5
+  version: d4327190ff838312623b09bfeb50d7c93c8d9c1d
+- name: github.com/go-stack/stack
+  version: 100eb0c0a9c5b306ca2fb4f165df21d80ada4b82
 - name: github.com/golang/lint
-  version: 8f348af5e29faa4262efdc14302797f23774e477
+  version: 3390df4df2787994aea98de825b964ac7944b817
   subpackages:
   - golint
+- name: github.com/kr/logfmt
+  version: b84e30acd515aadc4b783ad4ff83aff3299bdfe0
 - name: github.com/mattn/go-colorable
-  version: 9cbef7c35391cca05f15f8181dc0b18bc9736dbb
+  version: d228849504861217f796da67fae4f6e347643f15
+- name: github.com/mattn/go-isatty
+  version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
 - name: github.com/mattn/goveralls
-  version: b8787b61088a1fa0593616c35add0ba8a412fc85
+  version: a63d65fe590e2c830e60ad260cde6755ce3482a5
 - name: github.com/pborman/uuid
-  version: c55201b036063326c5b1b89ccfe45a184973d073
-- name: github.com/Sirupsen/logrus
-  version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
+  version: ca53cad383cad2479bbba7f7a1a05797ec1386e4
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
 - name: github.com/stretchr/testify
-  version: 6fe211e493929a8aac0469b93f28b1d0688a9a3a
+  version: 976c720a22c8eb4eb6a0b4348ad85ad12491a506
   subpackages:
   - assert
   - require
-- name: github.com/uber-common/bark
-  version: d52ffa061726911f47fcd3d9e8b9b55f22794772
-- name: github.com/uber-go/atomic
-  version: e682c1008ac17bf26d2e4b5ad6cdd08520ed0b22
-- name: golang.org/x/sys
-  version: f64b50fbea64174967a8882830d621a18ee1548e
-  subpackages:
-  - unix
 - name: golang.org/x/tools
-  version: fe1488f8abd7e0eea44f1950dad93a6ff6880a60
+  version: 44b4c5d044d148f4248b0188ff5ea3e57cfedbc5
   subpackages:
   - cover
 - name: gopkg.in/inconshreveable/log15.v2
   version: b105bd37f74e5d9dc7b6ad7806715c7a2b83fd3f
-- name: gopkg.in/stack.v1
-  version: 0585967eab0016c8e4e2d55ac20585b469574cec
-devImports: []
+  subpackages:
+  - stack
+  - term

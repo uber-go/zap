@@ -1,30 +1,30 @@
 package: github.com/uber-go/zap
+license: MIT
 import:
+- package: github.com/uber-common/bark
+- package: github.com/uber-go/atomic
+testImport:
+- package: github.com/Sirupsen/logrus
+- package: github.com/apex/log
+  subpackages:
+  - handlers/json
+- package: github.com/go-kit/kit
+  subpackages:
+  - log
 - package: github.com/stretchr/testify
   subpackages:
   - assert
   - require
-- package: github.com/Sirupsen/logrus
-- package: github.com/go-kit/kit
-  subpackages:
-  - log
-- package: github.com/go-logfmt/logfmt
-- package: gopkg.in/stack.v1
 - package: gopkg.in/inconshreveable/log15.v2
-- package: github.com/axw/gocov
-  subpackages:
-  - gocov
 - package: github.com/mattn/goveralls
+- package: github.com/pborman/uuid
 - package: golang.org/x/tools
   subpackages:
   - cover
-- package: github.com/pborman/uuid
+- package: golang.org/x/tools/cover
 - package: github.com/golang/lint
   subpackages:
   - golint
-- package: github.com/mattn/go-colorable
-- package: github.com/uber-common/bark
-- package: github.com/apex/log
+- package: github.com/axw/gocov
   subpackages:
-  - handler/json
-- package: github.com/uber-go/atomic
+  - gocov
