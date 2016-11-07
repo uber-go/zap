@@ -44,13 +44,17 @@ type Meta struct {
 // MakeMeta returns a new meta struct with sensible defaults: logging at
 // InfoLevel, development mode off, and writing to standard error and standard
 // out.
-func MakeMeta(enc Encoder) Meta {
-	return Meta{
+func MakeMeta(enc Encoder, options ...Option) Meta {
+	m := Meta{
 		lvl:         atomic.NewInt32(int32(InfoLevel)),
 		Encoder:     enc,
 		Output:      newLockedWriteSyncer(os.Stdout),
 		ErrorOutput: newLockedWriteSyncer(os.Stderr),
 	}
+	for _, opt := range options {
+		opt.apply(&m)
+	}
+	return m
 }
 
 // Level returns the minimum enabled log level. It's safe to call concurrently.

@@ -71,13 +71,9 @@ type logger struct{ Meta }
 // Options can change the log level, the output location, the initial fields
 // that should be added as context, and many other behaviors.
 func New(enc Encoder, options ...Option) Logger {
-	logger := logger{
-		Meta: MakeMeta(enc),
+	return &logger{
+		Meta: MakeMeta(enc, options...),
 	}
-	for _, opt := range options {
-		opt.apply(&logger.Meta)
-	}
-	return &logger
 }
 
 func (log *logger) With(fields ...Field) Logger {
