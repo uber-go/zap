@@ -110,13 +110,16 @@ func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
 
 		assert.Equal(t, InfoLevel, parent.Level(), "expected initial InfoLevel")
 
-		for round, lvl := range []Level{InfoLevel, DebugLevel} {
+		for round, lvl := range []Level{InfoLevel, DebugLevel, WarnLevel} {
 			parent.SetLevel(lvl)
 			for loggerI, log := range all {
 				log.Debug("@debug", Int("round", round), Int("logger", loggerI))
 			}
 			for loggerI, log := range all {
 				log.Info("@info", Int("round", round), Int("logger", loggerI))
+			}
+			for loggerI, log := range all {
+				log.Warn("@warn", Int("round", round), Int("logger", loggerI))
 			}
 		}
 
@@ -125,6 +128,9 @@ func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
 			`{"level":"info","msg":"@info","round":0,"logger":0}`,
 			`{"level":"info","msg":"@info","generation":2,"round":0,"logger":1}`,
 			`{"level":"info","msg":"@info","generation":2,"generation":3,"round":0,"logger":2}`,
+			`{"level":"warn","msg":"@warn","round":0,"logger":0}`,
+			`{"level":"warn","msg":"@warn","generation":2,"round":0,"logger":1}`,
+			`{"level":"warn","msg":"@warn","generation":2,"generation":3,"round":0,"logger":2}`,
 
 			// round 1 at DebugLevel
 			`{"level":"debug","msg":"@debug","round":1,"logger":0}`,
@@ -133,6 +139,14 @@ func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
 			`{"level":"info","msg":"@info","round":1,"logger":0}`,
 			`{"level":"info","msg":"@info","generation":2,"round":1,"logger":1}`,
 			`{"level":"info","msg":"@info","generation":2,"generation":3,"round":1,"logger":2}`,
+			`{"level":"warn","msg":"@warn","round":1,"logger":0}`,
+			`{"level":"warn","msg":"@warn","generation":2,"round":1,"logger":1}`,
+			`{"level":"warn","msg":"@warn","generation":2,"generation":3,"round":1,"logger":2}`,
+
+			// round 2 at WarnLevel
+			`{"level":"warn","msg":"@warn","round":2,"logger":0}`,
+			`{"level":"warn","msg":"@warn","generation":2,"round":2,"logger":1}`,
+			`{"level":"warn","msg":"@warn","generation":2,"generation":3,"round":2,"logger":2}`,
 		}, strings.Split(buf.Stripped(), "\n"))
 	})
 }
