@@ -96,7 +96,7 @@ func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
 		// is disabled.
 		break
 	default:
-		if lvl < log.Level() {
+		if !log.Meta.Enabled(lvl, msg) {
 			return nil
 		}
 	}
@@ -142,7 +142,7 @@ func (log *logger) DFatal(msg string, fields ...Field) {
 }
 
 func (log *logger) log(lvl Level, msg string, fields []Field) {
-	if !(lvl >= log.Level()) {
+	if !log.Meta.Enabled(lvl, msg) {
 		return
 	}
 

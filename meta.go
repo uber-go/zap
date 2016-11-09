@@ -74,3 +74,8 @@ func (m Meta) Clone() Meta {
 	m.Encoder = m.Encoder.Clone()
 	return m
 }
+
+// Enabled returns true if logging a message at a particular level is enabled.
+func (m Meta) Enabled(lvl Level, msg string) bool {
+	return lvl >= m.Level()
+}
