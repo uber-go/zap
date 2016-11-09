@@ -159,7 +159,7 @@ func (s *sampler) check(lvl zap.Level, msg string) bool {
 		// cause a panic or exit.
 		return true
 	}
-	if lvl < s.Level() {
+	if s.Logger.Check(lvl, msg) == nil {
 		return false
 	}
 	n := s.counts.Inc(msg)
