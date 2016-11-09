@@ -186,7 +186,7 @@ func TestJSONLoggerLog(t *testing.T) {
 	})
 }
 
-func TestJSONLoggerLog_panic(t *testing.T) {
+func TestJSONLoggerLogPanic(t *testing.T) {
 	for _, tc := range []struct {
 		do       func(Logger)
 		should   bool
@@ -207,7 +207,7 @@ func TestJSONLoggerLog_panic(t *testing.T) {
 	}
 }
 
-func TestJSONLoggerLog_fatal(t *testing.T) {
+func TestJSONLoggerLogFatal(t *testing.T) {
 	for _, tc := range []struct {
 		do       func(Logger)
 		should   bool
