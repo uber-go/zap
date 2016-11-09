@@ -79,3 +79,19 @@ func (m Meta) Clone() Meta {
 func (m Meta) Enabled(lvl Level, msg string) bool {
 	return lvl >= m.Level()
 }
+
+// Check returns a CheckedMessage logging the given message is Enabled, nil
+// otherwise.
+func (m Meta) Check(log Logger, lvl Level, msg string) *CheckedMessage {
+	switch lvl {
+	case PanicLevel, FatalLevel:
+		// Panic and Fatal should always cause a panic/exit, even if the level
+		// is disabled.
+		break
+	default:
+		if !m.Enabled(lvl, msg) {
+			return nil
+		}
+	}
+	return NewCheckedMessage(log, lvl, msg)
+}
