@@ -55,21 +55,6 @@ func MakeMeta(enc Encoder, options ...Option) Meta {
 	return m
 }
 
-// Level returns the minimum enabled log level, if simple monotonic level
-// enabling is being used; otherwise it returns FatalLevel+1.
-func (m Meta) Level() Level {
-	if lvl, ok := m.LevelEnabler.(Level); ok {
-		return lvl
-	}
-	return FatalLevel + 1
-}
-
-// SetLevel atomically alters the level enabler so that all logs of a given
-// level and up are enabled.
-func (m Meta) SetLevel(lvl Level) {
-	m.LevelEnabler = lvl
-}
-
 // Clone creates a copy of the meta struct. It deep-copies the encoder, but not
 // the hooks (since they rarely change).
 func (m Meta) Clone() Meta {
