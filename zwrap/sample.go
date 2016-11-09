@@ -162,6 +162,10 @@ func (s *sampler) check(lvl zap.Level, msg string) bool {
 	if s.Logger.Check(lvl, msg) == nil {
 		return false
 	}
+	return s.sampled(lvl, msg)
+}
+
+func (s *sampler) sampled(lvl zap.Level, msg string) bool {
 	n := s.counts.Inc(msg)
 	if n <= s.first {
 		return true
