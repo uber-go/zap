@@ -353,8 +353,7 @@ func TestJSONLoggerDFatal(t *testing.T) {
 }
 
 func TestJSONLoggerNoOpsDisabledLevels(t *testing.T) {
-	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
-		logger.SetLevel(WarnLevel)
+	withJSONLogger(t, opts(WarnLevel), func(logger Logger, buf *testBuffer) {
 		logger.Info("silence!")
 		assert.Equal(t, []string{}, buf.Lines(), "Expected logging at a disabled level to produce no output.")
 	})
