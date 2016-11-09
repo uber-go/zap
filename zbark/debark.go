@@ -37,14 +37,14 @@ func Debarkify(bl bark.Logger, lvl zap.Level) zap.Logger {
 		return wrapper.zl
 	}
 	return &zapper{
-		lvl: lvl,
-		bl:  bl,
+		Meta: zap.MakeMeta(nil, lvl),
+		bl:   bl,
 	}
 }
 
 type zapper struct {
-	lvl zap.Level
-	bl  bark.Logger
+	zap.Meta
+	bl bark.Logger
 }
 
 func (z *zapper) DFatal(msg string, fields ...zap.Field) {
@@ -58,7 +58,7 @@ func (z *zapper) Log(l zap.Level, msg string, fields ...zap.Field) {
 	switch l {
 	case zap.PanicLevel, zap.FatalLevel:
 	default:
-		if l < z.lvl {
+		if !z.Meta.Enabled(l, msg) {
 			return
 		}
 	}
@@ -81,34 +81,16 @@ func (z *zapper) Log(l zap.Level, msg string, fields ...zap.Field) {
 	}
 }
 
-func (z *zapper) Level() zap.Level {
-	return z.lvl
-}
-
-// Change the level of this logger, as well as all its ancestors and
-// descendants. This makes it easy to change the log level at runtime
-// without restarting your application.
-func (z *zapper) SetLevel(l zap.Level) {
-	z.lvl = l
-}
-
 // Create a child logger, and optionally add some context to that logger.
 func (z *zapper) With(fields ...zap.Field) zap.Logger {
 	return &zapper{
-		lvl: z.lvl,
-		bl:  z.bl.WithFields(zapToBark(fields)),
+		Meta: z.Meta,
+		bl:   z.bl.WithFields(zapToBark(fields)),
 	}
 }
 
 func (z *zapper) Check(l zap.Level, msg string) *zap.CheckedMessage {
-	switch l {
-	case zap.PanicLevel, zap.FatalLevel:
-	default:
-		if l < z.lvl {
-			return nil
-		}
-	}
-	return zap.NewCheckedMessage(z, l, msg)
+	return z.Meta.Check(z, l, msg)
 }
 
 func (z *zapper) Debug(msg string, fields ...zap.Field) {
