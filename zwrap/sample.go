@@ -144,15 +144,11 @@ func (s *sampler) Error(msg string, fields ...zap.Field) {
 }
 
 func (s *sampler) Panic(msg string, fields ...zap.Field) {
-	if s.check(zap.PanicLevel, msg) {
-		s.Logger.Panic(msg, fields...)
-	}
+	s.Logger.Panic(msg, fields...)
 }
 
 func (s *sampler) Fatal(msg string, fields ...zap.Field) {
-	if s.check(zap.FatalLevel, msg) {
-		s.Logger.Fatal(msg, fields...)
-	}
+	s.Logger.Fatal(msg, fields...)
 }
 
 func (s *sampler) DFatal(msg string, fields ...zap.Field) {
@@ -162,12 +158,6 @@ func (s *sampler) DFatal(msg string, fields ...zap.Field) {
 }
 
 func (s *sampler) check(lvl zap.Level, msg string) bool {
-	switch lvl {
-	case zap.PanicLevel, zap.FatalLevel:
-		// Ignore sampling for Panic and Fatal, since it should always
-		// cause a panic or exit.
-		return true
-	}
 	if s.Logger.Check(lvl, msg) == nil {
 		return false
 	}
