@@ -111,14 +111,14 @@ func TestDebark_Check(t *testing.T) {
 		buf.Reset()
 	}
 
-	logger.SetLevel(zap.PanicLevel)
+	logger, buf = newDebark(zap.PanicLevel)
 	for _, l := range levels {
 		assert.Nil(t, logger.Check(l, "msg"))
 	}
 
 	// We should still panic even if the level isn't enough to log.
+	logger, buf = newDebark(zap.FatalLevel)
 	assert.Panics(t, func() {
-		logger.SetLevel(zap.FatalLevel)
 		logger.Check(zap.PanicLevel, "panic!").Write()
 	})
 }
@@ -132,14 +132,14 @@ func TestDebark_LeveledLogging(t *testing.T) {
 		buf.Reset()
 	}
 
-	logger.SetLevel(zap.FatalLevel)
+	logger, buf = newDebark(zap.FatalLevel)
 	require.Equal(t, 0, buf.Len(), "buffer not zero to begin test")
 	for _, l := range append(levels) {
 		logger.Log(l, "ohai")
 		assert.Equal(t, 0, buf.Len(), "buffer not zero, we should not have logged")
 	}
 
-	logger.SetLevel(zap.DebugLevel)
+	logger, buf = newDebark(zap.DebugLevel)
 	assert.Panics(t, func() { logger.Log(zap.Level(31337), "") })
 	assert.Panics(t, func() { logger.Log(zap.PanicLevel, "") })
 }
@@ -164,7 +164,7 @@ func TestDebark_Methods(t *testing.T) {
 	assert.Panics(t, func() { logger.Panic("foo") })
 	buf.Reset()
 
-	logger.SetLevel(zap.FatalLevel)
+	logger, buf = newDebark(zap.FatalLevel)
 	for i, f := range funcs {
 		f("ohai")
 		if !assert.Equal(t, 0, buf.Len(), "%+v(%d) logged, but shouldn't", f, i) {
