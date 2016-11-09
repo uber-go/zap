@@ -98,10 +98,19 @@ func (s *sampler) With(fields ...zap.Field) zap.Logger {
 }
 
 func (s *sampler) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
-	if s.check(lvl, msg) {
-		return zap.NewCheckedMessage(s.Logger, lvl, msg)
+	cm := s.Logger.Check(lvl, msg)
+	if cm == nil {
+		return nil
 	}
-	return nil
+	switch lvl {
+	case zap.PanicLevel, zap.FatalLevel:
+		break
+	default:
+		if !s.sampled(lvl, msg) {
+			return nil
+		}
+	}
+	return cm
 }
 
 func (s *sampler) Log(lvl zap.Level, msg string, fields ...zap.Field) {
