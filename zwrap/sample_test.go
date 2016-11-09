@@ -36,8 +36,8 @@ func WithIter(l zap.Logger, n int) zap.Logger {
 	return l.With(zap.Int("iter", n))
 }
 
-func fakeSampler(tick time.Duration, first, thereafter int, development bool) (zap.Logger, *spy.Sink) {
-	base, sink := spy.New(zap.DebugLevel)
+func fakeSampler(lvl zap.Level, tick time.Duration, first, thereafter int, development bool) (zap.Logger, *spy.Sink) {
+	base, sink := spy.New(lvl)
 	base.Development = development
 	sampler := Sample(base, tick, first, thereafter)
 	return sampler, sink
@@ -93,7 +93,7 @@ func TestSampler(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		sampler, sink := fakeSampler(time.Minute, 2, 3, tt.development)
+		sampler, sink := fakeSampler(zap.DebugLevel, time.Minute, 2, 3, tt.development)
 		for i := 1; i < 10; i++ {
 			tt.logFunc(sampler, i)
 		}
@@ -103,8 +103,7 @@ func TestSampler(t *testing.T) {
 }
 
 func TestSampledDisabledLevels(t *testing.T) {
-	sampler, sink := fakeSampler(time.Minute, 1, 100, false)
-	sampler.SetLevel(zap.InfoLevel)
+	sampler, sink := fakeSampler(zap.InfoLevel, time.Minute, 1, 100, false)
 
 	// Shouldn't be counted, because debug logging isn't enabled.
 	WithIter(sampler, 1).Debug("sample")
@@ -114,7 +113,7 @@ func TestSampledDisabledLevels(t *testing.T) {
 }
 
 func TestSamplerWithSharesCounters(t *testing.T) {
-	logger, sink := fakeSampler(time.Minute, 1, 100, false)
+	logger, sink := fakeSampler(zap.DebugLevel, time.Minute, 1, 100, false)
 
 	expected := []spy.Log{
 		{
@@ -140,7 +139,7 @@ func TestSamplerWithSharesCounters(t *testing.T) {
 
 func TestSamplerTicks(t *testing.T) {
 	// Ensure that we're resetting the sampler's counter every tick.
-	sampler, sink := fakeSampler(time.Millisecond, 1, 1000, false)
+	sampler, sink := fakeSampler(zap.DebugLevel, time.Millisecond, 1, 1000, false)
 
 	// The first statement should be logged, the second should be skipped but
 	// start the reset timer, and then we sleep. After sleeping for more than a
@@ -157,8 +156,7 @@ func TestSamplerTicks(t *testing.T) {
 }
 
 func TestSamplerCheck(t *testing.T) {
-	sampler, sink := fakeSampler(time.Millisecond, 1, 10, false)
-	sampler.SetLevel(zap.InfoLevel)
+	sampler, sink := fakeSampler(zap.InfoLevel, time.Millisecond, 1, 10, false)
 
 	assert.Nil(t, sampler.Check(zap.DebugLevel, "foo"), "Expected a nil CheckedMessage at disabled log levels.")
 
@@ -174,8 +172,7 @@ func TestSamplerCheck(t *testing.T) {
 
 func TestSamplerCheckPanicFatal(t *testing.T) {
 	for _, level := range []zap.Level{zap.FatalLevel, zap.PanicLevel} {
-		sampler, sink := fakeSampler(time.Millisecond, 1, 10, false)
-		sampler.SetLevel(zap.FatalLevel + 1)
+		sampler, sink := fakeSampler(zap.FatalLevel+1, time.Millisecond, 1, 10, false)
 
 		assert.Nil(t, sampler.Check(zap.DebugLevel, "foo"), "Expected a nil CheckedMessage at disabled log levels.")
 		for i := 0; i < 5; i++ {
@@ -190,7 +187,7 @@ func TestSamplerCheckPanicFatal(t *testing.T) {
 }
 
 func TestSamplerRaces(t *testing.T) {
-	sampler, _ := fakeSampler(time.Minute, 1, 1000, false)
+	sampler, _ := fakeSampler(zap.DebugLevel, time.Minute, 1, 1000, false)
 
 	var wg sync.WaitGroup
 	start := make(chan struct{})
