@@ -98,10 +98,10 @@ func (s *sampler) With(fields ...zap.Field) zap.Logger {
 }
 
 func (s *sampler) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
-	if !s.check(lvl, msg) {
-		return nil
+	if s.check(lvl, msg) {
+		return zap.NewCheckedMessage(s.Logger, lvl, msg)
 	}
-	return zap.NewCheckedMessage(s.Logger, lvl, msg)
+	return nil
 }
 
 func (s *sampler) Log(lvl zap.Level, msg string, fields ...zap.Field) {
