@@ -53,6 +53,8 @@ func (z *zapper) DFatal(msg string, fields ...zap.Field) {
 }
 
 func (z *zapper) Log(l zap.Level, msg string, fields ...zap.Field) {
+	// NOTE: logging at panic and fatal level actually panic and exit the
+	// process, meaning that bark loggers cannot compose well.
 	switch l {
 	case zap.PanicLevel, zap.FatalLevel:
 	default:
