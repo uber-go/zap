@@ -82,24 +82,6 @@ func TestJSONLoggerSetLevel(t *testing.T) {
 	})
 }
 
-func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
-	// Test that changing a logger's level also changes the level of all
-	// ancestors and descendants.
-	grandparent := New(newJSONEncoder(), Fields(Int("generation", 1)))
-	parent := grandparent.With(Int("generation", 2))
-	child := parent.With(Int("generation", 3))
-
-	all := []Logger{grandparent, parent, child}
-	for _, logger := range all {
-		assert.Equal(t, InfoLevel, logger.Level(), "Expected all loggers to start at Info level.")
-	}
-
-	parent.SetLevel(DebugLevel)
-	for _, logger := range all {
-		assert.Equal(t, DebugLevel, logger.Level(), "Expected all loggers to switch to Debug level.")
-	}
-}
-
 func TestJSONLoggerConcurrentLevelMutation(t *testing.T) {
 	// Trigger races for non-atomic level mutations.
 	logger := New(newJSONEncoder())
@@ -116,6 +98,57 @@ func TestJSONLoggerConcurrentLevelMutation(t *testing.T) {
 	})
 	close(proceed)
 	wg.Wait()
+}
+
+func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
+	// Test that changing a logger's level also changes the level of all
+	// ancestors and descendants.
+	withJSONLogger(t, opts(InfoLevel), func(grandparent Logger, buf *testBuffer) {
+		parent := grandparent.With(Int("generation", 2))
+		child := parent.With(Int("generation", 3))
+		all := []Logger{grandparent, parent, child}
+
+		assert.Equal(t, InfoLevel, parent.Level(), "expected initial InfoLevel")
+
+		for round, lvl := range []Level{InfoLevel, DebugLevel, WarnLevel} {
+			parent.SetLevel(lvl)
+			for loggerI, log := range all {
+				log.Debug("@debug", Int("round", round), Int("logger", loggerI))
+			}
+			for loggerI, log := range all {
+				log.Info("@info", Int("round", round), Int("logger", loggerI))
+			}
+			for loggerI, log := range all {
+				log.Warn("@warn", Int("round", round), Int("logger", loggerI))
+			}
+		}
+
+		assert.Equal(t, []string{
+			// round 0 at InfoLevel
+			`{"level":"info","msg":"@info","round":0,"logger":0}`,
+			`{"level":"info","msg":"@info","generation":2,"round":0,"logger":1}`,
+			`{"level":"info","msg":"@info","generation":2,"generation":3,"round":0,"logger":2}`,
+			`{"level":"warn","msg":"@warn","round":0,"logger":0}`,
+			`{"level":"warn","msg":"@warn","generation":2,"round":0,"logger":1}`,
+			`{"level":"warn","msg":"@warn","generation":2,"generation":3,"round":0,"logger":2}`,
+
+			// round 1 at DebugLevel
+			`{"level":"debug","msg":"@debug","round":1,"logger":0}`,
+			`{"level":"debug","msg":"@debug","generation":2,"round":1,"logger":1}`,
+			`{"level":"debug","msg":"@debug","generation":2,"generation":3,"round":1,"logger":2}`,
+			`{"level":"info","msg":"@info","round":1,"logger":0}`,
+			`{"level":"info","msg":"@info","generation":2,"round":1,"logger":1}`,
+			`{"level":"info","msg":"@info","generation":2,"generation":3,"round":1,"logger":2}`,
+			`{"level":"warn","msg":"@warn","round":1,"logger":0}`,
+			`{"level":"warn","msg":"@warn","generation":2,"round":1,"logger":1}`,
+			`{"level":"warn","msg":"@warn","generation":2,"generation":3,"round":1,"logger":2}`,
+
+			// round 2 at WarnLevel
+			`{"level":"warn","msg":"@warn","round":2,"logger":0}`,
+			`{"level":"warn","msg":"@warn","generation":2,"round":2,"logger":1}`,
+			`{"level":"warn","msg":"@warn","generation":2,"generation":3,"round":2,"logger":2}`,
+		}, strings.Split(buf.Stripped(), "\n"))
+	})
 }
 
 func TestJSONLoggerInitialFields(t *testing.T) {
