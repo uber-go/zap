@@ -20,10 +20,7 @@
 
 package zap
 
-import (
-	"os"
-	"sync"
-)
+import "os"
 
 // Meta is implementation-agnostic state management for Loggers. Most Logger
 // implementations can reduce the required boilerplate by embedding a Meta.
@@ -36,22 +33,18 @@ type Meta struct {
 	Hooks       []Hook
 	Output      WriteSyncer
 	ErrorOutput WriteSyncer
-
-	enabLock *sync.RWMutex
-	enab     *LevelEnabler
+	LevelEnabler
 }
 
 // MakeMeta returns a new meta struct with sensible defaults: logging at
 // InfoLevel, development mode off, and writing to standard error and standard
 // out.
 func MakeMeta(enc Encoder, options ...Option) Meta {
-	enb := LevelEnabler(InfoLevel)
 	m := Meta{
-		Encoder:     enc,
-		Output:      newLockedWriteSyncer(os.Stdout),
-		ErrorOutput: newLockedWriteSyncer(os.Stderr),
-		enabLock:    &sync.RWMutex{},
-		enab:        &enb,
+		Encoder:      enc,
+		Output:       newLockedWriteSyncer(os.Stdout),
+		ErrorOutput:  newLockedWriteSyncer(os.Stderr),
+		LevelEnabler: InfoLevel,
 	}
 	for _, opt := range options {
 		opt.apply(&m)
@@ -62,21 +55,16 @@ func MakeMeta(enc Encoder, options ...Option) Meta {
 // Level returns the minimum enabled log level, if simple monotonic level
 // enabling is being used; otherwise it returns FatalLevel+1.
 func (m Meta) Level() Level {
-	m.enabLock.RLock()
-	if lvl, ok := (*m.enab).(Level); ok {
-		m.enabLock.RUnlock()
+	if lvl, ok := m.LevelEnabler.(Level); ok {
 		return lvl
 	}
-	m.enabLock.RUnlock()
 	return FatalLevel + 1
 }
 
 // SetLevel atomically alters the level enabler so that all logs of a given
 // level and up are enabled.
 func (m Meta) SetLevel(lvl Level) {
-	m.enabLock.Lock()
-	*m.enab = lvl
-	m.enabLock.Unlock()
+	m.LevelEnabler = lvl
 }
 
 // Clone creates a copy of the meta struct. It deep-copies the encoder, but not
@@ -88,10 +76,7 @@ func (m Meta) Clone() Meta {
 
 // Enabled returns true if logging a message at a particular level is enabled.
 func (m Meta) Enabled(lvl Level) bool {
-	m.enabLock.RLock()
-	e := (*m.enab).Enabled(lvl)
-	m.enabLock.RUnlock()
-	return e
+	return m.LevelEnabler.Enabled(lvl)
 }
 
 // Check returns a CheckedMessage logging the given message is Enabled, nil
