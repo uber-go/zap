@@ -66,6 +66,11 @@ func (c *counters) Reset(key string) {
 // sampler will emit the first N logs in each bucket and every Mth log
 // therafter. Sampling loggers are safe for concurrent use.
 //
+// Panic and Fatal logging are NOT sampled, and will always call the underlying
+// logger to panic() or terminate the process. HOWEVER Log-ing at PanicLevel or
+// FatalLevel, if it happens is sampled and will call the underlying logger Log
+// method, which should NOT panic() or terminate.
+//
 // Per-message counts are shared between parent and child loggers, which allows
 // applications to more easily control global I/O load.
 func Sample(zl zap.Logger, tick time.Duration, first, thereafter int) zap.Logger {
