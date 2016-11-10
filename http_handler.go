@@ -35,18 +35,19 @@ type errorResponse struct {
 }
 
 type levelHandler struct {
-	logger Logger
+	lvl AtomicLevel
 }
 
-// NewHTTPHandler returns an HTTP handler that can atomically change the logging
-// level at runtime. Keep in mind that changing a logger's level also affects that
-// logger's ancestors and descendants.
+// NewHTTPHandler returns an HTTP handler that can atomically change a dynamic
+// logging level at runtime. Keep in mind that changing a dynamic logging level
+// affects not just the logger(s) that it was passed to, but also any
+// sub-loggers that have been or will be created With them.
 //
 // GET requests return a JSON description of the current logging level. PUT
 // requests change the logging level and expect a payload like:
 //   {"level":"info"}
-func NewHTTPHandler(logger Logger) http.Handler {
-	return &levelHandler{logger: logger}
+func NewHTTPHandler(lvl AtomicLevel) http.Handler {
+	return &levelHandler{lvl: lvl}
 }
 
 func (h *levelHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +62,7 @@ func (h *levelHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *levelHandler) getLevel(w http.ResponseWriter, r *http.Request) {
-	current := h.logger.Level()
+	current := h.lvl.Level()
 	json.NewEncoder(w).Encode(httpPayload{Level: &current})
 }
 
@@ -80,7 +81,7 @@ func (h *levelHandler) putLevel(w http.ResponseWriter, r *http.Request) {
 		h.error(w, "Must specify a logging level.", http.StatusBadRequest)
 		return
 	}
-	h.logger.SetLevel(*p.Level)
+	h.lvl.SetLevel(*p.Level)
 	json.NewEncoder(w).Encode(p)
 }
 
