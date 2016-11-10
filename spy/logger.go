@@ -145,7 +145,7 @@ func (l *Logger) DFatal(msg string, fields ...zap.Field) {
 }
 
 func (l *Logger) log(lvl zap.Level, msg string, fields []zap.Field) {
-	if l.Meta.Enabled(lvl, msg) {
+	if l.Meta.Enabled(lvl) {
 		l.sink.WriteLog(lvl, msg, l.allFields(fields))
 	}
 }

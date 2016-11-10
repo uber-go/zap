@@ -58,7 +58,7 @@ func (z *zapper) Log(l zap.Level, msg string, fields ...zap.Field) {
 	switch l {
 	case zap.PanicLevel, zap.FatalLevel:
 	default:
-		if !z.Meta.Enabled(l, msg) {
+		if !z.Meta.Enabled(l) {
 			return
 		}
 	}

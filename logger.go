@@ -132,7 +132,7 @@ func (log *logger) DFatal(msg string, fields ...Field) {
 }
 
 func (log *logger) log(lvl Level, msg string, fields []Field) {
-	if !log.Meta.Enabled(lvl, msg) {
+	if !log.Meta.Enabled(lvl) {
 		return
 	}
 
