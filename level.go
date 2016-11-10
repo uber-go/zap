@@ -33,6 +33,20 @@ var errMarshalNilLevel = errors.New("can't marshal a nil *Level to text")
 // New to override the default logging priority.
 type Level int32
 
+// LevelEnabler decides whether a given logging level is enabled when logging a
+// message.
+//
+// Enablers are intended to be used to implement deterministic filters;
+// concerns like sampling are better implemented as a Logger implementation.
+//
+// Each concrete Level value implements a static LevelEnabler which returns
+// true for itself and all higher logging levels. For example WarnLevel.Enabled()
+// will return true for WarnLevel, ErrorLevel, PanicLevel, and FatalLevel, but
+// return false for InfoLevel and DebugLevel.
+type LevelEnabler interface {
+	Enabled(Level) bool
+}
+
 const (
 	// DebugLevel logs are typically voluminous, and are usually disabled in
 	// production.
@@ -104,4 +118,9 @@ func (l *Level) UnmarshalText(text []byte) error {
 		return fmt.Errorf("unrecognized level: %v", string(text))
 	}
 	return nil
+}
+
+// Enabled return true if the given level is at or above this level.
+func (l Level) Enabled(lvl Level) bool {
+	return lvl >= l
 }
