@@ -41,14 +41,14 @@ func newLogrus() (bark.Logger, *bytes.Buffer) {
 	return bark.NewLoggerFromLogrus(logger), buf
 }
 
-func newDebark() (zap.Logger, *bytes.Buffer) {
+func newDebark(lvl zap.Level) (zap.Logger, *bytes.Buffer) {
 	logrus, buf := newLogrus()
-	return Debarkify(logrus, zap.DebugLevel), buf
+	return Debarkify(logrus, lvl), buf
 }
 
 func TestLogrusOutputIsTheSame(t *testing.T) {
 	logrus, lbuf := newLogrus()
-	debark, dbuf := newDebark()
+	debark, dbuf := newDebark(zap.DebugLevel)
 
 	zfields := []zap.Field{
 		zap.Bool("a", true),
@@ -93,7 +93,7 @@ var levels = []zap.Level{
 }
 
 func TestDebark_Levels(t *testing.T) {
-	logger, _ := newDebark()
+	logger, _ := newDebark(zap.DebugLevel)
 	for _, l := range append(levels, zap.PanicLevel, zap.FatalLevel) {
 		logger.SetLevel(l)
 		assert.Equal(t, l, logger.Level())
@@ -101,8 +101,7 @@ func TestDebark_Levels(t *testing.T) {
 }
 
 func TestDebark_Check(t *testing.T) {
-	logger, buf := newDebark()
-	logger.SetLevel(zap.DebugLevel)
+	logger, buf := newDebark(zap.DebugLevel)
 	for _, l := range append(levels, zap.PanicLevel, zap.FatalLevel) {
 		require.Equal(t, 0, buf.Len(), "buffer must be clean for %v", l)
 		lc := logger.Check(l, "msg")
@@ -133,8 +132,7 @@ func TestDebark_Check(t *testing.T) {
 }
 
 func TestDebark_LeveledLogging(t *testing.T) {
-	logger, buf := newDebark()
-	logger.SetLevel(zap.DebugLevel)
+	logger, buf := newDebark(zap.DebugLevel)
 	for _, l := range levels {
 		require.Equal(t, 0, buf.Len(), "buffer not zero")
 		logger.Log(l, "ohai")
@@ -155,8 +153,7 @@ func TestDebark_LeveledLogging(t *testing.T) {
 }
 
 func TestDebark_Methods(t *testing.T) {
-	logger, buf := newDebark()
-	logger.SetLevel(zap.DebugLevel)
+	logger, buf := newDebark(zap.DebugLevel)
 
 	funcs := []func(string, ...zap.Field){
 		logger.Debug,
@@ -186,12 +183,12 @@ func TestDebark_Methods(t *testing.T) {
 }
 
 func TestDebark_Stubs(t *testing.T) {
-	logger, _ := newDebark()
+	logger, _ := newDebark(zap.DebugLevel)
 	assert.NotPanics(t, func() { logger.DFatal("msg") })
 }
 
 func TestDebark_zapToBarkFields(t *testing.T) {
-	logger, _ := newDebark()
+	logger, _ := newDebark(zap.DebugLevel)
 	fields := []zap.Field{
 		zap.Bool("a", true),
 		zap.Float64("b", float64(0.1)),
