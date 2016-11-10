@@ -45,6 +45,10 @@ func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 // Write logs the pre-checked message with the supplied fields. It should only
 // be used once; if a CheckedMessage is re-used, it also logs an error message
 // with the underlying logger's DFatal method.
+//
+// Write will call the underlying level method (Debug, Info, Warn, Error,
+// Panic, and Fatal) for the defined levels; the Log method is only called for
+// unknown logging levels.
 func (m *CheckedMessage) Write(fields ...Field) {
 	if n := m.used.Inc(); n > 1 {
 		if n == 2 {
@@ -54,7 +58,22 @@ func (m *CheckedMessage) Write(fields ...Field) {
 		}
 		return
 	}
-	m.logger.Log(m.lvl, m.msg, fields...)
+	switch m.lvl {
+	case DebugLevel:
+		m.logger.Debug(m.msg, fields...)
+	case InfoLevel:
+		m.logger.Info(m.msg, fields...)
+	case WarnLevel:
+		m.logger.Warn(m.msg, fields...)
+	case ErrorLevel:
+		m.logger.Error(m.msg, fields...)
+	case PanicLevel:
+		m.logger.Panic(m.msg, fields...)
+	case FatalLevel:
+		m.logger.Fatal(m.msg, fields...)
+	default:
+		m.logger.Log(m.lvl, m.msg, fields...)
+	}
 }
 
 // OK checks whether it's safe to call Write.
