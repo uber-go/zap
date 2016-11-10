@@ -1,9 +1,5 @@
 package: github.com/uber-go/zap
 import:
-- package: github.com/stretchr/testify
-  subpackages:
-  - assert
-  - require
 - package: github.com/Sirupsen/logrus
 - package: github.com/go-kit/kit
   subpackages:
@@ -28,3 +24,8 @@ import:
   subpackages:
   - handler/json
 - package: github.com/uber-go/atomic
+testImport:
+- package: github.com/stretchr/testify
+  subpackages:
+  - assert
+  - require

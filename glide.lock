@@ -1,10 +1,11 @@
-hash: 64d5a2692f570c258ae1c30e683872ea1f8e7f79595fef4f84517aed055dbb83
-updated: 2016-06-02T18:44:39.806767976-07:00
+hash: 2e6eb0117589f356c68d161f2f917ce209a278a0611cab6657b9553a0fa8d06c
+updated: 2016-11-06T19:55:29.66696298-05:00
 imports:
 - name: github.com/apex/log
   version: a999c1b29c986b1972ec53b15092b63a8051ec83
   subpackages:
   - handler/json
+  - handlers/json
 - name: github.com/axw/gocov
   version: f5b2b5cf8644b8b432436eaee1c8a73d2f4cf86e
   subpackages:
@@ -31,11 +32,6 @@ imports:
   version: c55201b036063326c5b1b89ccfe45a184973d073
 - name: github.com/Sirupsen/logrus
   version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
-- name: github.com/stretchr/testify
-  version: 6fe211e493929a8aac0469b93f28b1d0688a9a3a
-  subpackages:
-  - assert
-  - require
 - name: github.com/uber-common/bark
   version: d52ffa061726911f47fcd3d9e8b9b55f22794772
 - name: github.com/uber-go/atomic
@@ -50,6 +46,26 @@ imports:
   - cover
 - name: gopkg.in/inconshreveable/log15.v2
   version: b105bd37f74e5d9dc7b6ad7806715c7a2b83fd3f
+  subpackages:
+  - stack
+  - term
 - name: gopkg.in/stack.v1
   version: 0585967eab0016c8e4e2d55ac20585b469574cec
-devImports: []
+testImports:
+- name: github.com/davecgh/go-spew
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  subpackages:
+  - spew
+- name: github.com/kr/logfmt
+  version: b84e30acd515aadc4b783ad4ff83aff3299bdfe0
+- name: github.com/mattn/go-isatty
+  version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
+- name: github.com/stretchr/testify
+  version: 6fe211e493929a8aac0469b93f28b1d0688a9a3a
+  subpackages:
+  - assert
+  - require
