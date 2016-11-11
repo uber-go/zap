@@ -64,36 +64,44 @@ func (c *counters) Reset(key string) {
 // Sample returns a sampling logger. The logger maintains a separate bucket
 // for each message (e.g., "foo" in logger.Warn("foo")). In each tick, the
 // sampler will emit the first N logs in each bucket and every Mth log
-// therafter. Sampling loggers are safe for concurrent use.
+// thereafter (rounded down to nearest power of 2). Sampling loggers are safe for concurrent use.
 //
 // Per-message counts are shared between parent and child loggers, which allows
 // applications to more easily control global I/O load.
 func Sample(zl zap.Logger, tick time.Duration, first, thereafter int) zap.Logger {
+	power := 1
+	for {
+		thereafter >>= 1
+		if thereafter <= 0 {
+			break
+		}
+		power <<= 1
+	}
 	return &sampler{
-		Logger:     zl,
-		tick:       tick,
-		counts:     &counters{counts: make(map[string]*atomic.Uint64)},
-		first:      uint64(first),
-		thereafter: uint64(thereafter),
+		Logger: zl,
+		tick:   tick,
+		counts: &counters{counts: make(map[string]*atomic.Uint64)},
+		first:  uint64(first),
+		power:  uint64(power - 1),
 	}
 }
 
 type sampler struct {
 	zap.Logger
 
-	tick       time.Duration
-	counts     *counters
-	first      uint64
-	thereafter uint64
+	tick   time.Duration
+	counts *counters
+	first  uint64
+	power  uint64
 }
 
 func (s *sampler) With(fields ...zap.Field) zap.Logger {
 	return &sampler{
-		Logger:     s.Logger.With(fields...),
-		tick:       s.tick,
-		counts:     s.counts,
-		first:      s.first,
-		thereafter: s.thereafter,
+		Logger: s.Logger.With(fields...),
+		tick:   s.tick,
+		counts: s.counts,
+		first:  s.first,
+		power:  s.power,
 	}
 }
 
@@ -169,5 +177,5 @@ func (s *sampler) check(lvl zap.Level, msg string) bool {
 	if n == s.first+1 {
 		time.AfterFunc(s.tick, func() { s.counts.Reset(msg) })
 	}
-	return (n-s.first)%s.thereafter == 0
+	return (n-s.first)&s.power == 0
 }

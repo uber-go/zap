@@ -62,6 +62,6 @@ func Example_sample() {
 
 	// Output:
 	// {"level":"error","msg":"Common failure.","n":1}
-	// {"level":"error","msg":"Common failure.","n":101}
+	// {"level":"error","msg":"Common failure.","n":65}
 	// {"level":"error","msg":"Unusual failure."}
 }
