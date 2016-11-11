@@ -142,12 +142,12 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 	entry := newEntry(lvl, msg, temp)
 	for _, hook := range log.Hooks {
 		if err := hook(entry); err != nil {
-			log.internalError(err.Error())
+			log.internalError("hook", err)
 		}
 	}
 
 	if err := temp.WriteEntry(log.Output, entry.Message, entry.Level, entry.Time); err != nil {
-		log.internalError(err.Error())
+		log.internalError("encoder", err)
 	}
 	temp.Free()
 	entry.free()
@@ -158,7 +158,7 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 	}
 }
 
-func (log *logger) internalError(msg string) {
-	fmt.Fprintln(log.ErrorOutput, msg)
+func (log *logger) internalError(cause string, err error) {
+	fmt.Fprintf(log.ErrorOutput, "%s error: %v\n", cause, err)
 	log.ErrorOutput.Sync()
 }
