@@ -30,6 +30,51 @@ type CheckedMessage struct {
 	used   atomic.Uint32
 	lvl    Level
 	msg    string
+	cms    []*CheckedMessage
+}
+
+// MultiCheckedMessage combines one or more CheckedMessages into one, keeping
+// only those that return true from OK().
+func MultiCheckedMessage(cms ...*CheckedMessage) *CheckedMessage {
+	switch len(cms) {
+	case 0:
+		return nil
+	case 1:
+		return cms[0]
+	}
+
+	// find the first OK message
+	var cm *CheckedMessage
+	i := 0
+	for ; i < len(cms); i++ {
+		if cms[i].OK() {
+			cm = cms[i]
+			goto findSecond
+		}
+	}
+	return cm
+
+	// found first OK, find second
+findSecond:
+	for i++; i < len(cms); i++ {
+		if cms[i].OK() {
+			ccms := make([]*CheckedMessage, 2, len(cms))
+			ccms[0] = cm
+			ccms[1] = cms[i]
+			cm = &CheckedMessage{cms: ccms}
+			goto appendRest
+		}
+	}
+	return cm
+
+	// found two OK messages, append any more
+appendRest:
+	for i++; i < len(cms); i++ {
+		if cms[i].OK() {
+			cm.cms = append(cm.cms, cms[i])
+		}
+	}
+	return cm
 }
 
 // NewCheckedMessage constructs a CheckedMessage. It's only intended for use by
@@ -50,6 +95,10 @@ func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 // Panic, and Fatal) for the defined levels; the Log method is only called for
 // unknown logging levels.
 func (m *CheckedMessage) Write(fields ...Field) {
+	if m == nil {
+		return
+	}
+
 	if n := m.used.Inc(); n > 1 {
 		if n == 2 {
 			// Log an error on the first re-use. After that, skip the I/O and
@@ -58,6 +107,14 @@ func (m *CheckedMessage) Write(fields ...Field) {
 		}
 		return
 	}
+
+	if m.cms != nil {
+		for _, cm := range m.cms {
+			cm.Write(fields...)
+		}
+		return
+	}
+
 	switch m.lvl {
 	case DebugLevel:
 		m.logger.Debug(m.msg, fields...)
