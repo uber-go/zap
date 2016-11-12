@@ -92,14 +92,6 @@ var levels = []zap.Level{
 	zap.ErrorLevel,
 }
 
-func TestDebark_Levels(t *testing.T) {
-	logger, _ := newDebark(zap.DebugLevel)
-	for _, l := range append(levels, zap.PanicLevel, zap.FatalLevel) {
-		logger.SetLevel(l)
-		assert.Equal(t, l, logger.Level())
-	}
-}
-
 func TestDebark_Check(t *testing.T) {
 	logger, buf := newDebark(zap.DebugLevel)
 	for _, l := range append(levels, zap.PanicLevel, zap.FatalLevel) {

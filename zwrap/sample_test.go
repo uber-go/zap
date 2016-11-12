@@ -181,8 +181,7 @@ func TestSamplerCheckPanicFatal(t *testing.T) {
 			}
 		}
 
-		expected := buildExpectation(level, 0, 1, 2, 3, 4)
-		assert.Equal(t, expected, sink.Logs(), "Unexpected output when sampling with Check.")
+		assert.Equal(t, []spy.Log(nil), sink.Logs(), "Unexpected output when sampling with Check.")
 	}
 }
 
