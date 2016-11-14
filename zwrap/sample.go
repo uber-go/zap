@@ -120,7 +120,7 @@ func (s *sampler) Log(lvl zap.Level, msg string, fields ...zap.Field) {
 	case zap.PanicLevel, zap.FatalLevel:
 		s.Logger.Log(lvl, msg, fields...)
 	default:
-		if s.Logger.Check(lvl, msg) != nil && s.sampled(msg) {
+		if s.Logger.Check(lvl, msg).OK() && s.sampled(msg) {
 			s.Logger.Log(lvl, msg, fields...)
 		}
 	}
