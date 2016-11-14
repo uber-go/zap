@@ -116,8 +116,13 @@ func (s *sampler) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
 }
 
 func (s *sampler) Log(lvl zap.Level, msg string, fields ...zap.Field) {
-	if s.Logger.Check(lvl, msg) != nil && s.sampled(msg) {
+	switch lvl {
+	case zap.PanicLevel, zap.FatalLevel:
 		s.Logger.Log(lvl, msg, fields...)
+	default:
+		if s.Logger.Check(lvl, msg) != nil && s.sampled(msg) {
+			s.Logger.Log(lvl, msg, fields...)
+		}
 	}
 }
 
