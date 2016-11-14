@@ -36,45 +36,26 @@ type CheckedMessage struct {
 // MultiCheckedMessage combines one or more CheckedMessages into one, keeping
 // only those that return true from OK().
 func MultiCheckedMessage(cms ...*CheckedMessage) *CheckedMessage {
+	cms = compactCheckedMessages(cms)
 	switch len(cms) {
 	case 0:
 		return nil
 	case 1:
 		return cms[0]
+	default:
+		return &CheckedMessage{cms: cms}
 	}
+}
 
-	// find the first OK message
-	var cm *CheckedMessage
+func compactCheckedMessages(cms []*CheckedMessage) []*CheckedMessage {
 	i := 0
-	for ; i < len(cms); i++ {
-		if cms[i].OK() {
-			cm = cms[i]
-			goto findSecond
+	for j := 0; j < len(cms); j++ {
+		if cms[j].OK() {
+			cms[i] = cms[j]
+			i++
 		}
 	}
-	return cm
-
-	// found first OK, find second
-findSecond:
-	for i++; i < len(cms); i++ {
-		if cms[i].OK() {
-			ccms := make([]*CheckedMessage, 2, len(cms))
-			ccms[0] = cm
-			ccms[1] = cms[i]
-			cm = &CheckedMessage{cms: ccms}
-			goto appendRest
-		}
-	}
-	return cm
-
-	// found two OK messages, append any more
-appendRest:
-	for i++; i < len(cms); i++ {
-		if cms[i].OK() {
-			cm.cms = append(cm.cms, cms[i])
-		}
-	}
-	return cm
+	return cms[:i]
 }
 
 // NewCheckedMessage constructs a CheckedMessage. It's only intended for use by

@@ -140,13 +140,15 @@ func TestMultiCheckedMessage(t *testing.T) {
 		}
 
 		for i, tt := range tests {
-			cm := MultiCheckedMessage(tt.cms...)
+			cm := MultiCheckedMessage(append([]*CheckedMessage(nil), tt.cms...)...)
 
 			var first *CheckedMessage
 			n := 0
 			for _, cmi := range tt.cms {
 				if cmi.OK() {
-					first = cmi
+					if first == nil {
+						first = cmi
+					}
 					n++
 				}
 			}
