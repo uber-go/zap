@@ -144,14 +144,6 @@ func (s *sampler) Error(msg string, fields ...zap.Field) {
 	}
 }
 
-func (s *sampler) Panic(msg string, fields ...zap.Field) {
-	s.Logger.Panic(msg, fields...)
-}
-
-func (s *sampler) Fatal(msg string, fields ...zap.Field) {
-	s.Logger.Fatal(msg, fields...)
-}
-
 func (s *sampler) DFatal(msg string, fields ...zap.Field) {
 	if s.Logger.Check(zap.ErrorLevel, msg) != nil && s.sampled(msg) {
 		s.Logger.DFatal(msg, fields...)
