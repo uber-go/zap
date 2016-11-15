@@ -100,6 +100,6 @@ func (m Meta) Check(log Logger, lvl Level, msg string) *CheckedMessage {
 // InternalError prints an internal error message to the configured
 // ErrorOutput
 func (m Meta) InternalError(cause string, err error) {
-	fmt.Fprintf(m.ErrorOutput, "%s error: %v\n", cause, err)
+	fmt.Fprintf(m.ErrorOutput, "%v %s error: %v\n", _timeNow().UTC(), cause, err)
 	m.ErrorOutput.Sync()
 }
