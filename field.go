@@ -24,6 +24,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math"
+	"runtime"
+	"strconv"
 	"time"
 )
 
@@ -155,6 +157,64 @@ func Stack() Field {
 	field := String("stacktrace", takeStacktrace(bs, false))
 	enc.Free()
 	return field
+}
+
+// Callers constrcuts a Field that stores a structured object detailing its
+// caller's call stack (up to 32 entries from it at least) under the key
+// "callers". It is spiritually similar to Stack, but should be more efficient
+// since it is lazy and shouldn't incur any allocations while marshaling.
+//
+// The skip argument is relative to Callers's caller, with 0 identifying the
+// calling function (the log site), 1 identifying its caller, and so on.
+//
+// The marshaled object is a "fake array" with keys "0", "1", "2", etc. Each
+// key's value is an object with "pc", "file", and "line" fields. The callers object may be empty
+func Callers(skip int) Field {
+	var pcs [32]uintptr
+	n := runtime.Callers(skip+2, pcs[:])
+	return Marshaler("callers", LogMarshalerFunc(func(kv KeyValue) error {
+		i := 0
+		frames := runtime.CallersFrames(pcs[:n])
+		fr, more := frames.Next()
+		for {
+			if err := kv.AddMarshaler(strconv.Itoa(i), LogMarshalerFunc(func(kv KeyValue) error {
+				kv.AddUintptr("pc", fr.PC)
+				kv.AddString("file", fr.File)
+				kv.AddInt("line", fr.Line)
+				return nil
+			})); err != nil {
+				return err
+			}
+			if !more {
+				break
+			}
+			fr, more = frames.Next()
+			i++
+		}
+		return nil
+	}))
+}
+
+// Caller constrcuts a Field that stores a structured object its
+// caller under the key "caller". It is spiritually similar to AddCaller,
+// except on a per log-site basis. It should be relatively efficient since it
+// is lazy and incurs no marshaling allocations.
+//
+// The skip argument is relative to Caller's caller, with 0 identifying the
+// calling function (the log site), 1 identifying its caller, and so on.
+//
+// The marshaled object has "pc", "file", and "line" fields, unless a caller
+// couldn't be resolved.
+func Caller(skip int) Field {
+	pc, file, line, ok := runtime.Caller(skip + 2)
+	return Marshaler("caller", LogMarshalerFunc(func(kv KeyValue) error {
+		if ok {
+			kv.AddUintptr("pc", pc)
+			kv.AddString("file", file)
+			kv.AddInt("line", line)
+		}
+		return nil
+	}))
 }
 
 // Duration constructs a Field with the given key and value. It represents
