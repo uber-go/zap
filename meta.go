@@ -22,8 +22,7 @@ package zap
 
 import (
 	"os"
-
-	"github.com/uber-go/atomic"
+	"sync"
 )
 
 // Meta is implementation-agnostic state management for Loggers. Most Logger
@@ -38,18 +37,21 @@ type Meta struct {
 	Output      WriteSyncer
 	ErrorOutput WriteSyncer
 
-	lvl *atomic.Int32
+	enabLock *sync.RWMutex
+	enab     *LevelEnabler
 }
 
 // MakeMeta returns a new meta struct with sensible defaults: logging at
 // InfoLevel, development mode off, and writing to standard error and standard
 // out.
 func MakeMeta(enc Encoder, options ...Option) Meta {
+	enb := LevelEnabler(InfoLevel)
 	m := Meta{
-		lvl:         atomic.NewInt32(int32(InfoLevel)),
 		Encoder:     enc,
 		Output:      newLockedWriteSyncer(os.Stdout),
 		ErrorOutput: newLockedWriteSyncer(os.Stderr),
+		enabLock:    &sync.RWMutex{},
+		enab:        &enb,
 	}
 	for _, opt := range options {
 		opt.apply(&m)
@@ -57,15 +59,24 @@ func MakeMeta(enc Encoder, options ...Option) Meta {
 	return m
 }
 
-// Level returns the minimum enabled log level. It's safe to call concurrently.
+// Level returns the minimum enabled log level, if simple monotonic level
+// enabling is being used; otherwise it returns FatalLevel+1.
 func (m Meta) Level() Level {
-	return Level(m.lvl.Load())
+	m.enabLock.RLock()
+	if lvl, ok := (*m.enab).(Level); ok {
+		m.enabLock.RUnlock()
+		return lvl
+	}
+	m.enabLock.RUnlock()
+	return FatalLevel + 1
 }
 
-// SetLevel atomically alters the the logging level for this Meta and all its
-// clones.
+// SetLevel atomically alters the level enabler so that all logs of a given
+// level and up are enabled.
 func (m Meta) SetLevel(lvl Level) {
-	m.lvl.Store(int32(lvl))
+	m.enabLock.Lock()
+	*m.enab = lvl
+	m.enabLock.Unlock()
 }
 
 // Clone creates a copy of the meta struct. It deep-copies the encoder, but not
@@ -77,7 +88,10 @@ func (m Meta) Clone() Meta {
 
 // Enabled returns true if logging a message at a particular level is enabled.
 func (m Meta) Enabled(lvl Level) bool {
-	return lvl >= m.Level()
+	m.enabLock.RLock()
+	e := (*m.enab).Enabled(lvl)
+	m.enabLock.RUnlock()
+	return e
 }
 
 // Check returns a CheckedMessage logging the given message is Enabled, nil
