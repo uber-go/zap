@@ -7,7 +7,7 @@ import (
 	"github.com/uber-go/zap"
 )
 
-func BenchmarkMultiCheckedMessage(b *testing.B) {
+func BenchmarkCheckedMessage_Chain(b *testing.B) {
 	infoLog := zap.New(
 		zap.NullEncoder(),
 		zap.InfoLevel,
@@ -38,10 +38,9 @@ func BenchmarkMultiCheckedMessage(b *testing.B) {
 		myErrorLog := errorLog.With(zap.Int("p", int(j)))
 		for pb.Next() {
 			d := data[i%len(data)]
-			if cm := zap.MultiCheckedMessage(
-				myInfoLog.Check(d.lvl, d.msg),
-				myErrorLog.Check(d.lvl, d.msg),
-			); cm.OK() {
+			cm := myInfoLog.Check(d.lvl, d.msg)
+			cm = cm.Chain(myErrorLog, d.lvl, d.msg)
+			if cm.OK() {
 				cm.Write(zap.Int("i", i))
 			}
 			i++
@@ -49,7 +48,7 @@ func BenchmarkMultiCheckedMessage(b *testing.B) {
 	})
 }
 
-func BenchmarkMultiCheckedMessage_sliceLoggers(b *testing.B) {
+func BenchmarkCheckedMessage_Chain_sliceLoggers(b *testing.B) {
 	logs := []zap.Logger{
 		zap.New(
 			zap.NullEncoder(),
@@ -84,11 +83,11 @@ func BenchmarkMultiCheckedMessage_sliceLoggers(b *testing.B) {
 		i := 0
 		for pb.Next() {
 			d := data[i%len(data)]
-			cms := make([]*zap.CheckedMessage, len(myLogs))
-			for k, log := range myLogs {
-				cms[k] = log.Check(d.lvl, d.msg)
+			var cm *zap.CheckedMessage
+			for _, log := range myLogs {
+				cm = cm.Chain(log, d.lvl, d.msg)
 			}
-			if cm := zap.MultiCheckedMessage(cms...); cm.OK() {
+			if cm.OK() {
 				cm.Write(zap.Int("i", i))
 			}
 			i++

@@ -30,32 +30,12 @@ type CheckedMessage struct {
 	used   atomic.Uint32
 	lvl    Level
 	msg    string
-	cms    []*CheckedMessage
-}
 
-// MultiCheckedMessage combines one or more CheckedMessages into one, keeping
-// only those that return true from OK().
-func MultiCheckedMessage(cms ...*CheckedMessage) *CheckedMessage {
-	cms = compactCheckedMessages(cms)
-	switch len(cms) {
-	case 0:
-		return nil
-	case 1:
-		return cms[0]
-	default:
-		return &CheckedMessage{cms: cms}
-	}
-}
-
-func compactCheckedMessages(cms []*CheckedMessage) []*CheckedMessage {
-	i := 0
-	for j := 0; j < len(cms); j++ {
-		if cms[j].OK() {
-			cms[i] = cms[j]
-			i++
-		}
-	}
-	return cms[:i]
+	// singly linked list built by Chain
+	next *CheckedMessage // carried by each part of Chain-ed list
+	tail *CheckedMessage // non-nil only in the head of a Chain-ed list
+	// NOTE: suffixes are NOT valid lists, since they lack a tail pointer; tail
+	// pointer exist solely as an optimization for calling head.Chain.
 }
 
 // NewCheckedMessage constructs a CheckedMessage. It's only intended for use by
@@ -89,13 +69,6 @@ func (m *CheckedMessage) Write(fields ...Field) {
 		return
 	}
 
-	if m.cms != nil {
-		for _, cm := range m.cms {
-			cm.Write(fields...)
-		}
-		return
-	}
-
 	switch m.lvl {
 	case DebugLevel:
 		m.logger.Debug(m.msg, fields...)
@@ -111,6 +84,41 @@ func (m *CheckedMessage) Write(fields ...Field) {
 		m.logger.Fatal(m.msg, fields...)
 	default:
 		m.logger.Log(m.lvl, m.msg, fields...)
+	}
+
+	if m.next != nil {
+		m.next.Write(fields...)
+	}
+}
+
+// Chain builds a chain of checked messages over several loggers. It returns an
+// OK message if either the prior message, or the new one returned by
+// logger.Check is OK.
+//
+// The returned message will first Write to any prior loggers before logging to
+// the newly passed logger.
+func (m *CheckedMessage) Chain(logger Logger, lvl Level, msg string) *CheckedMessage {
+	if m == nil {
+		return logger.Check(lvl, msg)
+	}
+	if next := NewCheckedMessage(logger, lvl, msg); next.OK() {
+		m.push(next)
+	}
+	return m
+}
+
+func (m *CheckedMessage) push(next *CheckedMessage) {
+	if m.tail != nil {
+		m.tail.next = next
+	} else if m.next != nil {
+		panic("invalid CheckedMessage linked list; did we loose our head?")
+	} else {
+		m.next = next
+	}
+	if next.tail != nil {
+		m.tail, next.tail = next.tail, nil
+	} else {
+		m.tail = next
 	}
 }
 
