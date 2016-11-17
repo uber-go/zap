@@ -35,8 +35,12 @@ package zap
 // level; each sub-logger's DFatal method dynamically chooses to either cal
 // Error or Fatal.
 //
-// Check returns a CheckedMessage against the TeeLogger itself if at least one
-// of the sub-logger Checks returns an OK CheckedMessage.
+// Check returns a CheckedMessage chain of any OK CheckedMessages returned by
+// all sub-loggers. The returned message is OK if any of the sub-messages are.
+// An exception is made for FatalLevel and PanicLevel, where a CheckedMessage
+// is returned against the TeeLogger itself. This is so that
+// tlog.Check(PanicLevel, ...).Write(...) is equivalent to tlog.Panic(...)
+// (likewise for FatalLevel).
 func TeeLogger(logs ...Logger) Logger {
 	switch len(logs) {
 	case 0:
@@ -109,19 +113,16 @@ func (ml multiLogger) With(fields ...Field) Logger {
 }
 
 func (ml multiLogger) Check(lvl Level, msg string) *CheckedMessage {
-lvlSwitch:
 	switch lvl {
-	case PanicLevel, FatalLevel:
-		// Panic and Fatal should always cause a panic/exit, even if the level
-		// is disabled.
-		break
-	default:
-		for _, log := range ml {
-			if cm := log.Check(lvl, msg); cm.OK() {
-				break lvlSwitch
-			}
-		}
-		return nil
+	case FatalLevel, PanicLevel:
+		// need to end up calling TeeLogger Fatal and Panic methods, to avoid
+		// sub-logger termination (by merely logging at FatalLevel and
+		// PanicLevel).
+		return NewCheckedMessage(ml, lvl, msg)
 	}
-	return NewCheckedMessage(ml, lvl, msg)
+	var cm *CheckedMessage
+	for _, log := range ml {
+		cm = cm.Chain(log.Check(lvl, msg))
+	}
+	return cm
 }
