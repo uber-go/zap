@@ -20,7 +20,13 @@
 
 package zap
 
-import "github.com/uber-go/atomic"
+import (
+	"sync"
+
+	"github.com/uber-go/atomic"
+)
+
+var cmPool sync.Pool
 
 // A CheckedMessage is the result of a call to Logger.Check, which allows
 // especially performance-sensitive applications to avoid allocations for disabled
@@ -41,6 +47,25 @@ type CheckedMessage struct {
 // NewCheckedMessage constructs a CheckedMessage. It's only intended for use by
 // wrapper libraries, and shouldn't be necessary in application code.
 func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
+	for {
+		val := cmPool.Get()
+		if val == nil {
+			break
+		}
+		m := val.(*CheckedMessage)
+		if n := m.used.Load(); n > 1 {
+			// we've already logged (and survived!) a DFatal log in the second
+			// CheckedMessage.Write, so just skip it and move on
+			continue
+		}
+		*m = CheckedMessage{
+			logger: logger,
+			lvl:    lvl,
+			msg:    msg,
+		}
+		return m
+	}
+
 	return &CheckedMessage{
 		logger: logger,
 		lvl:    lvl,
@@ -87,6 +112,8 @@ func (m *CheckedMessage) Write(fields ...Field) {
 	}
 
 	m.next.Write(fields...)
+	m.lvl, m.next, m.tail = invalidLevel, nil, nil
+	cmPool.Put(m)
 }
 
 // Chain combines two or more CheckedMessages. If the receiver message is not
