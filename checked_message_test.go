@@ -73,82 +73,124 @@ func TestCheckedMessage_Chain(t *testing.T) {
 		// compound ok cases
 		`{"level":"info","msg":"cherry","name":"A","i":5}`,
 		`{"level":"info","msg":"cherry","name":"B","i":5}`,
+
+		`{"level":"info","msg":"durian","name":"A","i":6}`,
+		`{"level":"info","msg":"durian","name":"B","i":6}`,
+
+		`{"level":"info","msg":"elderberry","name":"A","i":7}`,
+		`{"level":"info","msg":"elderberry","name":"B","i":7}`,
+
+		// trees
+		`{"level":"info","msg":"fig","name":"A","i":8}`,
+		`{"level":"info","msg":"fig","name":"B","i":8}`,
+		`{"level":"info","msg":"fig","name":"C","i":8}`,
+		`{"level":"info","msg":"guava","name":"B","i":9}`,
+		`{"level":"info","msg":"guava","name":"C","i":9}`,
+		`{"level":"info","msg":"guava","name":"A","i":9}`,
 	}
 	withJSONLogger(t, opts(InfoLevel), func(logger Logger, buf *testBuffer) {
 		loga := logger.With(String("name", "A"))
 		logb := logger.With(String("name", "B"))
+		logc := logger.With(String("name", "C"))
 
 		tests := []struct {
-			init       func() *CheckedMessage
-			logs       []Logger
-			lvl        Level
-			msg        string
+			cms        []*CheckedMessage
 			expectedOK bool
 			desc       string
 		}{
 			// not-ok base cases
 			{
-				init:       nil,
+				cms:        []*CheckedMessage{nil},
 				expectedOK: false,
-				desc:       "nil init",
+				desc:       "nil",
 			},
 			{
-				init:       nil,
-				logs:       []Logger{loga},
-				lvl:        DebugLevel,
-				msg:        "nope",
+				cms: []*CheckedMessage{
+					nil,
+					loga.Check(DebugLevel, "nope"),
+				},
 				expectedOK: false,
-				desc:       "nil init, one decline",
+				desc:       "nil, A decline",
 			},
 			{
-				init:       nil,
-				logs:       []Logger{loga, logb},
-				lvl:        DebugLevel,
-				msg:        "nope",
+				cms: []*CheckedMessage{
+					nil,
+					loga.Check(DebugLevel, "nope"),
+					logb.Check(DebugLevel, "nope"),
+				},
 				expectedOK: false,
-				desc:       "nil init, two decline",
+				desc:       "nil, A and B decline",
 			},
 
 			// singleton ok cases
 			{
-				init:       nil,
-				logs:       []Logger{loga},
-				lvl:        InfoLevel,
-				msg:        "apple",
+				cms: []*CheckedMessage{
+					nil,
+					loga.Check(InfoLevel, "apple"),
+				},
 				expectedOK: true,
-				desc:       "nil init, A OK",
+				desc:       "nil, A OK",
 			},
 			{
-				init:       func() *CheckedMessage { return loga.Check(InfoLevel, "banana") },
-				logs:       []Logger{logb},
-				lvl:        DebugLevel, // XXX hack, but we don't have split-level log{a,b,c} setup
-				msg:        "banana",
+				cms: []*CheckedMessage{
+					loga.Check(InfoLevel, "banana"),
+					logb.Check(DebugLevel, "banana"),
+				},
 				expectedOK: true,
-				desc:       "A init, B decline",
+				desc:       "A OK, B decline",
 			},
 
 			// compound ok cases
 			{
-				init:       func() *CheckedMessage { return loga.Check(InfoLevel, "cherry") },
-				logs:       []Logger{logb},
-				lvl:        InfoLevel,
-				msg:        "cherry",
+				cms: []*CheckedMessage{
+					loga.Check(InfoLevel, "cherry"),
+					logb.Check(InfoLevel, "cherry"),
+				},
 				expectedOK: true,
-				desc:       "A init, B OK",
+				desc:       "A and B OK",
 			},
-			// XXX: if we had split-level log{a,b,c} setup, we could easily test:
-			// - A init, B decline, C OK
-			// - A init, B OK, C decline
+
+			{
+				cms: []*CheckedMessage{
+					loga.Check(InfoLevel, "durian"),
+					nil,
+					logb.Check(InfoLevel, "durian"),
+				},
+				expectedOK: true,
+				desc:       "A OK, nil, B OK",
+			},
+
+			{
+				cms: []*CheckedMessage{
+					loga.Check(InfoLevel, "elderberry"),
+					logb.Check(InfoLevel, "elderberry"),
+					nil,
+				},
+				expectedOK: true,
+				desc:       "A OK, B OK, nil",
+			},
+
+			// trees
+			{
+				cms: []*CheckedMessage{
+					loga.Check(InfoLevel, "fig"),
+					logb.Check(InfoLevel, "fig").Chain(logc.Check(InfoLevel, "fig")),
+				},
+				expectedOK: true,
+				desc:       "A OK, ( B OK, C OK )",
+			},
+			{
+				cms: []*CheckedMessage{
+					logb.Check(InfoLevel, "guava").Chain(logc.Check(InfoLevel, "guava")),
+					loga.Check(InfoLevel, "guava"),
+				},
+				expectedOK: true,
+				desc:       "( B OK, C OK ), A OK",
+			},
 		}
 
 		for i, tt := range tests {
-			var cm *CheckedMessage
-			if tt.init != nil {
-				cm = tt.init()
-			}
-			for _, log := range tt.logs {
-				cm = cm.Chain(log, tt.lvl, tt.msg)
-			}
+			cm := tt.cms[0].Chain(tt.cms[1:]...)
 			assert.Equal(t, cm.OK(), tt.expectedOK, "%s: expected cm.OK()", tt.desc)
 			cm.Write(Int("i", i))
 		}

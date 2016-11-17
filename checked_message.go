@@ -97,12 +97,15 @@ func (m *CheckedMessage) Write(fields ...Field) {
 //
 // The returned message will first Write to any prior loggers before logging to
 // the newly passed logger.
-func (m *CheckedMessage) Chain(logger Logger, lvl Level, msg string) *CheckedMessage {
-	if m == nil {
-		return logger.Check(lvl, msg)
-	}
-	if next := NewCheckedMessage(logger, lvl, msg); next.OK() {
-		m.push(next)
+func (m *CheckedMessage) Chain(ms ...*CheckedMessage) *CheckedMessage {
+	for _, m2 := range ms {
+		if m2.OK() {
+			if m.OK() {
+				m.push(m2)
+			} else {
+				m = m2
+			}
+		}
 	}
 	return m
 }

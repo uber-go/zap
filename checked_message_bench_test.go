@@ -39,7 +39,7 @@ func BenchmarkCheckedMessage_Chain(b *testing.B) {
 		for pb.Next() {
 			d := data[i%len(data)]
 			cm := myInfoLog.Check(d.lvl, d.msg)
-			cm = cm.Chain(myErrorLog, d.lvl, d.msg)
+			cm = cm.Chain(myErrorLog.Check(d.lvl, d.msg))
 			if cm.OK() {
 				cm.Write(zap.Int("i", i))
 			}
@@ -85,7 +85,7 @@ func BenchmarkCheckedMessage_Chain_sliceLoggers(b *testing.B) {
 			d := data[i%len(data)]
 			var cm *zap.CheckedMessage
 			for _, log := range myLogs {
-				cm = cm.Chain(log, d.lvl, d.msg)
+				cm = cm.Chain(log.Check(d.lvl, d.msg))
 			}
 			if cm.OK() {
 				cm.Write(zap.Int("i", i))
