@@ -98,7 +98,7 @@ func WithCapturer(c Capturer) Option {
 	}
 }
 
-// MinLevel provides a slice of levels for which sentry packaet should be sent.
+// MinLevel provides a minimum level threshold, above which Sentry packtes will be triggered
 func MinLevel(level zap.Level) Option {
 	return func(l *Logger) {
 		l.minLevel = level
