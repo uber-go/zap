@@ -1,18 +1,22 @@
-hash: 8aeb29a35adb31f8b46a792ae1b304c2c55f2d10bfe0ca1a4b8ac5330e22decc
-updated: 2016-11-09T16:14:48.657534669+09:00
+hash: 3028dfe3df1463fd20a19a2ac02c361ebfdaddfa4793cfa0cf75899f741282d5
+updated: 2016-11-14T11:46:53.503304274-08:00
 imports:
 - name: github.com/cactus/go-statsd-client
-  version: d8eabe07bc70ff9ba6a56836cde99d1ea3d005f7
+  version: 95cb85a8d6b2d1ccfce95fa58d1ca3445779d8af
   subpackages:
   - statsd
+- name: github.com/getsentry/raven-go
+  version: e39495fea085e98d1281fac0ff4d6eb8dc56f86d
+- name: github.com/pkg/errors
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/Sirupsen/logrus
-  version: 1445b7a38228c041834afc69231b7966b9943397
+  version: 08a8a7c27e3d058a8989316a850daad1c10bf4ab
 - name: github.com/uber-common/bark
-  version: 8841a0f8e7ca869284ccb29c08a14cf3f4310f46
+  version: d52ffa061726911f47fcd3d9e8b9b55f22794772
 - name: github.com/uber-go/atomic
-  version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
+  version: 0c9e689d64f004564b79d9a663634756df322902
 - name: golang.org/x/sys
-  version: 9a2e24c3733eddc63871eda99f253e2db29bd3b9
+  version: d4feaf1a7e61e1d9e79e6c4e76c6349e9cab0a03
   subpackages:
   - unix
 testImports:
@@ -25,7 +29,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/go-kit/kit
@@ -47,20 +51,20 @@ testImports:
 - name: github.com/mattn/go-isatty
   version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
 - name: github.com/mattn/goveralls
-  version: a63d65fe590e2c830e60ad260cde6755ce3482a5
+  version: edf7508a2bcb40ec1160e94518c983c2fc169f02
 - name: github.com/pborman/uuid
-  version: ca53cad383cad2479bbba7f7a1a05797ec1386e4
+  version: 3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b
 - name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: 976c720a22c8eb4eb6a0b4348ad85ad12491a506
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
   - assert
   - require
 - name: golang.org/x/tools
-  version: 44b4c5d044d148f4248b0188ff5ea3e57cfedbc5
+  version: 3fe2afc9e626f32e91aff6eddb78b14743446865
   subpackages:
   - cover
 - name: gopkg.in/inconshreveable/log15.v2
