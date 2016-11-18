@@ -94,15 +94,13 @@ func TestTraceCfg(t *testing.T) {
 
 func TestLevels(t *testing.T) {
 	_, ps := capturePackets(func(l *Logger) {
-		l.Log(zap.ErrorLevel, "direct call with error")
+		l.Log(zap.DebugLevel, "direct call at Debug level")
 		l.Info("info")
 		l.Warn("warn")
 		l.Error("error")
-		l.Panic("panic")
-		l.Fatal("fatal")
-	}, MinLevel(zap.FatalLevel))
+	}, MinLevel(zap.WarnLevel))
 
-	assert.Equal(t, len(ps), 1, "Only the fatal packet should be present")
+	assert.Equal(t, len(ps), 2, "only Warn and Error packets should be collected")
 }
 
 func TestMeta(t *testing.T) {

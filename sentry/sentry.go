@@ -21,6 +21,7 @@
 package sentry
 
 import (
+	"os"
 	"time"
 
 	raven "github.com/getsentry/raven-go"
@@ -153,14 +154,16 @@ func (l *Logger) Error(msg string, fields ...zap.Field) {
 	l.log(zap.ErrorLevel, msg, fields)
 }
 
-// Panic sends Sentry information provided minimum threshold is met.
+// Panic sends Sentry information provided minimum threshold is met, then panics.
 func (l *Logger) Panic(msg string, fields ...zap.Field) {
 	l.log(zap.PanicLevel, msg, fields)
+	panic(msg)
 }
 
-// Fatal sends Sentry information provided minimum threshold is met.
+// Fatal sends Sentry information provided minimum threshold is met, then exits.
 func (l *Logger) Fatal(msg string, fields ...zap.Field) {
 	l.log(zap.FatalLevel, msg, fields)
+	os.Exit(1)
 }
 
 // DFatal is a nop.
