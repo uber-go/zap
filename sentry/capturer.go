@@ -22,7 +22,7 @@ package sentry
 
 import raven "github.com/getsentry/raven-go"
 
-// Capturer knows what to do with a Sentry packet
+// Capturer knows what to do with a Sentry packet.
 //
 // Allows for a variety of implementations of how to send Sentry packets.
 // For more performance sensisitve systems, it might make sense to batch
@@ -39,12 +39,12 @@ func (m *memCapturer) Capture(p *raven.Packet) {
 	m.packets = append(m.packets, p)
 }
 
-// NonBlockingCapturer does not wait for the result of Sentry packet sending
+// NonBlockingCapturer does not wait for the result of Sentry packet sending.
 type NonBlockingCapturer struct {
 	*raven.Client
 }
 
-// Capture will fire off a packet without checking the error channel
+// Capture will fire off a packet without checking the error channel.
 func (s *NonBlockingCapturer) Capture(p *raven.Packet) {
 	s.Client.Capture(p, nil)
 }

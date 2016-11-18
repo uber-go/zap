@@ -43,7 +43,7 @@ var (
 	}
 )
 
-// Logger automatically sends logs above a certain threshold to Sentry
+// Logger automatically sends logs above a certain threshold to Sentry.
 type Logger struct {
 	zap.Meta
 	Capturer
@@ -61,10 +61,10 @@ type Logger struct {
 	extra zwrap.KeyValueMap
 }
 
-// Option pattern for logger creation
+// Option pattern for logger creation.
 type Option func(l *Logger)
 
-// New Sentry logger
+// New Sentry logger.
 func New(dsn string, options ...Option) (*Logger, error) {
 	l := &Logger{
 		minLevel:          zap.ErrorLevel,
@@ -91,31 +91,31 @@ func New(dsn string, options ...Option) (*Logger, error) {
 	return l, nil
 }
 
-// WithCapturer allows to specify which packet capturer should be used
-func WithCapturer(c Capturer) func(l *Logger) {
+// WithCapturer allows to specify which packet capturer should be used.
+func WithCapturer(c Capturer) Option {
 	return func(l *Logger) {
 		l.Capturer = c
 	}
 }
 
-// WithMinLevel provides a slice of levels for which sentry packaet should be sent
-func WithMinLevel(level zap.Level) func(l *Logger) {
+// MinLevel provides a slice of levels for which sentry packaet should be sent.
+func MinLevel(level zap.Level) Option {
 	return func(l *Logger) {
 		l.minLevel = level
 	}
 }
 
-// WithTraceEnabled allows to change wether (the somewhat expensive) stack trace generation
-// takes place
-func WithTraceEnabled(enabled bool) func(l *Logger) {
+// TraceEnabled allows to change wether (the somewhat expensive, relatively)
+// stack trace generation takes place.
+func TraceEnabled(enabled bool) Option {
 	return func(l *Logger) {
 		l.traceEnabled = enabled
 	}
 }
 
-// WithTraceCfg allows to change the number of skipped frames, number of context lines and
-// list of go prefixes that are considered "in-app", i.e. "github.com/uber-go/zap"
-func WithTraceCfg(skip, context int, prefixes []string) func(l *Logger) {
+// TraceCfg allows to change the number of skipped frames, number of context lines and
+// list of go prefixes that are considered "in-app", i.e. "github.com/uber-go/zap".
+func TraceCfg(skip, context int, prefixes []string) Option {
 	return func(l *Logger) {
 		l.traceSkipFrames = skip
 		l.traceContextLines = context
@@ -123,50 +123,50 @@ func WithTraceCfg(skip, context int, prefixes []string) func(l *Logger) {
 	}
 }
 
-// WithExtra stores additional information for each Sentry event
-func WithExtra(extra map[string]interface{}) func(l *Logger) {
+// Extra stores additional information for each Sentry event.
+func Extra(extra map[string]interface{}) Option {
 	return func(l *Logger) {
 		l.extra = extra
 	}
 }
 
-// Log sends Sentry information provided minimum threshold is met
+// Log sends Sentry information provided minimum threshold is met.
 func (l *Logger) Log(lvl zap.Level, msg string, fields ...zap.Field) {
 	l.log(lvl, msg, fields)
 }
 
-// Debug is a nop
+// Debug is a nop.
 func (l *Logger) Debug(msg string, fields ...zap.Field) {}
 
-// Info sends Sentry information provided minimum threshold is met
+// Info sends Sentry information provided minimum threshold is met.
 func (l *Logger) Info(msg string, fields ...zap.Field) {
 	l.log(zap.InfoLevel, msg, fields)
 }
 
-// Warn sends Sentry information provided minimum threshold is met
+// Warn sends Sentry information provided minimum threshold is met.
 func (l *Logger) Warn(msg string, fields ...zap.Field) {
 	l.log(zap.WarnLevel, msg, fields)
 }
 
-// Error sends Sentry information provided minimum threshold is met
+// Error sends Sentry information provided minimum threshold is met.
 func (l *Logger) Error(msg string, fields ...zap.Field) {
 	l.log(zap.ErrorLevel, msg, fields)
 }
 
-// Panic sends Sentry information provided minimum threshold is met
+// Panic sends Sentry information provided minimum threshold is met.
 func (l *Logger) Panic(msg string, fields ...zap.Field) {
 	l.log(zap.PanicLevel, msg, fields)
 }
 
-// Fatal sends Sentry information provided minimum threshold is met
+// Fatal sends Sentry information provided minimum threshold is met.
 func (l *Logger) Fatal(msg string, fields ...zap.Field) {
 	l.log(zap.FatalLevel, msg, fields)
 }
 
-// DFatal is a nop
+// DFatal is a nop.
 func (l *Logger) DFatal(msg string, fields ...zap.Field) {}
 
-// With returns Sentry logger with additional context
+// With returns Sentry logger with additional context.
 func (l *Logger) With(fields ...zap.Field) zap.Logger {
 	// Consider pre-allocing the whole new resulting map, but that may be even more expensive
 	for _, f := range fields {
@@ -175,7 +175,7 @@ func (l *Logger) With(fields ...zap.Field) zap.Logger {
 	return l
 }
 
-// Notify sentry if the log level meets minimum threshold
+// Notify sentry if the log level meets minimum threshold.
 func (l *Logger) log(lvl zap.Level, msg string, fields []zap.Field) {
 	if lvl >= l.minLevel {
 		// append all the fields from the current log message to the stored ones
@@ -203,7 +203,7 @@ func (l *Logger) log(lvl zap.Level, msg string, fields []zap.Field) {
 	}
 }
 
-// Check returns a CheckedMessage logging the given message is Enabled, nil otherwise
+// Check returns a CheckedMessage logging the given message is Enabled, nil otherwise.
 func (l *Logger) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
 	if lvl >= l.minLevel {
 		return zap.NewCheckedMessage(l, lvl, msg)

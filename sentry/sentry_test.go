@@ -45,7 +45,7 @@ func TestEmptyDSN(t *testing.T) {
 }
 
 func TestWithLevels(t *testing.T) {
-	l, err := New("", WithMinLevel(zap.InfoLevel))
+	l, err := New("", MinLevel(zap.InfoLevel))
 	assert.NoError(t, err)
 	assert.NotNil(t, l)
 	assert.Equal(t, l.minLevel, zap.InfoLevel)
@@ -57,14 +57,14 @@ func TestExtra(t *testing.T) {
 		"someInt":           123,
 		"arrayOfManyThings": []int{1, 2, 3},
 	}
-	l, err := New("", WithExtra(extra))
+	l, err := New("", Extra(extra))
 	l.Error("error log")
 	assert.NoError(t, err)
 	assert.Equal(t, l.extra, extra)
 }
 
 func TestWith(t *testing.T) {
-	l, err := New("", WithExtra(map[string]interface{}{
+	l, err := New("", Extra(map[string]interface{}{
 		"someInt": 123,
 	}))
 	expected := zwrap.KeyValueMap{"someInt": 123, "someFloat": float64(10)}
@@ -77,7 +77,7 @@ func TestWithTraceDisabled(t *testing.T) {
 	_, ps := capturePackets(func(l *Logger) {
 		l.Error("some error message", zap.String("foo", "bar"))
 		l.Error("another error message")
-	}, WithTraceEnabled(false))
+	}, TraceEnabled(false))
 
 	for _, p := range ps {
 		assert.Empty(t, p.Interfaces)
@@ -85,7 +85,7 @@ func TestWithTraceDisabled(t *testing.T) {
 }
 
 func TestTraceCfg(t *testing.T) {
-	l, err := New("", WithTraceCfg(1, 7, []string{"github.com/uber-go/unicorns"}))
+	l, err := New("", TraceCfg(1, 7, []string{"github.com/uber-go/unicorns"}))
 	assert.NoError(t, err)
 	assert.Equal(t, l.traceSkipFrames, 1)
 	assert.Equal(t, l.traceContextLines, 7)
@@ -100,7 +100,7 @@ func TestLevels(t *testing.T) {
 		l.Error("error")
 		l.Panic("panic")
 		l.Fatal("fatal")
-	}, WithMinLevel(zap.FatalLevel))
+	}, MinLevel(zap.FatalLevel))
 
 	assert.Equal(t, len(ps), 1, "Only the fatal packet should be present")
 }
