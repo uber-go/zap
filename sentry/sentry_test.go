@@ -58,7 +58,7 @@ func TestExtra(t *testing.T) {
 		"arrayOfManyThings": []int{1, 2, 3},
 	}
 	l, err := New("", Extra(extra))
-	l.Error("error log")
+	l.Error("error log", zap.String("foo", "bar"))
 	assert.NoError(t, err)
 	assert.Equal(t, l.extra, extra)
 }
