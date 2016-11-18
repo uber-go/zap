@@ -35,7 +35,6 @@ var (
 	_traceContextLines = 3
 	_traceSkipFrames   = 3
 	_zapToRavenMap     = map[zap.Level]raven.Severity{
-		zap.DebugLevel: raven.DEBUG,
 		zap.InfoLevel:  raven.INFO,
 		zap.WarnLevel:  raven.WARNING,
 		zap.ErrorLevel: raven.ERROR,
