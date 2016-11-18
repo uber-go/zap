@@ -35,7 +35,7 @@ type fakeClient raven.Client
 func TestBadDSN(t *testing.T) {
 	_, err := New("123http://whoops")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "dsn missing public", "failed to create sentry client")
+	assert.Contains(t, err.Error(), "failed to create sentry client")
 }
 
 func TestEmptyDSN(t *testing.T) {
