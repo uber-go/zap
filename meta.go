@@ -63,11 +63,6 @@ func (m Meta) Clone() Meta {
 	return m
 }
 
-// Enabled returns true if logging a message at a particular level is enabled.
-func (m Meta) Enabled(lvl Level) bool {
-	return m.LevelEnabler.Enabled(lvl)
-}
-
 // Check returns a CheckedMessage logging the given message is Enabled, nil
 // otherwise.
 func (m Meta) Check(log Logger, lvl Level, msg string) *CheckedMessage {
