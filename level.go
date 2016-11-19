@@ -122,7 +122,7 @@ func (l *Level) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// Enabled return true if the given level is at or above this level.
+// Enabled returns true if the given level is at or above this level.
 func (l Level) Enabled(lvl Level) bool {
 	return lvl >= l
 }
