@@ -31,12 +31,13 @@ import (
 // Note that while the level-related fields and methods are safe for concurrent
 // use, the remaining fields are not.
 type Meta struct {
+	LevelEnabler
+
 	Development bool
 	Encoder     Encoder
 	Hooks       []Hook
 	Output      WriteSyncer
 	ErrorOutput WriteSyncer
-	LevelEnabler
 }
 
 // MakeMeta returns a new meta struct with sensible defaults: logging at
