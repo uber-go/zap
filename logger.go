@@ -21,7 +21,6 @@
 package zap
 
 import (
-	"fmt"
 	"os"
 )
 
@@ -142,12 +141,12 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 	entry := newEntry(lvl, msg, temp)
 	for _, hook := range log.Hooks {
 		if err := hook(entry); err != nil {
-			log.internalError(err.Error())
+			log.InternalError("hook", err)
 		}
 	}
 
 	if err := temp.WriteEntry(log.Output, entry.Message, entry.Level, entry.Time); err != nil {
-		log.internalError(err.Error())
+		log.InternalError("encoder", err)
 	}
 	temp.Free()
 	entry.free()
@@ -156,9 +155,4 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 		// Sync on Panic and Fatal, since they may crash the program.
 		log.Output.Sync()
 	}
-}
-
-func (log *logger) internalError(msg string) {
-	fmt.Fprintln(log.ErrorOutput, msg)
-	log.ErrorOutput.Sync()
 }

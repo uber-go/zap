@@ -47,7 +47,7 @@ func TestHookAddCallerFail(t *testing.T) {
 
 	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), ErrorOutput(errBuf), AddCaller())
 	logger.Info("Failure.")
-	assert.Equal(t, "failed to get caller\n", errBuf.String(), "Didn't find expected failure message.")
+	assert.Regexp(t, `hook error: failed to get caller`, errBuf.String(), "Didn't find expected failure message.")
 	assert.Contains(t, buf.String(), `"msg":"Failure."`, "Expected original message to survive failures in runtime.Caller.")
 }
 

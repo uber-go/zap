@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/uber-go/atomic"
@@ -94,4 +95,12 @@ func (m Meta) Check(log Logger, lvl Level, msg string) *CheckedMessage {
 		}
 	}
 	return NewCheckedMessage(log, lvl, msg)
+}
+
+// InternalError prints an internal error message to the configured
+// ErrorOutput. This method should only be used to report internal logger
+// problems and should not be used to report user-caused problems.
+func (m Meta) InternalError(cause string, err error) {
+	fmt.Fprintf(m.ErrorOutput, "%v %s error: %v\n", _timeNow().UTC(), cause, err)
+	m.ErrorOutput.Sync()
 }
