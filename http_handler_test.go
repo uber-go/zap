@@ -37,10 +37,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newHandler() (AtomicLevel, Logger, http.Handler) {
+func newHandler() (AtomicLevel, Logger) {
 	lvl := DynamicLevel()
 	logger, _ := spy.New(lvl)
-	return lvl, logger, NewHTTPHandler(lvl)
+	return lvl, logger
 }
 
 func assertCodeOK(t testing.TB, code int) {
@@ -87,45 +87,45 @@ func makeRequest(t testing.TB, method string, handler http.Handler, reader io.Re
 }
 
 func TestHTTPHandlerGetLevel(t *testing.T) {
-	lvl, _, handler := newHandler()
-	code, body := makeRequest(t, "GET", handler, nil)
+	lvl, _ := newHandler()
+	code, body := makeRequest(t, "GET", lvl, nil)
 	assertCodeOK(t, code)
 	assertResponse(t, lvl.Level(), body)
 }
 
 func TestHTTPHandlerPutLevel(t *testing.T) {
-	lvl, _, handler := newHandler()
+	lvl, _ := newHandler()
 
-	code, body := makeRequest(t, "PUT", handler, strings.NewReader(`{"level":"warn"}`))
+	code, body := makeRequest(t, "PUT", lvl, strings.NewReader(`{"level":"warn"}`))
 
 	assertCodeOK(t, code)
 	assertResponse(t, lvl.Level(), body)
 }
 
 func TestHTTPHandlerPutUnrecognizedLevel(t *testing.T) {
-	_, _, handler := newHandler()
-	code, body := makeRequest(t, "PUT", handler, strings.NewReader(`{"level":"unrecognized-level"}`))
+	lvl, _ := newHandler()
+	code, body := makeRequest(t, "PUT", lvl, strings.NewReader(`{"level":"unrecognized-level"}`))
 	assertCodeBadRequest(t, code)
 	assertJSONError(t, body)
 }
 
 func TestHTTPHandlerNotJSON(t *testing.T) {
-	_, _, handler := newHandler()
-	code, body := makeRequest(t, "PUT", handler, strings.NewReader(`{`))
+	lvl, _ := newHandler()
+	code, body := makeRequest(t, "PUT", lvl, strings.NewReader(`{`))
 	assertCodeBadRequest(t, code)
 	assertJSONError(t, body)
 }
 
 func TestHTTPHandlerNoLevelSpecified(t *testing.T) {
-	_, _, handler := newHandler()
-	code, body := makeRequest(t, "PUT", handler, strings.NewReader(`{}`))
+	lvl, _ := newHandler()
+	code, body := makeRequest(t, "PUT", lvl, strings.NewReader(`{}`))
 	assertCodeBadRequest(t, code)
 	assertJSONError(t, body)
 }
 
 func TestHTTPHandlerMethodNotAllowed(t *testing.T) {
-	_, _, handler := newHandler()
-	code, body := makeRequest(t, "POST", handler, strings.NewReader(`{`))
+	lvl, _ := newHandler()
+	code, body := makeRequest(t, "POST", lvl, strings.NewReader(`{`))
 	assertCodeMethodNotAllowed(t, code)
 	assertJSONError(t, body)
 }
