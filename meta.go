@@ -87,3 +87,25 @@ func (m Meta) InternalError(cause string, err error) {
 	fmt.Fprintf(m.ErrorOutput, "%v %s error: %v\n", time.Now().UTC(), cause, err)
 	m.ErrorOutput.Sync()
 }
+
+// RunHooks runs any Hook functions, returning a possibly modified
+// time, message, and level.
+func (m Meta) RunHooks(t time.Time, lvl Level, msg string, fields []Field) (Level, string, Encoder) {
+	enc := m.Encoder.Clone()
+	addFields(enc, fields)
+	if len(m.Hooks) == 0 {
+		return lvl, msg, enc
+	}
+	entry := Entry{
+		Level:   lvl,
+		Message: msg,
+		Time:    t,
+		enc:     enc,
+	}
+	for _, hook := range m.Hooks {
+		if err := hook(&entry); err != nil {
+			m.InternalError("hook", err)
+		}
+	}
+	return entry.Level, entry.Message, entry.enc
+}

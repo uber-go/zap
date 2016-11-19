@@ -32,7 +32,7 @@ var (
 	errCaller       = errors.New("failed to get caller")
 	// Skip Caller, Logger.log, and the leveled Logger method when using
 	// runtime.Caller.
-	_callerSkip = 3
+	_callerSkip = 4
 )
 
 // A Hook is executed each time the logger writes an Entry. It can modify the

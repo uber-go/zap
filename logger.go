@@ -127,28 +127,11 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 	}
 
 	t := time.Now().UTC()
-	temp := log.Encoder.Clone()
-	addFields(temp, fields)
-
-	if len(log.Hooks) > 0 {
-		entry := Entry{
-			Level:   lvl,
-			Message: msg,
-			Time:    t,
-			enc:     temp,
-		}
-		for _, hook := range log.Hooks {
-			if err := hook(&entry); err != nil {
-				log.InternalError("hook", err)
-			}
-		}
-		t, lvl, msg = entry.Time, entry.Level, entry.Message
-	}
-
-	if err := temp.WriteEntry(log.Output, msg, lvl, t); err != nil {
+	lvl, msg, enc := log.RunHooks(t, lvl, msg, fields)
+	if err := enc.WriteEntry(log.Output, msg, lvl, t); err != nil {
 		log.InternalError("encoder", err)
 	}
-	temp.Free()
+	enc.Free()
 
 	if lvl > ErrorLevel {
 		// Sync on Panic and Fatal, since they may crash the program.
