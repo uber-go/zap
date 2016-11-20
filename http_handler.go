@@ -23,6 +23,7 @@ package zap
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -39,38 +40,44 @@ func (lvl AtomicLevel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Level *Level `json:"level"`
 	}
 
-	enc := json.NewEncoder(w)
+	if err := func() error {
+		enc := json.NewEncoder(w)
+		switch r.Method {
 
-	switch r.Method {
+		case "GET":
+			current := lvl.Level()
+			return enc.Encode(payload{Level: &current})
 
-	case "GET":
-		current := lvl.Level()
-		enc.Encode(payload{Level: &current})
-
-	case "PUT":
-		var req payload
-
-		if errmess := func() string {
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				return fmt.Sprintf("Request body must be well-formed JSON: %v", err)
+		case "PUT":
+			var req payload
+			if errmess := func() string {
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					return fmt.Sprintf("Request body must be well-formed JSON: %v", err)
+				}
+				if req.Level == nil {
+					return "Must specify a logging level."
+				}
+				return ""
+			}(); errmess != "" {
+				w.WriteHeader(http.StatusBadRequest)
+				return enc.Encode(errorResponse{Error: errmess})
 			}
-			if req.Level == nil {
-				return "Must specify a logging level."
-			}
-			return ""
-		}(); errmess != "" {
-			w.WriteHeader(http.StatusBadRequest)
-			enc.Encode(errorResponse{Error: errmess})
-			return
+			lvl.SetLevel(*req.Level)
+			return enc.Encode(req)
+
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return enc.Encode(errorResponse{
+				Error: "Only GET and PUT are supported.",
+			})
 		}
-
-		lvl.SetLevel(*req.Level)
-		enc.Encode(req)
-
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		enc.Encode(errorResponse{
-			Error: "Only GET and PUT are supported.",
-		})
+	}(); err != nil {
+		// an encoding error; TODO: it would be great if we had an intenal
+		// error reporting mechanism here.
+		w.WriteHeader(http.StatusInternalServerError)
+		// last ditch write to client, ignore any error (likely since an
+		// "encoding error" probably already was a repsonse io error)
+		_, _ = io.WriteString(w, fmt.Sprintf(
+			"AtomicLevel.ServeHTTP internal error: %v", err))
 	}
 }
