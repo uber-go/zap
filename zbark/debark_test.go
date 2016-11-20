@@ -23,6 +23,7 @@ package zbark
 import (
 	"bytes"
 	"testing"
+	"time"
 
 	"github.com/uber-go/zap"
 
@@ -127,7 +128,7 @@ func TestDebark_LeveledLogging(t *testing.T) {
 	logger, buf := newDebark(zap.DebugLevel)
 	for _, l := range levels {
 		require.Equal(t, 0, buf.Len(), "buffer not zero")
-		logger.Log(l, "ohai")
+		logger.Log(time.Now().UTC(), l, "ohai")
 		assert.NotEqual(t, 0, buf.Len(), "%q did not log", l)
 		buf.Reset()
 	}
@@ -135,13 +136,13 @@ func TestDebark_LeveledLogging(t *testing.T) {
 	logger, buf = newDebark(zap.FatalLevel)
 	require.Equal(t, 0, buf.Len(), "buffer not zero to begin test")
 	for _, l := range append(levels) {
-		logger.Log(l, "ohai")
+		logger.Log(time.Now().UTC(), l, "ohai")
 		assert.Equal(t, 0, buf.Len(), "buffer not zero, we should not have logged")
 	}
 
 	logger, buf = newDebark(zap.DebugLevel)
-	assert.Panics(t, func() { logger.Log(zap.Level(31337), "") })
-	assert.Panics(t, func() { logger.Log(zap.PanicLevel, "") })
+	assert.Panics(t, func() { logger.Log(time.Now().UTC(), zap.Level(31337), "") })
+	assert.Panics(t, func() { logger.Log(time.Now().UTC(), zap.PanicLevel, "") })
 }
 
 func TestDebark_Methods(t *testing.T) {

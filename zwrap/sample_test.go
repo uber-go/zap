@@ -88,7 +88,7 @@ func TestSampler(t *testing.T) {
 		},
 		{
 			level:   zap.ErrorLevel,
-			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Log(zap.ErrorLevel, "sample") },
+			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Log(time.Now().UTC(), zap.ErrorLevel, "sample") },
 		},
 	}
 

@@ -48,7 +48,7 @@ type Logger interface {
 	// process, but calling Log(PanicLevel, ...) or Log(FatalLevel, ...) should
 	// not. It may not be possible for compatibility wrappers to comply with
 	// this last part (e.g. the bark wrapper).
-	Log(Level, string, ...Field)
+	Log(time.Time, Level, string, ...Field)
 	Debug(string, ...Field)
 	Info(string, ...Field)
 	Warn(string, ...Field)
@@ -86,33 +86,33 @@ func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
 	return log.Meta.Check(log, lvl, msg)
 }
 
-func (log *logger) Log(lvl Level, msg string, fields ...Field) {
-	log.log(_timeNow().UTC(), lvl, msg, fields)
+func (log *logger) Log(t time.Time, lvl Level, msg string, fields ...Field) {
+	log.log(t, lvl, msg, fields)
 }
 
 func (log *logger) Debug(msg string, fields ...Field) {
-	log.log(_timeNow().UTC(), DebugLevel, msg, fields)
+	log.log(time.Now().UTC(), DebugLevel, msg, fields)
 }
 
 func (log *logger) Info(msg string, fields ...Field) {
-	log.log(_timeNow().UTC(), InfoLevel, msg, fields)
+	log.log(time.Now().UTC(), InfoLevel, msg, fields)
 }
 
 func (log *logger) Warn(msg string, fields ...Field) {
-	log.log(_timeNow().UTC(), WarnLevel, msg, fields)
+	log.log(time.Now().UTC(), WarnLevel, msg, fields)
 }
 
 func (log *logger) Error(msg string, fields ...Field) {
-	log.log(_timeNow().UTC(), ErrorLevel, msg, fields)
+	log.log(time.Now().UTC(), ErrorLevel, msg, fields)
 }
 
 func (log *logger) Panic(msg string, fields ...Field) {
-	log.log(_timeNow().UTC(), PanicLevel, msg, fields)
+	log.log(time.Now().UTC(), PanicLevel, msg, fields)
 	panic(msg)
 }
 
 func (log *logger) Fatal(msg string, fields ...Field) {
-	log.log(_timeNow().UTC(), FatalLevel, msg, fields)
+	log.log(time.Now().UTC(), FatalLevel, msg, fields)
 	_exit(1)
 }
 

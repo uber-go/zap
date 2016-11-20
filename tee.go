@@ -20,6 +20,8 @@
 
 package zap
 
+import "time"
+
 // Tee creates a Logger that duplicates its log calls to two or more
 // loggers. It is similar to io.MultiWriter.
 //
@@ -54,39 +56,39 @@ func Tee(logs ...Logger) Logger {
 
 type multiLogger []Logger
 
-func (ml multiLogger) Log(lvl Level, msg string, fields ...Field) {
-	ml.log(lvl, msg, fields)
+func (ml multiLogger) Log(t time.Time, lvl Level, msg string, fields ...Field) {
+	ml.log(t, lvl, msg, fields)
 }
 
 func (ml multiLogger) Debug(msg string, fields ...Field) {
-	ml.log(DebugLevel, msg, fields)
+	ml.log(time.Now().UTC(), DebugLevel, msg, fields)
 }
 
 func (ml multiLogger) Info(msg string, fields ...Field) {
-	ml.log(InfoLevel, msg, fields)
+	ml.log(time.Now().UTC(), InfoLevel, msg, fields)
 }
 
 func (ml multiLogger) Warn(msg string, fields ...Field) {
-	ml.log(WarnLevel, msg, fields)
+	ml.log(time.Now().UTC(), WarnLevel, msg, fields)
 }
 
 func (ml multiLogger) Error(msg string, fields ...Field) {
-	ml.log(ErrorLevel, msg, fields)
+	ml.log(time.Now().UTC(), ErrorLevel, msg, fields)
 }
 
 func (ml multiLogger) Panic(msg string, fields ...Field) {
-	ml.log(PanicLevel, msg, fields)
+	ml.log(time.Now().UTC(), PanicLevel, msg, fields)
 	panic(msg)
 }
 
 func (ml multiLogger) Fatal(msg string, fields ...Field) {
-	ml.log(FatalLevel, msg, fields)
+	ml.log(time.Now().UTC(), FatalLevel, msg, fields)
 	_exit(1)
 }
 
-func (ml multiLogger) log(lvl Level, msg string, fields []Field) {
+func (ml multiLogger) log(t time.Time, lvl Level, msg string, fields []Field) {
 	for _, log := range ml {
-		log.Log(lvl, msg, fields...)
+		log.Log(t, lvl, msg, fields...)
 	}
 }
 

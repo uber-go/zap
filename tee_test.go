@@ -22,6 +22,7 @@ package zap_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/uber-go/zap"
 	"github.com/uber-go/zap/spy"
@@ -34,8 +35,8 @@ func TestTeeLogsBoth(t *testing.T) {
 	log2, sink2 := spy.New(zap.WarnLevel)
 	log := zap.Tee(log1, log2)
 
-	log.Log(zap.InfoLevel, "log @info")
-	log.Log(zap.WarnLevel, "log @warn")
+	log.Log(time.Now().UTC(), zap.InfoLevel, "log @info")
+	log.Log(time.Now().UTC(), zap.WarnLevel, "log @warn")
 
 	log.Debug("log-dot-debug")
 	log.Info("log-dot-info")
@@ -101,7 +102,7 @@ func TestTee_Panic(t *testing.T) {
 
 	assert.Panics(t, func() { log.Panic("foo") }, "tee logger.Panic panics")
 	assert.Panics(t, func() { log.Check(zap.PanicLevel, "bar").Write() }, "tee logger.Check(PanicLevel).Write() panics")
-	assert.NotPanics(t, func() { log.Log(zap.PanicLevel, "baz") }, "tee logger.Log(PanicLevel) does not panic")
+	assert.NotPanics(t, func() { log.Log(time.Now().UTC(), zap.PanicLevel, "baz") }, "tee logger.Log(PanicLevel) does not panic")
 
 	assert.Equal(t, []spy.Log{
 		{

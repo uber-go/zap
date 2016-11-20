@@ -22,6 +22,7 @@ package zap
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -41,7 +42,7 @@ func withTextLogger(t testing.TB, opts []Option, f func(Logger, *testBuffer)) {
 
 func TestTextLoggerDebugLevel(t *testing.T) {
 	withTextLogger(t, nil, func(logger Logger, buf *testBuffer) {
-		logger.Log(DebugLevel, "foo")
+		logger.Log(time.Now(), DebugLevel, "foo")
 		assert.Equal(t, "[D] foo", buf.Stripped(), "Unexpected output from logger")
 	})
 }

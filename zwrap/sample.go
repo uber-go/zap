@@ -115,10 +115,10 @@ func (s *sampler) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
 	}
 }
 
-func (s *sampler) Log(lvl zap.Level, msg string, fields ...zap.Field) {
+func (s *sampler) Log(t time.Time, lvl zap.Level, msg string, fields ...zap.Field) {
 	switch lvl {
 	case zap.PanicLevel, zap.FatalLevel:
-		s.Logger.Log(lvl, msg, fields...)
+		s.Logger.Log(t, lvl, msg, fields...)
 	default:
 		if cm := s.Logger.Check(lvl, msg); cm.OK() && s.sampled(msg) {
 			cm.Write(fields...)

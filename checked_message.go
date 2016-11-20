@@ -83,7 +83,7 @@ func (m *CheckedMessage) Write(fields ...Field) {
 	case FatalLevel:
 		m.logger.Fatal(m.msg, fields...)
 	default:
-		m.logger.Log(m.lvl, m.msg, fields...)
+		m.logger.Log(_timeNow().UTC(), m.lvl, m.msg, fields...)
 	}
 
 	m.next.Write(fields...)
