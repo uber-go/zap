@@ -87,32 +87,32 @@ func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
 }
 
 func (log *logger) Log(lvl Level, msg string, fields ...Field) {
-	log.log(lvl, msg, fields)
+	log.log(_timeNow().UTC(), lvl, msg, fields)
 }
 
 func (log *logger) Debug(msg string, fields ...Field) {
-	log.log(DebugLevel, msg, fields)
+	log.log(_timeNow().UTC(), DebugLevel, msg, fields)
 }
 
 func (log *logger) Info(msg string, fields ...Field) {
-	log.log(InfoLevel, msg, fields)
+	log.log(_timeNow().UTC(), InfoLevel, msg, fields)
 }
 
 func (log *logger) Warn(msg string, fields ...Field) {
-	log.log(WarnLevel, msg, fields)
+	log.log(_timeNow().UTC(), WarnLevel, msg, fields)
 }
 
 func (log *logger) Error(msg string, fields ...Field) {
-	log.log(ErrorLevel, msg, fields)
+	log.log(_timeNow().UTC(), ErrorLevel, msg, fields)
 }
 
 func (log *logger) Panic(msg string, fields ...Field) {
-	log.log(PanicLevel, msg, fields)
+	log.log(_timeNow().UTC(), PanicLevel, msg, fields)
 	panic(msg)
 }
 
 func (log *logger) Fatal(msg string, fields ...Field) {
-	log.log(FatalLevel, msg, fields)
+	log.log(_timeNow().UTC(), FatalLevel, msg, fields)
 	_exit(1)
 }
 
@@ -124,12 +124,11 @@ func (log *logger) DFatal(msg string, fields ...Field) {
 	log.Error(msg, fields...)
 }
 
-func (log *logger) log(lvl Level, msg string, fields []Field) {
+func (log *logger) log(t time.Time, lvl Level, msg string, fields []Field) {
 	if !log.Meta.Enabled(lvl) {
 		return
 	}
 
-	t := time.Now().UTC()
 	temp := log.Encoder.Clone()
 	addFields(temp, fields)
 
