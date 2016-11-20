@@ -127,7 +127,7 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 	}
 
 	t := time.Now().UTC()
-	lvl, msg, enc := log.RunHooks(t, lvl, msg, fields)
+	msg, enc := log.Encode(t, lvl, msg, fields)
 	if err := enc.WriteEntry(log.Output, msg, lvl, t); err != nil {
 		log.InternalError("encoder", err)
 	}
