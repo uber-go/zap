@@ -59,27 +59,19 @@ func (ml multiLogger) Log(lvl Level, msg string, fields ...Field) {
 }
 
 func (ml multiLogger) Debug(msg string, fields ...Field) {
-	for _, log := range ml {
-		log.Debug(msg, fields...)
-	}
+	ml.log(DebugLevel, msg, fields)
 }
 
 func (ml multiLogger) Info(msg string, fields ...Field) {
-	for _, log := range ml {
-		log.Info(msg, fields...)
-	}
+	ml.log(InfoLevel, msg, fields)
 }
 
 func (ml multiLogger) Warn(msg string, fields ...Field) {
-	for _, log := range ml {
-		log.Warn(msg, fields...)
-	}
+	ml.log(WarnLevel, msg, fields)
 }
 
 func (ml multiLogger) Error(msg string, fields ...Field) {
-	for _, log := range ml {
-		log.Error(msg, fields...)
-	}
+	ml.log(ErrorLevel, msg, fields)
 }
 
 func (ml multiLogger) Panic(msg string, fields ...Field) {
