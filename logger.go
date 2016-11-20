@@ -146,6 +146,8 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 
 	if lvl > ErrorLevel {
 		// Sync on Panic and Fatal, since they may crash the program.
-		log.Output.Sync()
+		if err := log.Output.Sync(); err != nil {
+			log.InternalError("sync", err)
+		}
 	}
 }
