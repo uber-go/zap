@@ -22,8 +22,8 @@ package zap
 
 import "testing"
 
-func withBenchedSugar(b *testing.B, f func(Sugar)) {
-	logger := NewSugar(New(
+func withBenchedSugar(b *testing.B, f func(*SugaredLogger)) {
+	logger := Sugar(New(
 		NewJSONEncoder(),
 		DebugLevel,
 		DiscardOutput,
@@ -37,8 +37,8 @@ func withBenchedSugar(b *testing.B, f func(Sugar)) {
 }
 
 func Benchmark10FieldsSugar(b *testing.B) {
-	withBenchedSugar(b, func(log Sugar) {
-		log.Info("Ten fields, passed at the log site.",
+	withBenchedSugar(b, func(logger *SugaredLogger) {
+		logger.Info("Ten fields, passed at the log site.",
 			"one", 1,
 			"two", 2,
 			"three", 3,

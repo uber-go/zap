@@ -20,6 +20,8 @@
 
 package benchmarks
 
+/* FIXME (shah): Update to match new APIs.
+
 import (
 	"testing"
 	"time"
@@ -145,3 +147,4 @@ func BenchmarkZapSugarSampleAddingFields(b *testing.B) {
 		}
 	})
 }
+*/
