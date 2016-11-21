@@ -86,9 +86,7 @@ func (m *CheckedMessage) Write(fields ...Field) {
 		m.logger.Log(m.lvl, m.msg, fields...)
 	}
 
-	if m.next != nil {
-		m.next.Write(fields...)
-	}
+	m.next.Write(fields...)
 }
 
 // Chain builds a chain of checked messages over several loggers. It returns an
