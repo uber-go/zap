@@ -74,44 +74,42 @@ func withJSONLogger(t testing.TB, opts []Option, f func(Logger, *testBuffer)) {
 	assert.Empty(t, errSink.String(), "Expected error sink to be empty.")
 }
 
-func TestJSONLoggerSetLevel(t *testing.T) {
-	withJSONLogger(t, nil, func(logger Logger, _ *testBuffer) {
-		assert.Equal(t, DebugLevel, logger.Level(), "Unexpected initial level.")
-		logger.SetLevel(ErrorLevel)
-		assert.Equal(t, ErrorLevel, logger.Level(), "Unexpected level after SetLevel.")
-	})
+func TestDynamicLevel(t *testing.T) {
+	lvl := DynamicLevel()
+	assert.Equal(t, InfoLevel, lvl.Level(), "Unexpected initial level.")
+	lvl.SetLevel(ErrorLevel)
+	assert.Equal(t, ErrorLevel, lvl.Level(), "Unexpected level after SetLevel.")
 }
 
-func TestJSONLoggerConcurrentLevelMutation(t *testing.T) {
+func TestDynamicLevel_concurrentMutation(t *testing.T) {
+	lvl := DynamicLevel()
 	// Trigger races for non-atomic level mutations.
-	logger := New(newJSONEncoder())
-
 	proceed := make(chan struct{})
 	wg := &sync.WaitGroup{}
 	runConcurrently(10, 100, wg, func() {
 		<-proceed
-		logger.Level()
+		lvl.Level()
 	})
 	runConcurrently(10, 100, wg, func() {
 		<-proceed
-		logger.SetLevel(WarnLevel)
+		lvl.SetLevel(WarnLevel)
 	})
 	close(proceed)
 	wg.Wait()
 }
 
-func TestJSONLoggerRuntimeLevelChange(t *testing.T) {
-	// Test that changing a logger's level also changes the level of all
-	// ancestors and descendants.
-	withJSONLogger(t, opts(InfoLevel), func(grandparent Logger, buf *testBuffer) {
+func TestJSONLogger_DynamicLevel(t *testing.T) {
+	// Test that the DynamicLevel applys to all ancestors and descendants.
+	dl := DynamicLevel()
+	withJSONLogger(t, opts(dl), func(grandparent Logger, buf *testBuffer) {
 		parent := grandparent.With(Int("generation", 2))
 		child := parent.With(Int("generation", 3))
 		all := []Logger{grandparent, parent, child}
 
-		assert.Equal(t, InfoLevel, parent.Level(), "expected initial InfoLevel")
+		assert.Equal(t, InfoLevel, dl.Level(), "expected initial InfoLevel")
 
 		for round, lvl := range []Level{InfoLevel, DebugLevel, WarnLevel} {
-			parent.SetLevel(lvl)
+			dl.SetLevel(lvl)
 			for loggerI, log := range all {
 				log.Debug("@debug", Int("round", round), Int("logger", loggerI))
 			}
@@ -353,8 +351,7 @@ func TestJSONLoggerDFatal(t *testing.T) {
 }
 
 func TestJSONLoggerNoOpsDisabledLevels(t *testing.T) {
-	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
-		logger.SetLevel(WarnLevel)
+	withJSONLogger(t, opts(WarnLevel), func(logger Logger, buf *testBuffer) {
 		logger.Info("silence!")
 		assert.Equal(t, []string{}, buf.Lines(), "Expected logging at a disabled level to produce no output.")
 	})

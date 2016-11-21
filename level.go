@@ -23,6 +23,8 @@ package zap
 import (
 	"errors"
 	"fmt"
+
+	"github.com/uber-go/atomic"
 )
 
 var errMarshalNilLevel = errors.New("can't marshal a nil *Level to text")
@@ -32,6 +34,20 @@ var errMarshalNilLevel = errors.New("can't marshal a nil *Level to text")
 // Note that Level satisfies the Option interface, so any Level can be passed to
 // New to override the default logging priority.
 type Level int32
+
+// LevelEnabler decides whether a given logging level is enabled when logging a
+// message.
+//
+// Enablers are intended to be used to implement deterministic filters;
+// concerns like sampling are better implemented as a Logger implementation.
+//
+// Each concrete Level value implements a static LevelEnabler which returns
+// true for itself and all higher logging levels. For example WarnLevel.Enabled()
+// will return true for WarnLevel, ErrorLevel, PanicLevel, and FatalLevel, but
+// return false for InfoLevel and DebugLevel.
+type LevelEnabler interface {
+	Enabled(Level) bool
+}
 
 const (
 	// DebugLevel logs are typically voluminous, and are usually disabled in
@@ -104,4 +120,42 @@ func (l *Level) UnmarshalText(text []byte) error {
 		return fmt.Errorf("unrecognized level: %v", string(text))
 	}
 	return nil
+}
+
+// Enabled returns true if the given level is at or above this level.
+func (l Level) Enabled(lvl Level) bool {
+	return lvl >= l
+}
+
+// DynamicLevel creates an atomically changeable dynamic logging level.  The
+// returned level can be passed as a logger option just like a concrete level.
+//
+// The value's SetLevel() method may be called later to change the enabled
+// logging level of all loggers that were passed the value (either explicitly,
+// or by creating sub-loggers with Logger.With).
+func DynamicLevel() AtomicLevel {
+	return AtomicLevel{
+		l: atomic.NewInt32(int32(InfoLevel)),
+	}
+}
+
+// AtomicLevel wraps an atomically change-able Level value. It must be created
+// by the DynamicLevel() function to allocate the internal atomic pointer.
+type AtomicLevel struct {
+	l *atomic.Int32
+}
+
+// Enabled loads the level value, and calls its Enabled method.
+func (lvl AtomicLevel) Enabled(l Level) bool {
+	return lvl.Level().Enabled(l)
+}
+
+// Level returns the minimum enabled log level.
+func (lvl AtomicLevel) Level() Level {
+	return Level(lvl.l.Load())
+}
+
+// SetLevel alters the logging level.
+func (lvl AtomicLevel) SetLevel(l Level) {
+	lvl.l.Store(int32(l))
 }

@@ -30,13 +30,6 @@ var _exit = os.Exit
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
 type Logger interface {
-	// Check the minimum enabled log level.
-	Level() Level
-	// Change the level of this logger, as well as all its ancestors and
-	// descendants. This makes it easy to change the log level at runtime
-	// without restarting your application.
-	SetLevel(Level)
-
 	// Create a child logger, and optionally add some context to that logger.
 	With(...Field) Logger
 
