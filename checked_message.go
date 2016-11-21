@@ -97,12 +97,13 @@ func (m *CheckedMessage) Write(fields ...Field) {
 // the newly passed logger.
 func (m *CheckedMessage) Chain(ms ...*CheckedMessage) *CheckedMessage {
 	for _, m2 := range ms {
-		if m2.OK() {
-			if m.OK() {
-				m.push(m2)
-			} else {
-				m = m2
-			}
+		if !m2.OK() {
+			continue
+		}
+		if m.OK() {
+			m.push(m2)
+		} else {
+			m = m2
 		}
 	}
 	return m
