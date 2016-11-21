@@ -35,7 +35,7 @@ type CheckedMessage struct {
 	next *CheckedMessage // carried by each part of Chain-ed list
 	tail *CheckedMessage // non-nil only in the head of a Chain-ed list
 	// NOTE: suffixes are NOT valid lists, since they lack a tail pointer; tail
-	// pointer exist solely as an optimization for calling head.Chain.
+	// pointer exists solely as an optimization for calling head.Chain.
 }
 
 // NewCheckedMessage constructs a CheckedMessage. It's only intended for use by
