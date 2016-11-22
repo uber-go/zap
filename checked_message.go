@@ -113,7 +113,7 @@ func (m *CheckedMessage) push(next *CheckedMessage) {
 	if m.tail != nil {
 		m.tail.next = next
 	} else if m.next != nil {
-		m.logger.DFatal("invalid CheckedMessage linked list; did we loose our head?", String("original", m.msg))
+		m.logger.DFatal("invalid CheckedMessage linked list; did we lose our head?", String("original", m.msg))
 	} else {
 		m.next = next
 	}
