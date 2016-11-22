@@ -18,34 +18,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap_test
+package zap
 
 import (
 	"testing"
 
 	"github.com/uber-go/atomic"
-	"github.com/uber-go/zap"
 )
 
 func BenchmarkCheckedMessage_Chain(b *testing.B) {
-	infoLog := zap.New(
-		zap.NullEncoder(),
-		zap.InfoLevel,
-		zap.DiscardOutput,
+	infoLog := New(
+		NullEncoder(),
+		InfoLevel,
+		DiscardOutput,
 	)
-	errorLog := zap.New(
-		zap.NullEncoder(),
-		zap.ErrorLevel,
-		zap.DiscardOutput,
+	errorLog := New(
+		NullEncoder(),
+		ErrorLevel,
+		DiscardOutput,
 	)
 
 	data := []struct {
-		lvl zap.Level
+		lvl Level
 		msg string
 	}{
-		{zap.DebugLevel, "meh"},
-		{zap.InfoLevel, "fwiw"},
-		{zap.ErrorLevel, "hey!"},
+		{DebugLevel, "meh"},
+		{InfoLevel, "fwiw"},
+		{ErrorLevel, "hey!"},
 	}
 
 	p := atomic.NewInt32(0)
@@ -54,14 +53,14 @@ func BenchmarkCheckedMessage_Chain(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
 		j := p.Inc()
-		myInfoLog := infoLog.With(zap.Int("p", int(j)))
-		myErrorLog := errorLog.With(zap.Int("p", int(j)))
+		myInfoLog := infoLog.With(Int("p", int(j)))
+		myErrorLog := errorLog.With(Int("p", int(j)))
 		for pb.Next() {
 			d := data[i%len(data)]
 			cm := myInfoLog.Check(d.lvl, d.msg)
 			cm = cm.Chain(myErrorLog.Check(d.lvl, d.msg))
 			if cm.OK() {
-				cm.Write(zap.Int("i", i))
+				cm.Write(Int("i", i))
 			}
 			i++
 		}
@@ -69,26 +68,26 @@ func BenchmarkCheckedMessage_Chain(b *testing.B) {
 }
 
 func BenchmarkCheckedMessage_Chain_sliceLoggers(b *testing.B) {
-	logs := []zap.Logger{
-		zap.New(
-			zap.NullEncoder(),
-			zap.InfoLevel,
-			zap.DiscardOutput,
+	logs := []Logger{
+		New(
+			NullEncoder(),
+			InfoLevel,
+			DiscardOutput,
 		),
-		zap.New(
-			zap.NullEncoder(),
-			zap.ErrorLevel,
-			zap.DiscardOutput,
+		New(
+			NullEncoder(),
+			ErrorLevel,
+			DiscardOutput,
 		),
 	}
 
 	data := []struct {
-		lvl zap.Level
+		lvl Level
 		msg string
 	}{
-		{zap.DebugLevel, "meh"},
-		{zap.InfoLevel, "fwiw"},
-		{zap.ErrorLevel, "hey!"},
+		{DebugLevel, "meh"},
+		{InfoLevel, "fwiw"},
+		{ErrorLevel, "hey!"},
 	}
 
 	p := atomic.NewInt32(0)
@@ -96,19 +95,19 @@ func BenchmarkCheckedMessage_Chain_sliceLoggers(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		j := p.Inc()
-		myLogs := make([]zap.Logger, len(logs))
+		myLogs := make([]Logger, len(logs))
 		for i, log := range logs {
-			myLogs[i] = log.With(zap.Int("p", int(j)))
+			myLogs[i] = log.With(Int("p", int(j)))
 		}
 		i := 0
 		for pb.Next() {
 			d := data[i%len(data)]
-			var cm *zap.CheckedMessage
+			var cm *CheckedMessage
 			for _, log := range myLogs {
 				cm = cm.Chain(log.Check(d.lvl, d.msg))
 			}
 			if cm.OK() {
-				cm.Write(zap.Int("i", i))
+				cm.Write(Int("i", i))
 			}
 			i++
 		}
