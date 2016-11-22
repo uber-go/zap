@@ -60,3 +60,143 @@ func TestCheckedMessageIsSingleUse(t *testing.T) {
 		assert.Equal(t, expected, buf.Lines(), "Expected re-using a CheckedMessage to log an error.")
 	})
 }
+
+func TestCheckedMessage_Chain(t *testing.T) {
+	withJSONLogger(t, opts(InfoLevel), func(logger Logger, buf *testBuffer) {
+		loga := logger.With(String("name", "A"))
+		logb := logger.With(String("name", "B"))
+		logc := logger.With(String("name", "C"))
+
+		for i, tt := range []struct {
+			cms        []*CheckedMessage
+			expectedOK bool
+			desc       string
+			expected   []string
+		}{
+			// not-ok base cases
+			{
+				cms:        []*CheckedMessage{nil},
+				expectedOK: false,
+				desc:       "nil",
+				expected:   []string{},
+			},
+			{
+				cms: []*CheckedMessage{
+					nil,
+					loga.Check(DebugLevel, "nope"),
+				},
+				expectedOK: false,
+				desc:       "nil, A decline",
+				expected:   []string{},
+			},
+			{
+				cms: []*CheckedMessage{
+					nil,
+					loga.Check(DebugLevel, "nope"),
+					logb.Check(DebugLevel, "nope"),
+				},
+				expectedOK: false,
+				desc:       "nil, A and B decline",
+				expected:   []string{},
+			},
+
+			// singleton ok cases
+			{
+				cms: []*CheckedMessage{
+					nil,
+					loga.Check(InfoLevel, "apple"),
+				},
+				expectedOK: true,
+				desc:       "nil, A OK",
+				expected: []string{
+					`{"level":"info","msg":"apple","name":"A","i":3}`,
+				},
+			},
+			{
+				cms: []*CheckedMessage{
+					loga.Check(InfoLevel, "banana"),
+					logb.Check(DebugLevel, "banana"),
+				},
+				expectedOK: true,
+				desc:       "A OK, B decline",
+				expected: []string{
+					`{"level":"info","msg":"banana","name":"A","i":4}`,
+				},
+			},
+
+			// compound ok cases
+			{
+				cms: []*CheckedMessage{
+					loga.Check(InfoLevel, "cherry"),
+					logb.Check(InfoLevel, "cherry"),
+				},
+				expectedOK: true,
+				desc:       "A and B OK",
+				expected: []string{
+					`{"level":"info","msg":"cherry","name":"A","i":5}`,
+					`{"level":"info","msg":"cherry","name":"B","i":5}`,
+				},
+			},
+			{
+				cms: []*CheckedMessage{
+					loga.Check(InfoLevel, "durian"),
+					nil,
+					logb.Check(InfoLevel, "durian"),
+				},
+				expectedOK: true,
+				desc:       "A OK, nil, B OK",
+				expected: []string{
+					`{"level":"info","msg":"durian","name":"A","i":6}`,
+					`{"level":"info","msg":"durian","name":"B","i":6}`,
+				},
+			},
+			{
+				cms: []*CheckedMessage{
+					loga.Check(InfoLevel, "elderberry"),
+					logb.Check(InfoLevel, "elderberry"),
+					nil,
+				},
+				expectedOK: true,
+				desc:       "A OK, B OK, nil",
+				expected: []string{
+					`{"level":"info","msg":"elderberry","name":"A","i":7}`,
+					`{"level":"info","msg":"elderberry","name":"B","i":7}`,
+				},
+			},
+
+			// trees
+			{
+				cms: []*CheckedMessage{
+					loga.Check(InfoLevel, "fig"),
+					logb.Check(InfoLevel, "fig").Chain(logc.Check(InfoLevel, "fig")),
+				},
+				expectedOK: true,
+				desc:       "A OK, ( B OK, C OK )",
+				expected: []string{
+					`{"level":"info","msg":"fig","name":"A","i":8}`,
+					`{"level":"info","msg":"fig","name":"B","i":8}`,
+					`{"level":"info","msg":"fig","name":"C","i":8}`,
+				},
+			},
+			{
+				cms: []*CheckedMessage{
+					logb.Check(InfoLevel, "guava").Chain(logc.Check(InfoLevel, "guava")),
+					loga.Check(InfoLevel, "guava"),
+				},
+				expectedOK: true,
+				desc:       "( B OK, C OK ), A OK",
+				expected: []string{
+					`{"level":"info","msg":"guava","name":"B","i":9}`,
+					`{"level":"info","msg":"guava","name":"C","i":9}`,
+					`{"level":"info","msg":"guava","name":"A","i":9}`,
+				},
+			},
+		} {
+			cm := tt.cms[0].Chain(tt.cms[1:]...)
+			assert.Equal(t, cm.OK(), tt.expectedOK, "%s: expected cm.OK()", tt.desc)
+			cm.Write(Int("i", i))
+			assert.Equal(t, tt.expected, buf.Lines(), "expected output from MultiCheckedMessage")
+			buf.Reset()
+		}
+	})
+}
