@@ -52,9 +52,9 @@ func BenchmarkCheckedMessage_Chain(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
-		j := p.Inc()
-		myInfoLog := infoLog.With(Int("p", int(j)))
-		myErrorLog := errorLog.With(Int("p", int(j)))
+		j := int(p.Inc())
+		myInfoLog := infoLog.With(Int("p", j))
+		myErrorLog := errorLog.With(Int("p", j))
 		for pb.Next() {
 			d := data[i%len(data)]
 			cm := myInfoLog.Check(d.lvl, d.msg)
@@ -94,10 +94,10 @@ func BenchmarkCheckedMessage_Chain_sliceLoggers(b *testing.B) {
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
-		j := p.Inc()
+		j := int(p.Inc())
 		myLogs := make([]Logger, len(logs))
 		for i, log := range logs {
-			myLogs[i] = log.With(Int("p", int(j)))
+			myLogs[i] = log.With(Int("p", j))
 		}
 		i := 0
 		for pb.Next() {
