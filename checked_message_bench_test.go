@@ -26,18 +26,24 @@ import (
 	"github.com/uber-go/atomic"
 )
 
-func BenchmarkCheckedMessage_Chain(b *testing.B) {
-	infoLog := New(
-		NullEncoder(),
-		InfoLevel,
-		DiscardOutput,
-	)
-	errorLog := New(
-		NullEncoder(),
-		ErrorLevel,
-		DiscardOutput,
-	)
+func benchmarkLoggers(levels []Level, options ...Option) []Logger {
+	logs := make([]Logger, len(levels))
+	for i, lvl := range levels {
+		logs[i] = New(NullEncoder(), append([]Option{lvl}, options...)...)
+	}
+	return logs
+}
 
+func runIndexedPara(b *testing.B, f func(pb *testing.PB, j int)) {
+	p := atomic.NewInt32(0)
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		f(pb, int(p.Inc()))
+	})
+}
+
+func BenchmarkCheckedMessage_Chain(b *testing.B) {
+	logs := benchmarkLoggers([]Level{InfoLevel, ErrorLevel}, DiscardOutput)
 	data := []struct {
 		lvl Level
 		msg string
@@ -46,15 +52,10 @@ func BenchmarkCheckedMessage_Chain(b *testing.B) {
 		{InfoLevel, "fwiw"},
 		{ErrorLevel, "hey!"},
 	}
-
-	p := atomic.NewInt32(0)
-
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
+	runIndexedPara(b, func(pb *testing.PB, j int) {
+		myInfoLog := logs[0].With(Int("p", j))
+		myErrorLog := logs[1].With(Int("p", j))
 		i := 0
-		j := int(p.Inc())
-		myInfoLog := infoLog.With(Int("p", j))
-		myErrorLog := errorLog.With(Int("p", j))
 		for pb.Next() {
 			d := data[i%len(data)]
 			cm := myInfoLog.Check(d.lvl, d.msg)
@@ -68,19 +69,7 @@ func BenchmarkCheckedMessage_Chain(b *testing.B) {
 }
 
 func BenchmarkCheckedMessage_Chain_sliceLoggers(b *testing.B) {
-	logs := []Logger{
-		New(
-			NullEncoder(),
-			InfoLevel,
-			DiscardOutput,
-		),
-		New(
-			NullEncoder(),
-			ErrorLevel,
-			DiscardOutput,
-		),
-	}
-
+	logs := benchmarkLoggers([]Level{InfoLevel, ErrorLevel}, DiscardOutput)
 	data := []struct {
 		lvl Level
 		msg string
@@ -89,12 +78,7 @@ func BenchmarkCheckedMessage_Chain_sliceLoggers(b *testing.B) {
 		{InfoLevel, "fwiw"},
 		{ErrorLevel, "hey!"},
 	}
-
-	p := atomic.NewInt32(0)
-
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		j := int(p.Inc())
+	runIndexedPara(b, func(pb *testing.PB, j int) {
 		myLogs := make([]Logger, len(logs))
 		for i, log := range logs {
 			myLogs[i] = log.With(Int("p", j))
