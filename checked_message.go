@@ -89,12 +89,11 @@ func (m *CheckedMessage) Write(fields ...Field) {
 	m.next.Write(fields...)
 }
 
-// Chain builds a chain of checked messages over several loggers. It returns an
-// OK message if either the prior message, or the new one returned by
-// logger.Check is OK.
-//
-// The returned message will first Write to any prior loggers before logging to
-// the newly passed logger.
+// Chain combines two or more CheckedMessages. If the receiver message is not
+// OK(), the passed message is returned. Otherwise if the passed message is
+// OK(), then it is retained such that its Write() will be called after the
+// receiver's Write(), and any previously Chain()'ed messages already so
+// retained.
 func (m *CheckedMessage) Chain(ms ...*CheckedMessage) *CheckedMessage {
 	for _, m2 := range ms {
 		if !m2.OK() {
