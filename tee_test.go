@@ -29,10 +29,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTeeLoggerLogsBoth(t *testing.T) {
+func TestTeeLogsBoth(t *testing.T) {
 	log1, sink1 := spy.New(zap.DebugLevel)
 	log2, sink2 := spy.New(zap.WarnLevel)
-	log := zap.TeeLogger(log1, log2)
+	log := zap.Tee(log1, log2)
 
 	log.Log(zap.InfoLevel, "log @info")
 	log.Log(zap.WarnLevel, "log @warn")
@@ -94,10 +94,10 @@ func TestTeeLoggerLogsBoth(t *testing.T) {
 	}, sink2.Logs())
 }
 
-func TestTeeLogger_Panic(t *testing.T) {
+func TestTee_Panic(t *testing.T) {
 	log1, sink1 := spy.New(zap.DebugLevel)
 	log2, sink2 := spy.New(zap.WarnLevel)
-	log := zap.TeeLogger(log1, log2)
+	log := zap.Tee(log1, log2)
 
 	assert.Panics(t, func() { log.Panic("foo") }, "tee logger.Panic panics")
 	assert.Panics(t, func() { log.Check(zap.PanicLevel, "bar").Write() }, "tee logger.Check(PanicLevel).Write() panics")
@@ -140,6 +140,6 @@ func TestTeeLogger_Panic(t *testing.T) {
 	}, sink2.Logs())
 }
 
-// XXX: we cannot presently write `func TestTeeLogger_Fatal(t *testing.T)`,
+// XXX: we cannot presently write `func TestTee_Fatal(t *testing.T)`,
 // because we can't have both a spy logger and an exit stub without a
 // dependency cycle.

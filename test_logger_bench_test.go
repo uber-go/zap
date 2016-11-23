@@ -26,8 +26,8 @@ import (
 	"github.com/uber-go/zap"
 )
 
-func withBenchedTeeLogger(b *testing.B, f func(zap.Logger)) {
-	logger := zap.TeeLogger(
+func withBenchedTee(b *testing.B, f func(zap.Logger)) {
+	logger := zap.Tee(
 		zap.New(
 			zap.NewJSONEncoder(),
 			zap.DebugLevel,
@@ -43,7 +43,7 @@ func withBenchedTeeLogger(b *testing.B, f func(zap.Logger)) {
 	f(logger)
 }
 
-func BenchmarkTeeLogger_Check(b *testing.B) {
+func BenchmarkTee_Check(b *testing.B) {
 	cases := []struct {
 		lvl zap.Level
 		msg string
@@ -53,7 +53,7 @@ func BenchmarkTeeLogger_Check(b *testing.B) {
 		{zap.WarnLevel, "baz"},
 		{zap.ErrorLevel, "babble"},
 	}
-	withBenchedTeeLogger(b, func(logger zap.Logger) {
+	withBenchedTee(b, func(logger zap.Logger) {
 		b.RunParallel(func(pb *testing.PB) {
 			i := 0
 			for pb.Next() {

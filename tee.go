@@ -20,16 +20,17 @@
 
 package zap
 
-// TeeLogger creates a Logger that duplicates its log calls to two or
-// more loggers. It is similar to io.MultiWriter.
+// Tee creates a Logger that duplicates its log calls to two or more
+// loggers. It is similar to io.MultiWriter.
 //
-// For each logging level method (.Debug, .Info, etc), the TeeLogger calls each
-// sub-logger's level method.
+// For each logging level method (.Debug, .Info, etc), the Tee calls
+// each sub-logger's level method.
 //
-// Exceptions are made for the Fatal and Panic methods: the returned logger
-// calls .Log(FatalLevel, ...) and .Log(PanicLevel, ...). Only after all
-// sub-loggers have received the message, then the TeeLogger terminates the
-// process (using os.Exit or panic() per usual semantics).
+// Exceptions are made for the Fatal and Panic methods: the returned
+// logger calls .Log(FatalLevel, ...) and .Log(PanicLevel, ...). Only
+// after all sub-loggers have received the message, then the Tee
+// terminates the process (using os.Exit or panic() per usual
+// semantics).
 //
 // DFatal is handled similarly to Fatal and Panic, since it is not actually a
 // level; each sub-logger's DFatal method dynamically chooses to either call
@@ -38,10 +39,9 @@ package zap
 // Check returns a CheckedMessage chain of any OK CheckedMessages returned by
 // all sub-loggers. The returned message is OK if any of the sub-messages are.
 // An exception is made for FatalLevel and PanicLevel, where a CheckedMessage
-// is returned against the TeeLogger itself. This is so that
-// tlog.Check(PanicLevel, ...).Write(...) is equivalent to tlog.Panic(...)
-// (likewise for FatalLevel).
-func TeeLogger(logs ...Logger) Logger {
+// is returned against the Tee itself. This is so that tlog.Check(PanicLevel,
+// ...).Write(...) is equivalent to tlog.Panic(...) (likewise for FatalLevel).
+func Tee(logs ...Logger) Logger {
 	switch len(logs) {
 	case 0:
 		return nil
@@ -107,7 +107,7 @@ func (ml multiLogger) With(fields ...Field) Logger {
 func (ml multiLogger) Check(lvl Level, msg string) *CheckedMessage {
 	switch lvl {
 	case FatalLevel, PanicLevel:
-		// need to end up calling TeeLogger Fatal and Panic methods, to avoid
+		// need to end up calling multiLogger Fatal and Panic methods, to avoid
 		// sub-logger termination (by merely logging at FatalLevel and
 		// PanicLevel).
 		return NewCheckedMessage(ml, lvl, msg)
