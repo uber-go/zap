@@ -97,11 +97,11 @@ func (ml multiLogger) DFatal(msg string, fields ...Field) {
 }
 
 func (ml multiLogger) With(fields ...Field) Logger {
-	ml = append([]Logger(nil), ml...)
-	for i, log := range ml {
-		ml[i] = log.With(fields...)
+	clone := make(multiLogger, len(ml))
+	for i := range ml {
+		clone[i] = ml[i].With(fields...)
 	}
-	return multiLogger(ml)
+	return clone
 }
 
 func (ml multiLogger) Check(lvl Level, msg string) *CheckedMessage {
