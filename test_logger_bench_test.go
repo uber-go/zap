@@ -61,7 +61,7 @@ func BenchmarkTeeLogger_Check(b *testing.B) {
 				if cm := logger.Check(tt.lvl, tt.msg); cm.OK() {
 					cm.Write(zap.Int("i", i))
 				}
-				i = i % len(cases)
+				i = (i + 1) % len(cases)
 			}
 		})
 	})
