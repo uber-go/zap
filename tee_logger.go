@@ -23,7 +23,7 @@ package zap
 // TeeLogger creates a Logger that duplicates its log calls to two or
 // more loggers. It is similar to io.MultiWriter.
 //
-// For each logging level methad (.Debug, .Info, etc), the TeeLogger calls each
+// For each logging level method (.Debug, .Info, etc), the TeeLogger calls each
 // sub-logger's level method.
 //
 // Exceptions are made for the Fatal and Panic methods: the returned logger
@@ -32,7 +32,7 @@ package zap
 // process (using os.Exit or panic() per usual semantics).
 //
 // DFatal is handled similarly to Fatal and Panic, since it is not actually a
-// level; each sub-logger's DFatal method dynamically chooses to either cal
+// level; each sub-logger's DFatal method dynamically chooses to either call
 // Error or Fatal.
 //
 // Check returns a CheckedMessage chain of any OK CheckedMessages returned by
