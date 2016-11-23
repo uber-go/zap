@@ -103,11 +103,9 @@ func (f flusherWrapper) Sync() error {
 
 // MultiWriteSyncer creates a WriteSyncer that duplicates its writes
 // and sync calls, similarly to to io.MultiWriter.
-func MultiWriteSyncer(writeSyncers ...WriteSyncer) WriteSyncer {
+func MultiWriteSyncer(ws ...WriteSyncer) WriteSyncer {
 	// Copy to protect against https://github.com/golang/go/issues/7809
-	ws := make([]WriteSyncer, len(writeSyncers))
-	copy(ws, writeSyncers)
-	return multiWriteSyncer(ws)
+	return multiWriteSyncer(append([]WriteSyncer(nil), ws...))
 }
 
 // See https://golang.org/src/io/multi.go
