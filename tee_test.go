@@ -31,10 +31,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTeeWritesBoth(t *testing.T) {
+func TestMultiWriteSyncerWritesBoth(t *testing.T) {
 	first := &bytes.Buffer{}
 	second := &bytes.Buffer{}
-	ws := Tee(AddSync(first), AddSync(second))
+	ws := MultiWriteSyncer(AddSync(first), AddSync(second))
 
 	msg := []byte("dumbledore")
 	n, err := ws.Write(msg)
@@ -45,17 +45,17 @@ func TestTeeWritesBoth(t *testing.T) {
 	assert.Equal(t, msg, second.Bytes())
 }
 
-func TestTeeFailsWrite(t *testing.T) {
+func TestMultiWriteSyncerFailsWrite(t *testing.T) {
 	failer := spywrite.FailWriter{}
-	ws := Tee(AddSync(failer))
+	ws := MultiWriteSyncer(AddSync(failer))
 
 	_, err := ws.Write([]byte("test"))
 	assert.Error(t, err, "Write error should propagate")
 }
 
-func TestTeeFailsShortWrite(t *testing.T) {
+func TestMultiWriteSyncerFailsShortWrite(t *testing.T) {
 	shorter := spywrite.ShortWriter{}
-	ws := Tee(AddSync(shorter))
+	ws := MultiWriteSyncer(AddSync(shorter))
 
 	n, err := ws.Write([]byte("test"))
 	assert.NoError(t, err, "Expected fake-success from short write")
@@ -65,23 +65,23 @@ func TestTeeFailsShortWrite(t *testing.T) {
 func TestWritestoAllSyncs_EvenIfFirstErrors(t *testing.T) {
 	failer := spywrite.FailWriter{}
 	second := &bytes.Buffer{}
-	ws := Tee(AddSync(failer), AddSync(second))
+	ws := MultiWriteSyncer(AddSync(failer), AddSync(second))
 
 	_, err := ws.Write([]byte("fail"))
 	assert.Error(t, err, "Expected error from call to a writer that failed")
 	assert.Equal(t, []byte("fail"), second.Bytes(), "Expected second sink to be written after first error")
 }
 
-func TestTeeSync_PropagatesErrors(t *testing.T) {
+func TestMultiWriteSyncerSync_PropagatesErrors(t *testing.T) {
 	badsink := &syncSpy{}
 	badsink.SetError(errors.New("sink is full"))
-	ws := Tee(Discard, badsink)
+	ws := MultiWriteSyncer(Discard, badsink)
 
 	assert.Error(t, ws.Sync(), "Expected sync error to propagate")
 }
 
-func TestTeeSync_NoErrorsOnDiscard(t *testing.T) {
-	ws := Tee(Discard)
+func TestMultiWriteSyncerSync_NoErrorsOnDiscard(t *testing.T) {
+	ws := MultiWriteSyncer(Discard)
 	assert.NoError(t, ws.Sync(), "Expected error-free sync to /dev/null")
 }
 
@@ -92,12 +92,12 @@ func TestMultiError_WrapsStrings(t *testing.T) {
 	assert.Contains(t, err.Error(), "galactaca")
 }
 
-func TestTeeSync_AllCalled(t *testing.T) {
+func TestMultiWriteSyncerSync_AllCalled(t *testing.T) {
 	failedsink := &syncSpy{}
 	second := &syncSpy{}
 
 	failedsink.SetError(errors.New("disposal broken"))
-	ws := Tee(failedsink, second)
+	ws := MultiWriteSyncer(failedsink, second)
 
 	assert.Error(t, ws.Sync(), "Expected first sink to fail")
 	assert.True(t, second.Called(), "Expected call even with first failure")

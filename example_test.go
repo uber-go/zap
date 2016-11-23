@@ -129,11 +129,11 @@ func ExampleNew_textEncoder() {
 	// [I] This is a text log. foo=42
 }
 
-func ExampleNew_tee() {
-	// To send output to multiple sources, use Tee.
+func ExampleMultiWriteSyncer() {
+	// To send output to multiple outputs, use MultiWriteSyncer.
 	textLogger := zap.New(
 		zap.NewTextEncoder(zap.TextNoTime()),
-		zap.Output(zap.Tee(os.Stdout, os.Stdout)),
+		zap.Output(zap.MultiWriteSyncer(os.Stdout, os.Stdout)),
 	)
 
 	textLogger.Info("One becomes two")
