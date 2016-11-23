@@ -107,18 +107,16 @@ func MultiWriteSyncer(writeSyncers ...WriteSyncer) WriteSyncer {
 	// Copy to protect against https://github.com/golang/go/issues/7809
 	ws := make([]WriteSyncer, len(writeSyncers))
 	copy(ws, writeSyncers)
-	return &teeWriteSyncer{
-		writeSyncers: ws,
-	}
+	return multiWriteSyncer(ws)
 }
 
 // See https://golang.org/src/io/multi.go
 // In the case where not all underlying syncs writer all bytes, we return the smallest number of bytes wtirren
 // but still call Write() on all the underlying syncs.
-func (t *teeWriteSyncer) Write(p []byte) (int, error) {
+func (ws multiWriteSyncer) Write(p []byte) (int, error) {
 	var errs multiError
 	nWritten := 0
-	for _, w := range t.writeSyncers {
+	for _, w := range ws {
 		n, err := w.Write(p)
 		if err != nil {
 			errs = append(errs, err)
@@ -132,8 +130,8 @@ func (t *teeWriteSyncer) Write(p []byte) (int, error) {
 	return nWritten, errs.asError()
 }
 
-func (t *teeWriteSyncer) Sync() error {
-	return wrapMutiError(t.writeSyncers...)
+func (ws multiWriteSyncer) Sync() error {
+	return wrapMutiError(ws...)
 }
 
 // Run a series of `f`s, collecting and aggregating errors if presents
@@ -165,6 +163,4 @@ func (m multiError) Error() string {
 	return sb.String()
 }
 
-type teeWriteSyncer struct {
-	writeSyncers []WriteSyncer
-}
+type multiWriteSyncer []WriteSyncer
