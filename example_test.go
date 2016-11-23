@@ -129,11 +129,25 @@ func ExampleNew_textEncoder() {
 	// [I] This is a text log. foo=42
 }
 
-func ExampleNew_tee() {
-	// To send output to multiple sources, use Tee.
+func ExampleTee() {
+	// Multiple loggers can be combine using Tee.
+	output := zap.Output(os.Stdout)
+	logger := zap.Tee(
+		zap.New(zap.NewTextEncoder(zap.TextNoTime()), output),
+		zap.New(zap.NewJSONEncoder(zap.NoTime()), output),
+	)
+
+	logger.Info("this log gets encoded twice, differently", zap.Int("foo", 42))
+	// Output:
+	// [I] this log gets encoded twice, differently foo=42
+	// {"level":"info","msg":"this log gets encoded twice, differently","foo":42}
+}
+
+func ExampleMultiWriteSyncer() {
+	// To send output to multiple outputs, use MultiWriteSyncer.
 	textLogger := zap.New(
 		zap.NewTextEncoder(zap.TextNoTime()),
-		zap.Output(zap.Tee(os.Stdout, os.Stdout)),
+		zap.Output(zap.MultiWriteSyncer(os.Stdout, os.Stdout)),
 	)
 
 	textLogger.Info("One becomes two")

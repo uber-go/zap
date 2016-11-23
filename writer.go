@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 	"sync"
@@ -99,3 +100,65 @@ type flusherWrapper struct {
 func (f flusherWrapper) Sync() error {
 	return f.Flush()
 }
+
+// MultiWriteSyncer creates a WriteSyncer that duplicates its writes
+// and sync calls, similarly to to io.MultiWriter.
+func MultiWriteSyncer(ws ...WriteSyncer) WriteSyncer {
+	// Copy to protect against https://github.com/golang/go/issues/7809
+	return multiWriteSyncer(append([]WriteSyncer(nil), ws...))
+}
+
+// See https://golang.org/src/io/multi.go
+// In the case where not all underlying syncs writer all bytes, we return the smallest number of bytes wtirren
+// but still call Write() on all the underlying syncs.
+func (ws multiWriteSyncer) Write(p []byte) (int, error) {
+	var errs multiError
+	nWritten := 0
+	for _, w := range ws {
+		n, err := w.Write(p)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		if nWritten == 0 && n != 0 {
+			nWritten = n
+		} else if n < nWritten {
+			nWritten = n
+		}
+	}
+	return nWritten, errs.asError()
+}
+
+func (ws multiWriteSyncer) Sync() error {
+	return wrapMutiError(ws...)
+}
+
+// Run a series of `f`s, collecting and aggregating errors if presents
+func wrapMutiError(fs ...WriteSyncer) error {
+	var errs multiError
+	for _, f := range fs {
+		if err := f.Sync(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs.asError()
+}
+
+type multiError []error
+
+func (m multiError) asError() error {
+	if len(m) > 0 {
+		return m
+	}
+	return nil
+}
+
+func (m multiError) Error() string {
+	sb := bytes.Buffer{}
+	for _, err := range m {
+		sb.WriteString(err.Error())
+		sb.WriteString(" ")
+	}
+	return sb.String()
+}
+
+type multiWriteSyncer []WriteSyncer

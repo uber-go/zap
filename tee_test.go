@@ -18,92 +18,128 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+package zap_test
 
 import (
-	"bytes"
-	"errors"
 	"testing"
 
-	"github.com/uber-go/zap/spywrite"
+	"github.com/uber-go/zap"
+	"github.com/uber-go/zap/spy"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestTeeWritesBoth(t *testing.T) {
-	first := &bytes.Buffer{}
-	second := &bytes.Buffer{}
-	ws := Tee(AddSync(first), AddSync(second))
+func TestTeeLogsBoth(t *testing.T) {
+	log1, sink1 := spy.New(zap.DebugLevel)
+	log2, sink2 := spy.New(zap.WarnLevel)
+	log := zap.Tee(log1, log2)
 
-	msg := []byte("dumbledore")
-	n, err := ws.Write(msg)
-	require.NoError(t, err, "Expected successful buffer write")
-	assert.Equal(t, len(msg), n)
+	log.Log(zap.InfoLevel, "log @info")
+	log.Log(zap.WarnLevel, "log @warn")
 
-	assert.Equal(t, msg, first.Bytes())
-	assert.Equal(t, msg, second.Bytes())
+	log.Debug("log-dot-debug")
+	log.Info("log-dot-info")
+	log.Warn("log-dot-warn")
+	log.Error("log-dot-error")
+
+	assert.Equal(t, []spy.Log{
+		{
+			Level:  zap.InfoLevel,
+			Msg:    "log @info",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.WarnLevel,
+			Msg:    "log @warn",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.DebugLevel,
+			Msg:    "log-dot-debug",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.InfoLevel,
+			Msg:    "log-dot-info",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.WarnLevel,
+			Msg:    "log-dot-warn",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.ErrorLevel,
+			Msg:    "log-dot-error",
+			Fields: []zap.Field{},
+		},
+	}, sink1.Logs())
+
+	assert.Equal(t, []spy.Log{
+		{
+			Level:  zap.WarnLevel,
+			Msg:    "log @warn",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.WarnLevel,
+			Msg:    "log-dot-warn",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.ErrorLevel,
+			Msg:    "log-dot-error",
+			Fields: []zap.Field{},
+		},
+	}, sink2.Logs())
 }
 
-func TestTeeFailsWrite(t *testing.T) {
-	failer := spywrite.FailWriter{}
-	ws := Tee(AddSync(failer))
+func TestTee_Panic(t *testing.T) {
+	log1, sink1 := spy.New(zap.DebugLevel)
+	log2, sink2 := spy.New(zap.WarnLevel)
+	log := zap.Tee(log1, log2)
 
-	_, err := ws.Write([]byte("test"))
-	assert.Error(t, err, "Write error should propagate")
+	assert.Panics(t, func() { log.Panic("foo") }, "tee logger.Panic panics")
+	assert.Panics(t, func() { log.Check(zap.PanicLevel, "bar").Write() }, "tee logger.Check(PanicLevel).Write() panics")
+	assert.NotPanics(t, func() { log.Log(zap.PanicLevel, "baz") }, "tee logger.Log(PanicLevel) does not panic")
+
+	assert.Equal(t, []spy.Log{
+		{
+			Level:  zap.PanicLevel,
+			Msg:    "foo",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.PanicLevel,
+			Msg:    "bar",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.PanicLevel,
+			Msg:    "baz",
+			Fields: []zap.Field{},
+		},
+	}, sink1.Logs())
+
+	assert.Equal(t, []spy.Log{
+		{
+			Level:  zap.PanicLevel,
+			Msg:    "foo",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.PanicLevel,
+			Msg:    "bar",
+			Fields: []zap.Field{},
+		},
+		{
+			Level:  zap.PanicLevel,
+			Msg:    "baz",
+			Fields: []zap.Field{},
+		},
+	}, sink2.Logs())
 }
 
-func TestTeeFailsShortWrite(t *testing.T) {
-	shorter := spywrite.ShortWriter{}
-	ws := Tee(AddSync(shorter))
-
-	n, err := ws.Write([]byte("test"))
-	assert.NoError(t, err, "Expected fake-success from short write")
-	assert.Equal(t, 3, n, "Expected byte count to return from underlying writer")
-}
-
-func TestWritestoAllSyncs_EvenIfFirstErrors(t *testing.T) {
-	failer := spywrite.FailWriter{}
-	second := &bytes.Buffer{}
-	ws := Tee(AddSync(failer), AddSync(second))
-
-	_, err := ws.Write([]byte("fail"))
-	assert.Error(t, err, "Expected error from call to a writer that failed")
-	assert.Equal(t, []byte("fail"), second.Bytes(), "Expected second sink to be written after first error")
-}
-
-func TestTeeSync_PropagatesErrors(t *testing.T) {
-	badsink := &syncSpy{}
-	badsink.SetError(errors.New("sink is full"))
-	ws := Tee(Discard, badsink)
-
-	assert.Error(t, ws.Sync(), "Expected sync error to propagate")
-}
-
-func TestTeeSync_NoErrorsOnDiscard(t *testing.T) {
-	ws := Tee(Discard)
-	assert.NoError(t, ws.Sync(), "Expected error-free sync to /dev/null")
-}
-
-func TestMultiError_WrapsStrings(t *testing.T) {
-	err := multiError{errors.New("battlestar"), errors.New("galactaca")}
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "battlestar")
-	assert.Contains(t, err.Error(), "galactaca")
-}
-
-func TestTeeSync_AllCalled(t *testing.T) {
-	failedsink := &syncSpy{}
-	second := &syncSpy{}
-
-	failedsink.SetError(errors.New("disposal broken"))
-	ws := Tee(failedsink, second)
-
-	assert.Error(t, ws.Sync(), "Expected first sink to fail")
-	assert.True(t, second.Called(), "Expected call even with first failure")
-}
-
-type syncSpy struct {
-	bytes.Buffer
-	spywrite.Syncer
-}
+// XXX: we cannot presently write `func TestTee_Fatal(t *testing.T)`,
+// because we can't have both a spy logger and an exit stub without a
+// dependency cycle.

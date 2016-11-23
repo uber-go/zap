@@ -20,72 +20,101 @@
 
 package zap
 
-import "bytes"
-
-// Tee creates a WriteSyncer that duplicates its writes and
-// sync calls. It is similar to io.MultiWriter.
-func Tee(writeSyncers ...WriteSyncer) WriteSyncer {
-	// Copy to protect against https://github.com/golang/go/issues/7809
-	ws := make([]WriteSyncer, len(writeSyncers))
-	copy(ws, writeSyncers)
-	return &teeWriteSyncer{
-		writeSyncers: ws,
+// Tee creates a Logger that duplicates its log calls to two or more
+// loggers. It is similar to io.MultiWriter.
+//
+// For each logging level method (.Debug, .Info, etc), the Tee calls
+// each sub-logger's level method.
+//
+// Exceptions are made for the Fatal and Panic methods: the returned
+// logger calls .Log(FatalLevel, ...) and .Log(PanicLevel, ...). Only
+// after all sub-loggers have received the message, then the Tee
+// terminates the process (using os.Exit or panic() per usual
+// semantics).
+//
+// DFatal is handled similarly to Fatal and Panic, since it is not actually a
+// level; each sub-logger's DFatal method dynamically chooses to either call
+// Error or Fatal.
+//
+// Check returns a CheckedMessage chain of any OK CheckedMessages returned by
+// all sub-loggers. The returned message is OK if any of the sub-messages are.
+// An exception is made for FatalLevel and PanicLevel, where a CheckedMessage
+// is returned against the Tee itself. This is so that tlog.Check(PanicLevel,
+// ...).Write(...) is equivalent to tlog.Panic(...) (likewise for FatalLevel).
+func Tee(logs ...Logger) Logger {
+	switch len(logs) {
+	case 0:
+		return nil
+	case 1:
+		return logs[0]
+	default:
+		return multiLogger(logs)
 	}
 }
 
-// See https://golang.org/src/io/multi.go
-// In the case where not all underlying syncs writer all bytes, we return the smallest number of bytes wtirren
-// but still call Write() on all the underlying syncs.
-func (t *teeWriteSyncer) Write(p []byte) (int, error) {
-	var errs multiError
-	nWritten := 0
-	for _, w := range t.writeSyncers {
-		n, err := w.Write(p)
-		if err != nil {
-			errs = append(errs, err)
-		}
-		if nWritten == 0 && n != 0 {
-			nWritten = n
-		} else if n < nWritten {
-			nWritten = n
-		}
+type multiLogger []Logger
+
+func (ml multiLogger) Log(lvl Level, msg string, fields ...Field) {
+	ml.log(lvl, msg, fields)
+}
+
+func (ml multiLogger) Debug(msg string, fields ...Field) {
+	ml.log(DebugLevel, msg, fields)
+}
+
+func (ml multiLogger) Info(msg string, fields ...Field) {
+	ml.log(InfoLevel, msg, fields)
+}
+
+func (ml multiLogger) Warn(msg string, fields ...Field) {
+	ml.log(WarnLevel, msg, fields)
+}
+
+func (ml multiLogger) Error(msg string, fields ...Field) {
+	ml.log(ErrorLevel, msg, fields)
+}
+
+func (ml multiLogger) Panic(msg string, fields ...Field) {
+	ml.log(PanicLevel, msg, fields)
+	panic(msg)
+}
+
+func (ml multiLogger) Fatal(msg string, fields ...Field) {
+	ml.log(FatalLevel, msg, fields)
+	_exit(1)
+}
+
+func (ml multiLogger) log(lvl Level, msg string, fields []Field) {
+	for _, log := range ml {
+		log.Log(lvl, msg, fields...)
 	}
-	return nWritten, errs.asError()
 }
 
-func (t *teeWriteSyncer) Sync() error {
-	return wrapMutiError(t.writeSyncers...)
-}
-
-// Run a series of `f`s, collecting and aggregating errors if presents
-func wrapMutiError(fs ...WriteSyncer) error {
-	var errs multiError
-	for _, f := range fs {
-		if err := f.Sync(); err != nil {
-			errs = append(errs, err)
-		}
+func (ml multiLogger) DFatal(msg string, fields ...Field) {
+	for _, log := range ml {
+		log.DFatal(msg, fields...)
 	}
-	return errs.asError()
 }
 
-type multiError []error
-
-func (m multiError) asError() error {
-	if len(m) > 0 {
-		return m
+func (ml multiLogger) With(fields ...Field) Logger {
+	clone := make(multiLogger, len(ml))
+	for i := range ml {
+		clone[i] = ml[i].With(fields...)
 	}
-	return nil
+	return clone
 }
 
-func (m multiError) Error() string {
-	sb := bytes.Buffer{}
-	for _, err := range m {
-		sb.WriteString(err.Error())
-		sb.WriteString(" ")
+func (ml multiLogger) Check(lvl Level, msg string) *CheckedMessage {
+	switch lvl {
+	case FatalLevel, PanicLevel:
+		// need to end up calling multiLogger Fatal and Panic methods, to avoid
+		// sub-logger termination (by merely logging at FatalLevel and
+		// PanicLevel).
+		return NewCheckedMessage(ml, lvl, msg)
 	}
-	return sb.String()
-}
-
-type teeWriteSyncer struct {
-	writeSyncers []WriteSyncer
+	var cm *CheckedMessage
+	for _, log := range ml {
+		cm = cm.Chain(log.Check(lvl, msg))
+	}
+	return cm
 }
