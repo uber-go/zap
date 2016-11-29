@@ -24,10 +24,11 @@ import (
 	"os"
 	"time"
 
-	raven "github.com/getsentry/raven-go"
-	"github.com/pkg/errors"
 	"github.com/uber-go/zap"
 	"github.com/uber-go/zap/zwrap"
+
+	raven "github.com/getsentry/raven-go"
+	"github.com/pkg/errors"
 )
 
 const (
