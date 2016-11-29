@@ -89,8 +89,12 @@ func (m *CheckedMessage) Write(fields ...Field) {
 	}
 
 	m.next.Write(fields...)
-	m.lvl, m.next, m.tail = invalidLevel, nil, nil
+	m.reset()
 	_CMPool.Put(m)
+}
+
+func (m *CheckedMessage) reset() {
+	m.logger, m.lvl, m.msg, m.next, m.tail = nil, invalidLevel, "", nil, nil
 }
 
 // Chain combines two or more CheckedMessages. If the receiver message is not
