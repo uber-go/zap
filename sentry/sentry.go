@@ -53,7 +53,7 @@ type Logger struct {
 	// Minimum level threshold for sending a Sentry event
 	minLevel zap.Level
 
-	// Cotrols if stack trace should be automatically generated, and how many frames to skip
+	// Controls if stack trace should be automatically generated, and how many frames to skip
 	traceEnabled      bool
 	traceSkipFrames   int
 	traceContextLines int
@@ -172,7 +172,7 @@ func (l *Logger) DFatal(msg string, fields ...zap.Field) {}
 
 // With returns Sentry logger with additional context.
 func (l *Logger) With(fields ...zap.Field) zap.Logger {
-	// Consider pre-allocing the whole new resulting map, but that may be even more expensive
+	// Consider pre-allocating the whole new resulting map, but that may be even more expensive
 	for _, f := range fields {
 		f.AddTo(l.extra)
 	}

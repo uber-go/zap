@@ -25,8 +25,8 @@ import raven "github.com/getsentry/raven-go"
 // Capturer knows what to do with a Sentry packet.
 //
 // Allows for a variety of implementations of how to send Sentry packets.
-// For more performance sensisitve systems, it might make sense to batch
-// rather than opening op a connection on each send.
+// For more performance sensitive systems, it might make sense to batch
+// rather than opening up a connection on each send.
 type Capturer interface {
 	Capture(p *raven.Packet)
 }
