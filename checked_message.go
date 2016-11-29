@@ -50,11 +50,7 @@ type CheckedMessage struct {
 func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 	for {
 		m := _CMPool.Get().(*CheckedMessage)
-		*m = CheckedMessage{
-			logger: logger,
-			lvl:    lvl,
-			msg:    msg,
-		}
+		m.logger, m.lvl, m.msg = logger, lvl, msg
 		return m
 	}
 }
