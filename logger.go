@@ -22,10 +22,14 @@ package zap
 
 import (
 	"os"
+	"time"
 )
 
 // For tests.
-var _exit = os.Exit
+var (
+	_exit    = os.Exit
+	_timeNow = time.Now
+)
 
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
