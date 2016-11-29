@@ -132,13 +132,13 @@ func capturePacket(f func(l *Logger), options ...Option) (*Logger, *raven.Packet
 }
 
 func capturePackets(f func(l *Logger), options ...Option) (*Logger, []*raven.Packet) {
-	c := &memCapturer{}
-	options = append(options, WithCapturer(c))
-
 	l, err := New("", options...)
 	if err != nil {
 		panic("Failed to create the logger")
 	}
+
+	c := &memCapturer{}
+	l.Capturer = c
 
 	f(l)
 

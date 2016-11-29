@@ -23,28 +23,25 @@ package sentry
 import raven "github.com/getsentry/raven-go"
 
 // Capturer knows what to do with a Sentry packet.
-//
-// Allows for a variety of implementations of how to send Sentry packets.
-// For more performance sensitive systems, it might make sense to batch
-// rather than opening up a connection on each send.
 type Capturer interface {
-	Capture(p *raven.Packet)
+	Capture(p *raven.Packet) error
 }
 
 type memCapturer struct {
 	packets []*raven.Packet
 }
 
-func (m *memCapturer) Capture(p *raven.Packet) {
+func (m *memCapturer) Capture(p *raven.Packet) error {
 	m.packets = append(m.packets, p)
+	return nil
 }
 
-// NonBlockingCapturer does not wait for the result of Sentry packet sending.
-type NonBlockingCapturer struct {
+type nonBlockingCapturer struct {
 	*raven.Client
 }
 
 // Capture will fire off a packet without checking the error channel.
-func (s *NonBlockingCapturer) Capture(p *raven.Packet) {
+func (s *nonBlockingCapturer) Capture(p *raven.Packet) error {
 	s.Client.Capture(p, nil)
+	return nil
 }

@@ -81,24 +81,14 @@ func New(dsn string, options ...Option) (*Logger, error) {
 		option(l)
 	}
 
-	// Default to live sentry packet capturer
-	if l.Capturer == nil {
-		client, err := raven.New(dsn)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create sentry client")
-		}
-
-		l.Capturer = &NonBlockingCapturer{Client: client}
+	client, err := raven.New(dsn)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create sentry client")
 	}
+
+	l.Capturer = &nonBlockingCapturer{Client: client}
 
 	return l, nil
-}
-
-// WithCapturer allows to specify which packet capturer should be used.
-func WithCapturer(c Capturer) Option {
-	return func(l *Logger) {
-		l.Capturer = c
-	}
 }
 
 // MinLevel provides a minimum level threshold, above which Sentry packtes will be triggered
