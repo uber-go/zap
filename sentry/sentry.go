@@ -30,18 +30,20 @@ import (
 	"github.com/uber-go/zap/zwrap"
 )
 
-var (
+const (
 	_platform          = "go"
 	_traceContextLines = 3
 	_traceSkipFrames   = 3
-	_zapToRavenMap     = map[zap.Level]raven.Severity{
-		zap.InfoLevel:  raven.INFO,
-		zap.WarnLevel:  raven.WARNING,
-		zap.ErrorLevel: raven.ERROR,
-		zap.PanicLevel: raven.ERROR,
-		zap.FatalLevel: raven.FATAL,
-	}
 )
+
+var _zapToRavenMap = map[zap.Level]raven.Severity{
+	zap.DebugLevel: raven.INFO,
+	zap.InfoLevel:  raven.INFO,
+	zap.WarnLevel:  raven.WARNING,
+	zap.ErrorLevel: raven.ERROR,
+	zap.PanicLevel: raven.FATAL,
+	zap.FatalLevel: raven.FATAL,
+}
 
 // Logger automatically sends logs above a certain threshold to Sentry.
 type Logger struct {
