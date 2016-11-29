@@ -22,8 +22,6 @@ package zap
 
 import "time"
 
-var _timeNow   = time.Now // for tests
-
 // An Entry represents a complete log message. The entry's structured context
 // is already serialized, but the log level, time, and message are available
 // for inspection and modification.
