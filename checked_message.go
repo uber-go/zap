@@ -56,10 +56,12 @@ func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 // Panic, and Fatal) for the defined levels; the Log method is only called for
 // unknown logging levels.
 func (m *CheckedMessage) Write(fields ...Field) {
-	if m == nil {
-		return
+	if m != nil {
+		m.write(fields)
 	}
+}
 
+func (m *CheckedMessage) write(fields []Field) {
 	if n := m.used.Inc(); n > 1 {
 		if n == 2 {
 			// Log an error on the first re-use. After that, skip the I/O and
@@ -86,7 +88,9 @@ func (m *CheckedMessage) Write(fields ...Field) {
 		m.logger.Log(_timeNow().UTC(), m.lvl, m.msg, fields...)
 	}
 
-	m.next.Write(fields...)
+	if m.next.OK() {
+		m.next.write(fields)
+	}
 }
 
 // Chain combines two or more CheckedMessages. If the receiver message is not
