@@ -47,20 +47,6 @@ func TestJSONLoggerCheck(t *testing.T) {
 	})
 }
 
-func TestCheckedMessageIsSingleUse(t *testing.T) {
-	expected := []string{
-		`{"level":"info","msg":"single-use"}`,
-		`{"level":"error","msg":"Shouldn't re-use a CheckedMessage.","original":"single-use"}`,
-	}
-	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
-		cm := logger.Check(InfoLevel, "single-use")
-		cm.Write() // ok
-		cm.Write() // first re-use logs error
-		cm.Write() // second re-use is silently ignored
-		assert.Equal(t, expected, buf.Lines(), "Expected re-using a CheckedMessage to log an error.")
-	})
-}
-
 func TestCheckedMessage_Chain(t *testing.T) {
 	withJSONLogger(t, opts(InfoLevel), func(logger Logger, buf *testBuffer) {
 		loga := logger.With(String("name", "A"))

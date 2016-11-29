@@ -20,11 +20,7 @@
 
 package zap
 
-import (
-	"sync"
-
-	"github.com/uber-go/atomic"
-)
+import "sync"
 
 var _CMPool = sync.Pool{
 	New: func() interface{} {
@@ -39,7 +35,6 @@ var _CMPool = sync.Pool{
 // or heavily sampled log levels.
 type CheckedMessage struct {
 	logger Logger
-	used   atomic.Uint32
 	lvl    Level
 	msg    string
 
@@ -55,11 +50,6 @@ type CheckedMessage struct {
 func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 	for {
 		m := _CMPool.Get().(*CheckedMessage)
-		if n := m.used.Load(); n > 1 {
-			// we've already logged (and survived!) a DFatal log in the second
-			// CheckedMessage.Write, so just skip it and move on
-			continue
-		}
 		*m = CheckedMessage{
 			logger: logger,
 			lvl:    lvl,
@@ -69,24 +59,15 @@ func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 	}
 }
 
-// Write logs the pre-checked message with the supplied fields. It should only
-// be used once; if a CheckedMessage is re-used, it also logs an error message
-// with the underlying logger's DFatal method.
+// Write logs the pre-checked message with the supplied fields. It will call
+// the underlying level method (Debug, Info, Warn, Error, Panic, and Fatal) for
+// the defined levels; the Log method is only called for unknown logging
+// levels.
 //
-// Write will call the underlying level method (Debug, Info, Warn, Error,
-// Panic, and Fatal) for the defined levels; the Log method is only called for
-// unknown logging levels.
+// It MUST be called at most once, since Write will return the *CheckedMessage
+// to an internal pool for potentially immediate re-use.
 func (m *CheckedMessage) Write(fields ...Field) {
 	if m == nil {
-		return
-	}
-
-	if n := m.used.Inc(); n > 1 {
-		if n == 2 {
-			// Log an error on the first re-use. After that, skip the I/O and
-			// allocations and just return.
-			m.logger.DFatal("Shouldn't re-use a CheckedMessage.", String("original", m.msg))
-		}
 		return
 	}
 
