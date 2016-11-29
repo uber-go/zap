@@ -26,7 +26,13 @@ import (
 	"github.com/uber-go/atomic"
 )
 
-var _CMPool sync.Pool
+var _CMPool = sync.Pool{
+	New: func() interface{} {
+		return &CheckedMessage{
+			lvl: invalidLevel,
+		}
+	},
+}
 
 // A CheckedMessage is the result of a call to Logger.Check, which allows
 // especially performance-sensitive applications to avoid allocations for disabled
@@ -48,11 +54,7 @@ type CheckedMessage struct {
 // wrapper libraries, and shouldn't be necessary in application code.
 func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 	for {
-		val := _CMPool.Get()
-		if val == nil {
-			break
-		}
-		m := val.(*CheckedMessage)
+		m := _CMPool.Get().(*CheckedMessage)
 		if n := m.used.Load(); n > 1 {
 			// we've already logged (and survived!) a DFatal log in the second
 			// CheckedMessage.Write, so just skip it and move on
@@ -64,12 +66,6 @@ func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 			msg:    msg,
 		}
 		return m
-	}
-
-	return &CheckedMessage{
-		logger: logger,
-		lvl:    lvl,
-		msg:    msg,
 	}
 }
 
