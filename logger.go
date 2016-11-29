@@ -139,7 +139,6 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 		log.InternalError("encoder", err)
 	}
 	temp.Free()
-	entry.free()
 
 	if lvl > ErrorLevel {
 		// Sync on Panic and Fatal, since they may crash the program.
