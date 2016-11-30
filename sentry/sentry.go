@@ -201,30 +201,32 @@ func (l *Logger) With(fields ...zap.Field) zap.Logger {
 
 // Notify sentry if the log level meets minimum threshold.
 func (l *Logger) log(lvl zap.Level, msg string, fields []zap.Field) {
-	if lvl >= l.minLevel {
-		// append all the fields from the current log message to the stored ones
-		extra := l.extra
-		for _, f := range fields {
-			f.AddTo(extra)
-		}
-
-		packet := &raven.Packet{
-			Message:   msg,
-			Timestamp: raven.Timestamp(time.Now()),
-			Level:     _zapToRavenMap[lvl],
-			Platform:  _platform,
-			Extra:     extra,
-		}
-
-		if l.traceEnabled {
-			trace := raven.NewStacktrace(l.traceSkipFrames, l.traceContextLines, l.traceAppPrefixes)
-			if trace != nil {
-				packet.Interfaces = append(packet.Interfaces, trace)
-			}
-		}
-
-		l.Capture(packet)
+	if lvl < l.minLevel {
+		return
 	}
+
+	// append all the fields from the current log message to the stored ones
+	extra := l.extra
+	for _, f := range fields {
+		f.AddTo(extra)
+	}
+
+	packet := &raven.Packet{
+		Message:   msg,
+		Timestamp: raven.Timestamp(time.Now()),
+		Level:     _zapToRavenMap[lvl],
+		Platform:  _platform,
+		Extra:     extra,
+	}
+
+	if l.traceEnabled {
+		trace := raven.NewStacktrace(l.traceSkipFrames, l.traceContextLines, l.traceAppPrefixes)
+		if trace != nil {
+			packet.Interfaces = append(packet.Interfaces, trace)
+		}
+	}
+
+	l.Capture(packet)
 }
 
 // Check returns a CheckedMessage logging the given message is Enabled, nil otherwise.
