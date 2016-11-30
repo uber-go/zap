@@ -22,7 +22,7 @@ package zap
 
 import "sync"
 
-var _CMPool = sync.Pool{
+var _cmPool = sync.Pool{
 	New: func() interface{} {
 		return &CheckedMessage{
 			lvl: invalidLevel,
@@ -49,7 +49,7 @@ type CheckedMessage struct {
 // wrapper libraries, and shouldn't be necessary in application code.
 func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 	for {
-		m := _CMPool.Get().(*CheckedMessage)
+		m := _cmPool.Get().(*CheckedMessage)
 		m.logger, m.lvl, m.msg = logger, lvl, msg
 		return m
 	}
@@ -86,7 +86,7 @@ func (m *CheckedMessage) Write(fields ...Field) {
 
 	m.next.Write(fields...)
 	m.reset()
-	_CMPool.Put(m)
+	_cmPool.Put(m)
 }
 
 func (m *CheckedMessage) reset() {
