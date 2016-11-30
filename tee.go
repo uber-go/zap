@@ -26,15 +26,14 @@ package zap
 // For each logging level method (.Debug, .Info, etc), the Tee calls
 // each sub-logger's level method.
 //
-// Exceptions are made for the Fatal and Panic methods: the returned
-// logger calls .Log(FatalLevel, ...) and .Log(PanicLevel, ...). Only
-// after all sub-loggers have received the message, then the Tee
-// terminates the process (using os.Exit or panic() per usual
-// semantics).
+// Exceptions are made for the DPyanic, Panic, and Fatal methods: the returned
+// logger calls .Log(DPanicLevel, ...), .Log(PanicLevel, ...), and
+// .Log(FatalLevel, ...) respectively. Only after all sub-loggers have received
+// the message, then the Tee terminates the process (using os.Exit or panic()
+// per usual semantics).
 //
-// DFatal is handled similarly to Fatal and Panic, since it is not actually a
-// level; each sub-logger's DFatal method dynamically chooses to either call
-// Error or Fatal.
+// NOTE: DPanic will currently never panic, since the Tee Logger does not
+// accept options (nor even have a development flag).
 //
 // Check returns a CheckedMessage chain of any OK CheckedMessages returned by
 // all sub-loggers. The returned message is OK if any of the sub-messages are.
@@ -90,10 +89,9 @@ func (ml multiLogger) log(lvl Level, msg string, fields []Field) {
 	}
 }
 
-func (ml multiLogger) DFatal(msg string, fields ...Field) {
-	for _, log := range ml {
-		log.DFatal(msg, fields...)
-	}
+func (ml multiLogger) DPanic(msg string, fields ...Field) {
+	ml.log(DPanicLevel, msg, fields)
+	// TODO: Implement development/DPanic?
 }
 
 func (ml multiLogger) With(fields ...Field) Logger {

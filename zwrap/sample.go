@@ -61,6 +61,11 @@ func (c *counters) Reset(key string) {
 	count.Store(0)
 }
 
+// TODO: implement (*sampler).DPanic so that if we're not going to panic, we
+// down sample the dpanic logs. Also will need custom case in Check (Log
+// already is compliant, since it didn't have to maintain "panic in dev"
+// semantics).
+
 // Sample returns a sampling logger. The logger maintains a separate bucket
 // for each message (e.g., "foo" in logger.Warn("foo")). In each tick, the
 // sampler will emit the first N logs in each bucket and every Mth log
@@ -70,6 +75,9 @@ func (c *counters) Reset(key string) {
 // logger to panic() or terminate the process. HOWEVER Log-ing at PanicLevel or
 // FatalLevel, if it happens is sampled and will call the underlying logger Log
 // method, which should NOT panic() or terminate.
+//
+// NOTE: logging at DPanic level currently IS sampled, but calls to DPanic and
+// Check(DPanicLevvel) are NOT sampled.
 //
 // Per-message counts are shared between parent and child loggers, which allows
 // applications to more easily control global I/O load.
@@ -105,7 +113,7 @@ func (s *sampler) With(fields ...zap.Field) zap.Logger {
 func (s *sampler) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
 	cm := s.Logger.Check(lvl, msg)
 	switch lvl {
-	case zap.PanicLevel, zap.FatalLevel:
+	case zap.DPanicLevel, zap.PanicLevel, zap.FatalLevel:
 		return cm
 	default:
 		if !cm.OK() || s.sampled(msg) {
@@ -147,12 +155,6 @@ func (s *sampler) Warn(msg string, fields ...zap.Field) {
 func (s *sampler) Error(msg string, fields ...zap.Field) {
 	if s.Logger.Check(zap.ErrorLevel, msg) != nil && s.sampled(msg) {
 		s.Logger.Error(msg, fields...)
-	}
-}
-
-func (s *sampler) DFatal(msg string, fields ...zap.Field) {
-	if s.Logger.Check(zap.ErrorLevel, msg) != nil && s.sampled(msg) {
-		s.Logger.DFatal(msg, fields...)
 	}
 }
 

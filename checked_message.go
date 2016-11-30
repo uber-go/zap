@@ -55,14 +55,14 @@ func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 }
 
 // Write logs the pre-checked message with the supplied fields. It will call
-// the underlying level method (Debug, Info, Warn, Error, Panic, and Fatal) for
-// the defined levels; the Log method is only called for unknown logging
-// levels.
+// the underlying level method (Debug, Info, Warn, Error, DPanic, Panic, and
+// Fatal) for the defined levels; the Log method is only called for unknown
+// logging levels.
 //
 // It MUST be called at most once, since Write will return the *CheckedMessage
 // to an internal pool for potentially immediate re-use; re-using a
 // *CheckedMessage after calling Write() will result in data races or other
-// undefined behavior. An attempt is made to detect and DFatal log any re-use,
+// undefined behavior. An attempt is made to detect and DPanic log any re-use,
 // but such detection is not guaranteed due to race conditions.
 func (m *CheckedMessage) Write(fields ...Field) {
 	if m == nil {
@@ -74,7 +74,7 @@ func (m *CheckedMessage) Write(fields ...Field) {
 		// that we have, and at least tell the user something
 		if logger := m.logger; logger != nil {
 			lvl, msg := m.lvl, m.msg
-			logger.DFatal(
+			logger.DPanic(
 				"Must not call zap.(*CheckedMessage).Write() more than once",
 				Nest("prior", Stringer("level", lvl), String("msg", msg)),
 			)
@@ -128,7 +128,7 @@ func (m *CheckedMessage) push(next *CheckedMessage) {
 	if m.tail != nil {
 		m.tail.next = next
 	} else if m.next != nil {
-		m.logger.DFatal("invalid CheckedMessage linked list; did we lose our head?", String("original", m.msg))
+		m.logger.DPanic("invalid CheckedMessage linked list; did we lose our head?", String("original", m.msg))
 	} else {
 		m.next = next
 	}

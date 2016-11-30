@@ -47,11 +47,6 @@ type zapper struct {
 	bl bark.Logger
 }
 
-func (z *zapper) DFatal(msg string, fields ...zap.Field) {
-	// TODO: Implement development/DFatal?
-	z.Error(msg, fields...)
-}
-
 func (z *zapper) Log(l zap.Level, msg string, fields ...zap.Field) {
 	// NOTE: logging at panic and fatal level actually panic and exit the
 	// process, meaning that bark loggers cannot compose well.
@@ -71,6 +66,8 @@ func (z *zapper) Log(l zap.Level, msg string, fields ...zap.Field) {
 	case zap.WarnLevel:
 		bl.Warn(msg)
 	case zap.ErrorLevel:
+		bl.Error(msg)
+	case zap.DPanicLevel:
 		bl.Error(msg)
 	case zap.PanicLevel:
 		bl.Panic(msg)
@@ -107,6 +104,11 @@ func (z *zapper) Warn(msg string, fields ...zap.Field) {
 
 func (z *zapper) Error(msg string, fields ...zap.Field) {
 	z.Log(zap.ErrorLevel, msg, fields...)
+}
+
+func (z *zapper) DPanic(msg string, fields ...zap.Field) {
+	// TODO: Implement development/DPanic?
+	z.Error(msg, fields...)
 }
 
 func (z *zapper) Panic(msg string, fields ...zap.Field) {

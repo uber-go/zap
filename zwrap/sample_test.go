@@ -60,35 +60,45 @@ func TestSampler(t *testing.T) {
 		level       zap.Level
 		logFunc     func(zap.Logger, int)
 		development bool
+		sampled     bool
 	}{
 		{
 			level:   zap.DebugLevel,
 			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Debug("sample") },
+			sampled: true,
 		},
 		{
 			level:   zap.InfoLevel,
 			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Info("sample") },
+			sampled: true,
 		},
 		{
 			level:   zap.WarnLevel,
 			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Warn("sample") },
+			sampled: true,
 		},
 		{
 			level:   zap.ErrorLevel,
 			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Error("sample") },
+			sampled: true,
 		},
 		{
-			level:   zap.ErrorLevel,
-			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).DFatal("sample") },
+			level:   zap.DPanicLevel,
+			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).DPanic("sample") },
+			sampled: false,
 		},
 		{
-			level:       zap.FatalLevel,
-			logFunc:     func(sampler zap.Logger, n int) { WithIter(sampler, n).DFatal("sample") },
+			level: zap.DPanicLevel,
+			logFunc: func(sampler zap.Logger, n int) {
+				assert.Panics(t, func() { WithIter(sampler, n).DPanic("sample") })
+			},
 			development: true,
+			sampled:     false,
 		},
 		{
 			level:   zap.ErrorLevel,
 			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Log(zap.ErrorLevel, "sample") },
+			sampled: true,
 		},
 	}
 
@@ -97,8 +107,13 @@ func TestSampler(t *testing.T) {
 		for i := 1; i < 10; i++ {
 			tt.logFunc(sampler, i)
 		}
-		expected := buildExpectation(tt.level, 1, 2, 5, 8)
-		assert.Equal(t, expected, sink.Logs(), "Unexpected output from sampled logger.")
+		nums := []int{1, 2, 5, 8}
+		if !tt.sampled {
+			nums = []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+		}
+		assert.Equal(t,
+			buildExpectation(tt.level, nums...),
+			sink.Logs(), "Unexpected output from sampled logger.")
 	}
 }
 
