@@ -26,10 +26,7 @@ import (
 )
 
 // For tests.
-var (
-	_exit    = os.Exit
-	_timeNow = time.Now
-)
+var _exit = os.Exit
 
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
@@ -132,7 +129,7 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 		return
 	}
 
-	t := _timeNow().UTC()
+	t := time.Now().UTC()
 	temp := log.Encoder.Clone()
 	addFields(temp, fields)
 
