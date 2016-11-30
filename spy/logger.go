@@ -22,6 +22,7 @@ package spy
 
 import (
 	"sync"
+	"time"
 
 	"github.com/uber-go/zap"
 )
@@ -98,7 +99,7 @@ func (l *Logger) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
 }
 
 // Log writes a message at the specified level.
-func (l *Logger) Log(lvl zap.Level, msg string, fields ...zap.Field) {
+func (l *Logger) Log(_ time.Time, lvl zap.Level, msg string, fields ...zap.Field) {
 	l.log(lvl, msg, fields)
 }
 

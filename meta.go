@@ -23,6 +23,7 @@ package zap
 import (
 	"fmt"
 	"os"
+	"time"
 )
 
 // Meta is implementation-agnostic state management for Loggers. Most Logger
@@ -83,6 +84,6 @@ func (m Meta) Check(log Logger, lvl Level, msg string) *CheckedMessage {
 // ErrorOutput. This method should only be used to report internal logger
 // problems and should not be used to report user-caused problems.
 func (m Meta) InternalError(cause string, err error) {
-	fmt.Fprintf(m.ErrorOutput, "%v %s error: %v\n", _timeNow().UTC(), cause, err)
+	fmt.Fprintf(m.ErrorOutput, "%v %s error: %v\n", time.Now().UTC(), cause, err)
 	m.ErrorOutput.Sync()
 }

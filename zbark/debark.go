@@ -22,6 +22,7 @@ package zbark
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/uber-go/zap"
 	"github.com/uber-go/zap/zwrap"
@@ -52,7 +53,7 @@ func (z *zapper) DFatal(msg string, fields ...zap.Field) {
 	z.Error(msg, fields...)
 }
 
-func (z *zapper) Log(l zap.Level, msg string, fields ...zap.Field) {
+func (z *zapper) Log(_ time.Time, l zap.Level, msg string, fields ...zap.Field) {
 	// NOTE: logging at panic and fatal level actually panic and exit the
 	// process, meaning that bark loggers cannot compose well.
 	switch l {
@@ -94,27 +95,27 @@ func (z *zapper) Check(l zap.Level, msg string) *zap.CheckedMessage {
 }
 
 func (z *zapper) Debug(msg string, fields ...zap.Field) {
-	z.Log(zap.DebugLevel, msg, fields...)
+	z.Log(time.Now().UTC(), zap.DebugLevel, msg, fields...)
 }
 
 func (z *zapper) Info(msg string, fields ...zap.Field) {
-	z.Log(zap.InfoLevel, msg, fields...)
+	z.Log(time.Now().UTC(), zap.InfoLevel, msg, fields...)
 }
 
 func (z *zapper) Warn(msg string, fields ...zap.Field) {
-	z.Log(zap.WarnLevel, msg, fields...)
+	z.Log(time.Now().UTC(), zap.WarnLevel, msg, fields...)
 }
 
 func (z *zapper) Error(msg string, fields ...zap.Field) {
-	z.Log(zap.ErrorLevel, msg, fields...)
+	z.Log(time.Now().UTC(), zap.ErrorLevel, msg, fields...)
 }
 
 func (z *zapper) Panic(msg string, fields ...zap.Field) {
-	z.Log(zap.PanicLevel, msg, fields...)
+	z.Log(time.Now().UTC(), zap.PanicLevel, msg, fields...)
 }
 
 func (z *zapper) Fatal(msg string, fields ...zap.Field) {
-	z.Log(zap.FatalLevel, msg, fields...)
+	z.Log(time.Now().UTC(), zap.FatalLevel, msg, fields...)
 }
 
 func (zbf zapperBarkFields) Fields() map[string]interface{} {

@@ -27,6 +27,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/uber-go/zap/spywrite"
 
@@ -179,7 +180,7 @@ func TestJSONLoggerWith(t *testing.T) {
 
 func TestJSONLoggerLog(t *testing.T) {
 	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
-		logger.Log(DebugLevel, "foo")
+		logger.Log(time.Now().UTC(), DebugLevel, "foo")
 		assert.Equal(t, `{"level":"debug","msg":"foo"}`, buf.Stripped(), "Unexpected output from Log.")
 	})
 }
@@ -190,7 +191,7 @@ func TestJSONLoggerLogPanic(t *testing.T) {
 		should   bool
 		expected string
 	}{
-		{func(logger Logger) { logger.Log(PanicLevel, "foo") }, false, `{"level":"panic","msg":"foo"}`},
+		{func(logger Logger) { logger.Log(time.Now().UTC(), PanicLevel, "foo") }, false, `{"level":"panic","msg":"foo"}`},
 		{func(logger Logger) { logger.Check(PanicLevel, "bar").Write() }, true, `{"level":"panic","msg":"bar"}`},
 		{func(logger Logger) { logger.Panic("baz") }, true, `{"level":"panic","msg":"baz"}`},
 	} {
@@ -212,7 +213,7 @@ func TestJSONLoggerLogFatal(t *testing.T) {
 		status   int
 		expected string
 	}{
-		{func(logger Logger) { logger.Log(FatalLevel, "foo") }, false, 0, `{"level":"fatal","msg":"foo"}`},
+		{func(logger Logger) { logger.Log(time.Now().UTC(), FatalLevel, "foo") }, false, 0, `{"level":"fatal","msg":"foo"}`},
 		{func(logger Logger) { logger.Check(FatalLevel, "bar").Write() }, true, 1, `{"level":"fatal","msg":"bar"}`},
 		{func(logger Logger) { logger.Fatal("baz") }, true, 1, `{"level":"fatal","msg":"baz"}`},
 	} {

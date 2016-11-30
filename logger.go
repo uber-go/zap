@@ -22,6 +22,7 @@ package zap
 
 import (
 	"os"
+	"time"
 )
 
 // For tests.
@@ -47,7 +48,7 @@ type Logger interface {
 	// process, but calling Log(PanicLevel, ...) or Log(FatalLevel, ...) should
 	// not. It may not be possible for compatibility wrappers to comply with
 	// this last part (e.g. the bark wrapper).
-	Log(Level, string, ...Field)
+	Log(time.Time, Level, string, ...Field)
 	Debug(string, ...Field)
 	Info(string, ...Field)
 	Warn(string, ...Field)
@@ -85,33 +86,33 @@ func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
 	return log.Meta.Check(log, lvl, msg)
 }
 
-func (log *logger) Log(lvl Level, msg string, fields ...Field) {
-	log.log(lvl, msg, fields)
+func (log *logger) Log(t time.Time, lvl Level, msg string, fields ...Field) {
+	log.log(t, lvl, msg, fields)
 }
 
 func (log *logger) Debug(msg string, fields ...Field) {
-	log.log(DebugLevel, msg, fields)
+	log.log(time.Now().UTC(), DebugLevel, msg, fields)
 }
 
 func (log *logger) Info(msg string, fields ...Field) {
-	log.log(InfoLevel, msg, fields)
+	log.log(time.Now().UTC(), InfoLevel, msg, fields)
 }
 
 func (log *logger) Warn(msg string, fields ...Field) {
-	log.log(WarnLevel, msg, fields)
+	log.log(time.Now().UTC(), WarnLevel, msg, fields)
 }
 
 func (log *logger) Error(msg string, fields ...Field) {
-	log.log(ErrorLevel, msg, fields)
+	log.log(time.Now().UTC(), ErrorLevel, msg, fields)
 }
 
 func (log *logger) Panic(msg string, fields ...Field) {
-	log.log(PanicLevel, msg, fields)
+	log.log(time.Now().UTC(), PanicLevel, msg, fields)
 	panic(msg)
 }
 
 func (log *logger) Fatal(msg string, fields ...Field) {
-	log.log(FatalLevel, msg, fields)
+	log.log(time.Now().UTC(), FatalLevel, msg, fields)
 	_exit(1)
 }
 
@@ -123,7 +124,7 @@ func (log *logger) DFatal(msg string, fields ...Field) {
 	log.Error(msg, fields...)
 }
 
-func (log *logger) log(lvl Level, msg string, fields []Field) {
+func (log *logger) log(t time.Time, lvl Level, msg string, fields []Field) {
 	if !log.Meta.Enabled(lvl) {
 		return
 	}
@@ -131,18 +132,25 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 	temp := log.Encoder.Clone()
 	addFields(temp, fields)
 
-	entry := newEntry(lvl, msg, temp)
-	for _, hook := range log.Hooks {
-		if err := hook(entry); err != nil {
-			log.InternalError("hook", err)
+	if len(log.Hooks) > 0 {
+		entry := Entry{
+			Level:   lvl,
+			Message: msg,
+			Time:    t,
+			enc:     temp,
 		}
+		for _, hook := range log.Hooks {
+			if err := hook(&entry); err != nil {
+				log.InternalError("hook", err)
+			}
+		}
+		t, lvl, msg = entry.Time, entry.Level, entry.Message
 	}
 
-	if err := temp.WriteEntry(log.Output, entry.Message, entry.Level, entry.Time); err != nil {
+	if err := temp.WriteEntry(log.Output, msg, lvl, t); err != nil {
 		log.InternalError("encoder", err)
 	}
 	temp.Free()
-	entry.free()
 
 	if lvl > ErrorLevel {
 		// Sync on Panic and Fatal, since they may crash the program.

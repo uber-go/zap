@@ -20,7 +20,11 @@
 
 package zap
 
-import "github.com/uber-go/atomic"
+import (
+	"time"
+
+	"github.com/uber-go/atomic"
+)
 
 // A CheckedMessage is the result of a call to Logger.Check, which allows
 // especially performance-sensitive applications to avoid allocations for disabled
@@ -28,6 +32,7 @@ import "github.com/uber-go/atomic"
 type CheckedMessage struct {
 	logger Logger
 	used   atomic.Uint32
+	t      time.Time
 	lvl    Level
 	msg    string
 
@@ -43,6 +48,7 @@ type CheckedMessage struct {
 func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 	return &CheckedMessage{
 		logger: logger,
+		t:      time.Now().UTC(),
 		lvl:    lvl,
 		msg:    msg,
 	}
@@ -56,10 +62,12 @@ func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 // Panic, and Fatal) for the defined levels; the Log method is only called for
 // unknown logging levels.
 func (m *CheckedMessage) Write(fields ...Field) {
-	if m == nil {
-		return
+	if m != nil {
+		m.write(m.t, fields)
 	}
+}
 
+func (m *CheckedMessage) write(t time.Time, fields []Field) {
 	if n := m.used.Inc(); n > 1 {
 		if n == 2 {
 			// Log an error on the first re-use. After that, skip the I/O and
@@ -83,10 +91,12 @@ func (m *CheckedMessage) Write(fields ...Field) {
 	case FatalLevel:
 		m.logger.Fatal(m.msg, fields...)
 	default:
-		m.logger.Log(m.lvl, m.msg, fields...)
+		m.logger.Log(t, m.lvl, m.msg, fields...)
 	}
 
-	m.next.Write(fields...)
+	if m.next.OK() {
+		m.next.write(t, fields)
+	}
 }
 
 // Chain combines two or more CheckedMessages. If the receiver message is not
