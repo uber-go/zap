@@ -48,7 +48,6 @@ var _zapToRavenMap = map[zap.Level]raven.Severity{
 
 // Logger automatically sends logs above a certain threshold to Sentry.
 type Logger struct {
-	zap.Meta
 	Capturer
 
 	// Minimum level threshold for sending a Sentry event
@@ -163,11 +162,32 @@ func (l *Logger) DFatal(msg string, fields ...zap.Field) {}
 
 // With returns Sentry logger with additional context.
 func (l *Logger) With(fields ...zap.Field) zap.Logger {
-	// Consider pre-allocating the whole new resulting map, but that may be even more expensive
-	for _, f := range fields {
-		f.AddTo(l.extra)
+	// TODO(glib): this is terribly inefficient as a lot of logging messages
+	// are going to be produced under the Error limit. Need to make sure
+	// that the amount of work here is minimal...
+
+	m := make(zwrap.KeyValueMap, len(l.extra)+len(fields))
+
+	// add original fields
+	// TODO(glib): deep copy here or change approach of passing maps around
+	for k, v := range l.extra {
+		m[k] = v
 	}
-	return l
+
+	// add new fields
+	for _, f := range fields {
+		f.AddTo(m)
+	}
+
+	return &Logger{
+		extra:             m,
+		Capturer:          l.Capturer,
+		minLevel:          l.minLevel,
+		traceAppPrefixes:  l.traceAppPrefixes,
+		traceContextLines: l.traceContextLines,
+		traceEnabled:      l.traceEnabled,
+		traceSkipFrames:   l.traceSkipFrames,
+	}
 }
 
 // Notify sentry if the log level meets minimum threshold.

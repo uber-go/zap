@@ -73,6 +73,16 @@ func TestWith(t *testing.T) {
 	assert.Equal(t, l.extra, expected)
 }
 
+func TestWithDoesNotMutate(t *testing.T) {
+	l1, err := New("", Extra(map[string]interface{}{
+		"someInt": 123,
+	}))
+	assert.NoError(t, err)
+
+	var _ = l1.With(zap.Float64("someFloat", float64(10))).(*Logger)
+	assert.Equal(t, zwrap.KeyValueMap{"someInt": 123}, l1.extra)
+}
+
 func TestWithTraceDisabled(t *testing.T) {
 	_, ps := capturePackets(func(l *Logger) {
 		l.Error("some error message", zap.String("foo", "bar"))
