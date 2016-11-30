@@ -48,11 +48,9 @@ type CheckedMessage struct {
 // NewCheckedMessage constructs a CheckedMessage. It's only intended for use by
 // wrapper libraries, and shouldn't be necessary in application code.
 func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
-	for {
-		m := _cmPool.Get().(*CheckedMessage)
-		m.logger, m.lvl, m.msg = logger, lvl, msg
-		return m
-	}
+	m := _cmPool.Get().(*CheckedMessage)
+	m.logger, m.lvl, m.msg = logger, lvl, msg
+	return m
 }
 
 // Write logs the pre-checked message with the supplied fields. It will call
