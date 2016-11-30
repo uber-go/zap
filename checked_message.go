@@ -59,7 +59,9 @@ func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 // levels.
 //
 // It MUST be called at most once, since Write will return the *CheckedMessage
-// to an internal pool for potentially immediate re-use.
+// to an internal pool for potentially immediate re-use; re-using a
+// *CheckedMessage after calling Write() will result in data races or other
+// undefined behavior.
 func (m *CheckedMessage) Write(fields ...Field) {
 	if m == nil {
 		return
