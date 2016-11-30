@@ -109,8 +109,9 @@ func MultiWriteSyncer(ws ...WriteSyncer) WriteSyncer {
 }
 
 // See https://golang.org/src/io/multi.go
-// In the case where not all underlying syncs writer all bytes, we return the smallest number of bytes wtirren
-// but still call Write() on all the underlying syncs.
+// When not all underlying syncers write the same number of bytes,
+// the smallest number is returned even though Write() is called on
+// all of them.
 func (ws multiWriteSyncer) Write(p []byte) (int, error) {
 	var errs multiError
 	nWritten := 0
@@ -129,11 +130,11 @@ func (ws multiWriteSyncer) Write(p []byte) (int, error) {
 }
 
 func (ws multiWriteSyncer) Sync() error {
-	return wrapMutiError(ws...)
+	return wrapMultiError(ws...)
 }
 
 // Run a series of `f`s, collecting and aggregating errors if presents
-func wrapMutiError(fs ...WriteSyncer) error {
+func wrapMultiError(fs ...WriteSyncer) error {
 	var errs multiError
 	for _, f := range fs {
 		if err := f.Sync(); err != nil {
