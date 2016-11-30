@@ -32,15 +32,6 @@ type Entry struct {
 	enc     Encoder
 }
 
-func newEntry(lvl Level, msg string, enc Encoder) *Entry {
-	return &Entry{
-		Level: lvl,
-		Message: msg,
-		Time: _timeNow().UTC(),
-		enc: enc,
-	}
-}
-
 // Fields returns a mutable reference to the entry's accumulated context.
 func (e *Entry) Fields() KeyValue {
 	return e.enc
