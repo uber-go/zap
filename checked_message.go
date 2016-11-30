@@ -34,9 +34,10 @@ var _cmPool = sync.Pool{
 // especially performance-sensitive applications to avoid allocations for disabled
 // or heavily sampled log levels.
 type CheckedMessage struct {
-	logger Logger
-	lvl    Level
-	msg    string
+	safeToWrite bool
+	logger      Logger
+	lvl         Level
+	msg         string
 
 	// singly linked list built by Chain
 	next *CheckedMessage // carried by each part of Chain-ed list
@@ -49,7 +50,7 @@ type CheckedMessage struct {
 // wrapper libraries, and shouldn't be necessary in application code.
 func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 	m := _cmPool.Get().(*CheckedMessage)
-	m.logger, m.lvl, m.msg = logger, lvl, msg
+	m.safeToWrite, m.logger, m.lvl, m.msg = true, logger, lvl, msg
 	return m
 }
 
@@ -61,11 +62,26 @@ func NewCheckedMessage(logger Logger, lvl Level, msg string) *CheckedMessage {
 // It MUST be called at most once, since Write will return the *CheckedMessage
 // to an internal pool for potentially immediate re-use; re-using a
 // *CheckedMessage after calling Write() will result in data races or other
-// undefined behavior.
+// undefined behavior. An attempt is made to detect and DFatal log any re-use,
+// but such detection is not guaranteed due to race conditions.
 func (m *CheckedMessage) Write(fields ...Field) {
 	if m == nil {
 		return
 	}
+
+	if !m.safeToWrite {
+		// we're living in racy times, so copy what we can out of the pointer
+		// that we have, and at least tell the user something
+		if logger := m.logger; logger != nil {
+			lvl, msg := m.lvl, m.msg
+			logger.DFatal(
+				"Must not call zap.(*CheckedMessage).Write() more than once",
+				Nest("prior", Stringer("level", lvl), String("msg", msg)),
+			)
+		}
+		return
+	}
+	m.safeToWrite = false
 
 	switch m.lvl {
 	case DebugLevel:
@@ -85,12 +101,8 @@ func (m *CheckedMessage) Write(fields ...Field) {
 	}
 
 	m.next.Write(fields...)
-	m.reset()
+	m.next, m.tail = nil, nil
 	_cmPool.Put(m)
-}
-
-func (m *CheckedMessage) reset() {
-	m.logger, m.lvl, m.msg, m.next, m.tail = nil, invalidLevel, "", nil, nil
 }
 
 // Chain combines two or more CheckedMessages. If the receiver message is not

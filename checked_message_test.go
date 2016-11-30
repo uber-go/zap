@@ -47,6 +47,21 @@ func TestJSONLoggerCheck(t *testing.T) {
 	})
 }
 
+func TestCheckedMessageUnsafeWrite(t *testing.T) {
+	withJSONLogger(t, opts(InfoLevel), func(logger Logger, buf *testBuffer) {
+		stub := stubExit()
+		defer stub.Unstub()
+		cm := logger.Check(InfoLevel, "bob lob law blog")
+		cm.Write()
+		cm.Write()
+		assert.Equal(t, []string{
+			`{"level":"info","msg":"bob lob law blog"}`,
+			`{"level":"error","msg":"Must not call zap.(*CheckedMessage).Write() more than once","prior":{"level":"info","msg":"bob lob law blog"}}`,
+		}, buf.Lines(), "Expected one lob log, and a fatal")
+		stub.AssertNoExit(t)
+	})
+}
+
 func TestCheckedMessage_Chain(t *testing.T) {
 	withJSONLogger(t, opts(InfoLevel), func(logger Logger, buf *testBuffer) {
 		loga := logger.With(String("name", "A"))
