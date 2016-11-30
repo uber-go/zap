@@ -48,6 +48,7 @@ var _zapToRavenMap = map[zap.Level]raven.Severity{
 
 // Logger automatically sends logs above a certain threshold to Sentry.
 type Logger struct {
+	zap.Meta
 	Capturer
 
 	// Minimum level threshold for sending a Sentry event
@@ -127,8 +128,10 @@ func (l *Logger) Log(lvl zap.Level, msg string, fields ...zap.Field) {
 	l.log(lvl, msg, fields)
 }
 
-// Debug is a nop.
-func (l *Logger) Debug(msg string, fields ...zap.Field) {}
+// Debug sends Sentry information provided minimum threshold is met.
+func (l *Logger) Debug(msg string, fields ...zap.Field) {
+	l.log(zap.DebugLevel, msg, fields)
+}
 
 // Info sends Sentry information provided minimum threshold is met.
 func (l *Logger) Info(msg string, fields ...zap.Field) {
@@ -157,8 +160,14 @@ func (l *Logger) Fatal(msg string, fields ...zap.Field) {
 	os.Exit(1)
 }
 
-// DFatal is a nop.
-func (l *Logger) DFatal(msg string, fields ...zap.Field) {}
+// DFatal either Fatals in development or Errors in production, as well as sending a packet.
+func (l *Logger) DFatal(msg string, fields ...zap.Field) {
+	if l.Development {
+		l.Fatal(msg, fields...)
+		return
+	}
+	l.Error(msg, fields...)
+}
 
 // With returns Sentry logger with additional context.
 func (l *Logger) With(fields ...zap.Field) zap.Logger {
