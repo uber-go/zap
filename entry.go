@@ -33,6 +33,6 @@ type Entry struct {
 }
 
 // Fields returns a mutable reference to the entry's accumulated context.
-func (e *Entry) Fields() KeyValue {
+func (e Entry) Fields() KeyValue {
 	return e.enc
 }
