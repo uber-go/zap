@@ -21,6 +21,14 @@
 package sentry
 
 import (
+	"compress/zlib"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/uber-go/zap"
@@ -133,6 +141,23 @@ func TestErrorCapture(t *testing.T) {
 	assert.NotNil(t, trace.Frames)
 }
 
+func TestPacketSending(t *testing.T) {
+	withTestSentry(t, func(dsn string, ch <-chan *raven.Packet) {
+		sl, err := New(dsn)
+		defer sl.Close()
+
+		if err != nil {
+			panic("Failed to create sentry client")
+		}
+		sl.Error("my error message", zap.String("mykey1", "myvalue1"))
+
+		p := <-ch
+
+		assert.Equal(t, p.Message, "my error message")
+		assert.Equal(t, map[string]interface{}{"mykey1": "myvalue1"}, p.Extra)
+	})
+}
+
 func capturePacket(f func(l *Logger), options ...Option) (*Logger, *raven.Packet) {
 	l, ps := capturePackets(f, options...)
 	if len(ps) != 1 {
@@ -153,4 +178,39 @@ func capturePackets(f func(l *Logger), options ...Option) (*Logger, []*raven.Pac
 	f(l)
 
 	return l, c.packets
+}
+
+func withTestSentry(t *testing.T, f func(string, <-chan *raven.Packet)) {
+	ch := make(chan *raven.Packet)
+	h := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		defer req.Body.Close()
+
+		contentType := req.Header.Get("Content-Type")
+		var bodyReader io.Reader = req.Body
+		// underlying client will compress and encode payload above certain size
+		if contentType == "application/octet-stream" {
+			bodyReader = base64.NewDecoder(base64.StdEncoding, bodyReader)
+			bodyReader, _ = zlib.NewReader(bodyReader)
+		}
+
+		d := json.NewDecoder(bodyReader)
+		p := &raven.Packet{}
+		err := d.Decode(p)
+		if err != nil {
+			ch <- nil
+			t.Fatal(err.Error())
+		}
+		ch <- p
+	})
+	s := httptest.NewServer(h)
+	defer s.Close()
+
+	fragments := strings.SplitN(s.URL, "://", 2)
+	dsn := fmt.Sprintf(
+		"%s://public:secret@%s/sentry/project-id",
+		fragments[0],
+		fragments[1],
+	)
+
+	f(dsn, ch)
 }

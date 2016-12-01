@@ -25,11 +25,14 @@ import raven "github.com/getsentry/raven-go"
 // Capturer knows what to do with a Sentry packet.
 type Capturer interface {
 	Capture(p *raven.Packet) error
+	Close()
 }
 
 type memCapturer struct {
 	packets []*raven.Packet
 }
+
+func (m *memCapturer) Close() {}
 
 func (m *memCapturer) Capture(p *raven.Packet) error {
 	m.packets = append(m.packets, p)
@@ -40,8 +43,12 @@ type nonBlockingCapturer struct {
 	*raven.Client
 }
 
+func (nb *nonBlockingCapturer) Close() {
+	nb.Client.Close()
+}
+
 // Capture will fire off a packet without checking the error channel.
-func (s *nonBlockingCapturer) Capture(p *raven.Packet) error {
-	s.Client.Capture(p, nil)
+func (nb *nonBlockingCapturer) Capture(p *raven.Packet) error {
+	nb.Client.Capture(p, nil)
 	return nil
 }
