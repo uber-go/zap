@@ -23,8 +23,15 @@ package zap
 import (
 	"fmt"
 	"os"
+	"sync"
 	"time"
 )
+
+var _entryPool = sync.Pool{
+	New: func() interface{} {
+		return &Entry{}
+	},
+}
 
 // Meta is implementation-agnostic state management for Loggers. Most Logger
 // implementations can reduce the required boilerplate by embedding a Meta.
@@ -96,16 +103,16 @@ func (m Meta) Encode(t time.Time, lvl Level, msg string, fields []Field) (string
 	if len(m.Hooks) == 0 {
 		return msg, enc
 	}
-	entry := Entry{
-		Level:   lvl,
-		Message: msg,
-		Time:    t,
-		enc:     enc,
-	}
+	entry := _entryPool.Get().(*Entry)
+	entry.Level = lvl
+	entry.Message = msg
+	entry.Time = t
+	entry.enc = enc
 	for _, hook := range m.Hooks {
-		if err := hook(&entry); err != nil {
+		if err := hook(entry); err != nil {
 			m.InternalError("hook", err)
 		}
 	}
+	_entryPool.Put(entry)
 	return entry.Message, entry.enc
 }
