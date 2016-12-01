@@ -1,10 +1,12 @@
 hash: 3028dfe3df1463fd20a19a2ac02c361ebfdaddfa4793cfa0cf75899f741282d5
-updated: 2016-11-14T11:46:53.503304274-08:00
+updated: 2016-12-01T12:49:47.876258376-08:00
 imports:
 - name: github.com/cactus/go-statsd-client
   version: 95cb85a8d6b2d1ccfce95fa58d1ca3445779d8af
   subpackages:
   - statsd
+- name: github.com/certifi/gocertifi
+  version: a61bf5eafa3aee233ec8043e9da052447e5463dd
 - name: github.com/getsentry/raven-go
   version: 3f7439d3e74d88e21d196ba20eb61a5a958bc118
 - name: github.com/pkg/errors
