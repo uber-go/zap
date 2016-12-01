@@ -6,7 +6,7 @@ imports:
   subpackages:
   - statsd
 - name: github.com/getsentry/raven-go
-  version: e39495fea085e98d1281fac0ff4d6eb8dc56f86d
+  version: 3f7439d3e74d88e21d196ba20eb61a5a958bc118
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/Sirupsen/logrus
