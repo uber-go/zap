@@ -34,8 +34,8 @@ var _cmPool = sync.Pool{
 // especially performance-sensitive applications to avoid allocations for disabled
 // or heavily sampled log levels.
 type CheckedMessage struct {
-	safeToWrite bool
 	logger      Logger
+	safeToWrite bool
 	lvl         Level
 	msg         string
 
