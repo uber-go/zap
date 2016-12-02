@@ -228,10 +228,22 @@ func TestStackField(t *testing.T) {
 func TestCaller(t *testing.T) {
 	// Caller() makes an assupmtion that it is called within zap's hook mechanism.
 	// This is not true for this test, so pass -1 to log this function as the caller.
-	c, _ := Caller(-1)
+	c, ok := Caller(-1)
+	assert.NoError(t, ok, "Caller should not return an error ")
 	assertFieldJSONRegEx(t, "\"caller\":{\"pc\":[0-9]+,\"file\":\".+field_test.go\",\"line\":[0-9]+}", c)
 
-	c2, _ := Caller(-1)
+	c2, ok := Caller(-1)
+	assert.NoError(t, ok, "Caller should not return an error ")
+	assertCanBeReused(t, c2)
+}
+
+func TestCallers(t *testing.T) {
+	// Caller() makes an assupmtion that it is called within zap's hook mechanism.
+	// This is not true for this test, so pass 0 to log this function as the caller.
+	c := Callers(0)
+	assertFieldJSONRegEx(t, "\"callers\":{\"0\":{\"pc\":[0-9]+,\"file\":\".+field_test.go\",\"line\":[0-9]+},", c)
+
+	c2 := Callers(0)
 	assertCanBeReused(t, c2)
 }
 

@@ -56,6 +56,24 @@ func TestHookAddCallerFail(t *testing.T) {
 	assert.Contains(t, buf.String(), `"msg":"Failure."`, "Expected original message to survive failures in runtime.Caller.")
 }
 
+func TestHookAddCallers(t *testing.T) {
+	buf := &testBuffer{}
+	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), AddCallers(InfoLevel))
+
+	logger.Info("Callers.")
+	output := buf.String()
+	require.Contains(t, output, "zap/hook_test.go", "Expected to find test file in callers.")
+	assert.Contains(t, output, `"callers":`, "Callers added under an unexpected key.")
+
+	buf.Reset()
+	logger.Warn("Callers.")
+	assert.Contains(t, buf.String(), `"callers":`, "Expected to include callers at Warn level.")
+
+	buf.Reset()
+	logger.Debug("No callers.")
+	assert.NotContains(t, buf.String(), "Unexpected stacktrace at Debug level.")
+}
+
 func TestHookAddCallersWithSkip(t *testing.T) {
 	buf := &testBuffer{}
 	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), AddCallersWithSkip(_callersSkip, InfoLevel))

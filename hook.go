@@ -71,9 +71,15 @@ func AddCallerWithSkip(callerSkip int) Option {
 	})
 }
 
-// AddCallersWithSkip records the caller's call stack for all messages at or above a given level.
-// The callerskip option helps select the target caller.  Using a value of _callerSkip will select
+// AddCallers records the caller's call stack for all messages at or above a given level.
+// This uses _callerSkip for the caller skip, which will select
 // the target caller as the caller of the leveled logger method.
+func AddCallers(lvl Level) Option {
+	return AddCallersWithSkip(_callersSkip, lvl)
+}
+
+// AddCallersWithSkip records the caller's call stack for all messages at or above a given level.
+// The callerskip option helps select the target caller.
 func AddCallersWithSkip(callerSkip int, lvl Level) Option {
 	return Hook(func(e *Entry) error {
 		if e == nil {
