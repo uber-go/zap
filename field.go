@@ -22,6 +22,7 @@ package zap
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"math"
 	"runtime"
@@ -47,6 +48,8 @@ const (
 	errorType
 	skipType
 )
+
+var errCaller = errors.New("failed to get caller")
 
 // A Field is a marshaling operation used to add a key-value pair to a logger's
 // context. Most fields are lazily marshaled, so it's inexpensive to add fields to
@@ -205,8 +208,12 @@ func Callers(skip int) Field {
 //
 // The marshaled object has "pc", "file", and "line" fields, unless a caller
 // couldn't be resolved.
-func Caller(skip int) Field {
+func Caller(skip int) (Field, error) {
 	pc, file, line, ok := runtime.Caller(skip + 2)
+	if !ok {
+		return Skip(), errCaller
+	}
+
 	return Marshaler("caller", LogMarshalerFunc(func(kv KeyValue) error {
 		if ok {
 			kv.AddUintptr("pc", pc)
@@ -214,7 +221,7 @@ func Caller(skip int) Field {
 			kv.AddInt("line", line)
 		}
 		return nil
-	}))
+	})), nil
 }
 
 // Duration constructs a Field with the given key and value. It represents

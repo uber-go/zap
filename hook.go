@@ -20,19 +20,14 @@
 
 package zap
 
-import (
-	"errors"
-	"path/filepath"
-	"runtime"
-	"strconv"
-)
+import "errors"
 
 var (
 	errHookNilEntry = errors.New("can't call a hook on a nil *Entry")
-	errCaller       = errors.New("failed to get caller")
 	// Skip Caller, Logger.log, and the leveled Logger method when using
 	// runtime.Caller.
-	_callerSkip = 3
+	_callerSkip  = 2
+	_callersSkip = 3 // see golang docs for differences between runtime.Caller(s)
 )
 
 // A Hook is executed each time the logger writes an Entry. It can modify the
@@ -48,31 +43,45 @@ func (h Hook) apply(m *Meta) {
 	m.Hooks = append(m.Hooks, h)
 }
 
-// AddCaller configures the Logger to annotate each message with the filename
-// and line number of zap's caller.
+// AddCaller configures the Logger to annotate each log with
+// a "caller" field with the values as the filename,
+// line number and program counter.
 func AddCaller() Option {
+	return AddCallerWithSkip(_callerSkip)
+}
+
+// AddCallerWithSkip - see desc above
+// The callerSkip parameter helps specifies which stack frame above the
+// runtime.Caller() to capture.
+// Using _callerSkip will return the caller of the leveled logger method.
+func AddCallerWithSkip(callerSkip int) Option {
 	return Hook(func(e *Entry) error {
 		if e == nil {
 			return errHookNilEntry
 		}
-		_, filename, line, ok := runtime.Caller(_callerSkip)
-		if !ok {
-			return errCaller
+
+		var field Field
+		var err error
+		if field, err = Caller(callerSkip); err != nil {
+			return err
 		}
 
-		// Re-use a buffer from the pool.
-		enc := jsonPool.Get().(*jsonEncoder)
-		enc.truncate()
-		buf := enc.bytes
-		buf = append(buf, filepath.Base(filename)...)
-		buf = append(buf, ':')
-		buf = strconv.AppendInt(buf, int64(line), 10)
-		buf = append(buf, ':', ' ')
-		buf = append(buf, e.Message...)
+		field.AddTo(e.Fields())
+		return nil
+	})
+}
 
-		newMsg := string(buf)
-		enc.Free()
-		e.Message = newMsg
+// AddCallersWithSkip records the caller's call stack for all messages at or above a given level.
+// The callerskip option helps select the target caller.  Using a value of _callerSkip will select
+// the target caller as the caller of the leveled logger method.
+func AddCallersWithSkip(callerSkip int, lvl Level) Option {
+	return Hook(func(e *Entry) error {
+		if e == nil {
+			return errHookNilEntry
+		}
+		if e.Level >= lvl {
+			Callers(callerSkip).AddTo(e.Fields())
+		}
 		return nil
 	})
 }
