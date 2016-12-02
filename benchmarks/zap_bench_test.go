@@ -192,6 +192,24 @@ func BenchmarkZapSampleWithoutFields(b *testing.B) {
 	})
 }
 
+func BenchmarkZapSampleWithoutFieldsPowerOfTwo(b *testing.B) {
+	messages := fakeMessages(1000)
+	base := zap.New(
+		zap.NewJSONEncoder(),
+		zap.DebugLevel,
+		zap.DiscardOutput,
+	)
+	logger := zwrap.Sample(base, time.Second, 10, 1<<13)
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		i := 0
+		for pb.Next() {
+			i++
+			logger.Info(messages[i%1000])
+		}
+	})
+}
+
 func BenchmarkZapSampleAddingFields(b *testing.B) {
 	messages := fakeMessages(1000)
 	base := zap.New(

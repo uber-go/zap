@@ -97,7 +97,7 @@ func TestSampler(t *testing.T) {
 		for i := 1; i < 10; i++ {
 			tt.logFunc(sampler, i)
 		}
-		expected := buildExpectation(tt.level, 1, 2, 5, 8)
+		expected := buildExpectation(tt.level, 1, 2, 4, 6, 8)
 		assert.Equal(t, expected, sink.Logs(), "Unexpected output from sampled logger.")
 	}
 }
@@ -166,7 +166,22 @@ func TestSamplerCheck(t *testing.T) {
 		}
 	}
 
-	expected := buildExpectation(zap.InfoLevel, 1, 11)
+	expected := buildExpectation(zap.InfoLevel, 1, 9)
+	assert.Equal(t, expected, sink.Logs(), "Unexpected output when sampling with Check.")
+}
+
+func TestSamplerCheckExactPower(t *testing.T) {
+	sampler, sink := fakeSampler(zap.InfoLevel, time.Millisecond, 1, 8, false)
+
+	assert.Nil(t, sampler.Check(zap.DebugLevel, "foo"), "Expected a nil CheckedMessage at disabled log levels.")
+
+	for i := 1; i < 12; i++ {
+		if cm := sampler.Check(zap.InfoLevel, "sample"); cm.OK() {
+			cm.Write(zap.Int("iter", i))
+		}
+	}
+
+	expected := buildExpectation(zap.InfoLevel, 1, 9)
 	assert.Equal(t, expected, sink.Logs(), "Unexpected output when sampling with Check.")
 }
 
