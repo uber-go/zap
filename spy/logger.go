@@ -134,13 +134,11 @@ func (l *Logger) Fatal(msg string, fields ...zap.Field) {
 	l.log(zap.FatalLevel, msg, fields)
 }
 
-// DFatal logs at the Fatal level if the development flag is set, and the Error
-// level otherwise.
-func (l *Logger) DFatal(msg string, fields ...zap.Field) {
+// DPanic logs at the DPanic level, and panics if the development flag is set.
+func (l *Logger) DPanic(msg string, fields ...zap.Field) {
+	l.log(zap.DPanicLevel, msg, fields)
 	if l.Development {
-		l.log(zap.FatalLevel, msg, fields)
-	} else {
-		l.log(zap.ErrorLevel, msg, fields)
+		panic(msg)
 	}
 }
 

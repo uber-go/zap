@@ -176,7 +176,7 @@ func TestDebark_Methods(t *testing.T) {
 
 func TestDebark_Stubs(t *testing.T) {
 	logger, _ := newDebark(zap.DebugLevel)
-	assert.NotPanics(t, func() { logger.DFatal("msg") })
+	assert.NotPanics(t, func() { logger.DPanic("msg") })
 }
 
 func TestDebark_zapToBarkFields(t *testing.T) {

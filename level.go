@@ -63,6 +63,9 @@ const (
 	// ErrorLevel logs are high-priority. If an application is running smoothly,
 	// it shouldn't generate any error-level logs.
 	ErrorLevel
+	// DPanicLevel logs are particularly important errors. In development the
+	// logger panics after writing the message.
+	DPanicLevel
 	// PanicLevel logs a message, then panics.
 	PanicLevel
 	// FatalLevel logs a message, then calls os.Exit(1).
@@ -80,6 +83,8 @@ func (l Level) String() string {
 		return "warn"
 	case ErrorLevel:
 		return "error"
+	case DPanicLevel:
+		return "dpanic"
 	case PanicLevel:
 		return "panic"
 	case FatalLevel:
@@ -114,6 +119,8 @@ func (l *Level) UnmarshalText(text []byte) error {
 		*l = WarnLevel
 	case "error":
 		*l = ErrorLevel
+	case "dpanic":
+		*l = DPanicLevel
 	case "panic":
 		*l = PanicLevel
 	case "fatal":

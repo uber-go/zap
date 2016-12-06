@@ -334,19 +334,14 @@ func TestJSONLoggerCheckAlwaysFatals(t *testing.T) {
 	})
 }
 
-func TestJSONLoggerDFatal(t *testing.T) {
-	stub := stubExit()
-	defer stub.Unstub()
-
+func TestJSONLoggerDPanic(t *testing.T) {
 	withJSONLogger(t, nil, func(logger Logger, buf *testBuffer) {
-		logger.DFatal("foo")
-		assert.Equal(t, `{"level":"error","msg":"foo"}`, buf.Stripped(), "Unexpected output from DFatal in production mode.")
-		stub.AssertNoExit(t)
+		assert.NotPanics(t, func() { logger.DPanic("foo") })
+		assert.Equal(t, `{"level":"dpanic","msg":"foo"}`, buf.Stripped(), "Unexpected output from DPanic in production mode.")
 	})
 	withJSONLogger(t, opts(Development()), func(logger Logger, buf *testBuffer) {
-		logger.DFatal("foo")
-		assert.Equal(t, `{"level":"fatal","msg":"foo"}`, buf.Stripped(), "Unexpected output from Logger.Fatal in development mode.")
-		stub.AssertStatus(t, 1)
+		assert.Panics(t, func() { logger.DPanic("foo") })
+		assert.Equal(t, `{"level":"dpanic","msg":"foo"}`, buf.Stripped(), "Unexpected output from Logger.Fatal in development mode.")
 	})
 }
 
