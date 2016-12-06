@@ -100,20 +100,19 @@ func (m Meta) InternalError(cause string, err error) {
 func (m Meta) Encode(t time.Time, lvl Level, msg string, fields []Field) (string, Encoder) {
 	enc := m.Encoder.Clone()
 	addFields(enc, fields)
-	if len(m.Hooks) == 0 {
-		return msg, enc
-	}
-	entry := _entryPool.Get().(*Entry)
-	entry.Level = lvl
-	entry.Message = msg
-	entry.Time = t
-	entry.enc = enc
-	for _, hook := range m.Hooks {
-		if err := hook(entry); err != nil {
-			m.InternalError("hook", err)
+	if len(m.Hooks) >= 0 {
+		entry := _entryPool.Get().(*Entry)
+		entry.Level = lvl
+		entry.Message = msg
+		entry.Time = t
+		entry.enc = enc
+		for _, hook := range m.Hooks {
+			if err := hook(entry); err != nil {
+				m.InternalError("hook", err)
+			}
 		}
+		msg, enc = entry.Message, entry.enc
+		_entryPool.Put(entry)
 	}
-	msg, enc = entry.Message, entry.enc
-	_entryPool.Put(entry)
 	return msg, enc
 }
