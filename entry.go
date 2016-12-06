@@ -25,6 +25,9 @@ import "time"
 // An Entry represents a complete log message. The entry's structured context
 // is already serialized, but the log level, time, and message are available
 // for inspection and modification.
+//
+// Entries are pooled, so any functions that accept them must be careful not to
+// retain references to them.
 type Entry struct {
 	Level   Level
 	Time    time.Time

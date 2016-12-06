@@ -113,6 +113,7 @@ func (m Meta) Encode(t time.Time, lvl Level, msg string, fields []Field) (string
 			m.InternalError("hook", err)
 		}
 	}
+	msg, enc = entry.Message, entry.enc
 	_entryPool.Put(entry)
-	return entry.Message, entry.enc
+	return msg, enc
 }
