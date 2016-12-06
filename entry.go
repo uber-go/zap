@@ -20,15 +20,7 @@
 
 package zap
 
-import (
-	"sync"
-	"time"
-)
-
-var (
-	_timeNow   = time.Now // for tests
-	_entryPool = sync.Pool{New: func() interface{} { return &Entry{} }}
-)
+import "time"
 
 // An Entry represents a complete log message. The entry's structured context
 // is already serialized, but the log level, time, and message are available
@@ -43,20 +35,7 @@ type Entry struct {
 	enc     Encoder
 }
 
-func newEntry(lvl Level, msg string, enc Encoder) *Entry {
-	e := _entryPool.Get().(*Entry)
-	e.Level = lvl
-	e.Message = msg
-	e.Time = _timeNow().UTC()
-	e.enc = enc
-	return e
-}
-
 // Fields returns a mutable reference to the entry's accumulated context.
-func (e *Entry) Fields() KeyValue {
+func (e Entry) Fields() KeyValue {
 	return e.enc
-}
-
-func (e *Entry) free() {
-	_entryPool.Put(e)
 }
