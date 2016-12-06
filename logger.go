@@ -35,12 +35,12 @@ type Logger interface {
 	// Create a child logger, and optionally add some context to that logger.
 	With(...Field) Logger
 
-	// Check returns a CheckedMessage if logging a message at the specified level
+	// Check returns a CheckedEntry if logging a message at the specified level
 	// is enabled. It's a completely optional optimization; in high-performance
 	// applications, Check can help avoid allocating a slice to hold fields.
 	//
-	// See CheckedMessage for an example.
-	Check(Level, string) *CheckedMessage
+	// See CheckedEntry for an example.
+	Check(Level, string) *CheckedEntry
 
 	// Log a message at the given level. Messages include any context that's
 	// accumulated on the logger, as well as any fields added at the log site.
@@ -96,21 +96,12 @@ func (log *logger) With(fields ...Field) Logger {
 	}
 }
 
-func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
+func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
 	ent := Entry{
 		Time:    time.Now().UTC(),
 		Level:   lvl,
 		Message: msg,
 	}
-	if ce := log.checkEntry(ent); ce != nil {
-		cm := NewCheckedMessage(log, lvl, msg)
-		cm.ce = ce
-		return cm
-	}
-	return nil
-}
-
-func (log *logger) checkEntry(ent Entry) *CheckedEntry {
 	ce := log.fac.Check(ent, nil)
 	switch ent.Level {
 	case PanicLevel:

@@ -169,7 +169,7 @@ func TestSamplerCheck(t *testing.T) {
 	assert.Nil(t, sampler.Check(zap.DebugLevel, "foo"), "Expected a nil CheckedMessage at disabled log levels.")
 
 	for i := 1; i < 12; i++ {
-		if cm := sampler.Check(zap.InfoLevel, "sample"); cm.OK() {
+		if cm := sampler.Check(zap.InfoLevel, "sample"); cm != nil {
 			cm.Write(zap.Int("iter", i))
 		}
 	}

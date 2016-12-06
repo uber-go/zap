@@ -98,7 +98,7 @@ func TestDebark_Check(t *testing.T) {
 		require.Equal(t, 0, buf.Len(), "buffer must be clean for %v", l)
 		lc := logger.Check(l, "msg")
 		require.NotNil(t, lc)
-		assert.True(t, lc.OK())
+		assert.NotNil(t, lc)
 		switch l {
 		case zap.FatalLevel:
 			continue

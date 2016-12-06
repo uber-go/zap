@@ -50,7 +50,7 @@ func BenchmarkTee_Check(b *testing.B) {
 			i := 0
 			for pb.Next() {
 				tt := cases[i]
-				if cm := logger.Check(tt.lvl, tt.msg); cm.OK() {
+				if cm := logger.Check(tt.lvl, tt.msg); cm != nil {
 					cm.Write(zap.Int("i", i))
 				}
 				i = (i + 1) % len(cases)

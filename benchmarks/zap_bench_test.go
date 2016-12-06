@@ -129,7 +129,7 @@ func BenchmarkZapDisabledLevelsCheckAddingFields(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			if m := logger.Check(zap.InfoLevel, "Should be discarded."); m.OK() {
+			if m := logger.Check(zap.InfoLevel, "Should be discarded."); m != nil {
 				m.Write(fakeFields()...)
 			}
 		}
@@ -228,7 +228,7 @@ func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
 		i := 0
 		for pb.Next() {
 			i++
-			if cm := logger.Check(zap.InfoLevel, messages[i%1000]); cm.OK() {
+			if cm := logger.Check(zap.InfoLevel, messages[i%1000]); cm != nil {
 				cm.Write()
 			}
 		}
@@ -247,7 +247,7 @@ func BenchmarkZapSampleCheckAddingFields(b *testing.B) {
 		i := 0
 		for pb.Next() {
 			i++
-			if m := logger.Check(zap.InfoLevel, messages[i%1000]); m.OK() {
+			if m := logger.Check(zap.InfoLevel, messages[i%1000]); m != nil {
 				m.Write(fakeFields()...)
 			}
 		}
