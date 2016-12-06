@@ -95,8 +95,8 @@ func (m Meta) InternalError(cause string, err error) {
 	m.ErrorOutput.Sync()
 }
 
-// Encode runs any Hook functions, returning a possibly modified
-// time, message, and level.
+// Encode runs any Hook functions, returning a possibly modified message and an
+// Encoder with all fields added (both contextual and args).
 func (m Meta) Encode(t time.Time, lvl Level, msg string, fields []Field) (string, Encoder) {
 	enc := m.Encoder.Clone()
 	addFields(enc, fields)
