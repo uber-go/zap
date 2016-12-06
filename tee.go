@@ -26,7 +26,7 @@ package zap
 // For each logging level method (.Debug, .Info, etc), the Tee calls
 // each sub-logger's level method.
 //
-// Exceptions are made for the DPyanic, Panic, and Fatal methods: the returned
+// Exceptions are made for the DPanic, Panic, and Fatal methods: the returned
 // logger calls .Log(DPanicLevel, ...), .Log(PanicLevel, ...), and
 // .Log(FatalLevel, ...) respectively. Only after all sub-loggers have received
 // the message, then the Tee terminates the process (using os.Exit or panic()

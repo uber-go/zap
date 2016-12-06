@@ -63,7 +63,8 @@ const (
 	// ErrorLevel logs are high-priority. If an application is running smoothly,
 	// it shouldn't generate any error-level logs.
 	ErrorLevel
-	// DPanicLevel logs an error message, but panics only in development.
+	// DPanicLevel logs are particularly important errors. In development the
+	// logger panics after writing the message.
 	DPanicLevel
 	// PanicLevel logs a message, then panics.
 	PanicLevel

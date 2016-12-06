@@ -76,7 +76,7 @@ func (c *counters) Reset(key string) {
 // FatalLevel, if it happens is sampled and will call the underlying logger Log
 // method, which should NOT panic() or terminate.
 //
-// NOTE: logging at DPanic level currently IS sampled, but calls to DPanic and
+// NOTE: logging at DPanicLevel currently IS sampled, but calls to DPanic and
 // Check(DPanicLevvel) are NOT sampled.
 //
 // Per-message counts are shared between parent and child loggers, which allows
