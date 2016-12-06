@@ -133,7 +133,7 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 
 	entry := newEntry(lvl, msg, temp)
 	for _, h := range log.Hooks {
-		if err := h.hook(entry); err != nil {
+		if err := h.Hook(entry); err != nil {
 			log.InternalError("hook", err)
 		}
 	}

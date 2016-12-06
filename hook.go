@@ -37,7 +37,7 @@ var (
 //
 // Hooks implement the Option interface.
 type Hook interface {
-	hook(*Entry) error
+	Hook(*Entry) error
 }
 
 // AddCaller configures the Logger to annotate each log with
@@ -90,7 +90,7 @@ func SetCallersSkip(callerSkip int, lvl Level) Option {
 ////////////////////
 
 // Hook adds caller information as a field with "caller" key
-func (h *addCallerHook) hook(e *Entry) error {
+func (h *addCallerHook) Hook(e *Entry) error {
 	if e == nil {
 		return errHookNilEntry
 	}
@@ -120,7 +120,7 @@ type addCallerHook struct {
 ////////////////////
 
 // Hook adds callers information as a field with "callers" key
-func (h *addCallersHook) hook(e *Entry) error {
+func (h *addCallersHook) Hook(e *Entry) error {
 	if e == nil {
 		return errHookNilEntry
 	}
@@ -146,7 +146,7 @@ type addCallersHook struct {
 ////////////////////
 
 // Hook adds stack trace information as a field with "stacktrace" key
-func (h *addStacksHook) hook(e *Entry) error {
+func (h *addStacksHook) Hook(e *Entry) error {
 	if e == nil {
 		return errHookNilEntry
 	}

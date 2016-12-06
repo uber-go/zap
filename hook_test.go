@@ -118,7 +118,7 @@ func TestHooksNilEntry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		assert.NotPanics(t, func() {
-			assert.Equal(t, errHookNilEntry, tt.hook.hook(nil), "Expected an error running hook %s on a nil message.", tt.name)
+			assert.Equal(t, errHookNilEntry, tt.hook.Hook(nil), "Expected an error running hook %s on a nil message.", tt.name)
 		}, "Unexpected panic running hook %s on a nil message.", tt.name)
 	}
 }
