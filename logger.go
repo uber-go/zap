@@ -84,44 +84,40 @@ func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
 	return log.Meta.Check(log, lvl, msg)
 }
 
-func (log *logger) Log(lvl Level, msg string, fields ...Field) {
-	log.log(lvl, msg, fields)
-}
-
 func (log *logger) Debug(msg string, fields ...Field) {
-	log.log(DebugLevel, msg, fields)
+	log.Log(DebugLevel, msg, fields...)
 }
 
 func (log *logger) Info(msg string, fields ...Field) {
-	log.log(InfoLevel, msg, fields)
+	log.Log(InfoLevel, msg, fields...)
 }
 
 func (log *logger) Warn(msg string, fields ...Field) {
-	log.log(WarnLevel, msg, fields)
+	log.Log(WarnLevel, msg, fields...)
 }
 
 func (log *logger) Error(msg string, fields ...Field) {
-	log.log(ErrorLevel, msg, fields)
+	log.Log(ErrorLevel, msg, fields...)
 }
 
 func (log *logger) DPanic(msg string, fields ...Field) {
-	log.log(DPanicLevel, msg, fields)
+	log.Log(DPanicLevel, msg, fields...)
 	if log.Development {
 		panic(msg)
 	}
 }
 
 func (log *logger) Panic(msg string, fields ...Field) {
-	log.log(PanicLevel, msg, fields)
+	log.Log(PanicLevel, msg, fields...)
 	panic(msg)
 }
 
 func (log *logger) Fatal(msg string, fields ...Field) {
-	log.log(FatalLevel, msg, fields)
+	log.Log(FatalLevel, msg, fields...)
 	_exit(1)
 }
 
-func (log *logger) log(lvl Level, msg string, fields []Field) {
+func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 	if !log.Meta.Enabled(lvl) {
 		return
 	}
