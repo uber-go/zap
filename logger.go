@@ -127,11 +127,9 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 	}
 
 	t := time.Now().UTC()
-	msg, enc := log.Encode(t, lvl, msg, fields)
-	if err := enc.WriteEntry(log.Output, msg, lvl, t); err != nil {
+	if err := log.Encode(log.Output, t, lvl, msg, fields); err != nil {
 		log.InternalError("encoder", err)
 	}
-	enc.Free()
 
 	if lvl > ErrorLevel {
 		// Sync on Panic and Fatal, since they may crash the program.
