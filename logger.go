@@ -129,8 +129,8 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 	addFields(temp, fields)
 
 	entry := newEntry(lvl, msg, temp)
-	for _, hook := range log.Hooks {
-		if err := hook(entry); err != nil {
+	for _, h := range log.Hooks {
+		if err := h.Hook(entry); err != nil {
 			log.InternalError("hook", err)
 		}
 	}

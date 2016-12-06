@@ -66,6 +66,15 @@ func assertNotEqualFieldJSON(t testing.TB, expected string, field Field) {
 		"Unexpected JSON output after applying field %+v.", field)
 }
 
+func assertFieldJSONRegEx(t testing.TB, expected string, field Field) {
+	enc := newJSONEncoder()
+	defer enc.Free()
+
+	field.AddTo(enc)
+	assert.Regexp(t, expected, string(enc.bytes),
+		"Unexpected JSON output after applying field %+v.", field)
+}
+
 func assertCanBeReused(t testing.TB, field Field) {
 	var wg sync.WaitGroup
 
@@ -214,6 +223,28 @@ func TestStackField(t *testing.T) {
 
 	require.True(t, strings.HasPrefix(output, `"stacktrace":`), "Stacktrace added under an unexpected key.")
 	assert.Contains(t, output[13:], "zap.TestStackField", "Expected stacktrace to contain caller.")
+}
+
+func TestCaller(t *testing.T) {
+	// Caller() makes an assupmtion that it is called within zap's hook mechanism.
+	// This is not true for this test, so pass -1 to log this function as the caller.
+	c, ok := Caller(-1)
+	assert.NoError(t, ok, "Caller should not return an error ")
+	assertFieldJSONRegEx(t, "\"caller\":{\"pc\":[0-9]+,\"file\":\".+field_test.go\",\"line\":[0-9]+}", c)
+
+	c2, ok := Caller(-1)
+	assert.NoError(t, ok, "Caller should not return an error ")
+	assertCanBeReused(t, c2)
+}
+
+func TestCallers(t *testing.T) {
+	// Caller() makes an assupmtion that it is called within zap's hook mechanism.
+	// This is not true for this test, so pass 0 to log this function as the caller.
+	c := Callers(0)
+	assertFieldJSONRegEx(t, "\"callers\":{\"0\":{\"pc\":[0-9]+,\"file\":\".+field_test.go\",\"line\":[0-9]+},", c)
+
+	c2 := Callers(0)
+	assertCanBeReused(t, c2)
 }
 
 func TestUnknownField(t *testing.T) {

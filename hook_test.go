@@ -31,9 +31,18 @@ import (
 func TestHookAddCaller(t *testing.T) {
 	buf := &testBuffer{}
 	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), AddCaller())
-	logger.Info("Callers.")
+	logger.Info("Caller.")
 
-	re := regexp.MustCompile(`"msg":"hook_test.go:[\d]+: Callers\."`)
+	re := regexp.MustCompile(`"msg":"Caller\.","caller":{"pc":\d+,"file":".+hook_test.go","line":\d+}`)
+	assert.Regexp(t, re, buf.Stripped(), "Expected to find package name and file name in output.")
+}
+
+func TestHookAddCallerWithSkip(t *testing.T) {
+	buf := &testBuffer{}
+	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), AddCaller(), SetCallerSkip(_callerSkip))
+	logger.Info("Caller.")
+
+	re := regexp.MustCompile(`"msg":"Caller\.","caller":{"pc":\d+,"file":".+hook_test.go","line":\d+}`)
 	assert.Regexp(t, re, buf.Stripped(), "Expected to find package name and file name in output.")
 }
 
@@ -41,14 +50,44 @@ func TestHookAddCallerFail(t *testing.T) {
 	buf := &testBuffer{}
 	errBuf := &testBuffer{}
 
-	originalSkip := _callerSkip
-	_callerSkip = 1e3
-	defer func() { _callerSkip = originalSkip }()
-
-	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), ErrorOutput(errBuf), AddCaller())
+	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), ErrorOutput(errBuf), AddCaller(), SetCallerSkip(1e3))
 	logger.Info("Failure.")
 	assert.Regexp(t, `hook error: failed to get caller`, errBuf.String(), "Didn't find expected failure message.")
 	assert.Contains(t, buf.String(), `"msg":"Failure."`, "Expected original message to survive failures in runtime.Caller.")
+}
+
+func TestHookAddCallers(t *testing.T) {
+	buf := &testBuffer{}
+	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), AddCallers(InfoLevel))
+
+	logger.Info("Callers.")
+	output := buf.String()
+	require.Contains(t, output, "zap/hook_test.go", "Expected to find test file in callers.")
+	assert.Contains(t, output, `"callers":`, "Callers added under an unexpected key.")
+
+	buf.Reset()
+	logger.Warn("Callers.")
+	assert.Contains(t, buf.String(), `"callers":`, "Expected to include callers at Warn level.")
+
+	buf.Reset()
+	logger.Debug("No callers.")
+	assert.NotContains(t, buf.String(), "Unexpected stacktrace at Debug level.")
+}
+
+func TestHookAddCallersWithSkip(t *testing.T) {
+	buf := &testBuffer{}
+	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), AddCallers(InfoLevel), SetCallersSkip(_callersSkip, WarnLevel))
+
+	logger.Info("Callers.")
+	assert.NotContains(t, buf.String(), "Unexpected stacktrace at Info level.")
+
+	buf.Reset()
+	logger.Warn("Callers.")
+	assert.Contains(t, buf.String(), `"callers":`, "Expected to include callers at Warn level.")
+
+	buf.Reset()
+	logger.Debug("No callers.")
+	assert.NotContains(t, buf.String(), "Unexpected stacktrace at Debug level.")
 }
 
 func TestHookAddStacks(t *testing.T) {
@@ -79,7 +118,7 @@ func TestHooksNilEntry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		assert.NotPanics(t, func() {
-			assert.Equal(t, errHookNilEntry, tt.hook(nil), "Expected an error running hook %s on a nil message.", tt.name)
+			assert.Equal(t, errHookNilEntry, tt.hook.Hook(nil), "Expected an error running hook %s on a nil message.", tt.name)
 		}, "Unexpected panic running hook %s on a nil message.", tt.name)
 	}
 }

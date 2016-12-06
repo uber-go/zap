@@ -20,19 +20,14 @@
 
 package zap
 
-import (
-	"errors"
-	"path/filepath"
-	"runtime"
-	"strconv"
-)
+import "errors"
 
 var (
 	errHookNilEntry = errors.New("can't call a hook on a nil *Entry")
-	errCaller       = errors.New("failed to get caller")
 	// Skip Caller, Logger.log, and the leveled Logger method when using
 	// runtime.Caller.
-	_callerSkip = 3
+	_callerSkip  = 2
+	_callersSkip = 3 // see golang docs for differences between runtime.Caller(s)
 )
 
 // A Hook is executed each time the logger writes an Entry. It can modify the
@@ -41,53 +36,169 @@ var (
 // the logger's error output.
 //
 // Hooks implement the Option interface.
-type Hook func(*Entry) error
+type Hook interface {
+	Hook(*Entry) error
+}
 
-// apply implements the Option interface.
-func (h Hook) apply(m *Meta) {
+// AddCaller configures the Logger to annotate each log with
+// a "caller" field with the values as the filename,
+// line number and program counter.
+// The caller is the line where the leveled logger method is called.
+func AddCaller() Option {
+	return &addCallerHook{
+		callerSkip: _callerSkip,
+	}
+}
+
+// AddCallers configures the Logger to annotate each log with
+// a "callers" field with the the caller's call stack for all messages
+// at or above a given level.
+// The caller is the line where the leveled logger method is called.
+func AddCallers(lvl Level) Option {
+	return &addCallersHook{
+		callerSkip: _callersSkip,
+		lvl:        lvl,
+	}
+}
+
+// AddStacks configures the Logger to annotate each log with a stack trace
+// for all messages at or above a given level. Keep in mind that this is
+// (relatively speaking) quite expensive.
+func AddStacks(lvl Level) Option {
+	return &addStacksHook{
+		lvl: lvl,
+	}
+}
+
+// SetCallerSkip updates the callerSkip value for the existing AddCaller option
+func SetCallerSkip(callerSkip int) Option {
+	return &setCallerSkip{
+		callerSkip: callerSkip,
+	}
+}
+
+// SetCallersSkip updates the callerSkip and lvl values for the existing AddCallers option
+func SetCallersSkip(callerSkip int, lvl Level) Option {
+	return &setCallersSkip{
+		callerSkip: callerSkip,
+		lvl:        lvl,
+	}
+}
+
+////////////////////
+//   Add Caller   //
+////////////////////
+
+// Hook adds caller information as a field with "caller" key
+func (h *addCallerHook) Hook(e *Entry) error {
+	if e == nil {
+		return errHookNilEntry
+	}
+
+	var field Field
+	var err error
+	if field, err = Caller(h.callerSkip); err != nil {
+		return err
+	}
+
+	field.AddTo(e.Fields())
+	return nil
+}
+
+// apply implements the Option interface
+func (h *addCallerHook) apply(m *Meta) {
 	m.Hooks = append(m.Hooks, h)
 }
 
-// AddCaller configures the Logger to annotate each message with the filename
-// and line number of zap's caller.
-func AddCaller() Option {
-	return Hook(func(e *Entry) error {
-		if e == nil {
-			return errHookNilEntry
-		}
-		_, filename, line, ok := runtime.Caller(_callerSkip)
-		if !ok {
-			return errCaller
-		}
-
-		// Re-use a buffer from the pool.
-		enc := jsonPool.Get().(*jsonEncoder)
-		enc.truncate()
-		buf := enc.bytes
-		buf = append(buf, filepath.Base(filename)...)
-		buf = append(buf, ':')
-		buf = strconv.AppendInt(buf, int64(line), 10)
-		buf = append(buf, ':', ' ')
-		buf = append(buf, e.Message...)
-
-		newMsg := string(buf)
-		enc.Free()
-		e.Message = newMsg
-		return nil
-	})
+// addCallerHook implements both the Hook and Option interfaces
+type addCallerHook struct {
+	callerSkip int
 }
 
-// AddStacks configures the Logger to record a stack trace for all messages at
-// or above a given level. Keep in mind that this is (relatively speaking) quite
-// expensive.
-func AddStacks(lvl Level) Option {
-	return Hook(func(e *Entry) error {
-		if e == nil {
-			return errHookNilEntry
+////////////////////
+//   Add Callers  //
+////////////////////
+
+// Hook adds callers information as a field with "callers" key
+func (h *addCallersHook) Hook(e *Entry) error {
+	if e == nil {
+		return errHookNilEntry
+	}
+	if e.Level >= h.lvl {
+		Callers(h.callerSkip).AddTo(e.Fields())
+	}
+	return nil
+}
+
+// apply implements the Option interface
+func (h *addCallersHook) apply(m *Meta) {
+	m.Hooks = append(m.Hooks, h)
+}
+
+// addCallersHook implements both the Hook and Option interfaces
+type addCallersHook struct {
+	callerSkip int
+	lvl        Level
+}
+
+////////////////////
+//   Add Stacks   //
+////////////////////
+
+// Hook adds stack trace information as a field with "stacktrace" key
+func (h *addStacksHook) Hook(e *Entry) error {
+	if e == nil {
+		return errHookNilEntry
+	}
+	if e.Level >= h.lvl {
+		Stack().AddTo(e.Fields())
+	}
+	return nil
+}
+
+// apply implements the Option interface
+func (h *addStacksHook) apply(m *Meta) {
+	m.Hooks = append(m.Hooks, h)
+}
+
+// addStacksHook implements both the Hook and Option interfaces
+type addStacksHook struct {
+	lvl Level
+}
+
+/////////////////////////
+//   Set Caller Skip   //
+/////////////////////////
+
+// apply implements the Option interface
+func (s *setCallerSkip) apply(m *Meta) {
+	for _, hd := range m.Hooks {
+		if h, ok := hd.(*addCallerHook); ok {
+			h.callerSkip = s.callerSkip
 		}
-		if e.Level >= lvl {
-			Stack().AddTo(e.Fields())
+	}
+}
+
+// setCallerSkip implements the Option interfaces
+type setCallerSkip struct {
+	callerSkip int
+}
+
+/////////////////////////
+//   Set Callers Skip  //
+/////////////////////////
+
+// apply implements the Option interface
+func (s *setCallersSkip) apply(m *Meta) {
+	for _, hd := range m.Hooks {
+		if h, ok := hd.(*addCallersHook); ok {
+			h.callerSkip = s.callerSkip
 		}
-		return nil
-	})
+	}
+}
+
+// setCallersSkip implements the Option interfaces
+type setCallersSkip struct {
+	callerSkip int
+	lvl        Level
 }
