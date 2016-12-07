@@ -30,8 +30,6 @@ import (
 var (
 	// Discard is a convenience wrapper around ioutil.Discard.
 	Discard = AddSync(ioutil.Discard)
-	// DiscardOutput is an Option that discards logger output.
-	DiscardOutput = Output(Discard)
 )
 
 // A WriteFlusher is an io.Writer that can also flush any buffered data.
