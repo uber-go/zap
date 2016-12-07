@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"fmt"
 	"os"
 	"time"
 )
@@ -58,7 +59,10 @@ type Logger interface {
 	Fatal(string, ...Field)
 }
 
-type logger struct{ Meta }
+type logger struct {
+	Meta
+	fac Facility
+}
 
 // New constructs a logger that uses the provided encoder. By default, the
 // logger will write Info logs or higher to standard out. Any errors during logging
@@ -67,21 +71,66 @@ type logger struct{ Meta }
 // Options can change the log level, the output location, the initial fields
 // that should be added as context, and many other behaviors.
 func New(enc Encoder, options ...Option) Logger {
-	return &logger{
-		Meta: MakeMeta(enc, options...),
+	meta := MakeMeta(enc, options...)
+	fac := ioFacility{
+		enab: meta.LevelEnabler,
+		enc:  meta.Encoder,
+		out:  meta.Output,
 	}
+	log := &logger{
+		Meta: meta,
+		fac:  fac,
+	}
+	return log
 }
 
 func (log *logger) With(fields ...Field) Logger {
 	clone := &logger{
 		Meta: log.Meta.Clone(),
+		fac:  log.fac.With(fields...),
 	}
 	addFields(clone.Encoder, fields)
 	return clone
 }
 
 func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
-	return log.Meta.Check(log, lvl, msg)
+	ent := Entry{
+		Time:    time.Now().UTC(),
+		Level:   lvl,
+		Message: msg,
+	}
+	if ce := log.checkEntry(ent); ce != nil {
+		cm := NewCheckedMessage(log, lvl, msg)
+		cm.ce = ce
+		return cm
+	}
+	return nil
+}
+
+func (log *logger) checkEntry(ent Entry) *CheckedEntry {
+	var ce *CheckedEntry
+	switch ent.Level {
+	case PanicLevel:
+		// Panic should always cause a panic, even if not written.
+		ce = log.fac.Check(ent, ce)
+		return ce.Should(ent, WriteThenPanic)
+	case FatalLevel:
+		// Fatal should always cause an exit.
+		ce = log.fac.Check(ent, ce)
+		return ce.Should(ent, WriteThenFatal)
+	case DPanicLevel:
+		// DPanic should always cause a panic in development.
+		if log.Meta.Development {
+			ce = log.fac.Check(ent, ce)
+			return ce.Should(ent, WriteThenPanic)
+		}
+		fallthrough
+	default:
+		if !log.Meta.Enabled(ent.Level) {
+			return nil
+		}
+		return log.fac.Check(ent, ce)
+	}
 }
 
 func (log *logger) Debug(msg string, fields ...Field) {
@@ -118,24 +167,28 @@ func (log *logger) Fatal(msg string, fields ...Field) {
 }
 
 func (log *logger) Log(lvl Level, msg string, fields ...Field) {
-	if !log.Meta.Enabled(lvl) {
-		return
-	}
 	ent := Entry{
 		Time:    time.Now().UTC(),
 		Level:   lvl,
 		Message: msg,
+	}
+	if !log.Meta.Enabled(ent.Level) {
+		return
 	}
 	for _, hook := range log.Hooks {
 		if err := hook(&ent); err != nil {
 			log.InternalError("hook", err)
 		}
 	}
-	if err := log.Encoder.WriteEntry(log.Output, ent, fields); err != nil {
-		log.InternalError("encoder", err)
+	if err := log.fac.Log(ent, fields...); err != nil {
+		log.InternalError("facility", err)
 	}
-	if ent.Level > ErrorLevel {
-		// Sync on Panic and Fatal, since they may crash the program.
-		log.Output.Sync()
-	}
+}
+
+// InternalError prints an internal error message to the configured
+// ErrorOutput. This method should only be used to report internal logger
+// problems and should not be used to report user-caused problems.
+func (log *logger) InternalError(cause string, err error) {
+	fmt.Fprintf(log.Meta.ErrorOutput, "%v %s error: %v\n", time.Now().UTC(), cause, err)
+	log.Meta.ErrorOutput.Sync()
 }

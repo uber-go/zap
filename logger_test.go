@@ -364,7 +364,7 @@ func TestJSONLoggerWriteEntryFailure(t *testing.T) {
 
 	logger.Info("foo")
 	// Should log the error.
-	assert.Regexp(t, `encoder error: failed`, errBuf.Stripped(), "Expected to log the error to the error output.")
+	assert.Regexp(t, `facility error: failed`, errBuf.Stripped(), "Expected to log the error to the error output.")
 	assert.True(t, errSink.Called(), "Expected logging an internal error to call Sync the error sink.")
 }
 

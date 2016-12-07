@@ -28,3 +28,40 @@ type Facility interface {
 	Check(Entry, *CheckedEntry) *CheckedEntry
 	Write(Entry, []Field) error
 }
+
+type ioFacility struct {
+	enab LevelEnabler
+	enc  Encoder
+	out  WriteSyncer
+}
+
+func (iof ioFacility) With(fields ...Field) Facility {
+	iof.enc = iof.enc.Clone()
+	addFields(iof.enc, fields)
+	return iof
+}
+
+func (iof ioFacility) Log(ent Entry, fields ...Field) error {
+	if iof.enab.Enabled(ent.Level) {
+		return iof.Write(ent, fields)
+	}
+	return nil
+}
+
+func (iof ioFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
+	if iof.enab.Enabled(ent.Level) {
+		ce = ce.AddFacility(ent, iof)
+	}
+	return ce
+}
+
+func (iof ioFacility) Write(ent Entry, fields []Field) error {
+	if err := iof.enc.WriteEntry(iof.out, ent, fields); err != nil {
+		return err
+	}
+	if ent.Level > ErrorLevel {
+		// Sync on Panic and Fatal, since they may crash the program.
+		return iof.out.Sync()
+	}
+	return nil
+}
