@@ -80,6 +80,11 @@ func (m Meta) Check(log Logger, lvl Level, msg string) *CheckedMessage {
 		// Panic and Fatal should always cause a panic/exit, even if the level
 		// is disabled.
 		break
+	case DPanicLevel:
+		if m.Development {
+			break
+		}
+		fallthrough
 	default:
 		if !m.Enabled(lvl) {
 			return nil
