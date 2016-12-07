@@ -20,99 +20,53 @@
 
 package zap
 
-// Tee creates a Logger that duplicates its log calls to two or more
-// loggers. It is similar to io.MultiWriter.
-//
-// For each logging level method (.Debug, .Info, etc), the Tee calls
-// each sub-logger's level method.
-//
-// Exceptions are made for the DPanic, Panic, and Fatal methods: the returned
-// logger calls .Log(DPanicLevel, ...), .Log(PanicLevel, ...), and
-// .Log(FatalLevel, ...) respectively. Only after all sub-loggers have received
-// the message, then the Tee terminates the process (using os.Exit or panic()
-// per usual semantics).
-//
-// NOTE: DPanic will currently never panic, since the Tee Logger does not
-// accept options (nor even have a development flag).
-//
-// Check returns a CheckedMessage chain of any OK CheckedMessages returned by
-// all sub-loggers. The returned message is OK if any of the sub-messages are.
-// An exception is made for FatalLevel and PanicLevel, where a CheckedMessage
-// is returned against the Tee itself. This is so that tlog.Check(PanicLevel,
-// ...).Write(...) is equivalent to tlog.Panic(...) (likewise for FatalLevel).
-func Tee(logs ...Logger) Logger {
-	switch len(logs) {
+// Tee creates a Facility that duplicates log entries into two or more
+// facilities; if you call it with less than two, you get back the one facility
+// you passed (or nil in the pathological case).
+func Tee(facs ...Facility) Facility {
+	switch len(facs) {
 	case 0:
 		return nil
 	case 1:
-		return logs[0]
+		return facs[0]
 	default:
-		return multiLogger(logs)
+		return multiFacility(facs)
 	}
 }
 
-type multiLogger []Logger
+type multiFacility []Facility
 
-func (ml multiLogger) Log(lvl Level, msg string, fields ...Field) {
-	ml.log(lvl, msg, fields)
-}
-
-func (ml multiLogger) Debug(msg string, fields ...Field) {
-	ml.log(DebugLevel, msg, fields)
-}
-
-func (ml multiLogger) Info(msg string, fields ...Field) {
-	ml.log(InfoLevel, msg, fields)
-}
-
-func (ml multiLogger) Warn(msg string, fields ...Field) {
-	ml.log(WarnLevel, msg, fields)
-}
-
-func (ml multiLogger) Error(msg string, fields ...Field) {
-	ml.log(ErrorLevel, msg, fields)
-}
-
-func (ml multiLogger) Panic(msg string, fields ...Field) {
-	ml.log(PanicLevel, msg, fields)
-	panic(msg)
-}
-
-func (ml multiLogger) Fatal(msg string, fields ...Field) {
-	ml.log(FatalLevel, msg, fields)
-	_exit(1)
-}
-
-func (ml multiLogger) log(lvl Level, msg string, fields []Field) {
-	for _, log := range ml {
-		log.Log(lvl, msg, fields...)
-	}
-}
-
-func (ml multiLogger) DPanic(msg string, fields ...Field) {
-	ml.log(DPanicLevel, msg, fields)
-	// TODO: Implement development/DPanic?
-}
-
-func (ml multiLogger) With(fields ...Field) Logger {
-	clone := make(multiLogger, len(ml))
-	for i := range ml {
-		clone[i] = ml[i].With(fields...)
+func (mf multiFacility) With(fields ...Field) Facility {
+	clone := make(multiFacility, len(mf))
+	for i := range mf {
+		clone[i] = mf[i].With(fields...)
 	}
 	return clone
 }
 
-func (ml multiLogger) Check(lvl Level, msg string) *CheckedMessage {
-	switch lvl {
-	case FatalLevel, PanicLevel:
-		// need to end up calling multiLogger Fatal and Panic methods, to avoid
-		// sub-logger termination (by merely logging at FatalLevel and
-		// PanicLevel).
-		return NewCheckedMessage(ml, lvl, msg)
+func (mf multiFacility) Log(ent Entry, fields ...Field) error {
+	var errs multiError
+	for i := range mf {
+		if err := mf[i].Log(ent, fields...); err != nil {
+			errs = append(errs, err)
+		}
 	}
-	var cm *CheckedMessage
-	for _, log := range ml {
-		cm = cm.Chain(log.Check(lvl, msg))
+	return errs.asError()
+}
+
+func (mf multiFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
+	for i := range mf {
+		ce = mf[i].Check(ent, ce)
 	}
-	return cm
+	return ce
+}
+
+func (mf multiFacility) Write(ent Entry, fields []Field) error {
+	var errs multiError
+	for i := range mf {
+		if err := mf[i].Write(ent, fields); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs.asError()
 }
