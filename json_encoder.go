@@ -28,7 +28,6 @@ import (
 	"math"
 	"strconv"
 	"sync"
-	"time"
 	"unicode/utf8"
 )
 
@@ -194,7 +193,7 @@ func (enc *jsonEncoder) Clone() Encoder {
 // the encoder's accumulated fields. It doesn't modify or lock the encoder's
 // underlying byte slice. It's safe to call from multiple goroutines, but it's
 // not safe to call WriteEntry while adding fields.
-func (enc *jsonEncoder) WriteEntry(sink io.Writer, msg string, lvl Level, t time.Time) error {
+func (enc *jsonEncoder) WriteEntry(sink io.Writer, ent Entry) error {
 	if sink == nil {
 		return errNilSink
 	}
@@ -202,9 +201,9 @@ func (enc *jsonEncoder) WriteEntry(sink io.Writer, msg string, lvl Level, t time
 	final := jsonPool.Get().(*jsonEncoder)
 	final.truncate()
 	final.bytes = append(final.bytes, '{')
-	enc.levelF(lvl).AddTo(final)
-	enc.timeF(t).AddTo(final)
-	enc.messageF(msg).AddTo(final)
+	enc.levelF(ent.Level).AddTo(final)
+	enc.timeF(ent.Time).AddTo(final)
+	enc.messageF(ent.Message).AddTo(final)
 	if len(enc.bytes) > 0 {
 		if len(final.bytes) > 1 {
 			// All the formatters may have been no-ops.

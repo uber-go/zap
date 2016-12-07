@@ -157,20 +157,22 @@ func TestJSONEncoderFields(t *testing.T) {
 }
 
 func TestJSONWriteEntry(t *testing.T) {
-	entry := &Entry{Level: InfoLevel, Message: `hello\`, Time: time.Unix(0, 0)}
 	enc := NewJSONEncoder()
 
-	assert.Equal(t, errNilSink, enc.WriteEntry(
-		nil,
-		entry.Message,
-		entry.Level,
-		entry.Time,
-	), "Expected an error writing to a nil sink.")
+	assert.Equal(t, errNilSink, enc.WriteEntry(nil, Entry{
+		Level:   InfoLevel,
+		Message: `hello\`,
+		Time:    time.Unix(0, 0),
+	}), "Expected an error writing to a nil sink.")
 
 	// Messages should be escaped.
 	sink := &testBuffer{}
 	enc.AddString("foo", "bar")
-	err := enc.WriteEntry(sink, entry.Message, entry.Level, entry.Time)
+	err := enc.WriteEntry(sink, Entry{
+		Level:   InfoLevel,
+		Message: `hello\`,
+		Time:    time.Unix(0, 0),
+	})
 	assert.NoError(t, err, "WriteEntry returned an unexpected error.")
 	assert.Equal(
 		t,
@@ -181,7 +183,11 @@ func TestJSONWriteEntry(t *testing.T) {
 	// We should be able to re-use the encoder, preserving the accumulated
 	// fields.
 	sink.Reset()
-	err = enc.WriteEntry(sink, entry.Message, entry.Level, time.Unix(100, 0))
+	err = enc.WriteEntry(sink, Entry{
+		Level:   InfoLevel,
+		Message: `hello\`,
+		Time:    time.Unix(100, 0),
+	})
 	assert.NoError(t, err, "WriteEntry returned an unexpected error.")
 	assert.Equal(
 		t,
@@ -195,7 +201,11 @@ func TestJSONWriteEntryLargeTimestamps(t *testing.T) {
 	sink := &testBuffer{}
 	enc := NewJSONEncoder()
 	future := time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC)
-	require.NoError(t, enc.WriteEntry(sink, "fake msg", DebugLevel, future))
+	require.NoError(t, enc.WriteEntry(sink, Entry{
+		Message: "fake msg",
+		Level:   DebugLevel,
+		Time:    future,
+	}))
 	assert.Contains(
 		t,
 		sink.Stripped(),
@@ -227,7 +237,11 @@ func TestJSONWriteEntryFailure(t *testing.T) {
 			{spywrite.ShortWriter{}, "Expected an error on partial writes to sink."},
 		}
 		for _, tt := range tests {
-			err := enc.WriteEntry(tt.sink, "hello", InfoLevel, time.Unix(0, 0))
+			err := enc.WriteEntry(tt.sink, Entry{
+				Message: "hello",
+				Level:   InfoLevel,
+				Time:    time.Unix(0, 0),
+			})
 			assert.Error(t, err, tt.msg)
 		}
 	})
@@ -283,7 +297,11 @@ func TestJSONOptions(t *testing.T) {
 
 	for _, enc := range []Encoder{root, root.Clone()} {
 		buf := &bytes.Buffer{}
-		enc.WriteEntry(buf, "fake msg", DebugLevel, epoch)
+		enc.WriteEntry(buf, Entry{
+			Message: "fake msg",
+			Level:   DebugLevel,
+			Time:    epoch,
+		})
 		assert.Equal(
 			t,
 			`{"the-level":"debug","the-timestamp":"1970-01-01T00:00:00Z","the-message":"fake msg"}`+"\n",

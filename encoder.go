@@ -20,10 +20,7 @@
 
 package zap
 
-import (
-	"io"
-	"time"
-)
+import "io"
 
 // Encoder is a format-agnostic interface for all log entry marshalers. Since
 // log encoders don't need to support the same wide range of use cases as
@@ -44,5 +41,5 @@ type Encoder interface {
 	Free()
 	// Write the supplied message, level, and timestamp to the writer, along with
 	// any accumulated context.
-	WriteEntry(io.Writer, string, Level, time.Time) error
+	WriteEntry(io.Writer, Entry) error
 }

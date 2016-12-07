@@ -20,10 +20,7 @@
 
 package zap
 
-import (
-	"io"
-	"time"
-)
+import "io"
 
 // nullEncoder is an Encoder implementation that throws everything away.
 type nullEncoder struct{}
@@ -56,7 +53,7 @@ func (nullEncoder) Clone() Encoder {
 
 // WriteEntry writes nothing to the supplied writer, but demands a valid writer.
 // It's safe to call from multiple goroutines.
-func (nullEncoder) WriteEntry(sink io.Writer, _ string, _ Level, _ time.Time) error {
+func (nullEncoder) WriteEntry(sink io.Writer, _ Entry) error {
 	if sink == nil {
 		return errNilSink
 	}

@@ -63,21 +63,23 @@ func TestNullEncoderFields(t *testing.T) {
 }
 
 func TestNullWriteEntry(t *testing.T) {
-	entry := &Entry{Level: InfoLevel, Message: `ohai`, Time: time.Unix(0, 0)}
 	enc := NullEncoder()
 
-	assert.Equal(t, errNilSink, enc.WriteEntry(
-		nil,
-		entry.Message,
-		entry.Level,
-		entry.Time,
-	), "Expected an error writing to a nil sink.")
+	assert.Equal(t, errNilSink, enc.WriteEntry(nil, Entry{
+		Level:   InfoLevel,
+		Message: `ohai`,
+		Time:    time.Unix(0, 0),
+	}), "Expected an error writing to a nil sink.")
 
 	// Messages should be thrown away.
 	sink := &bytes.Buffer{}
 	enc.AddString("foo", "bar")
 	assert.Len(t, sink.Bytes(), 0)
-	err := enc.WriteEntry(sink, entry.Message, entry.Level, entry.Time)
+	err := enc.WriteEntry(sink, Entry{
+		Level:   InfoLevel,
+		Message: `ohai`,
+		Time:    time.Unix(0, 0),
+	})
 	assert.NoError(t, err, "WriteEntry returned an unexpected error.")
 	assert.Len(
 		t,

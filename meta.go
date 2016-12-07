@@ -106,21 +106,21 @@ func (m Meta) InternalError(cause string, err error) {
 func (m Meta) Encode(w io.Writer, t time.Time, lvl Level, msg string, fields []Field) error {
 	enc := m.Encoder.Clone()
 	addFields(enc, fields)
+	entry := _entryPool.Get().(*Entry)
+	entry.Level = lvl
+	entry.Message = msg
+	entry.Time = t
+	entry.enc = enc
 	if len(m.Hooks) >= 0 {
-		entry := _entryPool.Get().(*Entry)
-		entry.Level = lvl
-		entry.Message = msg
-		entry.Time = t
-		entry.enc = enc
 		for _, hook := range m.Hooks {
 			if err := hook(entry); err != nil {
 				m.InternalError("hook", err)
 			}
 		}
 		msg, enc = entry.Message, entry.enc
-		_entryPool.Put(entry)
 	}
-	err := enc.WriteEntry(w, msg, lvl, t)
+	err := enc.WriteEntry(w, *entry)
 	enc.Free()
+	_entryPool.Put(entry)
 	return err
 }
