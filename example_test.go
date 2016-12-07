@@ -143,6 +143,21 @@ func ExampleTee() {
 	// {"level":"info","msg":"this log gets encoded twice, differently","foo":42}
 }
 
+func ExampleFilter() {
+	stdout := zap.New(zap.NewTextEncoder(zap.TextNoTime()), zap.Output(os.Stdout))
+	stderr := zap.New(zap.NewTextEncoder(zap.TextNoTime()), zap.Output(os.Stderr))
+
+	logger := zap.Filter(
+		zap.LeveledLogger{zap.InfoLevel, stdout},
+		zap.LeveledLogger{zap.WarnLevel, stdout},
+		zap.LeveledLogger{zap.ErrorLevel, stderr},
+	)
+	logger.Info("This is a filter log.", zap.Int("foo", 42))
+
+	// Output:
+	// [I] This is a filter log. foo=42
+}
+
 func ExampleMultiWriteSyncer() {
 	// To send output to multiple outputs, use MultiWriteSyncer.
 	textLogger := zap.New(
