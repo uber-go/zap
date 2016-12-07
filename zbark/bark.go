@@ -29,7 +29,7 @@ import (
 	"github.com/uber-common/bark"
 )
 
-// Barkify wraps zap's JSON logger to make it compatible with the bark.Logger
+// Barkify wraps zap.logger to make it compatible with the bark.Logger
 // interface.
 func Barkify(l zap.Logger) bark.Logger {
 	if wrapper, ok := l.(*zapper); ok {
