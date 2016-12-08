@@ -98,11 +98,10 @@ func MinLevel(level zap.Level) Option {
 	}
 }
 
-// TraceEnabled allows to change wether (the somewhat expensive, relatively)
-// stack trace generation takes place.
-func TraceEnabled(enabled bool) Option {
+// DisableTraces allows to turn off Stacktrace for sentry packets
+func DisableTraces() Option {
 	return func(l *Logger) {
-		l.traceEnabled = enabled
+		l.traceEnabled = false
 	}
 }
 

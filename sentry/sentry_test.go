@@ -95,7 +95,7 @@ func TestWithTraceDisabled(t *testing.T) {
 	_, ps := capturePackets(func(l *Logger) {
 		l.Error("some error message", zap.String("foo", "bar"))
 		l.Error("another error message")
-	}, TraceEnabled(false))
+	}, DisableTraces())
 
 	for _, p := range ps {
 		assert.Empty(t, p.Interfaces)
