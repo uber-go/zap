@@ -121,13 +121,20 @@ func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 	if !log.Meta.Enabled(lvl) {
 		return
 	}
-
-	t := time.Now().UTC()
-	if err := log.Encode(log.Output, t, lvl, msg, fields); err != nil {
+	ent := Entry{
+		Time:    time.Now().UTC(),
+		Level:   lvl,
+		Message: msg,
+	}
+	for _, hook := range log.Hooks {
+		if err := hook(&ent); err != nil {
+			log.InternalError("hook", err)
+		}
+	}
+	if err := log.Encoder.WriteEntry(log.Output, ent, fields); err != nil {
 		log.InternalError("encoder", err)
 	}
-
-	if lvl > ErrorLevel {
+	if ent.Level > ErrorLevel {
 		// Sync on Panic and Fatal, since they may crash the program.
 		log.Output.Sync()
 	}
