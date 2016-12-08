@@ -53,7 +53,7 @@ func (nullEncoder) Clone() Encoder {
 
 // WriteEntry writes nothing to the supplied writer, but demands a valid writer.
 // It's safe to call from multiple goroutines.
-func (nullEncoder) WriteEntry(sink io.Writer, _ Entry) error {
+func (nullEncoder) WriteEntry(sink io.Writer, _ Entry, _ []Field) error {
 	if sink == nil {
 		return errNilSink
 	}

@@ -136,7 +136,7 @@ func TestTextWriteEntry(t *testing.T) {
 				Level:   InfoLevel,
 				Message: "Something happened.",
 				Time:    epoch,
-			}),
+			}, nil),
 			"Unexpected failure writing entry with text time formatter %s.", tt.name,
 		)
 		assert.Equal(t, tt.expected, sink.Stripped(), "Unexpected output from text time formatter %s.", tt.name)
@@ -167,7 +167,7 @@ func TestTextWriteEntryLevels(t *testing.T) {
 				Message: "Fake message.",
 				Level:   tt.level,
 				Time:    epoch,
-			}),
+			}, nil),
 			"Unexpected failure writing entry with level %s.", tt.level,
 		)
 		expected := fmt.Sprintf("[%s] Fake message.", tt.expected)
@@ -203,7 +203,7 @@ func TestTextWriteEntryFailure(t *testing.T) {
 				Message: "hello",
 				Level:   InfoLevel,
 				Time:    time.Unix(0, 0),
-			})
+			}, nil)
 			assert.Error(t, err, tt.msg)
 		}
 	})
@@ -220,7 +220,7 @@ func TestTextTimeOptions(t *testing.T) {
 		Level:   InfoLevel,
 		Message: "Something happened.",
 		Time:    epoch,
-	})
+	}, nil)
 	assert.NoError(t, err, "WriteEntry returned an unexpected error.")
 	assert.Equal(
 		t,

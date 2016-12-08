@@ -163,7 +163,7 @@ func TestJSONWriteEntry(t *testing.T) {
 		Level:   InfoLevel,
 		Message: `hello\`,
 		Time:    time.Unix(0, 0),
-	}), "Expected an error writing to a nil sink.")
+	}, nil), "Expected an error writing to a nil sink.")
 
 	// Messages should be escaped.
 	sink := &testBuffer{}
@@ -172,7 +172,7 @@ func TestJSONWriteEntry(t *testing.T) {
 		Level:   InfoLevel,
 		Message: `hello\`,
 		Time:    time.Unix(0, 0),
-	})
+	}, nil)
 	assert.NoError(t, err, "WriteEntry returned an unexpected error.")
 	assert.Equal(
 		t,
@@ -187,7 +187,7 @@ func TestJSONWriteEntry(t *testing.T) {
 		Level:   InfoLevel,
 		Message: `hello\`,
 		Time:    time.Unix(100, 0),
-	})
+	}, nil)
 	assert.NoError(t, err, "WriteEntry returned an unexpected error.")
 	assert.Equal(
 		t,
@@ -205,7 +205,7 @@ func TestJSONWriteEntryLargeTimestamps(t *testing.T) {
 		Message: "fake msg",
 		Level:   DebugLevel,
 		Time:    future,
-	}))
+	}, nil))
 	assert.Contains(
 		t,
 		sink.Stripped(),
@@ -241,7 +241,7 @@ func TestJSONWriteEntryFailure(t *testing.T) {
 				Message: "hello",
 				Level:   InfoLevel,
 				Time:    time.Unix(0, 0),
-			})
+			}, nil)
 			assert.Error(t, err, tt.msg)
 		}
 	})
@@ -301,7 +301,7 @@ func TestJSONOptions(t *testing.T) {
 			Message: "fake msg",
 			Level:   DebugLevel,
 			Time:    epoch,
-		})
+		}, nil)
 		assert.Equal(
 			t,
 			`{"the-level":"debug","the-timestamp":"1970-01-01T00:00:00Z","the-message":"fake msg"}`+"\n",

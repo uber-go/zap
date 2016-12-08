@@ -69,7 +69,7 @@ func TestNullWriteEntry(t *testing.T) {
 		Level:   InfoLevel,
 		Message: `ohai`,
 		Time:    time.Unix(0, 0),
-	}), "Expected an error writing to a nil sink.")
+	}, nil), "Expected an error writing to a nil sink.")
 
 	// Messages should be thrown away.
 	sink := &bytes.Buffer{}
@@ -79,7 +79,7 @@ func TestNullWriteEntry(t *testing.T) {
 		Level:   InfoLevel,
 		Message: `ohai`,
 		Time:    time.Unix(0, 0),
-	})
+	}, nil)
 	assert.NoError(t, err, "WriteEntry returned an unexpected error.")
 	assert.Len(
 		t,

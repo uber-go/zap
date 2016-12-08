@@ -55,7 +55,7 @@ func BenchmarkZapNull(b *testing.B) {
 				Message: "fake",
 				Level:   DebugLevel,
 				Time:    ts,
-			})
+			}, nil)
 			enc.Free()
 		}
 	})

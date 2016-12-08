@@ -104,8 +104,7 @@ func (m Meta) InternalError(cause string, err error) {
 // Encode runs any Hook functions and then writes an encoded log entry to the
 // given io.Writer, returning any error.
 func (m Meta) Encode(w io.Writer, t time.Time, lvl Level, msg string, fields []Field) error {
-	enc := m.Encoder.Clone()
-	addFields(enc, fields)
+	enc := m.Encoder
 	entry := _entryPool.Get().(*Entry)
 	entry.Level = lvl
 	entry.Message = msg
@@ -119,8 +118,7 @@ func (m Meta) Encode(w io.Writer, t time.Time, lvl Level, msg string, fields []F
 		}
 		msg, enc = entry.Message, entry.enc
 	}
-	err := enc.WriteEntry(w, *entry)
-	enc.Free()
+	err := enc.WriteEntry(w, *entry, fields)
 	_entryPool.Put(entry)
 	return err
 }

@@ -193,7 +193,7 @@ func (enc *jsonEncoder) Clone() Encoder {
 // the encoder's accumulated fields. It doesn't modify or lock the encoder's
 // underlying byte slice. It's safe to call from multiple goroutines, but it's
 // not safe to call WriteEntry while adding fields.
-func (enc *jsonEncoder) WriteEntry(sink io.Writer, ent Entry) error {
+func (enc *jsonEncoder) WriteEntry(sink io.Writer, ent Entry, fields []Field) error {
 	if sink == nil {
 		return errNilSink
 	}
@@ -211,6 +211,7 @@ func (enc *jsonEncoder) WriteEntry(sink io.Writer, ent Entry) error {
 		}
 		final.bytes = append(final.bytes, enc.bytes...)
 	}
+	addFields(final, fields)
 	final.bytes = append(final.bytes, '}', '\n')
 
 	expectedBytes := len(final.bytes)
