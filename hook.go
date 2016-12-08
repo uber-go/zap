@@ -22,9 +22,7 @@ package zap
 
 import (
 	"errors"
-	"path/filepath"
 	"runtime"
-	"strconv"
 )
 
 var (
@@ -55,24 +53,10 @@ func AddCaller() Option {
 		if e == nil {
 			return errHookNilEntry
 		}
-		_, filename, line, ok := runtime.Caller(_callerSkip)
-		if !ok {
+		e.Caller = MakeEntryCaller(runtime.Caller(_callerSkip))
+		if !e.Caller.Defined {
 			return errCaller
 		}
-
-		// Re-use a buffer from the pool.
-		enc := jsonPool.Get().(*jsonEncoder)
-		enc.truncate()
-		buf := enc.bytes
-		buf = append(buf, filepath.Base(filename)...)
-		buf = append(buf, ':')
-		buf = strconv.AppendInt(buf, int64(line), 10)
-		buf = append(buf, ':', ' ')
-		buf = append(buf, e.Message...)
-
-		newMsg := string(buf)
-		enc.Free()
-		e.Message = newMsg
 		return nil
 	})
 }

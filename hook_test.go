@@ -33,8 +33,9 @@ func TestHookAddCaller(t *testing.T) {
 	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), AddCaller())
 	logger.Info("Callers.")
 
-	re := regexp.MustCompile(`"msg":"hook_test.go:[\d]+: Callers\."`)
+	re := regexp.MustCompile(`"caller":"[^"]+/hook_test.go:[\d]+","msg":"Callers\."`)
 	assert.Regexp(t, re, buf.Stripped(), "Expected to find package name and file name in output.")
+
 }
 
 func TestHookAddCallerFail(t *testing.T) {
