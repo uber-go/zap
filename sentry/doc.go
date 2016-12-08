@@ -18,6 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package sentry provides a logger which will automatically send events to sentry
-// over a certain set threshold
+// Package sentry provides a logger which will automatically send events
+// to sentry over a certain log level threshold.
 package sentry

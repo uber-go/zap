@@ -160,13 +160,12 @@ func (l *Logger) Fatal(msg string, fields ...zap.Field) {
 	os.Exit(1)
 }
 
-// DFatal either Fatals in development or Errors in production, as well as sending a packet.
-func (l *Logger) DFatal(msg string, fields ...zap.Field) {
+// DPanic logs the message and then panics if in development mode
+func (l *Logger) DPanic(msg string, fields ...zap.Field) {
+	l.log(zap.DPanicLevel, msg, fields)
 	if l.Development {
-		l.Fatal(msg, fields...)
-		return
+		panic(msg)
 	}
-	l.Error(msg, fields...)
 }
 
 // With returns Sentry logger with additional context.
