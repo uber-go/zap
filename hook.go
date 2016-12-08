@@ -80,6 +80,8 @@ func AddCaller() Option {
 // AddStacks configures the Logger to record a stack trace for all messages at
 // or above a given level. Keep in mind that this is (relatively speaking) quite
 // expensive.
+//
+// TODO: why is this called AddStacks rather than just AddStack or AddStacktrace?
 func AddStacks(lvl Level) Option {
 	return Hook(func(e *Entry) error {
 		if e == nil {
