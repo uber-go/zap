@@ -142,11 +142,10 @@ func ExampleNew_textEncoder() {
 
 func ExampleTee() {
 	// Multiple loggers can be combine using Tee.
-	output := zap.Output(os.Stdout)
-	logger := zap.Tee(
-		zap.New(zap.NewTextEncoder(zap.TextNoTime()), output),
-		zap.New(zap.NewJSONEncoder(zap.NoTime()), output),
-	)
+	logger := zap.Neo(zap.Tee(
+		zap.WriterFacility(zap.NewTextEncoder(zap.TextNoTime()), os.Stdout, zap.InfoLevel),
+		zap.WriterFacility(zap.NewJSONEncoder(zap.NoTime()), os.Stdout, zap.InfoLevel),
+	))
 
 	logger.Info("this log gets encoded twice, differently", zap.Int("foo", 42))
 	// Output:
