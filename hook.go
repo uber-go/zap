@@ -72,7 +72,7 @@ func AddStacks(lvl Level) Option {
 			return errHookNilEntry
 		}
 		if e.Level >= lvl {
-			Stack().AddTo(e.Fields())
+			e.Stack = Stack().str
 		}
 		return nil
 	})
