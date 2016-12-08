@@ -67,6 +67,7 @@ type Entry struct {
 	Time    time.Time
 	Message string
 	Caller  EntryCaller
+	Stack   string
 
 	enc Encoder
 }
