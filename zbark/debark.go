@@ -23,8 +23,8 @@ package zbark
 import (
 	"fmt"
 
-	"github.com/uber-go/zap"
-	"github.com/uber-go/zap/zwrap"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zwrap"
 
 	"github.com/uber-common/bark"
 )

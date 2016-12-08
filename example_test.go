@@ -27,7 +27,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 func Example() {

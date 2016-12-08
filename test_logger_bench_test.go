@@ -23,7 +23,7 @@ package zap_test
 import (
 	"testing"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 func withBenchedTee(b *testing.B, f func(zap.Logger)) {

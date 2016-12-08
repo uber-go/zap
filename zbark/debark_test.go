@@ -24,7 +24,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/stretchr/testify/assert"

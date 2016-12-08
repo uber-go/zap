@@ -24,7 +24,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/uber-go/atomic"
+	"go.uber.org/atomic"
 )
 
 var errMarshalNilLevel = errors.New("can't marshal a nil *Level to text")
