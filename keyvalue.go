@@ -38,4 +38,8 @@ type KeyValue interface {
 	// allocation-heavy. Consider implementing the LogMarshaler interface instead.
 	AddObject(key string, value interface{}) error
 	AddString(key, value string)
+
+	// Slices
+	AddInts(key string, value []int)
+	AddStrings(key string, value []string)
 }

@@ -95,13 +95,17 @@ func (enc *jsonEncoder) Free() {
 	jsonPool.Put(enc)
 }
 
+func (enc *jsonEncoder) wrapString(val string) {
+	enc.bytes = append(enc.bytes, '"')
+	enc.safeAddString(val)
+	enc.bytes = append(enc.bytes, '"')
+}
+
 // AddString adds a string key and value to the encoder's fields. Both key and
 // value are JSON-escaped.
 func (enc *jsonEncoder) AddString(key, val string) {
 	enc.addKey(key)
-	enc.bytes = append(enc.bytes, '"')
-	enc.safeAddString(val)
-	enc.bytes = append(enc.bytes, '"')
+	enc.wrapString(val)
 }
 
 // AddBool adds a string key and a boolean value to the encoder's fields. The
@@ -177,6 +181,52 @@ func (enc *jsonEncoder) AddObject(key string, obj interface{}) error {
 	enc.addKey(key)
 	enc.bytes = append(enc.bytes, marshaled...)
 	return nil
+}
+
+func (enc *jsonEncoder) arrayBegin() {
+	enc.bytes = append(enc.bytes, '[')
+}
+
+func (enc *jsonEncoder) arrayEnd() {
+	enc.bytes = append(enc.bytes, ']')
+}
+
+func (enc *jsonEncoder) arraySep() {
+	enc.bytes = append(enc.bytes, ',')
+}
+
+// AddInts adds a string key and integer slice to the encoder's fields. The key
+// is JSON-escaped.
+func (enc *jsonEncoder) AddInts(key string, vals []int) {
+	enc.addKey(key)
+	enc.arrayBegin()
+	l := len(vals)
+	if l > 0 {
+		enc.bytes = strconv.AppendInt(enc.bytes, int64(vals[0]), 10)
+
+		for i := 1; i < l; i++ {
+			enc.arraySep()
+			enc.bytes = strconv.AppendInt(enc.bytes, int64(vals[i]), 10)
+		}
+	}
+	enc.arrayEnd()
+}
+
+// AddStrings adds a string key and string slice to the encoder's fields. The key
+// is JSON-escaped.
+func (enc *jsonEncoder) AddStrings(key string, vals []string) {
+	enc.addKey(key)
+	enc.arrayBegin()
+	l := len(vals)
+	if l > 0 {
+		enc.wrapString(vals[0])
+
+		for i := 1; i < l; i++ {
+			enc.arraySep()
+			enc.wrapString(vals[i])
+		}
+	}
+	enc.arrayEnd()
 }
 
 // Clone copies the current encoder, including any data already encoded.

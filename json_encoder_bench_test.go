@@ -62,7 +62,7 @@ func BenchmarkZapJSONStrings(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			enc := NewJSONEncoder()
-			enc.AddObject("strings", []string{"bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "bar 6", "bar 7", "bar 8", "bar 9", "bar 10"})
+			enc.AddInts("ints", []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
 			enc.WriteEntry(ioutil.Discard, "fake", DebugLevel, ts)
 			enc.Free()
 		}

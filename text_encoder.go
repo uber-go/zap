@@ -106,6 +106,48 @@ func (enc *textEncoder) AddMarshaler(key string, obj LogMarshaler) error {
 	return err
 }
 
+func (enc *textEncoder) arrayBegin() {
+	enc.bytes = append(enc.bytes, '[')
+}
+
+func (enc *textEncoder) arrayEnd() {
+	enc.bytes = append(enc.bytes, ']')
+}
+
+func (enc *textEncoder) arraySep() {
+	enc.bytes = append(enc.bytes, ',')
+}
+
+func (enc *textEncoder) AddInts(key string, vals []int) {
+	enc.addKey(key)
+	enc.arrayBegin()
+	l := len(vals)
+	if l > 0 {
+		enc.bytes = strconv.AppendInt(enc.bytes, int64(vals[0]), 10)
+
+		for i := 1; i < l; i++ {
+			enc.arraySep()
+			enc.bytes = strconv.AppendInt(enc.bytes, int64(vals[i]), 10)
+		}
+	}
+	enc.arrayEnd()
+}
+
+func (enc *textEncoder) AddStrings(key string, vals []string) {
+	enc.addKey(key)
+	enc.arrayBegin()
+	l := len(vals)
+	if l > 0 {
+		enc.bytes = append(enc.bytes, vals[0]...)
+
+		for i := 1; i < l; i++ {
+			enc.arraySep()
+			enc.bytes = append(enc.bytes, vals[i]...)
+		}
+	}
+	enc.arrayEnd()
+}
+
 func (enc *textEncoder) AddObject(key string, obj interface{}) error {
 	enc.AddString(key, fmt.Sprintf("%+v", obj))
 	return nil

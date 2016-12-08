@@ -46,6 +46,9 @@ func (nullEncoder) AddUint64(_ string, _ uint64)   {}
 func (nullEncoder) AddUintptr(_ string, _ uintptr) {}
 func (nullEncoder) AddFloat64(_ string, _ float64) {}
 
+func (nullEncoder) AddInts(_ string, _ []int)       {}
+func (nullEncoder) AddStrings(_ string, _ []string) {}
+
 func (nullEncoder) AddMarshaler(_ string, _ LogMarshaler) error { return nil }
 func (nullEncoder) AddObject(_ string, _ interface{}) error     { return nil }
 

@@ -42,6 +42,8 @@ const (
 	marshalerType
 	objectType
 	stringerType
+	intsType
+	stringsType
 	errorType
 	skipType
 )
@@ -54,6 +56,8 @@ type Field struct {
 	fieldType fieldType
 	ival      int64
 	str       string
+	ivals     []int
+	strs      []string
 	obj       interface{}
 }
 
@@ -171,6 +175,16 @@ func Marshaler(key string, val LogMarshaler) Field {
 	return Field{key: key, fieldType: marshalerType, obj: val}
 }
 
+// Ints constructs a Field with the given key and value. Marshaling ints is lazy.
+func Ints(key string, val []int) Field {
+	return Field{key: key, fieldType: intsType, ivals: val}
+}
+
+// Strings constructs a Field with the given key and value. Marshaling strings is lazy.
+func Strings(key string, val []string) Field {
+	return Field{key: key, fieldType: stringsType, strs: val}
+}
+
 // Object constructs a field with the given key and an arbitrary object. It uses
 // an encoding-appropriate, reflection-based function to lazily serialize nearly
 // any object into the logging context, but it's relatively slow and
@@ -214,6 +228,10 @@ func (f Field) AddTo(kv KeyValue) {
 		kv.AddString(f.key, f.obj.(fmt.Stringer).String())
 	case marshalerType:
 		err = kv.AddMarshaler(f.key, f.obj.(LogMarshaler))
+	case intsType:
+		kv.AddInts(f.key, f.ivals)
+	case stringsType:
+		kv.AddStrings(f.key, f.strs)
 	case objectType:
 		err = kv.AddObject(f.key, f.obj)
 	case errorType:
