@@ -45,7 +45,7 @@ func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
 	}
 }
 
-func BenchmarkZapJSONObjArray(b *testing.B) {
+func BenchmarkZapJSONInts(b *testing.B) {
 	ts := time.Unix(0, 0)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
