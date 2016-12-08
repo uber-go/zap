@@ -84,6 +84,28 @@ func New(enc Encoder, options ...Option) Logger {
 	return log
 }
 
+// Neo returns a new facility-based logger; TODO this replacen New Soon ™.
+func Neo(fac Facility, options ...Option) Logger {
+	meta := MakeMeta(NewJSONEncoder(), options...)
+	if fac == nil {
+		fac = WriterFacility(NewJSONEncoder(), nil, InfoLevel)
+	}
+	if iof, ok := fac.(ioFacility); ok {
+		meta.LevelEnabler = iof.enab
+	}
+	for _, opt := range options {
+		if fs, ok := opt.(fieldsT); ok {
+			fac = fac.With(fs...)
+		}
+	}
+	// N.B ignores Meta.Output and Meta.Encoder
+	log := &logger{
+		fac:  fac,
+		Meta: meta,
+	}
+	return log
+}
+
 func (log *logger) With(fields ...Field) Logger {
 	clone := &logger{
 		Meta: log.Meta.Clone(),
