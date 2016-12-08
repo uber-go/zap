@@ -39,7 +39,8 @@ import (
 
 func newHandler() (AtomicLevel, Logger) {
 	lvl := DynamicLevel()
-	logger, _ := spy.New(lvl)
+	fac, _ := spy.New(lvl)
+	logger := Neo(fac)
 	return lvl, logger
 }
 
