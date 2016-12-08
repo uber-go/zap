@@ -20,7 +20,41 @@
 
 package zap
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
+
+// MakeEntryCaller makes an EntryCaller from the return signature of
+// runtime.Caller().
+func MakeEntryCaller(pc uintptr, file string, line int, ok bool) EntryCaller {
+	if !ok {
+		return EntryCaller{}
+	}
+	return EntryCaller{
+		PC:      pc,
+		File:    file,
+		Line:    line,
+		Defined: true,
+	}
+}
+
+// EntryCaller represents a notable caller of a log entry.
+type EntryCaller struct {
+	Defined bool
+	PC      uintptr
+	File    string
+	Line    int
+}
+
+// String returns a "file:line" string if the EntryCaller is Defined, and the
+// empty string otherwise.
+func (ec EntryCaller) String() string {
+	if !ec.Defined {
+		return ""
+	}
+	return fmt.Sprintf("%s:%d", ec.File, ec.Line)
+}
 
 // An Entry represents a complete log message. The entry's structured context
 // is already serialized, but the log level, time, and message are available
@@ -32,7 +66,9 @@ type Entry struct {
 	Level   Level
 	Time    time.Time
 	Message string
-	enc     Encoder
+	Caller  EntryCaller
+
+	enc Encoder
 }
 
 // Fields returns a mutable reference to the entry's accumulated context.
