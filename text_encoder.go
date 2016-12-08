@@ -125,6 +125,10 @@ func (enc *textEncoder) WriteEntry(sink io.Writer, ent Entry, fields []Field) er
 		return errNilSink
 	}
 
+	if ent.Caller.Defined {
+		ent.Message = fmt.Sprintf("%v: %v", ent.Caller, ent.Message)
+	}
+
 	final := textPool.Get().(*textEncoder)
 	final.truncate()
 	enc.addLevel(final, ent.Level)

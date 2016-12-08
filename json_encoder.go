@@ -203,6 +203,11 @@ func (enc *jsonEncoder) WriteEntry(sink io.Writer, ent Entry, fields []Field) er
 	final.bytes = append(final.bytes, '{')
 	enc.levelF(ent.Level).AddTo(final)
 	enc.timeF(ent.Time).AddTo(final)
+	if ent.Caller.Defined {
+		// NOTE: we add the field here for parity compromise with text
+		// prepending, while not actualyl mutating the message string.
+		final.AddString("caller", ent.Caller.String())
+	}
 	enc.messageF(ent.Message).AddTo(final)
 	if len(enc.bytes) > 0 {
 		if len(final.bytes) > 1 {
