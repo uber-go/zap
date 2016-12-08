@@ -91,7 +91,7 @@ func New(dsn string, options ...Option) (*Logger, error) {
 	return l, nil
 }
 
-// MinLevel provides a minimum level threshold, above which Sentry packtes will be triggered
+// MinLevel provides a minimum level threshold, above which Sentry packets will be triggered
 func MinLevel(level zap.Level) Option {
 	return func(l *Logger) {
 		l.minLevel = level

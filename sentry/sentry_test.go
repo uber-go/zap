@@ -142,7 +142,7 @@ func TestErrorCapture(t *testing.T) {
 }
 
 func TestPacketSending(t *testing.T) {
-	withTestSentry(t, func(dsn string, ch <-chan *raven.Packet) {
+	withTestSentry(func(dsn string, ch <-chan *raven.Packet) {
 		sl, err := New(dsn)
 		defer sl.Close()
 
@@ -180,7 +180,7 @@ func capturePackets(f func(l *Logger), options ...Option) (*Logger, []*raven.Pac
 	return l, c.packets
 }
 
-func withTestSentry(t *testing.T, f func(string, <-chan *raven.Packet)) {
+func withTestSentry(f func(string, <-chan *raven.Packet)) {
 	ch := make(chan *raven.Packet)
 	h := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
@@ -198,7 +198,7 @@ func withTestSentry(t *testing.T, f func(string, <-chan *raven.Packet)) {
 		err := d.Decode(p)
 		if err != nil {
 			ch <- nil
-			t.Fatal(err.Error())
+			panic(err.Error())
 		}
 		ch <- p
 	})
