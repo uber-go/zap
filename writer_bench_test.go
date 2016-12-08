@@ -27,7 +27,7 @@ import (
 )
 
 func BenchmarkMultiWriteSyncer2(b *testing.B) {
-	log := zap.Neo(zap.WriterFacility(
+	log := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.MultiWriteSyncer(zap.Discard, zap.Discard),
 		zap.DebugLevel,
@@ -41,7 +41,7 @@ func BenchmarkMultiWriteSyncer2(b *testing.B) {
 }
 
 func BenchmarkMultiWriteSyncer4(b *testing.B) {
-	log := zap.Neo(zap.WriterFacility(
+	log := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.MultiWriteSyncer(zap.Discard, zap.Discard, zap.Discard, zap.Discard),
 		zap.DebugLevel,

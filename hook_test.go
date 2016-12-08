@@ -30,7 +30,7 @@ import (
 
 func TestHookAddCaller(t *testing.T) {
 	buf := &testBuffer{}
-	logger := Neo(
+	logger := New(
 		WriterFacility(NewJSONEncoder(), buf, DebugLevel),
 		AddCaller(),
 	)
@@ -49,7 +49,7 @@ func TestHookAddCallerFail(t *testing.T) {
 	_callerSkip = 1e3
 	defer func() { _callerSkip = originalSkip }()
 
-	logger := Neo(
+	logger := New(
 		WriterFacility(NewJSONEncoder(), buf, DebugLevel),
 		ErrorOutput(errBuf), AddCaller(),
 	)
@@ -60,7 +60,7 @@ func TestHookAddCallerFail(t *testing.T) {
 
 func TestHookAddStacks(t *testing.T) {
 	buf := &testBuffer{}
-	logger := Neo(
+	logger := New(
 		WriterFacility(NewJSONEncoder(), buf, DebugLevel),
 		AddStacks(InfoLevel),
 	)

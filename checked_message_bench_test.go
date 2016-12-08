@@ -29,7 +29,7 @@ import (
 func benchmarkLoggers(levels ...Level) []Logger {
 	logs := make([]Logger, len(levels))
 	for i, lvl := range levels {
-		logs[i] = Neo(WriterFacility(NullEncoder(), Discard, lvl))
+		logs[i] = New(WriterFacility(NullEncoder(), Discard, lvl))
 	}
 	return logs
 }

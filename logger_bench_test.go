@@ -48,7 +48,7 @@ var _jane = &user{
 }
 
 func withBenchedLogger(b *testing.B, f func(zap.Logger)) {
-	logger := zap.Neo(zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard, zap.DebugLevel))
+	logger := zap.New(zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard, zap.DebugLevel))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -138,7 +138,7 @@ func BenchmarkObjectField(b *testing.B) {
 }
 
 func BenchmarkAddCallerHook(b *testing.B) {
-	logger := zap.Neo(
+	logger := zap.New(
 		zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard, zap.InfoLevel),
 		zap.AddCaller(),
 	)
@@ -169,7 +169,7 @@ func Benchmark10Fields(b *testing.B) {
 
 func Benchmark100Fields(b *testing.B) {
 	const batchSize = 50
-	logger := zap.Neo(zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard, zap.DebugLevel))
+	logger := zap.New(zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard, zap.DebugLevel))
 
 	// Don't include allocating these helper slices in the benchmark. Since
 	// access to them isn't synchronized, we can't run the benchmark in

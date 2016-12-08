@@ -43,7 +43,7 @@ func fakeSampler(lvl zap.Level, tick time.Duration, first, thereafter int, devel
 	}
 	fac, sink := spy.New(lvl)
 	fac = Sample(fac, tick, first, thereafter)
-	log := zap.Neo(fac, opts...)
+	log := zap.New(fac, opts...)
 	return log, sink
 }
 

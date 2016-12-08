@@ -59,7 +59,7 @@ func (l loggable) MarshalLog(kv zap.KeyValue) error {
 
 func newBark() (bark.Logger, *bytes.Buffer) {
 	buf := &bytes.Buffer{}
-	logger := zap.Neo(zap.WriterFacility(
+	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		buf,
 		zap.DebugLevel,

@@ -33,7 +33,7 @@ import (
 func Example() {
 	// Log in JSON, using zap's reflection-free JSON encoder. By default, loggers
 	// write all InfoLevel and above logs to standard out.
-	logger := zap.Neo(zap.WriterFacility(
+	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 		nil, // defaults to standard out
 		zap.InfoLevel,
@@ -69,7 +69,7 @@ func Example_fileOutput() {
 	}
 	defer os.Remove(f.Name())
 
-	logger := zap.Neo(
+	logger := zap.New(
 		// Write the logging output to the specified file instead of stdout.
 		// Any type implementing zap.Facility can be used.
 		zap.WriterFacility(
@@ -95,7 +95,7 @@ func Example_fileOutput() {
 }
 
 func ExampleNest() {
-	logger := zap.Neo(zap.WriterFacility(
+	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 		nil, // defaults to standard out
 		zap.InfoLevel,
@@ -112,7 +112,7 @@ func ExampleNest() {
 func ExampleNew() {
 	// The default logger outputs to standard out and only writes logs that are
 	// Info level or higher.
-	logger := zap.Neo(zap.WriterFacility(
+	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 		nil, // defaults to standard out
 		zap.InfoLevel,
@@ -128,7 +128,7 @@ func ExampleNew() {
 
 func ExampleNew_textEncoder() {
 	// For more human-readable output in the console, use a TextEncoder.
-	textLogger := zap.Neo(zap.WriterFacility(
+	textLogger := zap.New(zap.WriterFacility(
 		zap.NewTextEncoder(zap.TextNoTime()), // drop timestamps in tests.
 		nil, // defaults to standard out
 		zap.InfoLevel,
@@ -142,7 +142,7 @@ func ExampleNew_textEncoder() {
 
 func ExampleTee() {
 	// Multiple loggers can be combine using Tee.
-	logger := zap.Neo(zap.Tee(
+	logger := zap.New(zap.Tee(
 		zap.WriterFacility(zap.NewTextEncoder(zap.TextNoTime()), os.Stdout, zap.InfoLevel),
 		zap.WriterFacility(zap.NewJSONEncoder(zap.NoTime()), os.Stdout, zap.InfoLevel),
 	))
@@ -155,7 +155,7 @@ func ExampleTee() {
 
 func ExampleMultiWriteSyncer() {
 	// To send output to multiple outputs, use MultiWriteSyncer.
-	textLogger := zap.Neo(zap.WriterFacility(
+	textLogger := zap.New(zap.WriterFacility(
 		zap.NewTextEncoder(zap.TextNoTime()),
 		zap.MultiWriteSyncer(os.Stdout, os.Stdout),
 		zap.InfoLevel,
@@ -170,7 +170,7 @@ func ExampleMultiWriteSyncer() {
 func ExampleNew_options() {
 	// We can pass multiple options to the New method to configure the logging
 	// level, output location, or even the initial context.
-	logger := zap.Neo(
+	logger := zap.New(
 		zap.WriterFacility(
 			zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 			nil, // defaults to standard out
@@ -188,7 +188,7 @@ func ExampleNew_options() {
 }
 
 func ExampleCheckedMessage() {
-	logger := zap.Neo(zap.WriterFacility(
+	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
 		nil, // defaults to standard out
 		zap.InfoLevel,

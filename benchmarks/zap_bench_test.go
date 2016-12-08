@@ -75,7 +75,7 @@ func fakeMessages(n int) []string {
 }
 
 func BenchmarkZapDisabledLevelsWithoutFields(b *testing.B) {
-	logger := zap.Neo(zap.WriterFacility(
+	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.ErrorLevel,
@@ -90,7 +90,7 @@ func BenchmarkZapDisabledLevelsWithoutFields(b *testing.B) {
 
 func BenchmarkZapDisabledLevelsAccumulatedContext(b *testing.B) {
 	context := fakeFields()
-	logger := zap.Neo(
+	logger := zap.New(
 		zap.WriterFacility(
 			zap.NewJSONEncoder(),
 			zap.Discard,
@@ -107,7 +107,7 @@ func BenchmarkZapDisabledLevelsAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapDisabledLevelsAddingFields(b *testing.B) {
-	logger := zap.Neo(zap.WriterFacility(
+	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.ErrorLevel,
@@ -121,7 +121,7 @@ func BenchmarkZapDisabledLevelsAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapDisabledLevelsCheckAddingFields(b *testing.B) {
-	logger := zap.Neo(zap.WriterFacility(
+	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.ErrorLevel,
@@ -137,7 +137,7 @@ func BenchmarkZapDisabledLevelsCheckAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapAddingFields(b *testing.B) {
-	logger := zap.Neo(zap.WriterFacility(
+	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.DebugLevel,
@@ -152,7 +152,7 @@ func BenchmarkZapAddingFields(b *testing.B) {
 
 func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 	context := fakeFields()
-	logger := zap.Neo(
+	logger := zap.New(
 		zap.WriterFacility(
 			zap.NewJSONEncoder(),
 			zap.Discard,
@@ -169,7 +169,7 @@ func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapWithoutFields(b *testing.B) {
-	logger := zap.Neo(zap.WriterFacility(
+	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.DebugLevel,
@@ -184,7 +184,7 @@ func BenchmarkZapWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleWithoutFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zap.Neo(zwrap.Sample(zap.WriterFacility(
+	logger := zap.New(zwrap.Sample(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.DebugLevel,
@@ -201,7 +201,7 @@ func BenchmarkZapSampleWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleAddingFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zap.Neo(zwrap.Sample(zap.WriterFacility(
+	logger := zap.New(zwrap.Sample(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.DebugLevel,
@@ -218,7 +218,7 @@ func BenchmarkZapSampleAddingFields(b *testing.B) {
 
 func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zap.Neo(zwrap.Sample(zap.WriterFacility(
+	logger := zap.New(zwrap.Sample(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.DebugLevel,
@@ -237,7 +237,7 @@ func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleCheckAddingFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zap.Neo(zwrap.Sample(zap.WriterFacility(
+	logger := zap.New(zwrap.Sample(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.DebugLevel,

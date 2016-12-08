@@ -70,30 +70,10 @@ type logger struct {
 	errorOutput WriteSyncer
 }
 
-// New constructs a logger that uses the provided encoder. By default, the
-// logger will write Info logs or higher to standard out. Any errors during logging
-// will be written to standard error.
-//
-// Options can change the log level, the output location, the initial fields
-// that should be added as context, and many other behaviors.
-func New(enc Encoder, options ...Option) Logger {
-	fac := ioFacility{
-		LevelEnabler: InfoLevel,
-		enc:          enc,
-		out:          newLockedWriteSyncer(os.Stdout),
-	}
-	log := &logger{
-		fac:         fac,
-		errorOutput: newLockedWriteSyncer(os.Stderr),
-	}
-	for _, opt := range options {
-		opt.apply(log)
-	}
-	return log
-}
-
-// Neo returns a new facility-based logger; TODO this replacen New Soon ™.
-func Neo(fac Facility, options ...Option) Logger {
+// New returns a new logger with sensible defaults: logging at InfoLevel,
+// development mode off, errors writtten to standard error, and logs JSON
+// encoded to standard output.
+func New(fac Facility, options ...Option) Logger {
 	if fac == nil {
 		fac = WriterFacility(NewJSONEncoder(), nil, InfoLevel)
 	}

@@ -36,7 +36,7 @@ func Debarkify(bl bark.Logger, lvl zap.Level) zap.Logger {
 	if wrapper, ok := bl.(*barker); ok {
 		return wrapper.zl
 	}
-	return zap.Neo(&barkFacility{
+	return zap.New(&barkFacility{
 		Level: lvl,
 		bl:    bl,
 	})

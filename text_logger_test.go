@@ -33,7 +33,7 @@ func withTextLogger(t testing.TB, enab LevelEnabler, opts []Option, f func(Logge
 	allOpts := make([]Option, 0, 2+len(opts))
 	allOpts = append(allOpts, ErrorOutput(errSink))
 	allOpts = append(allOpts, opts...)
-	logger := Neo(
+	logger := New(
 		WriterFacility(newTextEncoder(TextNoTime()), sink, enab),
 		allOpts...)
 

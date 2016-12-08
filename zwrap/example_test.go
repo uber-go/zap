@@ -28,7 +28,7 @@ import (
 )
 
 func Example_standardize() {
-	zapLogger := zap.Neo(zap.WriterFacility(
+	zapLogger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(zap.NoTime()), // discard timestamps in tests
 		nil, // defaults to stdout
 		zap.InfoLevel,
@@ -55,7 +55,7 @@ func Example_sample() {
 		nil, // defaults to stdout
 		zap.InfoLevel,
 	)
-	sampledLogger := zap.Neo(zwrap.Sample(zapFac, time.Second, 1, 100))
+	sampledLogger := zap.New(zwrap.Sample(zapFac, time.Second, 1, 100))
 
 	for i := 1; i < 110; i++ {
 		sampledLogger.With(zap.Int("n", i)).Error("Common failure.")

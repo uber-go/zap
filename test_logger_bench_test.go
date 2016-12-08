@@ -27,7 +27,7 @@ import (
 )
 
 func withBenchedTee(b *testing.B, f func(zap.Logger)) {
-	logger := zap.Neo(zap.Tee(
+	logger := zap.New(zap.Tee(
 		zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard, zap.DebugLevel),
 		zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard, zap.InfoLevel),
 	))

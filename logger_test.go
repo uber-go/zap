@@ -68,7 +68,7 @@ func withJSONLogger(t testing.TB, enab LevelEnabler, opts []Option, f func(Logge
 	allOpts := make([]Option, 0, 2+len(opts))
 	allOpts = append(allOpts, ErrorOutput(errSink))
 	allOpts = append(allOpts, opts...)
-	logger := Neo(
+	logger := New(
 		WriterFacility(newJSONEncoder(NoTime()), sink, enab),
 		allOpts...)
 
@@ -357,7 +357,7 @@ func TestJSONLoggerNoOpsDisabledLevels(t *testing.T) {
 func TestJSONLoggerWriteEntryFailure(t *testing.T) {
 	errBuf := &testBuffer{}
 	errSink := &spywrite.WriteSyncer{Writer: errBuf}
-	logger := Neo(
+	logger := New(
 		WriterFacility(newJSONEncoder(), spywrite.FailWriter{}, DebugLevel),
 		ErrorOutput(errSink))
 
@@ -369,7 +369,7 @@ func TestJSONLoggerWriteEntryFailure(t *testing.T) {
 
 func TestJSONLoggerSyncsOutput(t *testing.T) {
 	sink := &spywrite.WriteSyncer{Writer: ioutil.Discard}
-	logger := Neo(WriterFacility(newJSONEncoder(), sink, DebugLevel))
+	logger := New(WriterFacility(newJSONEncoder(), sink, DebugLevel))
 
 	logger.Error("foo")
 	assert.False(t, sink.Called(), "Didn't expect logging at error level to Sync underlying WriteCloser.")

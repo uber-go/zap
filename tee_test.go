@@ -32,7 +32,7 @@ import (
 func TestTeeLogsBoth(t *testing.T) {
 	fac1, sink1 := spy.New(zap.DebugLevel)
 	fac2, sink2 := spy.New(zap.WarnLevel)
-	log := zap.Neo(zap.Tee(fac1, fac2))
+	log := zap.New(zap.Tee(fac1, fac2))
 
 	log.Log(zap.InfoLevel, "log @info")
 	log.Log(zap.WarnLevel, "log @warn")
@@ -97,7 +97,7 @@ func TestTeeLogsBoth(t *testing.T) {
 func TestTee_Panic(t *testing.T) {
 	fac1, sink1 := spy.New(zap.DebugLevel)
 	fac2, sink2 := spy.New(zap.WarnLevel)
-	log := zap.Neo(zap.Tee(fac1, fac2))
+	log := zap.New(zap.Tee(fac1, fac2))
 
 	assert.Panics(t, func() { log.Panic("foo") }, "tee logger.Panic panics")
 	assert.Panics(t, func() { log.Check(zap.PanicLevel, "bar").Write() }, "tee logger.Check(PanicLevel).Write() panics")

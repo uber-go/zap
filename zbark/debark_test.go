@@ -68,7 +68,7 @@ func TestLogrusOutputIsTheSame(t *testing.T) {
 }
 
 func TestDebark_CastNoop(t *testing.T) {
-	orig := zap.Neo(zap.WriterFacility(
+	orig := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.DebugLevel,
