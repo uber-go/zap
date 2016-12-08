@@ -34,9 +34,8 @@ var (
 )
 
 // A Hook is executed each time the logger writes an Entry. It can modify the
-// entry (including adding context to Entry.Fields()), but must not retain
-// references to the entry or any of its contents. Returned errors are written to
-// the logger's error output.
+// entry, but must not retain references to the entry or any of its contents.
+// Returned errors are written to the logger's error output.
 //
 // Hooks implement the Option interface.
 type Hook func(*Entry) error

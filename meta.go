@@ -109,14 +109,12 @@ func (m Meta) Encode(w io.Writer, t time.Time, lvl Level, msg string, fields []F
 	entry.Level = lvl
 	entry.Message = msg
 	entry.Time = t
-	entry.enc = enc
 	if len(m.Hooks) >= 0 {
 		for _, hook := range m.Hooks {
 			if err := hook(entry); err != nil {
 				m.InternalError("hook", err)
 			}
 		}
-		msg, enc = entry.Message, entry.enc
 	}
 	err := enc.WriteEntry(w, *entry, fields)
 	_entryPool.Put(entry)

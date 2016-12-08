@@ -75,13 +75,6 @@ type Entry struct {
 	Message string
 	Caller  EntryCaller
 	Stack   string
-
-	enc Encoder
-}
-
-// Fields returns a mutable reference to the entry's accumulated context.
-func (e Entry) Fields() KeyValue {
-	return e.enc
 }
 
 // CheckWriteAction indicates what action to take after (*CheckedEntry).Write
