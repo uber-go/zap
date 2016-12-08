@@ -27,10 +27,10 @@ import (
 )
 
 func withBenchedTee(b *testing.B, f func(zap.Logger)) {
-	logger := zap.Tee(
-		zap.Neo(zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard, zap.DebugLevel)),
-		zap.Neo(zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard, zap.InfoLevel)),
-	)
+	logger := zap.Neo(zap.Tee(
+		zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard, zap.DebugLevel),
+		zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard, zap.InfoLevel),
+	))
 	b.ResetTimer()
 	f(logger)
 }
