@@ -30,7 +30,10 @@ import (
 
 func TestHookAddCaller(t *testing.T) {
 	buf := &testBuffer{}
-	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), AddCaller())
+	logger := Neo(
+		WriterFacility(NewJSONEncoder(), buf, DebugLevel),
+		AddCaller(),
+	)
 	logger.Info("Callers.")
 
 	re := regexp.MustCompile(`"caller":"[^"]+/hook_test.go:[\d]+","msg":"Callers\."`)
@@ -46,7 +49,10 @@ func TestHookAddCallerFail(t *testing.T) {
 	_callerSkip = 1e3
 	defer func() { _callerSkip = originalSkip }()
 
-	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), ErrorOutput(errBuf), AddCaller())
+	logger := Neo(
+		WriterFacility(NewJSONEncoder(), buf, DebugLevel),
+		ErrorOutput(errBuf), AddCaller(),
+	)
 	logger.Info("Failure.")
 	assert.Regexp(t, `hook error: failed to get caller`, errBuf.String(), "Didn't find expected failure message.")
 	assert.Contains(t, buf.String(), `"msg":"Failure."`, "Expected original message to survive failures in runtime.Caller.")
@@ -54,7 +60,10 @@ func TestHookAddCallerFail(t *testing.T) {
 
 func TestHookAddStacks(t *testing.T) {
 	buf := &testBuffer{}
-	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), AddStacks(InfoLevel))
+	logger := Neo(
+		WriterFacility(NewJSONEncoder(), buf, DebugLevel),
+		AddStacks(InfoLevel),
+	)
 
 	logger.Info("Stacks.")
 	output := buf.String()

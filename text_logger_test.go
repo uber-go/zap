@@ -30,10 +30,12 @@ func withTextLogger(t testing.TB, enab LevelEnabler, opts []Option, f func(Logge
 	sink := &testBuffer{}
 	errSink := &testBuffer{}
 
-	allOpts := make([]Option, 0, 3+len(opts))
-	allOpts = append(allOpts, enab.(Option), Output(sink), ErrorOutput(errSink))
+	allOpts := make([]Option, 0, 2+len(opts))
+	allOpts = append(allOpts, enab.(Option), ErrorOutput(errSink))
 	allOpts = append(allOpts, opts...)
-	logger := New(newTextEncoder(TextNoTime()), allOpts...)
+	logger := Neo(
+		WriterFacility(newTextEncoder(TextNoTime()), sink, enab),
+		allOpts...)
 
 	f(logger, sink)
 	assert.Empty(t, errSink.String(), "Expected error sink to be empty.")

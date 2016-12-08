@@ -41,11 +41,11 @@ func BenchmarkStandardLibraryWithoutFields(b *testing.B) {
 
 func BenchmarkZapStandardizeWithoutFields(b *testing.B) {
 	logger, err := zwrap.Standardize(
-		zap.New(
+		zap.Neo(zap.WriterFacility(
 			zap.NewJSONEncoder(),
+			zap.Discard,
 			zap.DebugLevel,
-			zap.DiscardOutput,
-		),
+		)),
 		zap.InfoLevel,
 	)
 	if err != nil {

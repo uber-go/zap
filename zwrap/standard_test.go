@@ -33,11 +33,11 @@ import (
 
 func newStd(lvl zap.Level) (StandardLogger, *bytes.Buffer, error) {
 	buf := &bytes.Buffer{}
-	logger := zap.New(
+	logger := zap.Neo(zap.WriterFacility(
 		zap.NewJSONEncoder(),
+		buf,
 		zap.DebugLevel,
-		zap.Output(zap.AddSync(buf)),
-	)
+	))
 	std, err := Standardize(logger, lvl)
 	return std, buf, err
 }

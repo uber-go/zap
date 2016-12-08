@@ -27,11 +27,11 @@ import (
 )
 
 func BenchmarkMultiWriteSyncer2(b *testing.B) {
-	log := zap.New(
+	log := zap.Neo(zap.WriterFacility(
 		zap.NewJSONEncoder(),
+		zap.MultiWriteSyncer(zap.Discard, zap.Discard),
 		zap.DebugLevel,
-		zap.Output(zap.MultiWriteSyncer(zap.Discard, zap.Discard)),
-	)
+	))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -41,11 +41,11 @@ func BenchmarkMultiWriteSyncer2(b *testing.B) {
 }
 
 func BenchmarkMultiWriteSyncer4(b *testing.B) {
-	log := zap.New(
+	log := zap.Neo(zap.WriterFacility(
 		zap.NewJSONEncoder(),
+		zap.MultiWriteSyncer(zap.Discard, zap.Discard, zap.Discard, zap.Discard),
 		zap.DebugLevel,
-		zap.Output(zap.MultiWriteSyncer(zap.Discard, zap.Discard, zap.Discard, zap.Discard)),
-	)
+	))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

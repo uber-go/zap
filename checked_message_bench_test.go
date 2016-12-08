@@ -26,10 +26,10 @@ import (
 	"go.uber.org/atomic"
 )
 
-func benchmarkLoggers(levels []Level, options ...Option) []Logger {
+func benchmarkLoggers(levels ...Level) []Logger {
 	logs := make([]Logger, len(levels))
 	for i, lvl := range levels {
-		logs[i] = New(NullEncoder(), append([]Option{lvl}, options...)...)
+		logs[i] = Neo(WriterFacility(NullEncoder(), Discard, lvl))
 	}
 	return logs
 }
@@ -43,7 +43,7 @@ func runIndexedPara(b *testing.B, f func(pb *testing.PB, j int)) {
 }
 
 func BenchmarkCheckedMessage_Chain(b *testing.B) {
-	logs := benchmarkLoggers([]Level{InfoLevel, ErrorLevel}, DiscardOutput)
+	logs := benchmarkLoggers(InfoLevel, ErrorLevel)
 	data := []struct {
 		lvl Level
 		msg string
@@ -69,7 +69,7 @@ func BenchmarkCheckedMessage_Chain(b *testing.B) {
 }
 
 func BenchmarkCheckedMessage_Chain_sliceLoggers(b *testing.B) {
-	logs := benchmarkLoggers([]Level{InfoLevel, ErrorLevel}, DiscardOutput)
+	logs := benchmarkLoggers(InfoLevel, ErrorLevel)
 	data := []struct {
 		lvl Level
 		msg string

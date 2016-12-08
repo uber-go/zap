@@ -28,10 +28,11 @@ import (
 )
 
 func Example_standardize() {
-	zapLogger := zap.New(zap.NewJSONEncoder(
-		zap.NoTime(), // discard timestamps in tests
+	zapLogger := zap.Neo(zap.WriterFacility(
+		zap.NewJSONEncoder(zap.NoTime()), // discard timestamps in tests
+		nil, // defaults to stdout
+		zap.InfoLevel,
 	))
-
 	// Wrap our structured logger to mimic the standard library's log.Logger.
 	// We also specify that we want all calls to the standard logger's Print
 	// family of methods to log at zap's Warn level.

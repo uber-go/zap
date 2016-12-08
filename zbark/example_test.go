@@ -31,8 +31,10 @@ import (
 )
 
 func ExampleBarkify() {
-	zapLogger := zap.New(zap.NewJSONEncoder(
-		zap.NoTime(), // discard timestamps in tests
+	zapLogger := zap.Neo(zap.WriterFacility(
+		zap.NewJSONEncoder(zap.NoTime()), // discard timestamps in tests
+		nil, // defaults to stdout
+		zap.InfoLevel,
 	))
 
 	// Wrap our structured logger to mimic bark.Logger.
