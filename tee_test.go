@@ -34,25 +34,12 @@ func TestTeeLogsBoth(t *testing.T) {
 	fac2, sink2 := spy.New(zap.WarnLevel)
 	log := zap.New(zap.Tee(fac1, fac2))
 
-	log.Log(zap.InfoLevel, "log @info")
-	log.Log(zap.WarnLevel, "log @warn")
-
 	log.Debug("log-dot-debug")
 	log.Info("log-dot-info")
 	log.Warn("log-dot-warn")
 	log.Error("log-dot-error")
 
 	assert.Equal(t, []spy.Log{
-		{
-			Level:  zap.InfoLevel,
-			Msg:    "log @info",
-			Fields: []zap.Field{},
-		},
-		{
-			Level:  zap.WarnLevel,
-			Msg:    "log @warn",
-			Fields: []zap.Field{},
-		},
 		{
 			Level:  zap.DebugLevel,
 			Msg:    "log-dot-debug",
@@ -78,11 +65,6 @@ func TestTeeLogsBoth(t *testing.T) {
 	assert.Equal(t, []spy.Log{
 		{
 			Level:  zap.WarnLevel,
-			Msg:    "log @warn",
-			Fields: []zap.Field{},
-		},
-		{
-			Level:  zap.WarnLevel,
 			Msg:    "log-dot-warn",
 			Fields: []zap.Field{},
 		},
@@ -101,7 +83,6 @@ func TestTee_Panic(t *testing.T) {
 
 	assert.Panics(t, func() { log.Panic("foo") }, "tee logger.Panic panics")
 	assert.Panics(t, func() { log.Check(zap.PanicLevel, "bar").Write() }, "tee logger.Check(PanicLevel).Write() panics")
-	assert.NotPanics(t, func() { log.Log(zap.PanicLevel, "baz") }, "tee logger.Log(PanicLevel) does not panic")
 
 	assert.Equal(t, []spy.Log{
 		{
@@ -112,11 +93,6 @@ func TestTee_Panic(t *testing.T) {
 		{
 			Level:  zap.PanicLevel,
 			Msg:    "bar",
-			Fields: []zap.Field{},
-		},
-		{
-			Level:  zap.PanicLevel,
-			Msg:    "baz",
 			Fields: []zap.Field{},
 		},
 	}, sink1.Logs())
@@ -130,11 +106,6 @@ func TestTee_Panic(t *testing.T) {
 		{
 			Level:  zap.PanicLevel,
 			Msg:    "bar",
-			Fields: []zap.Field{},
-		},
-		{
-			Level:  zap.PanicLevel,
-			Msg:    "baz",
 			Fields: []zap.Field{},
 		},
 	}, sink2.Logs())

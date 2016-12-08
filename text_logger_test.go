@@ -43,7 +43,7 @@ func withTextLogger(t testing.TB, enab LevelEnabler, opts []Option, f func(Logge
 
 func TestTextLoggerDebugLevel(t *testing.T) {
 	withTextLogger(t, DebugLevel, nil, func(logger Logger, buf *testBuffer) {
-		logger.Log(DebugLevel, "foo")
+		logger.Debug("foo")
 		assert.Equal(t, "[D] foo", buf.Stripped(), "Unexpected output from logger")
 	})
 }

@@ -22,6 +22,7 @@ package zbark
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"go.uber.org/zap"
@@ -92,6 +93,27 @@ var levels = []zap.Level{
 	zap.ErrorLevel,
 }
 
+func logAt(logger zap.Logger, lvl zap.Level, msg string, fields ...zap.Field) {
+	switch lvl {
+	case zap.DebugLevel:
+		logger.Debug(msg, fields...)
+	case zap.InfoLevel:
+		logger.Info(msg, fields...)
+	case zap.WarnLevel:
+		logger.Warn(msg, fields...)
+	case zap.ErrorLevel:
+		logger.Error(msg, fields...)
+	case zap.DPanicLevel:
+		logger.DPanic(msg, fields...)
+	case zap.PanicLevel:
+		logger.Panic(msg, fields...)
+	case zap.FatalLevel:
+		logger.Fatal(msg, fields...)
+	default:
+		panic(fmt.Sprintf("unknown log level %v", lvl))
+	}
+}
+
 func TestDebark_Check(t *testing.T) {
 	logger, buf := newDebark(zap.DebugLevel)
 	for _, l := range append(levels, zap.PanicLevel, zap.FatalLevel) {
@@ -123,11 +145,16 @@ func TestDebark_Check(t *testing.T) {
 	})
 }
 
+// TODO: test this behavior implemented by the barkFacility
+// assert.NotPanics(t, func() { bf.Log(zap.Level(31337), "") })
+// N.B. logs an internal error to ErrorOutput (currently inaccessible under Debarkify):
+// 2016-12-13 19:23:28.943923799 +0000 UTC facility error: unable to map zap.Level Level(31337) to bark
+
 func TestDebark_LeveledLogging(t *testing.T) {
 	logger, buf := newDebark(zap.DebugLevel)
 	for _, l := range levels {
 		require.Equal(t, 0, buf.Len(), "buffer not zero")
-		logger.Log(l, "ohai")
+		logAt(logger, l, "ohai")
 		assert.NotEqual(t, 0, buf.Len(), "%q did not log", l)
 		buf.Reset()
 	}
@@ -135,17 +162,12 @@ func TestDebark_LeveledLogging(t *testing.T) {
 	logger, buf = newDebark(zap.FatalLevel)
 	require.Equal(t, 0, buf.Len(), "buffer not zero to begin test")
 	for _, l := range append(levels) {
-		logger.Log(l, "ohai")
+		logAt(logger, l, "ohai")
 		assert.Equal(t, 0, buf.Len(), "buffer not zero, we should not have logged")
 	}
 
 	logger, buf = newDebark(zap.DebugLevel)
-
-	assert.NotPanics(t, func() { logger.Log(zap.Level(31337), "") })
-	// N.B. logs an internal error to ErrorOutput (currently inaccessible under Debarkify):
-	// 2016-12-13 19:23:28.943923799 +0000 UTC facility error: unable to map zap.Level Level(31337) to bark
-
-	assert.Panics(t, func() { logger.Log(zap.PanicLevel, "") })
+	assert.Panics(t, func() { logger.Panic("") })
 }
 
 func TestDebark_Methods(t *testing.T) {

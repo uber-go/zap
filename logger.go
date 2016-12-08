@@ -49,7 +49,6 @@ type Logger interface {
 	// process, but calling Log(PanicLevel, ...) or Log(FatalLevel, ...) should
 	// not. It may not be possible for compatibility wrappers to comply with
 	// this last part (e.g. the bark wrapper).
-	Log(Level, string, ...Field)
 	Debug(string, ...Field)
 	Info(string, ...Field)
 	Warn(string, ...Field)
