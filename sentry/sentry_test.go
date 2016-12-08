@@ -103,16 +103,34 @@ func TestWithTraceDisabled(t *testing.T) {
 }
 
 func TestTraceCfg(t *testing.T) {
-	l, err := New("", TraceCfg(1, 7, []string{"github.com/uber-go/unicorns"}))
+	l, err := New(
+		"",
+		TraceSkipFrames(1),
+		TraceContextLines(7),
+		TraceAppPrefixes([]string{"github.com/uber-go/unicorns"}),
+	)
 	assert.NoError(t, err)
 	assert.Equal(t, l.traceSkipFrames, 1)
 	assert.Equal(t, l.traceContextLines, 7)
 	assert.Equal(t, l.traceAppPrefixes, []string{"github.com/uber-go/unicorns"})
 }
 
+func TestPanics(t *testing.T) {
+	l, _ := New("")
+	l.Development = true
+
+	assert.Panics(t, func() {
+		l.Panic("ERMYGAWD")
+	})
+	assert.Panics(t, func() {
+		l.DPanic("ERMYGAWD in Development")
+	})
+}
+
 func TestLevels(t *testing.T) {
 	_, ps := capturePackets(func(l *Logger) {
 		l.Log(zap.DebugLevel, "direct call at Debug level")
+		l.Debug("debug")
 		l.Info("info")
 		l.Warn("warn")
 		l.Error("error")

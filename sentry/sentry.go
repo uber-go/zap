@@ -34,7 +34,7 @@ import (
 const (
 	_platform          = "go"
 	_traceContextLines = 3
-	_traceSkipFrames   = 3
+	_traceSkipFrames   = 2
 )
 
 var _zapToRavenMap = map[zap.Level]raven.Severity{
@@ -91,27 +91,41 @@ func New(dsn string, options ...Option) (*Logger, error) {
 	return l, nil
 }
 
-// MinLevel provides a minimum level threshold, above which Sentry packets will be triggered
+// MinLevel provides a minimum level threshold.
+// All log messages above the set level are sent to Sentry.
 func MinLevel(level zap.Level) Option {
 	return func(l *Logger) {
 		l.minLevel = level
 	}
 }
 
-// DisableTraces allows to turn off Stacktrace for sentry packets
+// DisableTraces allows to turn off Stacktrace for sentry packets.
 func DisableTraces() Option {
 	return func(l *Logger) {
 		l.traceEnabled = false
 	}
 }
 
-// TraceCfg allows to change the number of skipped frames, number of context lines and
-// list of go prefixes that are considered "in-app", i.e. "github.com/uber-go/zap".
-func TraceCfg(skip, context int, prefixes []string) Option {
+// TraceContextLines sets how many lines of code (in on direction) are sent
+// with the Sentry packet.
+func TraceContextLines(lines int) Option {
+	return func(l *Logger) {
+		l.traceContextLines = lines
+	}
+}
+
+// TraceAppPrefixes sets a list of go import prefixes that are considered "in app".
+func TraceAppPrefixes(prefixes []string) Option {
+	return func(l *Logger) {
+		l.traceAppPrefixes = prefixes
+	}
+}
+
+// TraceSkipFrames sets how many stacktrace frames to skip when sending a
+// sentry packet. This is very useful when helper functions are involved.
+func TraceSkipFrames(skip int) Option {
 	return func(l *Logger) {
 		l.traceSkipFrames = skip
-		l.traceContextLines = context
-		l.traceAppPrefixes = prefixes
 	}
 }
 
