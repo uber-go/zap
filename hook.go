@@ -41,8 +41,8 @@ var (
 type Hook func(*Entry) error
 
 // apply implements the Option interface.
-func (h Hook) apply(m *Meta) {
-	m.Hooks = append(m.Hooks, h)
+func (h Hook) apply(log *logger) {
+	log.hooks = append(log.hooks, h)
 }
 
 // AddCaller configures the Logger to annotate each message with the filename

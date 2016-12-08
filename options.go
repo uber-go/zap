@@ -22,19 +22,20 @@ package zap
 
 // Option is used to set options for the logger.
 type Option interface {
-	apply(*Meta)
+	apply(*logger)
 }
 
 // optionFunc wraps a func so it satisfies the Option interface.
-type optionFunc func(*Meta)
+type optionFunc func(*logger)
 
-func (f optionFunc) apply(m *Meta) {
-	f(m)
+func (f optionFunc) apply(log *logger) {
+	f(log)
 }
 
 // This allows any Level to be used as an option.
-func (l Level) apply(m *Meta)         { m.LevelEnabler = l }
-func (lvl AtomicLevel) apply(m *Meta) { m.LevelEnabler = lvl }
+func (l Level) apply(log *logger)            { log.enab = l }
+func (lvl AtomicLevel) apply(log *logger)    { log.enab = lvl }
+func (f LevelEnablerFunc) apply(log *logger) { log.LevelEnabler = f }
 
 // Fields sets the initial fields for the logger.
 func Fields(fs ...Field) Option {
@@ -43,16 +44,18 @@ func Fields(fs ...Field) Option {
 
 type fieldsT []Field
 
-func (fs fieldsT) apply(m *Meta) {
-	addFields(m.Encoder, fs)
+func (fs fieldsT) apply(log *logger) {
+	log.fac = log.fac.With(fs...)
 }
 
 // Output sets the destination for the logger's output. The supplied WriteSyncer
 // is automatically wrapped with a mutex, so it need not be safe for concurrent
 // use.
 func Output(w WriteSyncer) Option {
-	return optionFunc(func(m *Meta) {
-		m.Output = newLockedWriteSyncer(w)
+	return optionFunc(func(log *logger) {
+		iof := log.fac.(ioFacility)
+		iof.Output = newLockedWriteSyncer(w)
+		log.fac = iof
 	})
 }
 
@@ -60,15 +63,15 @@ func Output(w WriteSyncer) Option {
 // supplied WriteSyncer is automatically wrapped with a mutex, so it need not be
 // safe for concurrent use.
 func ErrorOutput(w WriteSyncer) Option {
-	return optionFunc(func(m *Meta) {
-		m.ErrorOutput = newLockedWriteSyncer(w)
+	return optionFunc(func(log *logger) {
+		log.errorOutput = newLockedWriteSyncer(w)
 	})
 }
 
 // Development puts the logger in development mode, which alters the behavior
 // of the DPanic method.
 func Development() Option {
-	return optionFunc(func(m *Meta) {
-		m.Development = true
+	return optionFunc(func(log *logger) {
+		log.development = true
 	})
 }
