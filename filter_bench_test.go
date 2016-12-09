@@ -41,9 +41,18 @@ func BenchmarkFilter(b *testing.B) {
 }
 
 func BenchmarkFilterUsingTeeWithLevelEnabler(b *testing.B) {
-	log := New(NewTextEncoder(), DiscardOutput, DebugLevel)
+	justLevel := func(level Level) LevelEnablerFunc {
+		return LevelEnablerFunc(func(lvl Level) bool {
+			return lvl == level
+		})
+	}
 
-	logger := Tee(log, log, log, log)
+	logger := Tee(
+		New(NewTextEncoder(), DiscardOutput, justLevel(DebugLevel)),
+		New(NewTextEncoder(), DiscardOutput, justLevel(InfoLevel)),
+		New(NewTextEncoder(), DiscardOutput, justLevel(WarnLevel)),
+		New(NewTextEncoder(), DiscardOutput, justLevel(ErrorLevel)),
+	)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
