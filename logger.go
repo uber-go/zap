@@ -77,38 +77,32 @@ type logger struct {
 // Options can change the log level, the output location, the initial fields
 // that should be added as context, and many other behaviors.
 func New(enc Encoder, options ...Option) Logger {
-	meta := MakeMeta(enc, options...)
 	fac := ioFacility{
-		LevelEnabler: meta.LevelEnabler,
-		enc:          meta.Encoder,
-		out:          meta.Output,
+		LevelEnabler: InfoLevel,
+		enc:          enc,
+		out:          newLockedWriteSyncer(os.Stdout),
 	}
 	log := &logger{
 		fac:         fac,
-		development: meta.Development,
-		hooks:       meta.Hooks,
-		errorOutput: meta.ErrorOutput,
+		errorOutput: newLockedWriteSyncer(os.Stderr),
+	}
+	for _, opt := range options {
+		opt.apply(log)
 	}
 	return log
 }
 
 // Neo returns a new facility-based logger; TODO this replacen New Soon ™.
 func Neo(fac Facility, options ...Option) Logger {
-	meta := MakeMeta(NewJSONEncoder(), options...)
 	if fac == nil {
 		fac = WriterFacility(NewJSONEncoder(), nil, InfoLevel)
 	}
-	for _, opt := range options {
-		if fs, ok := opt.(fieldsT); ok {
-			fac = fac.With(fs...)
-		}
-	}
-	// N.B ignores Meta.Output and Meta.Encoder
 	log := &logger{
 		fac:         fac,
-		development: meta.Development,
-		hooks:       meta.Hooks,
-		errorOutput: meta.ErrorOutput,
+		errorOutput: newLockedWriteSyncer(os.Stderr),
+	}
+	for _, opt := range options {
+		opt.apply(log)
 	}
 	return log
 }
