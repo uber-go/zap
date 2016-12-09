@@ -21,10 +21,24 @@
 package zap
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestLevelEnablerFunc(t *testing.T) {
+	//testing for the level enabler, I will generate a logger with the given
+	//level and it should be print out
+	opts := []Option{Fields(Int("foo", 42)), LevelEnablerFunc(func(l Level) bool { return l == DebugLevel })}
+	withJSONLogger(t, opts, func(log Logger, buf *testBuffer) {
+		log.Debug("@debug", Int("logger", 0))
+		log.Info("@info", Int("logger", 0))
+		assert.Equal(t, []string{
+			`{"level":"debug","msg":"@debug","foo":42,"logger":0}`,
+		}, strings.Split(buf.Stripped(), "\n"))
+	})
+}
 
 func TestLevelString(t *testing.T) {
 	tests := map[Level]string{
