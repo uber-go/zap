@@ -28,7 +28,7 @@ import (
 )
 
 func TestJSONLoggerCheck(t *testing.T) {
-	withJSONLogger(t, opts(InfoLevel), func(logger Logger, buf *testBuffer) {
+	withJSONLogger(t, InfoLevel, nil, func(logger Logger, buf *testBuffer) {
 		assert.False(
 			t,
 			logger.Check(DebugLevel, "Debug.").OK(),
@@ -48,7 +48,7 @@ func TestJSONLoggerCheck(t *testing.T) {
 }
 
 func TestCheckedMessageUnsafeWrite(t *testing.T) {
-	withJSONLogger(t, opts(InfoLevel), func(logger Logger, buf *testBuffer) {
+	withJSONLogger(t, InfoLevel, nil, func(logger Logger, buf *testBuffer) {
 		cm := logger.Check(InfoLevel, "bob lob law blog")
 		cm.Write()
 		cm.Write()
@@ -60,7 +60,7 @@ func TestCheckedMessageUnsafeWrite(t *testing.T) {
 }
 
 func TestCheckedMessage_Chain(t *testing.T) {
-	withJSONLogger(t, opts(InfoLevel), func(logger Logger, buf *testBuffer) {
+	withJSONLogger(t, InfoLevel, nil, func(logger Logger, buf *testBuffer) {
 		loga := logger.With(String("name", "A"))
 		logb := logger.With(String("name", "B"))
 		logc := logger.With(String("name", "C"))
