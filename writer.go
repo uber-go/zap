@@ -130,14 +130,9 @@ func (ws multiWriteSyncer) Write(p []byte) (int, error) {
 }
 
 func (ws multiWriteSyncer) Sync() error {
-	return wrapMultiError(ws...)
-}
-
-// Run a series of `f`s, collecting and aggregating errors if presents
-func wrapMultiError(fs ...WriteSyncer) error {
 	var errs multiError
-	for _, f := range fs {
-		if err := f.Sync(); err != nil {
+	for _, w := range ws {
+		if err := w.Sync(); err != nil {
 			errs = append(errs, err)
 		}
 	}
