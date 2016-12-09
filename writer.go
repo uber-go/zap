@@ -147,10 +147,14 @@ func wrapMultiError(fs ...WriteSyncer) error {
 type multiError []error
 
 func (m multiError) asError() error {
-	if len(m) > 0 {
+	switch len(m) {
+	case 0:
+		return nil
+	case 1:
+		return m[0]
+	default:
 		return m
 	}
-	return nil
 }
 
 func (m multiError) Error() string {
