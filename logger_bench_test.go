@@ -137,7 +137,13 @@ func BenchmarkMarshalerField(b *testing.B) {
 
 func BenchmarkIntsField(b *testing.B) {
 	withBenchedLogger(b, func(log zap.Logger) {
-		log.Info("Reflection-based serialization.", zap.Object("ints", []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}))
+		log.Info("Array of Ints.", zap.Object("ints", []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}))
+	})
+}
+
+func BenchmarkStringsField(b *testing.B) {
+	withBenchedLogger(b, func(log zap.Logger) {
+		log.Info("Array of Strings.", zap.Object("strings", []string{"bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "bar 6", "bar 7", "bar 8", "bar 9", "bar 10"}))
 	})
 }
 

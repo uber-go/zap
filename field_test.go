@@ -181,6 +181,13 @@ func TestIntsField(t *testing.T) {
 	assertCanBeReused(t, Object("foo", []int{1, 2, 3}))
 }
 
+func TestStringsField(t *testing.T) {
+	assertFieldJSON(t, `"foo":[]`, Object("foo", []string{}))
+	assertFieldJSON(t, `"foo":["bar 1"]`, Object("foo", []string{"bar 1"}))
+	assertFieldJSON(t, `"foo":["bar 1","bar 2","bar 3"]`, Object("foo", []string{"bar 1", "bar 2", "bar 3"}))
+	assertCanBeReused(t, Object("foo", []string{"bar 1", "bar 2", "bar 3"}))
+}
+
 func TestObjectField(t *testing.T) {
 	assertFieldJSON(t, `"foo":[5,6]`, Object("foo", []int{5, 6}))
 	assertCanBeReused(t, Object("foo", []int{5, 6}))

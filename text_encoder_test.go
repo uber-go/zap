@@ -87,6 +87,11 @@ func TestTextEncoderFields(t *testing.T) {
 		{"marshaler", "k={}", func(e Encoder) {
 			assert.Error(t, e.AddMarshaler("k", loggable{false}), "Expected an error calling MarshalLog.")
 		}},
+		{"ints", "k=[1 2 3 4 5 6 7 8 9 10]", func(e Encoder) { e.AddObject("k", []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}) }},
+		{"strings", `k=[bar 1 bar 2 bar 3 bar 4 bar 5 bar 6 bar 7 bar 8 bar 9 bar 10]`,
+			func(e Encoder) {
+				e.AddObject("k", []string{"bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "bar 6", "bar 7", "bar 8", "bar 9", "bar 10"})
+			}},
 		{"map[string]string", "k=map[loggable:yes]", func(e Encoder) {
 			assert.NoError(t, e.AddObject("k", map[string]string{"loggable": "yes"}), "Unexpected error serializing a map.")
 		}},
