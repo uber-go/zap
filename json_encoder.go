@@ -172,17 +172,6 @@ func (enc *jsonEncoder) AddMarshaler(key string, obj LogMarshaler) error {
 	return err
 }
 
-// AddObject uses reflection to add an arbitrary object to the logging context.
-func (enc *jsonEncoder) AddObject(key string, obj interface{}) error {
-	marshaled, err := json.Marshal(obj)
-	if err != nil {
-		return err
-	}
-	enc.addKey(key)
-	enc.bytes = append(enc.bytes, marshaled...)
-	return nil
-}
-
 func (enc *jsonEncoder) arrayBegin() {
 	enc.bytes = append(enc.bytes, '[')
 }
@@ -227,6 +216,17 @@ func (enc *jsonEncoder) AddStrings(key string, vals []string) {
 		}
 	}
 	enc.arrayEnd()
+}
+
+// AddObject uses reflection to add an arbitrary object to the logging context.
+func (enc *jsonEncoder) AddObject(key string, obj interface{}) error {
+	marshaled, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	enc.addKey(key)
+	enc.bytes = append(enc.bytes, marshaled...)
+	return nil
 }
 
 // Clone copies the current encoder, including any data already encoded.

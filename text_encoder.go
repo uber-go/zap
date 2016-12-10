@@ -106,6 +106,7 @@ func (enc *textEncoder) AddMarshaler(key string, obj LogMarshaler) error {
 	return err
 }
 
+// Helpers for Add Array fns below
 func (enc *textEncoder) arrayBegin() {
 	enc.bytes = append(enc.bytes, '[')
 }
@@ -133,16 +134,22 @@ func (enc *textEncoder) AddInts(key string, vals []int) {
 	enc.arrayEnd()
 }
 
+func (enc *textEncoder) wrapString(val string) {
+	enc.bytes = append(enc.bytes, `"`...)
+	enc.bytes = append(enc.bytes, val...)
+	enc.bytes = append(enc.bytes, `"`...)
+}
+
 func (enc *textEncoder) AddStrings(key string, vals []string) {
 	enc.addKey(key)
 	enc.arrayBegin()
 	l := len(vals)
 	if l > 0 {
-		enc.bytes = append(enc.bytes, vals[0]...)
+		enc.wrapString(vals[0])
 
 		for i := 1; i < l; i++ {
 			enc.arraySep()
-			enc.bytes = append(enc.bytes, vals[i]...)
+			enc.wrapString(vals[i])
 		}
 	}
 	enc.arrayEnd()

@@ -175,17 +175,29 @@ func TestMarshalerField(t *testing.T) {
 }
 
 func TestIntsField(t *testing.T) {
+	assertFieldJSON(t, `"foo":[]`, Object("foo", []int{}))
+	assertFieldJSON(t, `"foo":[1]`, Object("foo", []int{1}))
+	assertFieldJSON(t, `"foo":[1,2,3]`, Object("foo", []int{1, 2, 3}))
+
 	assertFieldJSON(t, `"foo":[]`, Ints("foo", []int{}))
 	assertFieldJSON(t, `"foo":[1]`, Ints("foo", []int{1}))
 	assertFieldJSON(t, `"foo":[1,2,3]`, Ints("foo", []int{1, 2, 3}))
+
 	assertCanBeReused(t, Object("foo", []int{1, 2, 3}))
+	assertCanBeReused(t, Ints("foo", []int{1, 2, 3}))
 }
 
 func TestStringsField(t *testing.T) {
+	assertFieldJSON(t, `"foo":[]`, Object("foo", []string{}))
+	assertFieldJSON(t, `"foo":["bar 1"]`, Object("foo", []string{"bar 1"}))
+	assertFieldJSON(t, `"foo":["bar 1","bar 2","bar 3"]`, Object("foo", []string{"bar 1", "bar 2", "bar 3"}))
+
 	assertFieldJSON(t, `"foo":[]`, Strings("foo", []string{}))
 	assertFieldJSON(t, `"foo":["bar 1"]`, Strings("foo", []string{"bar 1"}))
 	assertFieldJSON(t, `"foo":["bar 1","bar 2","bar 3"]`, Strings("foo", []string{"bar 1", "bar 2", "bar 3"}))
+
 	assertCanBeReused(t, Object("foo", []string{"bar 1", "bar 2", "bar 3"}))
+	assertCanBeReused(t, Strings("foo", []string{"bar 1", "bar 2", "bar 3"}))
 }
 
 func TestObjectField(t *testing.T) {

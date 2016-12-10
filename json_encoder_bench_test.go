@@ -57,6 +57,18 @@ func BenchmarkZapJSONInts(b *testing.B) {
 	})
 }
 
+func BenchmarkZapJSONStrings(b *testing.B) {
+	ts := time.Unix(0, 0)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			enc := NewJSONEncoder()
+			enc.AddStrings("strings", []string{"bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "bar 6", "bar 7", "bar 8", "bar 9", "bar 10"})
+			enc.WriteEntry(ioutil.Discard, "fake", DebugLevel, ts)
+			enc.Free()
+		}
+	})
+}
+
 func BenchmarkZapJSON(b *testing.B) {
 	ts := time.Unix(0, 0)
 	b.RunParallel(func(pb *testing.PB) {
