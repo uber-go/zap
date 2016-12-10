@@ -66,7 +66,7 @@ func withJSONLogger(t testing.TB, enab LevelEnabler, opts []Option, f func(Logge
 	errSink := &testBuffer{}
 
 	allOpts := make([]Option, 0, 2+len(opts))
-	allOpts = append(allOpts, enab.(Option), ErrorOutput(errSink))
+	allOpts = append(allOpts, ErrorOutput(errSink))
 	allOpts = append(allOpts, opts...)
 	logger := Neo(
 		WriterFacility(newJSONEncoder(NoTime()), sink, enab),

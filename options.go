@@ -32,11 +32,6 @@ func (f optionFunc) apply(log *logger) {
 	f(log)
 }
 
-// This allows any Level to be used as an option.
-func (l Level) apply(log *logger)            { log.enab = l }
-func (lvl AtomicLevel) apply(log *logger)    { log.enab = lvl }
-func (f LevelEnablerFunc) apply(log *logger) { log.LevelEnabler = f }
-
 // Fields sets the initial fields for the logger.
 func Fields(fs ...Field) Option {
 	return fieldsT(fs)
