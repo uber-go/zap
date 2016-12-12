@@ -34,6 +34,8 @@ var _cmPool = sync.Pool{
 // especially performance-sensitive applications to avoid allocations for disabled
 // or heavily sampled log levels.
 type CheckedMessage struct {
+	ce *CheckedEntry
+
 	logger      Logger
 	safeToWrite bool
 	lvl         Level
@@ -83,21 +85,29 @@ func (m *CheckedMessage) Write(fields ...Field) {
 	}
 	m.safeToWrite = false
 
-	switch m.lvl {
-	case DebugLevel:
-		m.logger.Debug(m.msg, fields...)
-	case InfoLevel:
-		m.logger.Info(m.msg, fields...)
-	case WarnLevel:
-		m.logger.Warn(m.msg, fields...)
-	case ErrorLevel:
-		m.logger.Error(m.msg, fields...)
-	case PanicLevel:
-		m.logger.Panic(m.msg, fields...)
-	case FatalLevel:
-		m.logger.Fatal(m.msg, fields...)
-	default:
-		m.logger.Log(m.lvl, m.msg, fields...)
+	if m.ce != nil {
+		if err := m.ce.Write(fields...); err != nil {
+			if log, ok := m.logger.(*logger); ok {
+				log.InternalError("facility", err)
+			}
+		}
+	} else {
+		switch m.lvl {
+		case DebugLevel:
+			m.logger.Debug(m.msg, fields...)
+		case InfoLevel:
+			m.logger.Info(m.msg, fields...)
+		case WarnLevel:
+			m.logger.Warn(m.msg, fields...)
+		case ErrorLevel:
+			m.logger.Error(m.msg, fields...)
+		case PanicLevel:
+			m.logger.Panic(m.msg, fields...)
+		case FatalLevel:
+			m.logger.Fatal(m.msg, fields...)
+		default:
+			m.logger.Log(m.lvl, m.msg, fields...)
+		}
 	}
 
 	m.next.Write(fields...)
