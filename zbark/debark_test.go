@@ -140,7 +140,11 @@ func TestDebark_LeveledLogging(t *testing.T) {
 	}
 
 	logger, buf = newDebark(zap.DebugLevel)
-	assert.Panics(t, func() { logger.Log(zap.Level(31337), "") })
+
+	assert.NotPanics(t, func() { logger.Log(zap.Level(31337), "") })
+	// N.B. logs an internal error to ErrorOutput (currently inaccessible under Debarkify):
+	// 2016-12-13 19:23:28.943923799 +0000 UTC facility error: unable to map zap.Level Level(31337) to bark
+
 	assert.Panics(t, func() { logger.Log(zap.PanicLevel, "") })
 }
 

@@ -88,8 +88,7 @@ func (bf *barkFacility) Write(ent zap.Entry, fields []zap.Field) error {
 	case zap.FatalLevel:
 		bl.Fatal(ent.Message)
 	default:
-		// TODO: panic seems a bit strong
-		panic(fmt.Errorf("passed an unknown zap.Level: %v", ent.Level))
+		return fmt.Errorf("unable to map zap.Level %v to bark", ent.Level)
 	}
 	return nil
 }
