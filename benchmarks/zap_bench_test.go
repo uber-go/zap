@@ -184,11 +184,11 @@ func BenchmarkZapWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleWithoutFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zwrap.Sample(zap.Neo(zap.WriterFacility(
+	logger := zap.Neo(zwrap.Sample(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.DebugLevel,
-	)), time.Second, 10, 10000)
+	), time.Second, 10, 10000))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -201,11 +201,11 @@ func BenchmarkZapSampleWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleAddingFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zwrap.Sample(zap.Neo(zap.WriterFacility(
+	logger := zap.Neo(zwrap.Sample(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.DebugLevel,
-	)), time.Second, 10, 10000)
+	), time.Second, 10, 10000))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -218,11 +218,11 @@ func BenchmarkZapSampleAddingFields(b *testing.B) {
 
 func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zwrap.Sample(zap.Neo(zap.WriterFacility(
+	logger := zap.Neo(zwrap.Sample(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.DebugLevel,
-	)), time.Second, 10, 10000)
+	), time.Second, 10, 10000))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -237,11 +237,11 @@ func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleCheckAddingFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zwrap.Sample(zap.Neo(zap.WriterFacility(
+	logger := zap.Neo(zwrap.Sample(zap.WriterFacility(
 		zap.NewJSONEncoder(),
 		zap.Discard,
 		zap.DebugLevel,
-	)), time.Second, 10, 10000)
+	), time.Second, 10, 10000))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0

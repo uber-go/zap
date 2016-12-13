@@ -41,11 +41,10 @@ func fakeSampler(lvl zap.Level, tick time.Duration, first, thereafter int, devel
 	if development {
 		opts = append(opts, zap.Development())
 	}
-
 	fac, sink := spy.New(lvl)
-	base := zap.Neo(fac, opts...)
-	sampler := Sample(base, tick, first, thereafter)
-	return sampler, sink
+	fac = Sample(fac, tick, first, thereafter)
+	log := zap.Neo(fac, opts...)
+	return log, sink
 }
 
 func buildExpectation(level zap.Level, nums ...int) []spy.Log {
@@ -65,32 +64,26 @@ func TestSampler(t *testing.T) {
 		level       zap.Level
 		logFunc     func(zap.Logger, int)
 		development bool
-		sampled     bool
 	}{
 		{
 			level:   zap.DebugLevel,
 			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Debug("sample") },
-			sampled: true,
 		},
 		{
 			level:   zap.InfoLevel,
 			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Info("sample") },
-			sampled: true,
 		},
 		{
 			level:   zap.WarnLevel,
 			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Warn("sample") },
-			sampled: true,
 		},
 		{
 			level:   zap.ErrorLevel,
 			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Error("sample") },
-			sampled: true,
 		},
 		{
 			level:   zap.DPanicLevel,
 			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).DPanic("sample") },
-			sampled: false,
 		},
 		{
 			level: zap.DPanicLevel,
@@ -98,12 +91,10 @@ func TestSampler(t *testing.T) {
 				assert.Panics(t, func() { WithIter(sampler, n).DPanic("sample") })
 			},
 			development: true,
-			sampled:     false,
 		},
 		{
 			level:   zap.ErrorLevel,
 			logFunc: func(sampler zap.Logger, n int) { WithIter(sampler, n).Log(zap.ErrorLevel, "sample") },
-			sampled: true,
 		},
 	}
 
@@ -113,9 +104,6 @@ func TestSampler(t *testing.T) {
 			tt.logFunc(sampler, i)
 		}
 		nums := []int{1, 2, 5, 8}
-		if !tt.sampled {
-			nums = []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
-		}
 		assert.Equal(t,
 			buildExpectation(tt.level, nums...),
 			sink.Logs(), "Unexpected output from sampled logger.")

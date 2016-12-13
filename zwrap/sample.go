@@ -60,29 +60,10 @@ func (c *counters) Reset(key string) {
 	count.Store(0)
 }
 
-// TODO: implement (*sampler).DPanic so that if we're not going to panic, we
-// down sample the dpanic logs. Also will need custom case in Check (Log
-// already is compliant, since it didn't have to maintain "panic in dev"
-// semantics).
-
-// Sample returns a sampling logger. The logger maintains a separate bucket
-// for each message (e.g., "foo" in logger.Warn("foo")). In each tick, the
-// sampler will emit the first N logs in each bucket and every Mth log
-// therafter. Sampling loggers are safe for concurrent use.
-//
-// Panic and Fatal logging are NOT sampled, and will always call the underlying
-// logger to panic() or terminate the process. HOWEVER Log-ing at PanicLevel or
-// FatalLevel, if it happens is sampled and will call the underlying logger Log
-// method, which should NOT panic() or terminate.
-//
-// NOTE: logging at DPanicLevel currently IS sampled, but calls to DPanic and
-// Check(DPanicLevvel) are NOT sampled.
-//
-// Per-message counts are shared between parent and child loggers, which allows
-// applications to more easily control global I/O load.
-func Sample(zl zap.Logger, tick time.Duration, first, thereafter int) zap.Logger {
+// Sample creates a sampled facility.
+func Sample(fac zap.Facility, tick time.Duration, first, thereafter int) zap.Facility {
 	return &sampler{
-		Logger:     zl,
+		Facility:   fac,
 		tick:       tick,
 		counts:     &counters{counts: make(map[string]*atomic.Uint64)},
 		first:      uint64(first),
@@ -91,7 +72,7 @@ func Sample(zl zap.Logger, tick time.Duration, first, thereafter int) zap.Logger
 }
 
 type sampler struct {
-	zap.Logger
+	zap.Facility
 
 	tick       time.Duration
 	counts     *counters
@@ -99,9 +80,9 @@ type sampler struct {
 	thereafter uint64
 }
 
-func (s *sampler) With(fields ...zap.Field) zap.Logger {
+func (s *sampler) With(fields ...zap.Field) zap.Facility {
 	return &sampler{
-		Logger:     s.Logger.With(fields...),
+		Facility:   s.Facility.With(fields...),
 		tick:       s.tick,
 		counts:     s.counts,
 		first:      s.first,
@@ -109,61 +90,33 @@ func (s *sampler) With(fields ...zap.Field) zap.Logger {
 	}
 }
 
-func (s *sampler) Check(lvl zap.Level, msg string) *zap.CheckedMessage {
-	cm := s.Logger.Check(lvl, msg)
-	switch lvl {
-	case zap.DPanicLevel, zap.PanicLevel, zap.FatalLevel:
-		return cm
-	default:
-		if !cm.OK() || s.sampled(msg) {
-			return cm
-		}
-		return nil
+func (s *sampler) Log(ent zap.Entry, fields ...zap.Field) error {
+	if s.sampled(ent) {
+		return s.Facility.Log(ent, fields...)
 	}
+	return nil
 }
 
-func (s *sampler) Log(lvl zap.Level, msg string, fields ...zap.Field) {
-	switch lvl {
-	case zap.PanicLevel, zap.FatalLevel:
-		s.Logger.Log(lvl, msg, fields...)
-	default:
-		if cm := s.Logger.Check(lvl, msg); cm.OK() && s.sampled(msg) {
-			cm.Write(fields...)
-		}
+func (s *sampler) Check(ent zap.Entry, ce *zap.CheckedEntry) *zap.CheckedEntry {
+	if s.sampled(ent) {
+		ce = s.Facility.Check(ent, ce)
 	}
+	return ce
 }
 
-func (s *sampler) Debug(msg string, fields ...zap.Field) {
-	if s.Logger.Check(zap.DebugLevel, msg) != nil && s.sampled(msg) {
-		s.Logger.Debug(msg, fields...)
+func (s *sampler) sampled(ent zap.Entry) bool {
+	if !s.Facility.Enabled(ent.Level) {
+		return false
 	}
-}
-
-func (s *sampler) Info(msg string, fields ...zap.Field) {
-	if s.Logger.Check(zap.InfoLevel, msg) != nil && s.sampled(msg) {
-		s.Logger.Info(msg, fields...)
-	}
-}
-
-func (s *sampler) Warn(msg string, fields ...zap.Field) {
-	if s.Logger.Check(zap.WarnLevel, msg) != nil && s.sampled(msg) {
-		s.Logger.Warn(msg, fields...)
-	}
-}
-
-func (s *sampler) Error(msg string, fields ...zap.Field) {
-	if s.Logger.Check(zap.ErrorLevel, msg) != nil && s.sampled(msg) {
-		s.Logger.Error(msg, fields...)
-	}
-}
-
-func (s *sampler) sampled(msg string) bool {
-	n := s.counts.Inc(msg)
+	n := s.counts.Inc(ent.Message)
 	if n <= s.first {
 		return true
 	}
 	if n == s.first+1 {
-		time.AfterFunc(s.tick, func() { s.counts.Reset(msg) })
+		time.AfterFunc(s.tick, func() { s.counts.Reset(ent.Message) })
 	}
-	return (n-s.first)%s.thereafter == 0
+	if (n-s.first)%s.thereafter == 0 {
+		return true
+	}
+	return false
 }
