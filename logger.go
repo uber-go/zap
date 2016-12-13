@@ -190,8 +190,10 @@ func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 		Message: msg,
 	}
 	for _, hook := range log.hooks {
-		if err := hook(&ent); err != nil {
+		if hookedEnt, err := hook(ent); err != nil {
 			log.InternalError("hook", err)
+		} else {
+			ent = hookedEnt
 		}
 	}
 	if err := log.fac.Log(ent, fields...); err != nil {

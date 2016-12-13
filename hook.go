@@ -26,8 +26,7 @@ import (
 )
 
 var (
-	errHookNilEntry = errors.New("can't call a hook on a nil *Entry")
-	errCaller       = errors.New("failed to get caller")
+	errCaller = errors.New("failed to get caller")
 	// Skip Caller, Logger.log, and the leveled Logger method when using
 	// runtime.Caller.
 	_callerSkip = 3
@@ -38,7 +37,7 @@ var (
 // Returned errors are written to the logger's error output.
 //
 // Hooks implement the Option interface.
-type Hook func(*Entry) error
+type Hook func(Entry) (Entry, error)
 
 // apply implements the Option interface.
 func (h Hook) apply(log *logger) {
@@ -48,15 +47,12 @@ func (h Hook) apply(log *logger) {
 // AddCaller configures the Logger to annotate each message with the filename
 // and line number of zap's caller.
 func AddCaller() Option {
-	return Hook(func(e *Entry) error {
-		if e == nil {
-			return errHookNilEntry
-		}
+	return Hook(func(e Entry) (Entry, error) {
 		e.Caller = MakeEntryCaller(runtime.Caller(_callerSkip))
 		if !e.Caller.Defined {
-			return errCaller
+			return e, errCaller
 		}
-		return nil
+		return e, nil
 	})
 }
 
@@ -66,13 +62,10 @@ func AddCaller() Option {
 //
 // TODO: why is this called AddStacks rather than just AddStack or AddStacktrace?
 func AddStacks(lvl Level) Option {
-	return Hook(func(e *Entry) error {
-		if e == nil {
-			return errHookNilEntry
-		}
+	return Hook(func(e Entry) (Entry, error) {
 		if e.Level >= lvl {
 			e.Stack = Stack().str
 		}
-		return nil
+		return e, nil
 	})
 }
