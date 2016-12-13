@@ -37,8 +37,13 @@ func WithIter(l zap.Logger, n int) zap.Logger {
 }
 
 func fakeSampler(lvl zap.Level, tick time.Duration, first, thereafter int, development bool) (zap.Logger, *spy.Sink) {
-	base, sink := spy.New(lvl)
-	base.Development = development
+	var opts []zap.Option
+	if development {
+		opts = append(opts, zap.Development())
+	}
+
+	fac, sink := spy.New(lvl)
+	base := zap.Neo(fac, opts...)
 	sampler := Sample(base, tick, first, thereafter)
 	return sampler, sink
 }
