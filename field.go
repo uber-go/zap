@@ -56,8 +56,6 @@ type Field struct {
 	fieldType fieldType
 	ival      int64
 	str       string
-	ivals     []int
-	strs      []string
 	obj       interface{}
 }
 
@@ -177,12 +175,12 @@ func Marshaler(key string, val LogMarshaler) Field {
 
 // Ints constructs a Field with the given key and value. Marshaling ints is lazy.
 func Ints(key string, val []int) Field {
-	return Field{key: key, fieldType: intsType, ivals: val}
+	return Field{key: key, fieldType: intsType, obj: val}
 }
 
 // Strings constructs a Field with the given key and value. Marshaling strings is lazy.
 func Strings(key string, val []string) Field {
-	return Field{key: key, fieldType: stringsType, strs: val}
+	return Field{key: key, fieldType: stringsType, obj: val}
 }
 
 // Object constructs a field with the given key and an arbitrary object. It uses
@@ -229,9 +227,9 @@ func (f Field) AddTo(kv KeyValue) {
 	case marshalerType:
 		err = kv.AddMarshaler(f.key, f.obj.(LogMarshaler))
 	case intsType:
-		kv.AddInts(f.key, f.ivals)
+		kv.AddInts(f.key, f.obj.([]int))
 	case stringsType:
-		kv.AddStrings(f.key, f.strs)
+		kv.AddStrings(f.key, f.obj.([]string))
 	case objectType:
 		err = kv.AddObject(f.key, f.obj)
 	case errorType:
