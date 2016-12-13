@@ -72,6 +72,16 @@ const (
 	FatalLevel
 )
 
+// LevelEnablerFunc is a convenient way to implement LevelEnabler around an
+// anonymous function. It is also a valid Option to pass to a logger.
+type LevelEnablerFunc func(Level) bool
+
+// This allows an LevelEnablerFunc to be used as an option.
+func (f LevelEnablerFunc) apply(m *Meta) { m.LevelEnabler = f }
+
+// Enabled calls the wrapped function.
+func (f LevelEnablerFunc) Enabled(lvl Level) bool { return f(lvl) }
+
 // String returns a lower-case ASCII representation of the log level.
 func (l Level) String() string {
 	switch l {

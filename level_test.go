@@ -26,6 +26,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestLevelEnablerFunc(t *testing.T) {
+	opts := []Option{Fields(Int("foo", 42)), LevelEnablerFunc(func(l Level) bool { return l == DebugLevel })}
+	withJSONLogger(t, opts, func(log Logger, buf *testBuffer) {
+		log.Debug("@debug", Int("logger", 0))
+		log.Info("@info", Int("logger", 0))
+		assert.Equal(t, []string{
+			`{"level":"debug","msg":"@debug","foo":42,"logger":0}`,
+		}, buf.Lines())
+	})
+}
+
 func TestLevelString(t *testing.T) {
 	tests := map[Level]string{
 		DebugLevel:  "debug",
