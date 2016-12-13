@@ -57,6 +57,9 @@ type Logger interface {
 	DPanic(string, ...Field)
 	Panic(string, ...Field)
 	Fatal(string, ...Field)
+
+	// Facility returns the destination that log entrys are written to.
+	Facility() Facility
 }
 
 type logger struct {
@@ -208,4 +211,9 @@ func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 func (log *logger) InternalError(cause string, err error) {
 	fmt.Fprintf(log.errorOutput, "%v %s error: %v\n", time.Now().UTC(), cause, err)
 	log.errorOutput.Sync()
+}
+
+// Facility returns the destination that logs entries are written to.
+func (log *logger) Facility() Facility {
+	return log.fac
 }
