@@ -36,87 +36,62 @@ func Debarkify(bl bark.Logger, lvl zap.Level) zap.Logger {
 	if wrapper, ok := bl.(*barker); ok {
 		return wrapper.zl
 	}
-	return &zapper{
-		Meta: zap.MakeMeta(nil, lvl),
-		bl:   bl,
-	}
+	return zap.Neo(&barkFacility{
+		Level: lvl,
+		bl:    bl,
+	})
 }
 
-type zapper struct {
-	zap.Meta
+type barkFacility struct {
+	zap.Level
 	bl bark.Logger
 }
 
-func (z *zapper) Log(l zap.Level, msg string, fields ...zap.Field) {
+// Create a child logger, and optionally add some context to that logger.
+func (bf *barkFacility) With(fields ...zap.Field) zap.Facility {
+	return &barkFacility{
+		bl: bf.bl.WithFields(zapToBark(fields)),
+	}
+}
+
+func (bf *barkFacility) Log(ent zap.Entry, fields ...zap.Field) error {
+	if bf.Enabled(ent.Level) {
+		return bf.Write(ent, fields)
+	}
+	return nil
+}
+
+func (bf *barkFacility) Check(ent zap.Entry, ce *zap.CheckedEntry) *zap.CheckedEntry {
+	if bf.Enabled(ent.Level) {
+		ce = ce.AddFacility(ent, bf)
+	}
+	return ce
+}
+
+func (bf *barkFacility) Write(ent zap.Entry, fields []zap.Field) error {
 	// NOTE: logging at panic and fatal level actually panic and exit the
 	// process, meaning that bark loggers cannot compose well.
-	switch l {
-	case zap.PanicLevel, zap.FatalLevel:
-	default:
-		if !z.Meta.Enabled(l) {
-			return
-		}
-	}
-	bl := z.bl.WithFields(zapToBark(fields))
-	switch l {
+	bl := bf.bl.WithFields(zapToBark(fields))
+	switch ent.Level {
 	case zap.DebugLevel:
-		bl.Debug(msg)
+		bl.Debug(ent.Message)
 	case zap.InfoLevel:
-		bl.Info(msg)
+		bl.Info(ent.Message)
 	case zap.WarnLevel:
-		bl.Warn(msg)
+		bl.Warn(ent.Message)
 	case zap.ErrorLevel:
-		bl.Error(msg)
+		bl.Error(ent.Message)
 	case zap.DPanicLevel:
-		bl.Error(msg)
+		bl.Error(ent.Message)
 	case zap.PanicLevel:
-		bl.Panic(msg)
+		bl.Panic(ent.Message)
 	case zap.FatalLevel:
-		bl.Fatal(msg)
+		bl.Fatal(ent.Message)
 	default:
-		panic(fmt.Errorf("passed an unknown zap.Level: %v", l))
+		// TODO: panic seems a bit strong
+		panic(fmt.Errorf("passed an unknown zap.Level: %v", ent.Level))
 	}
-}
-
-// Create a child logger, and optionally add some context to that logger.
-func (z *zapper) With(fields ...zap.Field) zap.Logger {
-	return &zapper{
-		Meta: z.Meta,
-		bl:   z.bl.WithFields(zapToBark(fields)),
-	}
-}
-
-func (z *zapper) Check(l zap.Level, msg string) *zap.CheckedMessage {
-	return z.Meta.Check(z, l, msg)
-}
-
-func (z *zapper) Debug(msg string, fields ...zap.Field) {
-	z.Log(zap.DebugLevel, msg, fields...)
-}
-
-func (z *zapper) Info(msg string, fields ...zap.Field) {
-	z.Log(zap.InfoLevel, msg, fields...)
-}
-
-func (z *zapper) Warn(msg string, fields ...zap.Field) {
-	z.Log(zap.WarnLevel, msg, fields...)
-}
-
-func (z *zapper) Error(msg string, fields ...zap.Field) {
-	z.Log(zap.ErrorLevel, msg, fields...)
-}
-
-func (z *zapper) DPanic(msg string, fields ...zap.Field) {
-	// TODO: Implement development/DPanic?
-	z.Error(msg, fields...)
-}
-
-func (z *zapper) Panic(msg string, fields ...zap.Field) {
-	z.Log(zap.PanicLevel, msg, fields...)
-}
-
-func (z *zapper) Fatal(msg string, fields ...zap.Field) {
-	z.Log(zap.FatalLevel, msg, fields...)
+	return nil
 }
 
 func (zbf zapperBarkFields) Fields() map[string]interface{} {
