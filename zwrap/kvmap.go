@@ -60,6 +60,12 @@ func (m KeyValueMap) AddMarshaler(k string, v zap.LogMarshaler) error {
 	return m.Nest(k, v.MarshalLog)
 }
 
+// AddInts adds the value under the specified key to the map.
+func (m KeyValueMap) AddInts(k string, v []int) { m[k] = v }
+
+// AddStrings adds the value under the specified key to the map.
+func (m KeyValueMap) AddStrings(k string, v []string) { m[k] = v }
+
 // Nest builds a object and adds the value under the specified key to the map.
 func (m KeyValueMap) Nest(k string, f func(zap.KeyValue) error) error {
 	newMap := make(KeyValueMap)

@@ -60,6 +60,9 @@ func TestKeyValueMapAdd(t *testing.T) {
 	assert.NoError(t, kv.AddMarshaler("m1", loggable{}), "AddMarshaler failed")
 	assert.NoError(t, kv.Nest("m2", loggable{}.MarshalLog), "Nest failed")
 
+	kv.AddInts("ints", []int{1, 2, 3})
+	kv.AddStrings("strings", []string{"bar 1", "bar 2", "bar 3"})
+
 	want := KeyValueMap{
 		"b":       true,
 		"f64":     1.56,
@@ -74,6 +77,8 @@ func TestKeyValueMapAdd(t *testing.T) {
 		"m2": KeyValueMap{
 			"loggable": "yes",
 		},
+		"ints":    []int{1, 2, 3},
+		"strings": []string{"bar 1", "bar 2", "bar 3"},
 	}
 	assert.Equal(t, want, kv, "Unexpected result")
 }
