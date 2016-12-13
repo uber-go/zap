@@ -28,7 +28,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/uber-go/zap/spywrite"
+	"go.uber.org/zap/spywrite"
 
 	"github.com/stretchr/testify/assert"
 )

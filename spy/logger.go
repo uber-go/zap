@@ -23,7 +23,7 @@ package spy
 import (
 	"sync"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 // A Log is an encoding-agnostic representation of a log message.

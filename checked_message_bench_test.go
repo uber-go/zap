@@ -23,7 +23,7 @@ package zap
 import (
 	"testing"
 
-	"github.com/uber-go/atomic"
+	"go.uber.org/atomic"
 )
 
 func benchmarkLoggers(levels []Level, options ...Option) []Logger {

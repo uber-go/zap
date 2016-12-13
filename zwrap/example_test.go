@@ -23,8 +23,8 @@ package zwrap_test
 import (
 	"time"
 
-	"github.com/uber-go/zap"
-	"github.com/uber-go/zap/zwrap"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zwrap"
 )
 
 func Example_standardize() {

@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/zap/spywrite"
+	"go.uber.org/zap/spywrite"
 )
 
 func newTextEncoder(opts ...TextOption) *textEncoder {

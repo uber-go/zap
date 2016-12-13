@@ -25,8 +25,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/uber-go/zap"
-	"github.com/uber-go/zap/zbark"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zbark"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/uber-common/bark"
