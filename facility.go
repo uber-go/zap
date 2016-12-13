@@ -28,6 +28,8 @@ import (
 // Facility is a destination for log entries. It can have pervasive fields
 // added with With().
 type Facility interface {
+	LevelEnabler
+
 	With(...Field) Facility
 	Log(Entry, ...Field) error
 	Check(Entry, *CheckedEntry) *CheckedEntry
@@ -41,16 +43,16 @@ func WriterFacility(enc Encoder, w io.Writer, enab LevelEnabler) Facility {
 		w = os.Stdout
 	}
 	return ioFacility{
-		enab: enab,
-		enc:  enc,
-		out:  newLockedWriteSyncer(AddSync(w)),
+		LevelEnabler: enab,
+		enc:          enc,
+		out:          newLockedWriteSyncer(AddSync(w)),
 	}
 }
 
 type ioFacility struct {
-	enab LevelEnabler
-	enc  Encoder
-	out  WriteSyncer
+	LevelEnabler
+	enc Encoder
+	out WriteSyncer
 }
 
 func (iof ioFacility) With(fields ...Field) Facility {
@@ -60,14 +62,14 @@ func (iof ioFacility) With(fields ...Field) Facility {
 }
 
 func (iof ioFacility) Log(ent Entry, fields ...Field) error {
-	if iof.enab.Enabled(ent.Level) {
+	if iof.Enabled(ent.Level) {
 		return iof.Write(ent, fields)
 	}
 	return nil
 }
 
 func (iof ioFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
-	if iof.enab.Enabled(ent.Level) {
+	if iof.Enabled(ent.Level) {
 		ce = ce.AddFacility(ent, iof)
 	}
 	return ce

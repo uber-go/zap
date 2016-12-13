@@ -76,9 +76,9 @@ type logger struct {
 func New(enc Encoder, options ...Option) Logger {
 	meta := MakeMeta(enc, options...)
 	fac := ioFacility{
-		enab: meta.LevelEnabler,
-		enc:  meta.Encoder,
-		out:  meta.Output,
+		LevelEnabler: meta.LevelEnabler,
+		enc:          meta.Encoder,
+		out:          meta.Output,
 	}
 	log := &logger{
 		fac:         fac,

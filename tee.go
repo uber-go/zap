@@ -54,6 +54,15 @@ func (mf multiFacility) Log(ent Entry, fields ...Field) error {
 	return errs.asError()
 }
 
+func (mf multiFacility) Enabled(lvl Level) bool {
+	for i := range mf {
+		if mf[i].Enabled(lvl) {
+			return true
+		}
+	}
+	return false
+}
+
 func (mf multiFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	for i := range mf {
 		ce = mf[i].Check(ent, ce)
