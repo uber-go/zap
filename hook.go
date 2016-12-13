@@ -32,22 +32,22 @@ var (
 	_callerSkip = 3
 )
 
-// A Hook is executed each time the logger writes an Entry. It can modify the
+// A hook is executed each time the logger writes an Entry. It can modify the
 // entry, but must not retain references to the entry or any of its contents.
 // Returned errors are written to the logger's error output.
 //
 // Hooks implement the Option interface.
-type Hook func(Entry) (Entry, error)
+type hook func(Entry) (Entry, error)
 
 // apply implements the Option interface.
-func (h Hook) apply(log *logger) {
+func (h hook) apply(log *logger) {
 	log.hooks = append(log.hooks, h)
 }
 
 // AddCaller configures the Logger to annotate each message with the filename
 // and line number of zap's caller.
 func AddCaller() Option {
-	return Hook(func(e Entry) (Entry, error) {
+	return hook(func(e Entry) (Entry, error) {
 		e.Caller = MakeEntryCaller(runtime.Caller(_callerSkip))
 		if !e.Caller.Defined {
 			return e, errCaller
@@ -62,7 +62,7 @@ func AddCaller() Option {
 //
 // TODO: why is this called AddStacks rather than just AddStack or AddStacktrace?
 func AddStacks(lvl Level) Option {
-	return Hook(func(e Entry) (Entry, error) {
+	return hook(func(e Entry) (Entry, error) {
 		if e.Level >= lvl {
 			e.Stack = Stack().str
 		}

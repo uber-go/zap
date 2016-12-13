@@ -66,7 +66,7 @@ type logger struct {
 	fac Facility
 
 	development bool
-	hooks       []Hook
+	hooks       []hook
 	errorOutput WriteSyncer
 }
 
