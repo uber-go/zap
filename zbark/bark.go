@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 
 	"github.com/uber-common/bark"
 )

@@ -23,8 +23,8 @@ package zap_test
 import (
 	"testing"
 
-	"github.com/uber-go/zap"
-	"github.com/uber-go/zap/spy"
+	"go.uber.org/zap"
+	"go.uber.org/zap/spy"
 
 	"github.com/stretchr/testify/assert"
 )
