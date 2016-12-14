@@ -74,7 +74,7 @@ func (sf *Facility) With(fields ...zap.Field) zap.Facility {
 	return &Facility{
 		enab:    sf.enab,
 		sink:    sf.sink,
-		context: append(sf.context, fields...),
+		context: append(sf.context[0:len(sf.context):len(sf.context)], fields...),
 	}
 }
 
