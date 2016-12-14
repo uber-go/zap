@@ -69,7 +69,7 @@ type Facility struct {
 
 // With creates a sub spy facility so that all log records recorded under it
 // have the given fields attached.
-func (sf *Facility) With(fields ...zap.Field) zap.Facility {
+func (sf *Facility) With(fields []zap.Field) zap.Facility {
 	return &Facility{
 		LevelEnabler: sf.LevelEnabler,
 		sink:         sf.sink,

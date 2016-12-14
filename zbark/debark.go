@@ -48,7 +48,7 @@ type barkFacility struct {
 }
 
 // Create a child logger, and optionally add some context to that logger.
-func (bf *barkFacility) With(fields ...zap.Field) zap.Facility {
+func (bf *barkFacility) With(fields []zap.Field) zap.Facility {
 	return &barkFacility{
 		bl: bf.bl.WithFields(zapToBark(fields)),
 	}

@@ -36,10 +36,10 @@ func Tee(facs ...Facility) Facility {
 
 type multiFacility []Facility
 
-func (mf multiFacility) With(fields ...Field) Facility {
+func (mf multiFacility) With(fields []Field) Facility {
 	clone := make(multiFacility, len(mf))
 	for i := range mf {
-		clone[i] = mf[i].With(fields...)
+		clone[i] = mf[i].With(fields)
 	}
 	return clone
 }

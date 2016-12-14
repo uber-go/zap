@@ -35,11 +35,11 @@ func TestSpy_With(t *testing.T) {
 	// need to pad out enough initial fields so that the underlying slice cap()
 	// gets ahead of its len() so that the sf3/4 With append's could choose
 	// not to copy (if the implementation doesn't force them)
-	sf1 = sf1.With(zap.Int("a", 1)).With(zap.Int("b", 2))
+	sf1 = sf1.With([]zap.Field{zap.Int("a", 1)}).With([]zap.Field{zap.Int("b", 2)})
 
-	sf2 := sf1.With(zap.Int("c", 3))
-	sf3 := sf2.With(zap.Int("d", 4))
-	sf4 := sf2.With(zap.Int("e", 5))
+	sf2 := sf1.With([]zap.Field{zap.Int("c", 3)})
+	sf3 := sf2.With([]zap.Field{zap.Int("d", 4)})
+	sf4 := sf2.With([]zap.Field{zap.Int("e", 5)})
 
 	for i, f := range []zap.Facility{sf2, sf3, sf4} {
 		f.Log(zap.Entry{

@@ -80,9 +80,9 @@ type sampler struct {
 	thereafter uint64
 }
 
-func (s *sampler) With(fields ...zap.Field) zap.Facility {
+func (s *sampler) With(fields []zap.Field) zap.Facility {
 	return &sampler{
-		Facility:   s.Facility.With(fields...),
+		Facility:   s.Facility.With(fields),
 		tick:       s.tick,
 		counts:     s.counts,
 		first:      s.first,

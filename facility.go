@@ -30,7 +30,7 @@ import (
 type Facility interface {
 	LevelEnabler
 
-	With(...Field) Facility
+	With([]Field) Facility
 	Log(Entry, []Field) error
 	Check(Entry, *CheckedEntry) *CheckedEntry
 	Write(Entry, []Field) error
@@ -55,7 +55,7 @@ type ioFacility struct {
 	out WriteSyncer
 }
 
-func (iof ioFacility) With(fields ...Field) Facility {
+func (iof ioFacility) With(fields []Field) Facility {
 	iof.enc = iof.enc.Clone()
 	addFields(iof.enc, fields)
 	return iof

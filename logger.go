@@ -88,7 +88,7 @@ func New(fac Facility, options ...Option) Logger {
 
 func (log *logger) With(fields ...Field) Logger {
 	return &logger{
-		fac:         log.fac.With(fields...),
+		fac:         log.fac.With(fields),
 		development: log.development,
 		hooks:       log.hooks,
 		errorOutput: log.errorOutput,
