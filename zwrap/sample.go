@@ -90,9 +90,9 @@ func (s *sampler) With(fields ...zap.Field) zap.Facility {
 	}
 }
 
-func (s *sampler) Log(ent zap.Entry, fields ...zap.Field) error {
+func (s *sampler) Log(ent zap.Entry, fields []zap.Field) error {
 	if s.sampled(ent) {
-		return s.Facility.Log(ent, fields...)
+		return s.Facility.Log(ent, fields)
 	}
 	return nil
 }

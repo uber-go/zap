@@ -166,7 +166,7 @@ func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 			ent = hookedEnt
 		}
 	}
-	if err := log.fac.Log(ent, fields...); err != nil {
+	if err := log.fac.Log(ent, fields); err != nil {
 		log.InternalError("facility", err)
 	}
 }

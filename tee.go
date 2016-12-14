@@ -44,10 +44,10 @@ func (mf multiFacility) With(fields ...Field) Facility {
 	return clone
 }
 
-func (mf multiFacility) Log(ent Entry, fields ...Field) error {
+func (mf multiFacility) Log(ent Entry, fields []Field) error {
 	var errs multiError
 	for i := range mf {
-		if err := mf[i].Log(ent, fields...); err != nil {
+		if err := mf[i].Log(ent, fields); err != nil {
 			errs = append(errs, err)
 		}
 	}

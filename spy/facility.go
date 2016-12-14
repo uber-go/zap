@@ -78,7 +78,7 @@ func (sf *Facility) With(fields ...zap.Field) zap.Facility {
 }
 
 // Log writes the entry if its level is enabled.
-func (sf *Facility) Log(ent zap.Entry, fields ...zap.Field) error {
+func (sf *Facility) Log(ent zap.Entry, fields []zap.Field) error {
 	if sf.Enabled(ent.Level) {
 		return sf.Write(ent, fields)
 	}

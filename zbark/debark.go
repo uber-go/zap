@@ -54,7 +54,7 @@ func (bf *barkFacility) With(fields ...zap.Field) zap.Facility {
 	}
 }
 
-func (bf *barkFacility) Log(ent zap.Entry, fields ...zap.Field) error {
+func (bf *barkFacility) Log(ent zap.Entry, fields []zap.Field) error {
 	if bf.Enabled(ent.Level) {
 		return bf.Write(ent, fields)
 	}

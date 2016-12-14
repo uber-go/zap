@@ -45,7 +45,7 @@ func TestSpy_With(t *testing.T) {
 		f.Log(zap.Entry{
 			Level:   zap.InfoLevel,
 			Message: "hello",
-		}, zap.Int("i", i))
+		}, []zap.Field{zap.Int("i", i)})
 	}
 
 	assert.Equal(t, []spy.Log{

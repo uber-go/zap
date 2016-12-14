@@ -113,7 +113,7 @@ func (ce *CheckedEntry) Write(fields ...Field) error {
 	}
 	var errs multiError
 	for i := range ce.facs {
-		if err := ce.facs[i].Log(ce.Entry, fields...); err != nil {
+		if err := ce.facs[i].Log(ce.Entry, fields); err != nil {
 			errs = append(errs, err)
 		}
 	}
