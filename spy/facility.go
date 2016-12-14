@@ -35,29 +35,28 @@ type Log struct {
 
 // A Sink stores Log structs.
 type Sink struct {
-	sync.Mutex
-
+	mu   sync.Mutex
 	logs []Log
 }
 
 // WriteLog writes a log message to the LogSink.
 func (s *Sink) WriteLog(lvl zap.Level, msg string, fields []zap.Field) {
-	s.Lock()
+	s.mu.Lock()
 	log := Log{
 		Msg:    msg,
 		Level:  lvl,
 		Fields: fields,
 	}
 	s.logs = append(s.logs, log)
-	s.Unlock()
+	s.mu.Unlock()
 }
 
 // Logs returns a copy of the sink's accumulated logs.
 func (s *Sink) Logs() []Log {
 	var logs []Log
-	s.Lock()
+	s.mu.Lock()
 	logs = append(logs, s.logs...)
-	s.Unlock()
+	s.mu.Unlock()
 	return logs
 }
 
