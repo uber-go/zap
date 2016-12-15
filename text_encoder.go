@@ -194,8 +194,10 @@ func (enc *textEncoder) addTime(final *textEncoder, t time.Time) {
 }
 
 func (enc *textEncoder) addMessage(final *textEncoder, msg string) {
-	final.bytes = append(final.bytes, ' ')
-	final.bytes = append(final.bytes, msg...)
+	if msg != "" {
+		final.bytes = append(final.bytes, ' ')
+		final.bytes = append(final.bytes, msg...)
+	}
 }
 
 // A TextOption is used to set options for a text encoder.
