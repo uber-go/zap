@@ -21,6 +21,9 @@
 package zap
 
 import (
+	"bytes"
+	"flag"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -101,4 +104,54 @@ func TestLevelUnmarshalUnknownText(t *testing.T) {
 	var l Level
 	err := l.UnmarshalText([]byte("foo"))
 	assert.Contains(t, err.Error(), "unrecognized level", "Expected unmarshaling arbitrary text to fail.")
+}
+
+func TestLevelAsFlagValue(t *testing.T) {
+	var (
+		lvl Level
+		buf bytes.Buffer
+	)
+
+	fs := flag.NewFlagSet("levelTest", flag.ContinueOnError)
+	fs.SetOutput(&buf)
+	fs.Var(&lvl, "level", "a log level")
+
+	// zero default isn't visible
+	fs.PrintDefaults()
+	assert.Equal(t, []string{
+		"  -level value",
+		"    \ta log level",
+		"",
+	}, strings.Split(buf.String(), "\n"), "expected zero default to not show")
+	buf.Reset()
+
+	// changing works
+	assert.Equal(t, InfoLevel, lvl)
+	assert.NoError(t, fs.Parse([]string{"-level", "warn"}))
+	assert.Equal(t, WarnLevel, lvl)
+	assert.NoError(t, fs.Parse([]string{"-level", "debug"}))
+	assert.Equal(t, DebugLevel, lvl)
+
+	// non-zero default
+	fs = flag.NewFlagSet("levelTest", flag.ContinueOnError)
+	fs.SetOutput(&buf)
+	fs.Var(&lvl, "level", "a log level")
+	fs.PrintDefaults()
+	assert.Equal(t, []string{
+		"  -level value",
+		"    \ta log level (default debug)",
+		"",
+	}, strings.Split(buf.String(), "\n"), "expected non-zero default to show")
+	buf.Reset()
+
+	// errors work
+	assert.Error(t, fs.Parse([]string{"-level", "nope"}))
+	assert.Equal(t, []string{
+		`invalid value "nope" for flag -level: unrecognized level: "nope"`,
+		"Usage of levelTest:",
+		"  -level value",
+		"    \ta log level (default debug)",
+		"",
+	}, strings.Split(buf.String(), "\n"), "expected error output")
+	buf.Reset()
 }
