@@ -143,7 +143,7 @@ func (l *Level) UnmarshalText(text []byte) error {
 
 // Set sets the level for the flag.Value interface.
 func (l *Level) Set(s string) error {
-	switch string(s) {
+	switch s {
 	case "debug":
 		*l = DebugLevel
 	case "info":
