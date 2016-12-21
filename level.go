@@ -141,6 +141,34 @@ func (l *Level) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// Set sets the level for the flag.Value interface.
+func (l *Level) Set(s string) error {
+	switch s {
+	case "debug":
+		*l = DebugLevel
+	case "info":
+		*l = InfoLevel
+	case "warn":
+		*l = WarnLevel
+	case "error":
+		*l = ErrorLevel
+	case "dpanic":
+		*l = DPanicLevel
+	case "panic":
+		*l = PanicLevel
+	case "fatal":
+		*l = FatalLevel
+	default:
+		return fmt.Errorf("unrecognized level: %q", s)
+	}
+	return nil
+}
+
+// Get gets the level for the flag.Getter interface.
+func (l *Level) Get() interface{} {
+	return *l
+}
+
 // Enabled returns true if the given level is at or above this level.
 func (l Level) Enabled(lvl Level) bool {
 	return lvl >= l
