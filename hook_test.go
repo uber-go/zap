@@ -41,9 +41,9 @@ func TestHookAddCallerFail(t *testing.T) {
 	buf := &testBuffer{}
 	errBuf := &testBuffer{}
 
-	originalSkip := _callerSkip
-	_callerSkip = 1e3
-	defer func() { _callerSkip = originalSkip }()
+	originalSkip := CallerSkip
+	CallerSkip = 1e3
+	defer func() { CallerSkip = originalSkip }()
 
 	logger := New(NewJSONEncoder(), DebugLevel, Output(buf), ErrorOutput(errBuf), AddCaller())
 	logger.Info("Failure.")

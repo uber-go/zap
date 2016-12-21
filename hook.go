@@ -32,7 +32,7 @@ var (
 	errCaller       = errors.New("failed to get caller")
 	// Skip Caller, Logger.log, and the leveled Logger method when using
 	// runtime.Caller.
-	_callerSkip = 4
+	CallerSkip = 4
 )
 
 // A Hook is executed each time the logger writes an Entry. It can modify the
@@ -55,7 +55,7 @@ func AddCaller() Option {
 		if e == nil {
 			return errHookNilEntry
 		}
-		_, filename, line, ok := runtime.Caller(_callerSkip)
+		_, filename, line, ok := runtime.Caller(CallerSkip)
 		if !ok {
 			return errCaller
 		}
