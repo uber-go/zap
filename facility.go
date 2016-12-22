@@ -26,7 +26,6 @@ type Facility interface {
 	LevelEnabler
 
 	With([]Field) Facility
-	Log(Entry, []Field) error
 	Check(Entry, *CheckedEntry) *CheckedEntry
 	Write(Entry, []Field) error
 }
@@ -51,13 +50,6 @@ func (iof ioFacility) With(fields []Field) Facility {
 	iof.enc = iof.enc.Clone()
 	addFields(iof.enc, fields)
 	return iof
-}
-
-func (iof ioFacility) Log(ent Entry, fields []Field) error {
-	if iof.Enabled(ent.Level) {
-		return iof.Write(ent, fields)
-	}
-	return nil
 }
 
 func (iof ioFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {

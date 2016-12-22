@@ -164,7 +164,11 @@ func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 			ent = hookedEnt
 		}
 	}
-	if err := log.fac.Log(ent, fields); err != nil {
+	cm := log.fac.Check(ent, nil)
+	if cm == nil {
+		return
+	}
+	if err := cm.Write(fields...); err != nil {
 		log.InternalError("facility", err)
 	}
 }

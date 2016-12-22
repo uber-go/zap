@@ -42,7 +42,7 @@ func TestSpy_With(t *testing.T) {
 	sf4 := sf2.With([]zap.Field{zap.Int("e", 5)})
 
 	for i, f := range []zap.Facility{sf2, sf3, sf4} {
-		f.Log(zap.Entry{
+		f.Write(zap.Entry{
 			Level:   zap.InfoLevel,
 			Message: "hello",
 		}, []zap.Field{zap.Int("i", i)})

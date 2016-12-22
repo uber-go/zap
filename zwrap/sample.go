@@ -90,13 +90,6 @@ func (s *sampler) With(fields []zap.Field) zap.Facility {
 	}
 }
 
-func (s *sampler) Log(ent zap.Entry, fields []zap.Field) error {
-	if s.sampled(ent) {
-		return s.Facility.Log(ent, fields)
-	}
-	return nil
-}
-
 func (s *sampler) Check(ent zap.Entry, ce *zap.CheckedEntry) *zap.CheckedEntry {
 	if s.sampled(ent) {
 		ce = s.Facility.Check(ent, ce)
