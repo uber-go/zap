@@ -94,8 +94,8 @@ func (sf *Facility) Write(ent zap.Entry, fields []zap.Field) error {
 	return nil
 }
 
-// Check adds this spy facility to the CheckedEntry build built if the Entry's
-// level is enabled.
+// Check adds this spy facility to the CheckedEntry, creating one if necessary,
+// if the Entry's level is enabled.
 func (sf *Facility) Check(ent zap.Entry, ce *zap.CheckedEntry) *zap.CheckedEntry {
 	if sf.enab.Enabled(ent.Level) {
 		ce = ce.AddFacility(ent, sf)
