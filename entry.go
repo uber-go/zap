@@ -96,8 +96,9 @@ const (
 // Write, and MUST NOT be retained after calling their Write() method.
 type CheckedEntry struct {
 	Entry
-	should CheckWriteAction
-	facs   []Facility
+	safeToWrite bool
+	should      CheckWriteAction
+	facs        []Facility
 	// TODO: we could provide static spac for the first N facilities to avoid
 	// allocations in common cases
 }
@@ -109,6 +110,16 @@ func (ce *CheckedEntry) Write(fields ...Field) error {
 	if ce == nil {
 		return nil
 	}
+
+	if !ce.safeToWrite {
+		// this races with (*CheckedEntry).AddFacility; recover a log entry for
+		// debugging, which may be an amalgamation of both the prior one
+		// returned to pool, and any new one being set
+		ent := ce.Entry
+		return fmt.Errorf("race-prone write detected circa log entry %+v", ent)
+	}
+	ce.safeToWrite = false
+
 	var errs multiError
 	for i := range ce.facs {
 		if err := ce.facs[i].Log(ce.Entry, fields); err != nil {
@@ -141,13 +152,14 @@ func (ce *CheckedEntry) AddFacility(ent Entry, fac Facility) *CheckedEntry {
 	}
 	if x := _cePool.Get(); x != nil {
 		ce = x.(*CheckedEntry)
-		ce.Entry, ce.should = ent, WriteThenNoop
+		ce.Entry, ce.should, ce.safeToWrite = ent, WriteThenNoop, true
 		ce.facs = append(ce.facs, fac)
 		return ce
 	}
 	return &CheckedEntry{
-		Entry: ent,
-		facs:  []Facility{fac},
+		Entry:       ent,
+		safeToWrite: true,
+		facs:        []Facility{fac},
 	}
 }
 
@@ -162,12 +174,12 @@ func (ce *CheckedEntry) Should(ent Entry, should CheckWriteAction) *CheckedEntry
 	}
 	if x := _cePool.Get(); x != nil {
 		ce = x.(*CheckedEntry)
-		ce.Entry = ent
-		ce.should = should
+		ce.Entry, ce.should, ce.safeToWrite = ent, should, true
 		return ce
 	}
 	return &CheckedEntry{
-		Entry:  ent,
-		should: should,
+		Entry:       ent,
+		safeToWrite: true,
+		should:      should,
 	}
 }
