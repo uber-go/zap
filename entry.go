@@ -26,11 +26,7 @@ import (
 	"time"
 )
 
-var _cePool = sync.Pool{
-	New: func() interface{} {
-		return &CheckedEntry{}
-	},
-}
+var _cePool = sync.Pool{}
 
 // MakeEntryCaller makes an EntryCaller from the return signature of
 // runtime.Caller().
@@ -143,10 +139,16 @@ func (ce *CheckedEntry) AddFacility(ent Entry, fac Facility) *CheckedEntry {
 		ce.facs = append(ce.facs, fac)
 		return ce
 	}
-	ce = _cePool.Get().(*CheckedEntry)
-	ce.Entry = ent
-	ce.facs = append(ce.facs, fac)
-	return ce
+	if x := _cePool.Get(); x != nil {
+		ce = x.(*CheckedEntry)
+		ce.Entry = ent
+		ce.facs = append(ce.facs, fac)
+		return ce
+	}
+	return &CheckedEntry{
+		Entry: ent,
+		facs:  []Facility{fac},
+	}
 }
 
 // Should sets state so that a panic or fatal exit will happen after Write is
@@ -158,8 +160,14 @@ func (ce *CheckedEntry) Should(ent Entry, should CheckWriteAction) *CheckedEntry
 		ce.should = should
 		return ce
 	}
-	ce = _cePool.Get().(*CheckedEntry)
-	ce.Entry = ent
-	ce.should = should
-	return ce
+	if x := _cePool.Get(); x != nil {
+		ce = x.(*CheckedEntry)
+		ce.Entry = ent
+		ce.should = should
+		return ce
+	}
+	return &CheckedEntry{
+		Entry:  ent,
+		should: should,
+	}
 }
