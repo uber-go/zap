@@ -114,10 +114,8 @@ func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
 		if log.development {
 			return ce.Should(ent, WriteThenPanic)
 		}
-		fallthrough
-	default:
-		return ce
 	}
+	return ce
 }
 
 func (log *logger) Debug(msg string, fields ...Field) {
