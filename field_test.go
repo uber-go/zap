@@ -27,7 +27,10 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/quick"
 	"time"
+
+	"os"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,6 +58,14 @@ func assertFieldJSON(t testing.TB, expected string, field Field) {
 	field.AddTo(enc)
 	assert.Equal(t, expected, string(enc.bytes),
 		"Unexpected JSON output after applying field %+v.", field)
+}
+
+func getEncodedStr(field Field) string {
+	enc := newJSONEncoder()
+	defer enc.Free()
+
+	field.AddTo(enc)
+	return string(enc.bytes)
 }
 
 func assertNotEqualFieldJSON(t testing.TB, expected string, field Field) {
@@ -183,8 +194,46 @@ func TestIntsField(t *testing.T) {
 	assertFieldJSON(t, `"foo":[1]`, Ints("foo", []int{1}))
 	assertFieldJSON(t, `"foo":[1,2,3]`, Ints("foo", []int{1, 2, 3}))
 
-	assertCanBeReused(t, Object("foo", []int{1, 2, 3}))
 	assertCanBeReused(t, Ints("foo", []int{1, 2, 3}))
+}
+
+func intsCompare(ints []int) bool {
+	sobj := getEncodedStr(Object("foo", ints))
+	sints := getEncodedStr(Ints("foo", ints))
+	if sobj != sints {
+		os.Stderr.WriteString("mis-match\n   sobj: " + sobj + "\n  sints: " + sints + "\n")
+		return false
+	}
+
+	return true
+}
+
+func TestIntsFieldQuick(t *testing.T) {
+	err := quick.Check(intsCompare, &quick.Config{MaxCountScale: 100.0})
+	if err != nil {
+		t.Error(err.Error())
+	}
+}
+
+func stringsCompare(strs []string) bool {
+	// test currently fails if strs contains below chars
+	// strs = []string{"&"}
+	sobj := getEncodedStr(Object("foo", strs))
+	sstrs := getEncodedStr(Strings("foo", strs))
+	if sobj != sstrs {
+		os.Stderr.WriteString("mis-match\n   sobj: " + sobj + "\n  sstrs: " + sstrs + "\n")
+		return false
+	}
+
+	return true
+}
+
+// Test currently fails
+func TestStringsFieldQuick(t *testing.T) {
+	err := quick.Check(stringsCompare, &quick.Config{MaxCountScale: 100.0})
+	if err != nil {
+		t.Error(err.Error())
+	}
 }
 
 func TestStringsField(t *testing.T) {
@@ -196,7 +245,6 @@ func TestStringsField(t *testing.T) {
 	assertFieldJSON(t, `"foo":["bar 1"]`, Strings("foo", []string{"bar 1"}))
 	assertFieldJSON(t, `"foo":["bar 1","bar 2","bar 3"]`, Strings("foo", []string{"bar 1", "bar 2", "bar 3"}))
 
-	assertCanBeReused(t, Object("foo", []string{"bar 1", "bar 2", "bar 3"}))
 	assertCanBeReused(t, Strings("foo", []string{"bar 1", "bar 2", "bar 3"}))
 }
 

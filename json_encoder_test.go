@@ -145,10 +145,10 @@ func TestJSONEncoderFields(t *testing.T) {
 			func(e Encoder) {
 				e.AddObject("k", []string{"bar 1", "bar 2", "bar 3"})
 			}},
-		{"ints", `"k":[1,2,3,4,5,6,7,8,9,10]`, func(e Encoder) { e.AddInts("k", []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}) }},
-		{"strings", `"k":["bar 1","bar 2","bar 3","bar 4","bar 5","bar 6","bar 7","bar 8","bar 9","bar 10"]`,
+		{"[]int", `"k":[1,2,3]`, func(e Encoder) { e.AddInts("k", []int{1, 2, 3}) }},
+		{"[]string", `"k":["bar 1","bar 2","bar 3"]`,
 			func(e Encoder) {
-				e.AddStrings("k", []string{"bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "bar 6", "bar 7", "bar 8", "bar 9", "bar 10"})
+				e.AddStrings("k", []string{"bar 1", "bar 2", "bar 3"})
 			}},
 		{"arbitrary object", `"k":{"loggable":"yes"}`, func(e Encoder) {
 			assert.NoError(t, e.AddObject("k", map[string]string{"loggable": "yes"}), "Unexpected error JSON-serializing a map.")
