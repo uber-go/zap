@@ -125,9 +125,9 @@ func (enc *textEncoder) addArraySep(i int) {
 func (enc *textEncoder) AddInts(key string, vals []int) {
 	enc.addKey(key)
 	enc.addArrayBegin()
-	for i := range vals {
+	for i, val := range vals {
 		enc.addArraySep(i)
-		enc.bytes = strconv.AppendInt(enc.bytes, int64(vals[i]), 10)
+		enc.bytes = strconv.AppendInt(enc.bytes, int64(val), 10)
 	}
 	enc.addArrayEnd()
 }
@@ -135,9 +135,9 @@ func (enc *textEncoder) AddInts(key string, vals []int) {
 func (enc *textEncoder) AddStrings(key string, vals []string) {
 	enc.addKey(key)
 	enc.addArrayBegin()
-	for i := range vals {
+	for i, val := range vals {
 		enc.addArraySep(i)
-		enc.bytes = append(enc.bytes, vals[i]...)
+		enc.bytes = append(enc.bytes, val...)
 	}
 	enc.addArrayEnd()
 }

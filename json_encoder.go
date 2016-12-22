@@ -193,9 +193,9 @@ func (enc *jsonEncoder) AddInts(key string, vals []int) {
 	enc.addKey(key)
 	enc.addArrayBegin()
 
-	for i := range vals {
+	for i, val := range vals {
 		enc.addArraySep(i)
-		enc.bytes = strconv.AppendInt(enc.bytes, int64(vals[i]), 10)
+		enc.bytes = strconv.AppendInt(enc.bytes, int64(val), 10)
 	}
 	enc.addArrayEnd()
 }
@@ -205,9 +205,9 @@ func (enc *jsonEncoder) AddInts(key string, vals []int) {
 func (enc *jsonEncoder) AddStrings(key string, vals []string) {
 	enc.addKey(key)
 	enc.addArrayBegin()
-	for i := range vals {
+	for i, val := range vals {
 		enc.addArraySep(i)
-		enc.addAndQuoteString(vals[i])
+		enc.addAndQuoteString(val)
 	}
 	enc.addArrayEnd()
 }
