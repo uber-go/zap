@@ -34,7 +34,7 @@ func newLog15() log15.Logger {
 	return logger
 }
 
-func BenchmarkLog15AddingFields(b *testing.B) {
+func log15AddingFields(b *testing.B) {
 	logger := newLog15()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -55,7 +55,7 @@ func BenchmarkLog15AddingFields(b *testing.B) {
 	})
 }
 
-func BenchmarkLog15WithAccumulatedContext(b *testing.B) {
+func log15WithAccumulatedContext(b *testing.B) {
 	logger := newLog15().New(
 		"int", 1,
 		"int64", int64(1),
@@ -76,7 +76,7 @@ func BenchmarkLog15WithAccumulatedContext(b *testing.B) {
 	})
 }
 
-func BenchmarkLog15WithoutFields(b *testing.B) {
+func log15WithoutFields(b *testing.B) {
 	logger := newLog15()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

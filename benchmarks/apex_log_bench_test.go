@@ -35,8 +35,7 @@ func newApexLog() *log.Logger {
 		Level:   log.DebugLevel,
 	}
 }
-
-func BenchmarkApexLogAddingFields(b *testing.B) {
+func apexLogAddingFields(b *testing.B) {
 	logger := newApexLog()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -57,7 +56,7 @@ func BenchmarkApexLogAddingFields(b *testing.B) {
 	})
 }
 
-func BenchmarkApexLogWithAccumulatedContext(b *testing.B) {
+func apexLogWithAccumulatedContext(b *testing.B) {
 	baseLogger := newApexLog()
 	logger := baseLogger.WithFields(log.Fields{
 		"int":               1,
@@ -79,7 +78,7 @@ func BenchmarkApexLogWithAccumulatedContext(b *testing.B) {
 	})
 }
 
-func BenchmarkApexLogWithoutFields(b *testing.B) {
+func apexLogWithoutFields(b *testing.B) {
 	logger := newApexLog()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

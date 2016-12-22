@@ -29,7 +29,7 @@ import (
 	"github.com/uber-go/zap/zwrap"
 )
 
-func BenchmarkStandardLibraryWithoutFields(b *testing.B) {
+func standardLibraryWithoutFields(b *testing.B) {
 	logger := log.New(ioutil.Discard, "", log.LstdFlags)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -39,7 +39,7 @@ func BenchmarkStandardLibraryWithoutFields(b *testing.B) {
 	})
 }
 
-func BenchmarkZapStandardizeWithoutFields(b *testing.B) {
+func zapStandardizeWithoutFields(b *testing.B) {
 	logger, err := zwrap.Standardize(
 		zap.New(
 			zap.NewJSONEncoder(),
