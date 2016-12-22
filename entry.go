@@ -102,6 +102,8 @@ type CheckedEntry struct {
 	Entry
 	should CheckWriteAction
 	facs   []Facility
+	// TODO: we could provide static spac for the first N facilities to avoid
+	// allocations in common cases
 }
 
 // Write writes the entry to any Facility references stored, returning any
@@ -137,13 +139,13 @@ func (ce *CheckedEntry) Write(fields ...Field) error {
 // to be used by Facility.Check implementations. If ce is nil then a new
 // CheckedEntry is created. Returns a non-nil CheckedEntry, maybe just created.
 func (ce *CheckedEntry) AddFacility(ent Entry, fac Facility) *CheckedEntry {
-	if ce == nil {
-		ce = _cePool.Get().(*CheckedEntry)
-		ce.Entry = ent
+	if ce != nil {
+		ce.facs = append(ce.facs, fac)
+		return ce
 	}
+	ce = _cePool.Get().(*CheckedEntry)
+	ce.Entry = ent
 	ce.facs = append(ce.facs, fac)
-	// TODO: we could provide static spac for the first N facilities to avoid
-	// allocations in common cases
 	return ce
 }
 
@@ -152,10 +154,12 @@ func (ce *CheckedEntry) AddFacility(ent Entry, fac Facility) *CheckedEntry {
 // built to record the intent to panic or fatal (this is why the caller must
 // provide an Entry value, since ce may be nil).
 func (ce *CheckedEntry) Should(ent Entry, should CheckWriteAction) *CheckedEntry {
-	if ce == nil {
-		ce = _cePool.Get().(*CheckedEntry)
-		ce.Entry = ent
+	if ce != nil {
+		ce.should = should
+		return ce
 	}
+	ce = _cePool.Get().(*CheckedEntry)
+	ce.Entry = ent
 	ce.should = should
 	return ce
 }
