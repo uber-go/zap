@@ -115,8 +115,5 @@ func (s *sampler) sampled(ent zap.Entry) bool {
 	if n == s.first+1 {
 		time.AfterFunc(s.tick, func() { s.counts.Reset(ent.Message) })
 	}
-	if (n-s.first)%s.thereafter == 0 {
-		return true
-	}
-	return false
+	return (n-s.first)%s.thereafter == 0
 }
