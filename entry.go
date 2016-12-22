@@ -141,7 +141,7 @@ func (ce *CheckedEntry) AddFacility(ent Entry, fac Facility) *CheckedEntry {
 	}
 	if x := _cePool.Get(); x != nil {
 		ce = x.(*CheckedEntry)
-		ce.Entry = ent
+		ce.Entry, ce.should = ent, WriteThenNoop
 		ce.facs = append(ce.facs, fac)
 		return ce
 	}
