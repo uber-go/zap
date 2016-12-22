@@ -61,7 +61,7 @@ func newBark() (bark.Logger, *bytes.Buffer) {
 	buf := &bytes.Buffer{}
 	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(),
-		buf,
+		zap.AddSync(buf),
 		zap.DebugLevel,
 	))
 	return Barkify(logger), buf

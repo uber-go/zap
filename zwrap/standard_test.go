@@ -35,7 +35,7 @@ func newStd(lvl zap.Level) (StandardLogger, *bytes.Buffer, error) {
 	buf := &bytes.Buffer{}
 	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(),
-		buf,
+		zap.AddSync(buf),
 		zap.DebugLevel,
 	))
 	std, err := Standardize(logger, lvl)

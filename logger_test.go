@@ -349,7 +349,7 @@ func TestJSONLoggerWriteEntryFailure(t *testing.T) {
 	errBuf := &testBuffer{}
 	errSink := &spywrite.WriteSyncer{Writer: errBuf}
 	logger := New(
-		WriterFacility(newJSONEncoder(), spywrite.FailWriter{}, DebugLevel),
+		WriterFacility(newJSONEncoder(), AddSync(spywrite.FailWriter{}), DebugLevel),
 		ErrorOutput(errSink))
 
 	logger.Info("foo")

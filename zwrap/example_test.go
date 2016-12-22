@@ -31,7 +31,7 @@ import (
 func Example_standardize() {
 	zapLogger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(zap.NoTime()), // discard timestamps in tests
-		os.Stdout,
+		zap.AddSync(os.Stdout),
 		zap.InfoLevel,
 	))
 	// Wrap our structured logger to mimic the standard library's log.Logger.
@@ -53,7 +53,7 @@ func Example_standardize() {
 func Example_sample() {
 	zapFac := zap.WriterFacility(
 		zap.NewJSONEncoder(zap.NoTime()), // discard timestamps in tests
-		os.Stdout,
+		zap.AddSync(os.Stdout),
 		zap.InfoLevel,
 	)
 	sampledLogger := zap.New(zwrap.Sample(zapFac, time.Second, 1, 100))

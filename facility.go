@@ -20,8 +20,6 @@
 
 package zap
 
-import "io"
-
 // Facility is a destination for log entries. It can have pervasive fields
 // added with With().
 type Facility interface {
@@ -35,11 +33,11 @@ type Facility interface {
 
 // WriterFacility creates a facility that writes logs to an io.Writer. By
 // default, if w is nil, os.Stdout is used.
-func WriterFacility(enc Encoder, w io.Writer, enab LevelEnabler) Facility {
+func WriterFacility(enc Encoder, ws WriteSyncer, enab LevelEnabler) Facility {
 	return ioFacility{
 		LevelEnabler: enab,
 		enc:          enc,
-		out:          newLockedWriteSyncer(AddSync(w)),
+		out:          newLockedWriteSyncer(ws),
 	}
 }
 
