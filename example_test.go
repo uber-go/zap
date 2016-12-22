@@ -35,7 +35,7 @@ func Example() {
 	// write all InfoLevel and above logs to standard out.
 	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
-		nil, // defaults to standard out
+		os.Stdout,
 		zap.InfoLevel,
 	))
 
@@ -97,7 +97,7 @@ func Example_fileOutput() {
 func ExampleNest() {
 	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
-		nil, // defaults to standard out
+		os.Stdout,
 		zap.InfoLevel,
 	))
 
@@ -114,7 +114,7 @@ func ExampleNew() {
 	// Info level or higher.
 	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
-		nil, // defaults to standard out
+		os.Stdout,
 		zap.InfoLevel,
 	))
 
@@ -130,7 +130,7 @@ func ExampleNew_textEncoder() {
 	// For more human-readable output in the console, use a TextEncoder.
 	textLogger := zap.New(zap.WriterFacility(
 		zap.NewTextEncoder(zap.TextNoTime()), // drop timestamps in tests.
-		nil, // defaults to standard out
+		os.Stdout,
 		zap.InfoLevel,
 	))
 
@@ -173,7 +173,7 @@ func ExampleNew_options() {
 	logger := zap.New(
 		zap.WriterFacility(
 			zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
-			nil, // defaults to standard out
+			os.Stdout,
 			zap.DebugLevel,
 		),
 		zap.Fields(zap.Int("count", 1)),
@@ -190,7 +190,7 @@ func ExampleNew_options() {
 func ExampleCheckedEntry() {
 	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(zap.NoTime()), // drop timestamps in tests
-		nil, // defaults to standard out
+		os.Stdout,
 		zap.InfoLevel,
 	))
 

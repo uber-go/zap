@@ -33,7 +33,7 @@ import (
 func ExampleBarkify() {
 	zapLogger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(zap.NoTime()), // discard timestamps in tests
-		nil, // defaults to stdout
+		os.Stdout,
 		zap.InfoLevel,
 	))
 

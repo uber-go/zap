@@ -74,7 +74,7 @@ type logger struct {
 // encoded to standard output.
 func New(fac Facility, options ...Option) Logger {
 	if fac == nil {
-		fac = WriterFacility(NewJSONEncoder(), nil, InfoLevel)
+		fac = WriterFacility(NewJSONEncoder(), os.Stdout, InfoLevel)
 	}
 	log := &logger{
 		fac:         fac,
