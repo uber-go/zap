@@ -135,6 +135,23 @@ func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
 		}
 	}
 
+	// Only do further annotations if we have a checked entry.
+	if ce == nil {
+		return ce
+	}
+
+	if log.addCaller {
+		ce.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip))
+		if !ce.Entry.Caller.Defined {
+			log.InternalError("addCaller", errCaller)
+		}
+	}
+
+	if ce.Entry.Level >= log.addStack {
+		ce.Entry.Stack = Stack().str
+		// TODO: maybe just inline Stack around takeStacktrace
+	}
+
 	return ce
 }
 
@@ -156,46 +173,22 @@ func (log *logger) Error(msg string, fields ...Field) {
 
 func (log *logger) DPanic(msg string, fields ...Field) {
 	log.Log(DPanicLevel, msg, fields...)
-	if log.development {
-		panic(msg)
-	}
 }
 
 func (log *logger) Panic(msg string, fields ...Field) {
 	log.Log(PanicLevel, msg, fields...)
-	panic(msg)
 }
 
 func (log *logger) Fatal(msg string, fields ...Field) {
 	log.Log(FatalLevel, msg, fields...)
-	_exit(1)
 }
 
+
 func (log *logger) Log(lvl Level, msg string, fields ...Field) {
-	ent := Entry{
-		Time:    time.Now().UTC(),
-		Level:   lvl,
-		Message: msg,
-	}
-	ce := log.fac.Check(ent, nil)
-	if ce == nil {
-		return
-	}
-
-	if log.addCaller {
-		ce.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip))
-		if !ce.Entry.Caller.Defined {
-			log.InternalError("addCaller", errCaller)
+	if ce := log.Check(lvl, msg); ce != nil {
+		if err := ce.Write(fields...); err != nil {
+			log.InternalError("facility", err)
 		}
-	}
-
-	if ce.Entry.Level >= log.addStack {
-		ce.Entry.Stack = Stack().str
-		// TODO: maybe just inline Stack around takeStacktrace
-	}
-
-	if err := ce.Write(fields...); err != nil {
-		log.InternalError("facility", err)
 	}
 }
 
