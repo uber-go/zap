@@ -155,34 +155,13 @@ func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
 	return ce
 }
 
-func (log *logger) Debug(msg string, fields ...Field) {
-	log.Log(DebugLevel, msg, fields...)
-}
-
-func (log *logger) Info(msg string, fields ...Field) {
-	log.Log(InfoLevel, msg, fields...)
-}
-
-func (log *logger) Warn(msg string, fields ...Field) {
-	log.Log(WarnLevel, msg, fields...)
-}
-
-func (log *logger) Error(msg string, fields ...Field) {
-	log.Log(ErrorLevel, msg, fields...)
-}
-
-func (log *logger) DPanic(msg string, fields ...Field) {
-	log.Log(DPanicLevel, msg, fields...)
-}
-
-func (log *logger) Panic(msg string, fields ...Field) {
-	log.Log(PanicLevel, msg, fields...)
-}
-
-func (log *logger) Fatal(msg string, fields ...Field) {
-	log.Log(FatalLevel, msg, fields...)
-}
-
+func (log *logger) Debug(msg string, fields ...Field)  { log.Log(DebugLevel, msg, fields...) }
+func (log *logger) Info(msg string, fields ...Field)   { log.Log(InfoLevel, msg, fields...) }
+func (log *logger) Warn(msg string, fields ...Field)   { log.Log(WarnLevel, msg, fields...) }
+func (log *logger) Error(msg string, fields ...Field)  { log.Log(ErrorLevel, msg, fields...) }
+func (log *logger) DPanic(msg string, fields ...Field) { log.Log(DPanicLevel, msg, fields...) }
+func (log *logger) Panic(msg string, fields ...Field)  { log.Log(PanicLevel, msg, fields...) }
+func (log *logger) Fatal(msg string, fields ...Field)  { log.Log(FatalLevel, msg, fields...) }
 
 func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 	if ce := log.Check(lvl, msg); ce != nil {
