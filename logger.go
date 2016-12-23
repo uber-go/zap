@@ -113,25 +113,28 @@ func (log *logger) With(fields ...Field) Logger {
 }
 
 func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
+	// Create basic checked entry thru the facility; this will be non-nil if
+	// the log message will actually be written somewhere.
 	ent := Entry{
 		Time:    time.Now().UTC(),
 		Level:   lvl,
 		Message: msg,
 	}
 	ce := log.fac.Check(ent, nil)
+
+	// If terminal behavior is required, setup so that it happens after the
+	// checked entry is written and create a checked entry if it's still nil.
 	switch ent.Level {
 	case PanicLevel:
-		// Panic should always cause a panic, even if not written.
-		return ce.Should(ent, WriteThenPanic)
+		ce = ce.Should(ent, WriteThenPanic)
 	case FatalLevel:
-		// Fatal should always cause an exit.
-		return ce.Should(ent, WriteThenFatal)
+		ce = ce.Should(ent, WriteThenFatal)
 	case DPanicLevel:
-		// DPanic should always cause a panic in development.
 		if log.development {
-			return ce.Should(ent, WriteThenPanic)
+			ce = ce.Should(ent, WriteThenPanic)
 		}
 	}
+
 	return ce
 }
 
