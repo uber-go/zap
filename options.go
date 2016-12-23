@@ -59,3 +59,23 @@ func Development() Option {
 		log.development = true
 	})
 }
+
+// AddCaller configures the Logger to annotate each message with the filename
+// and line number of zap's caller.
+func AddCaller() Option {
+	return optionFunc(func(log *logger) {
+		log.addCaller = true
+	})
+}
+
+// AddStacks configures the Logger to record a stack trace for all messages at
+// or above a given level. Keep in mind that this is (relatively speaking)
+// quite expensive.
+//
+// TODO: why is this called AddStacks rather than just AddStack or
+// AddStacktrace?
+func AddStacks(lvl Level) Option {
+	return optionFunc(func(log *logger) {
+		log.addStack = lvl
+	})
+}

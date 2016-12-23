@@ -23,6 +23,7 @@ package zap
 import (
 	"errors"
 	"fmt"
+	"math"
 
 	"go.uber.org/atomic"
 )
@@ -70,6 +71,8 @@ const (
 	PanicLevel
 	// FatalLevel logs a message, then calls os.Exit(1).
 	FatalLevel
+
+	maxLevel = Level(math.MaxInt32)
 )
 
 // LevelEnablerFunc is a convenient way to implement LevelEnabler around an

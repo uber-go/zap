@@ -21,8 +21,10 @@
 package zap
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -65,8 +67,13 @@ type logger struct {
 	fac Facility
 
 	development bool
-	hooks       []hook
 	errorOutput WriteSyncer
+
+	// TODO: consider using a LevelEnabler instead
+	addCaller bool
+	addStack  Level
+
+	callerSkip int
 }
 
 // New returns a new logger with sensible defaults: logging at InfoLevel,
@@ -79,6 +86,8 @@ func New(fac Facility, options ...Option) Logger {
 	log := &logger{
 		fac:         fac,
 		errorOutput: newLockedWriteSyncer(os.Stderr),
+		addStack:    maxLevel, // TODO: better an `always false` level enabler
+		callerSkip:  _defaultCallerSkip,
 	}
 	for _, opt := range options {
 		opt.apply(log)
@@ -90,8 +99,10 @@ func (log *logger) With(fields ...Field) Logger {
 	return &logger{
 		fac:         log.fac.With(fields),
 		development: log.development,
-		hooks:       log.hooks,
 		errorOutput: log.errorOutput,
+		addCaller:   log.addCaller,
+		addStack:    log.addStack,
+		callerSkip:  log.callerSkip,
 	}
 }
 
@@ -151,6 +162,13 @@ func (log *logger) Fatal(msg string, fields ...Field) {
 	_exit(1)
 }
 
+var (
+	errCaller = errors.New("failed to get caller")
+	// Skip Caller, Logger.log, and the leveled Logger method when using
+	// runtime.Caller.
+	_defaultCallerSkip = 3
+)
+
 func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 	ent := Entry{
 		Time:    time.Now().UTC(),
@@ -161,13 +179,19 @@ func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 	if cm == nil {
 		return
 	}
-	for _, hook := range log.hooks {
-		if hookedEnt, err := hook(ent); err != nil {
-			log.InternalError("hook", err)
-		} else {
-			ent = hookedEnt
+
+	if log.addCaller {
+		cm.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip))
+		if !cm.Entry.Caller.Defined {
+			log.InternalError("addCaller", errCaller)
 		}
 	}
+
+	if cm.Entry.Level >= log.addStack {
+		cm.Entry.Stack = Stack().str
+		// TODO: maybe just inline Stack around takeStacktrace
+	}
+
 	if err := cm.Write(fields...); err != nil {
 		log.InternalError("facility", err)
 	}

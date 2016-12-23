@@ -31,6 +31,7 @@ import (
 	"go.uber.org/zap/spywrite"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func opts(opts ...Option) []Option {
@@ -367,6 +368,51 @@ func TestJSONLoggerSyncsOutput(t *testing.T) {
 
 	assert.Panics(t, func() { logger.Panic("foo") }, "Expected panic when logging at Panic level.")
 	assert.True(t, sink.Called(), "Expected logging at panic level to Sync underlying WriteSyncer.")
+}
+
+func TestLoggerAddCaller(t *testing.T) {
+	withJSONLogger(t, DebugLevel, opts(AddCaller()), func(logger Logger, buf *testBuffer) {
+		logger.Info("Callers.")
+		assert.Regexp(t,
+			`"caller":"[^"]+/logger_test.go:[\d]+","msg":"Callers\."`,
+			buf.Stripped(), "Expected to find package name and file name in output.")
+	})
+}
+
+func TestLoggerAddCallerFail(t *testing.T) {
+	errBuf := &testBuffer{}
+	withJSONLogger(t, DebugLevel, opts(
+		AddCaller(),
+		ErrorOutput(errBuf),
+	), func(log Logger, buf *testBuffer) {
+		logImpl := log.(*logger)
+		logImpl.callerSkip = 1e3
+
+		log.Info("Failure.")
+		assert.Regexp(t,
+			`addCaller error: failed to get caller`,
+			errBuf.String(), "Didn't find expected failure message.")
+		assert.Contains(t,
+			buf.String(), `"msg":"Failure."`,
+			"Expected original message to survive failures in runtime.Caller.")
+	})
+}
+
+func TestLoggerAddStacks(t *testing.T) {
+	withJSONLogger(t, DebugLevel, opts(AddStacks(InfoLevel)), func(logger Logger, buf *testBuffer) {
+		logger.Info("Stacks.")
+		output := buf.String()
+		require.Contains(t, output, "zap.TestLoggerAddStacks", "Expected to find test function in stacktrace.")
+		assert.Contains(t, output, `"stacktrace":`, "Stacktrace added under an unexpected key.")
+
+		buf.Reset()
+		logger.Warn("Stacks.")
+		assert.Contains(t, buf.String(), `"stacktrace":`, "Expected to include stacktrace at Warn level.")
+
+		buf.Reset()
+		logger.Debug("No stacks.")
+		assert.NotContains(t, buf.String(), "Unexpected stacktrace at Debug level.")
+	})
 }
 
 func TestLoggerConcurrent(t *testing.T) {
