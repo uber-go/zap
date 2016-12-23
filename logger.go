@@ -63,6 +63,12 @@ type Logger interface {
 	Facility() Facility
 }
 
+var (
+	errCaller = errors.New("failed to get caller")
+	// default for logger.callerSkip
+	_defaultCallerSkip = 3
+)
+
 type logger struct {
 	fac Facility
 
@@ -161,13 +167,6 @@ func (log *logger) Fatal(msg string, fields ...Field) {
 	log.Log(FatalLevel, msg, fields...)
 	_exit(1)
 }
-
-var (
-	errCaller = errors.New("failed to get caller")
-	// Skip Caller, Logger.log, and the leveled Logger method when using
-	// runtime.Caller.
-	_defaultCallerSkip = 3
-)
 
 func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 	ent := Entry{
