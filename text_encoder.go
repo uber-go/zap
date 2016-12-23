@@ -71,9 +71,13 @@ func (enc *textEncoder) AddInt(key string, val int) {
 	enc.AddInt64(key, int64(val))
 }
 
+func (enc *textEncoder) addInt64(val int64) {
+	enc.bytes = strconv.AppendInt(enc.bytes, val, 10)
+}
+
 func (enc *textEncoder) AddInt64(key string, val int64) {
 	enc.addKey(key)
-	enc.bytes = strconv.AppendInt(enc.bytes, val, 10)
+	enc.addInt64(val)
 }
 
 func (enc *textEncoder) AddUint(key string, val uint) {
@@ -127,7 +131,7 @@ func (enc *textEncoder) AddInts(key string, vals []int) {
 	enc.addArrayBegin()
 	for i, val := range vals {
 		enc.addArraySep(i)
-		enc.bytes = strconv.AppendInt(enc.bytes, int64(val), 10)
+		enc.addInt64(int64(val))
 	}
 	enc.addArrayEnd()
 }
