@@ -174,24 +174,24 @@ func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 		Level:   lvl,
 		Message: msg,
 	}
-	cm := log.fac.Check(ent, nil)
-	if cm == nil {
+	ce := log.fac.Check(ent, nil)
+	if ce == nil {
 		return
 	}
 
 	if log.addCaller {
-		cm.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip))
-		if !cm.Entry.Caller.Defined {
+		ce.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip))
+		if !ce.Entry.Caller.Defined {
 			log.InternalError("addCaller", errCaller)
 		}
 	}
 
-	if cm.Entry.Level >= log.addStack {
-		cm.Entry.Stack = Stack().str
+	if ce.Entry.Level >= log.addStack {
+		ce.Entry.Stack = Stack().str
 		// TODO: maybe just inline Stack around takeStacktrace
 	}
 
-	if err := cm.Write(fields...); err != nil {
+	if err := ce.Write(fields...); err != nil {
 		log.InternalError("facility", err)
 	}
 }
