@@ -121,6 +121,7 @@ func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
 		Message: msg,
 	}
 	ce := log.fac.Check(ent, nil)
+	willWrite := ce != nil
 
 	// If terminal behavior is required, setup so that it happens after the
 	// checked entry is written and create a checked entry if it's still nil.
@@ -135,8 +136,10 @@ func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
 		}
 	}
 
-	// Only do further annotations if we have a checked entry.
-	if ce == nil {
+	// Only do further annotation if we're going to write this message; checked
+	// entries that exist only for terminal behavior do not benefit from
+	// annotation.
+	if !willWrite {
 		return ce
 	}
 
