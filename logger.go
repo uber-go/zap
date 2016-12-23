@@ -169,7 +169,7 @@ func (log *logger) Fatal(msg string, fields ...Field)  { log.Log(FatalLevel, msg
 func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 	if ce := log.Check(lvl, msg); ce != nil {
 		if err := ce.Write(fields...); err != nil {
-			log.InternalError("facility", err)
+			log.InternalError("write", err)
 		}
 	}
 }
