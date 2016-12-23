@@ -105,7 +105,7 @@ type CheckedEntry struct {
 
 // Write writes the entry to any Facility references stored, returning any
 // errors, and returns the CheckedEntry reference to a pool for immediate
-// re-use.
+// re-use. Write finally does any panic or fatal exiting that should happen.
 func (ce *CheckedEntry) Write(fields ...Field) error {
 	if ce == nil {
 		return nil
