@@ -22,6 +22,7 @@ package zap
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -56,7 +57,11 @@ func (ec EntryCaller) String() string {
 	if !ec.Defined {
 		return ""
 	}
-	return fmt.Sprintf("%s:%d", ec.File, ec.Line)
+	// TODO: pool these byte buffers.
+	buf := make([]byte, 0, len(ec.File)+10) // line number is unlikely to take more than 9 bytes
+	buf = append(buf, ec.File...)
+	buf = append(buf, ':')
+	return string(strconv.AppendInt(buf, int64(ec.Line), 10))
 }
 
 // An Entry represents a complete log message. The entry's structured context
