@@ -80,7 +80,7 @@ type Entry struct {
 
 // CheckWriteAction indicates what action to take after (*CheckedEntry).Write
 // is done.
-type CheckWriteAction int
+type CheckWriteAction uint8
 
 const (
 	// WriteThenNoop is the default behavior to do nothing speccial after write.
