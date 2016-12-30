@@ -18,54 +18,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+package zap_test
 
-// Tee creates a Facility that duplicates log entries into two or more
-// facilities; if you call it with less than two, you get back the one facility
-// you passed (or nil in the pathological case).
-func Tee(facs ...Facility) Facility {
-	switch len(facs) {
-	case 0:
-		return nil
-	case 1:
-		return facs[0]
-	default:
-		return multiFacility(facs)
-	}
-}
+import (
+	"testing"
 
-type multiFacility []Facility
+	"go.uber.org/zap"
+)
 
-func (mf multiFacility) With(fields []Field) Facility {
-	clone := make(multiFacility, len(mf))
-	for i := range mf {
-		clone[i] = mf[i].With(fields)
-	}
-	return clone
-}
-
-func (mf multiFacility) Enabled(lvl Level) bool {
-	for i := range mf {
-		if mf[i].Enabled(lvl) {
-			return true
+func BenchmarkMultiWriteSyncer2(b *testing.B) {
+	log := zap.New(zap.WriterFacility(
+		zap.NewJSONEncoder(),
+		zap.MultiWriteSyncer(zap.Discard, zap.Discard),
+		zap.DebugLevel,
+	))
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			log.Info("yup")
 		}
-	}
-	return false
+	})
 }
 
-func (mf multiFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
-	for i := range mf {
-		ce = mf[i].Check(ent, ce)
-	}
-	return ce
-}
-
-func (mf multiFacility) Write(ent Entry, fields []Field) error {
-	var errs multiError
-	for i := range mf {
-		if err := mf[i].Write(ent, fields); err != nil {
-			errs = append(errs, err)
+func BenchmarkMultiWriteSyncer4(b *testing.B) {
+	log := zap.New(zap.WriterFacility(
+		zap.NewJSONEncoder(),
+		zap.MultiWriteSyncer(zap.Discard, zap.Discard, zap.Discard, zap.Discard),
+		zap.DebugLevel,
+	))
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			log.Info("yup")
 		}
-	}
-	return errs.asError()
+	})
 }

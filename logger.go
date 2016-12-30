@@ -21,12 +21,18 @@
 package zap
 
 import (
+	"errors"
+	"fmt"
 	"os"
+	"runtime"
 	"time"
 )
 
-// For tests.
-var _exit = os.Exit
+var (
+	_exit              = os.Exit // for tests
+	_defaultCallerSkip = 3       // for logger.callerSkip
+	errCaller          = errors.New("failed to get caller")
+)
 
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
@@ -34,12 +40,12 @@ type Logger interface {
 	// Create a child logger, and optionally add some context to that logger.
 	With(...Field) Logger
 
-	// Check returns a CheckedMessage if logging a message at the specified level
+	// Check returns a CheckedEntry if logging a message at the specified level
 	// is enabled. It's a completely optional optimization; in high-performance
 	// applications, Check can help avoid allocating a slice to hold fields.
 	//
-	// See CheckedMessage for an example.
-	Check(Level, string) *CheckedMessage
+	// See CheckedEntry for an example.
+	Check(Level, string) *CheckedEntry
 
 	// Log a message at the given level. Messages include any context that's
 	// accumulated on the logger, as well as any fields added at the log site.
@@ -48,7 +54,6 @@ type Logger interface {
 	// process, but calling Log(PanicLevel, ...) or Log(FatalLevel, ...) should
 	// not. It may not be possible for compatibility wrappers to comply with
 	// this last part (e.g. the bark wrapper).
-	Log(Level, string, ...Field)
 	Debug(string, ...Field)
 	Info(string, ...Field)
 	Warn(string, ...Field)
@@ -56,83 +61,128 @@ type Logger interface {
 	DPanic(string, ...Field)
 	Panic(string, ...Field)
 	Fatal(string, ...Field)
+
+	// Facility returns the destination that log entries are written to.
+	Facility() Facility
 }
 
-type logger struct{ Meta }
+type logger struct {
+	fac Facility
 
-// New constructs a logger that uses the provided encoder. By default, the
-// logger will write Info logs or higher to standard out. Any errors during logging
-// will be written to standard error.
-//
-// Options can change the log level, the output location, the initial fields
-// that should be added as context, and many other behaviors.
-func New(enc Encoder, options ...Option) Logger {
-	return &logger{
-		Meta: MakeMeta(enc, options...),
+	development bool
+	errorOutput WriteSyncer
+
+	// TODO: consider using a LevelEnabler instead
+	addCaller bool
+	addStack  Level
+
+	callerSkip int
+}
+
+// New returns a new logger with sensible defaults: logging at InfoLevel,
+// development mode off, errors written to standard error, and logs JSON
+// encoded to standard output.
+func New(fac Facility, options ...Option) Logger {
+	if fac == nil {
+		fac = WriterFacility(NewJSONEncoder(), os.Stdout, InfoLevel)
 	}
+	log := &logger{
+		fac:         fac,
+		errorOutput: newLockedWriteSyncer(os.Stderr),
+		addStack:    maxLevel, // TODO: better an `always false` level enabler
+		callerSkip:  _defaultCallerSkip,
+	}
+	for _, opt := range options {
+		opt.apply(log)
+	}
+	return log
 }
 
 func (log *logger) With(fields ...Field) Logger {
-	clone := &logger{
-		Meta: log.Meta.Clone(),
+	if len(fields) == 0 {
+		return log
 	}
-	addFields(clone.Encoder, fields)
-	return clone
+	return &logger{
+		fac:         log.fac.With(fields),
+		development: log.development,
+		errorOutput: log.errorOutput,
+		addCaller:   log.addCaller,
+		addStack:    log.addStack,
+		callerSkip:  log.callerSkip,
+	}
 }
 
-func (log *logger) Check(lvl Level, msg string) *CheckedMessage {
-	return log.Meta.Check(log, lvl, msg)
+func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
+	// Create basic checked entry thru the facility; this will be non-nil if
+	// the log message will actually be written somewhere.
+	ent := Entry{
+		Time:    time.Now().UTC(),
+		Level:   lvl,
+		Message: msg,
+	}
+	ce := log.fac.Check(ent, nil)
+	willWrite := ce != nil
+
+	// If terminal behavior is required, setup so that it happens after the
+	// checked entry is written and create a checked entry if it's still nil.
+	switch ent.Level {
+	case PanicLevel:
+		ce = ce.Should(ent, WriteThenPanic)
+	case FatalLevel:
+		ce = ce.Should(ent, WriteThenFatal)
+	case DPanicLevel:
+		if log.development {
+			ce = ce.Should(ent, WriteThenPanic)
+		}
+	}
+
+	// Only do further annotation if we're going to write this message; checked
+	// entries that exist only for terminal behavior do not benefit from
+	// annotation.
+	if !willWrite {
+		return ce
+	}
+
+	if log.addCaller {
+		ce.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip))
+		if !ce.Entry.Caller.Defined {
+			log.InternalError("addCaller", errCaller)
+		}
+	}
+
+	if ce.Entry.Level >= log.addStack {
+		ce.Entry.Stack = Stack().str
+		// TODO: maybe just inline Stack around takeStacktrace
+	}
+
+	return ce
 }
+
+func (log *logger) Debug(msg string, fields ...Field)  { log.Log(DebugLevel, msg, fields...) }
+func (log *logger) Info(msg string, fields ...Field)   { log.Log(InfoLevel, msg, fields...) }
+func (log *logger) Warn(msg string, fields ...Field)   { log.Log(WarnLevel, msg, fields...) }
+func (log *logger) Error(msg string, fields ...Field)  { log.Log(ErrorLevel, msg, fields...) }
+func (log *logger) DPanic(msg string, fields ...Field) { log.Log(DPanicLevel, msg, fields...) }
+func (log *logger) Panic(msg string, fields ...Field)  { log.Log(PanicLevel, msg, fields...) }
+func (log *logger) Fatal(msg string, fields ...Field)  { log.Log(FatalLevel, msg, fields...) }
 
 func (log *logger) Log(lvl Level, msg string, fields ...Field) {
-	log.log(lvl, msg, fields)
-}
-
-func (log *logger) Debug(msg string, fields ...Field) {
-	log.log(DebugLevel, msg, fields)
-}
-
-func (log *logger) Info(msg string, fields ...Field) {
-	log.log(InfoLevel, msg, fields)
-}
-
-func (log *logger) Warn(msg string, fields ...Field) {
-	log.log(WarnLevel, msg, fields)
-}
-
-func (log *logger) Error(msg string, fields ...Field) {
-	log.log(ErrorLevel, msg, fields)
-}
-
-func (log *logger) DPanic(msg string, fields ...Field) {
-	log.log(DPanicLevel, msg, fields)
-	if log.Development {
-		panic(msg)
+	if ce := log.Check(lvl, msg); ce != nil {
+		if err := ce.Write(fields...); err != nil {
+			log.InternalError("write", err)
+		}
 	}
 }
 
-func (log *logger) Panic(msg string, fields ...Field) {
-	log.log(PanicLevel, msg, fields)
-	panic(msg)
+// InternalError prints an internal error message to the configured
+// ErrorOutput. This method should only be used to report internal logger
+// problems and should not be used to report user-caused problems.
+func (log *logger) InternalError(cause string, err error) {
+	fmt.Fprintf(log.errorOutput, "%v %s error: %v\n", time.Now().UTC(), cause, err)
+	log.errorOutput.Sync()
 }
 
-func (log *logger) Fatal(msg string, fields ...Field) {
-	log.log(FatalLevel, msg, fields)
-	_exit(1)
-}
-
-func (log *logger) log(lvl Level, msg string, fields []Field) {
-	if !log.Meta.Enabled(lvl) {
-		return
-	}
-
-	t := time.Now().UTC()
-	if err := log.Encode(log.Output, t, lvl, msg, fields); err != nil {
-		log.InternalError("encoder", err)
-	}
-
-	if lvl > ErrorLevel {
-		// Sync on Panic and Fatal, since they may crash the program.
-		log.Output.Sync()
-	}
+// Facility returns the destination that logs entries are written to.
+func (log *logger) Facility() Facility {
+	return log.fac
 }

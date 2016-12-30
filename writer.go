@@ -30,8 +30,6 @@ import (
 var (
 	// Discard is a convenience wrapper around ioutil.Discard.
 	Discard = AddSync(ioutil.Discard)
-	// DiscardOutput is an Option that discards logger output.
-	DiscardOutput = Output(Discard)
 )
 
 // A WriteFlusher is an io.Writer that can also flush any buffered data.
@@ -130,14 +128,9 @@ func (ws multiWriteSyncer) Write(p []byte) (int, error) {
 }
 
 func (ws multiWriteSyncer) Sync() error {
-	return wrapMultiError(ws...)
-}
-
-// Run a series of `f`s, collecting and aggregating errors if presents
-func wrapMultiError(fs ...WriteSyncer) error {
 	var errs multiError
-	for _, f := range fs {
-		if err := f.Sync(); err != nil {
+	for _, w := range ws {
+		if err := w.Sync(); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -147,10 +140,14 @@ func wrapMultiError(fs ...WriteSyncer) error {
 type multiError []error
 
 func (m multiError) asError() error {
-	if len(m) > 0 {
+	switch len(m) {
+	case 0:
+		return nil
+	case 1:
+		return m[0]
+	default:
 		return m
 	}
-	return nil
 }
 
 func (m multiError) Error() string {
