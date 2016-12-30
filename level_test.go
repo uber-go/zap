@@ -30,8 +30,9 @@ import (
 )
 
 func TestLevelEnablerFunc(t *testing.T) {
-	opts := []Option{Fields(Int("foo", 42)), LevelEnablerFunc(func(l Level) bool { return l == DebugLevel })}
-	withJSONLogger(t, opts, func(log Logger, buf *testBuffer) {
+	enab := LevelEnablerFunc(func(l Level) bool { return l == DebugLevel })
+	opts := []Option{Fields(Int("foo", 42))}
+	withJSONLogger(t, enab, opts, func(log Logger, buf *testBuffer) {
 		log.Debug("@debug", Int("logger", 0))
 		log.Info("@info", Int("logger", 0))
 		assert.Equal(t, []string{

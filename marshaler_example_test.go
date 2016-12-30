@@ -21,6 +21,7 @@
 package zap_test
 
 import (
+	"os"
 	"time"
 
 	"go.uber.org/zap"
@@ -62,7 +63,7 @@ func ExampleMarshaler() {
 		},
 	}
 
-	logger := zap.New(zap.NewJSONEncoder(zap.NoTime()))
+	logger := zap.New(zap.WriterFacility(zap.NewJSONEncoder(zap.NoTime()), os.Stdout, zap.InfoLevel))
 	logger.Info("Successful login.", zap.Marshaler("user", jane))
 
 	// Output:
