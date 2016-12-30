@@ -30,7 +30,7 @@ type Facility interface {
 	Write(Entry, []Field) error
 }
 
-// WriterFacility creates a facility that writes logs to an io.Writer. By
+// WriterFacility creates a facility that writes logs to a WriteSyncer. By
 // default, if w is nil, os.Stdout is used.
 func WriterFacility(enc Encoder, ws WriteSyncer, enab LevelEnabler) Facility {
 	return ioFacility{
