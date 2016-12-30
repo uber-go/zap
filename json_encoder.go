@@ -205,7 +205,7 @@ func (enc *jsonEncoder) WriteEntry(sink io.Writer, ent Entry, fields []Field) er
 	enc.timeF(ent.Time).AddTo(final)
 	if ent.Caller.Defined {
 		// NOTE: we add the field here for parity compromise with text
-		// prepending, while not actualyl mutating the message string.
+		// prepending, while not actually mutating the message string.
 		final.AddString("caller", ent.Caller.String())
 	}
 	enc.messageF(ent.Message).AddTo(final)

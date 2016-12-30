@@ -28,8 +28,11 @@ import (
 	"time"
 )
 
-// For tests.
-var _exit = os.Exit
+var (
+	_exit              = os.Exit // for tests
+	_defaultCallerSkip = 3       // for logger.callerSkip
+	errCaller          = errors.New("failed to get caller")
+)
 
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
@@ -59,15 +62,9 @@ type Logger interface {
 	Panic(string, ...Field)
 	Fatal(string, ...Field)
 
-	// Facility returns the destination that log entrys are written to.
+	// Facility returns the destination that log entries are written to.
 	Facility() Facility
 }
-
-var (
-	errCaller = errors.New("failed to get caller")
-	// default for logger.callerSkip
-	_defaultCallerSkip = 3
-)
 
 type logger struct {
 	fac Facility
@@ -83,7 +80,7 @@ type logger struct {
 }
 
 // New returns a new logger with sensible defaults: logging at InfoLevel,
-// development mode off, errors writtten to standard error, and logs JSON
+// development mode off, errors written to standard error, and logs JSON
 // encoded to standard output.
 func New(fac Facility, options ...Option) Logger {
 	if fac == nil {
