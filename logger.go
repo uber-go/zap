@@ -102,6 +102,9 @@ func New(fac Facility, options ...Option) Logger {
 }
 
 func (log *logger) With(fields ...Field) Logger {
+	if len(fields) == 0 {
+		return log
+	}
 	return &logger{
 		fac:         log.fac.With(fields),
 		development: log.development,
