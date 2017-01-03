@@ -23,19 +23,16 @@ package zap_test
 import (
 	"testing"
 
-	"github.com/uber-go/zap"
-	"github.com/uber-go/zap/spy"
+	"go.uber.org/zap"
+	"go.uber.org/zap/spy"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTeeLogsBoth(t *testing.T) {
-	log1, sink1 := spy.New(zap.DebugLevel)
-	log2, sink2 := spy.New(zap.WarnLevel)
-	log := zap.Tee(log1, log2)
-
-	log.Log(zap.InfoLevel, "log @info")
-	log.Log(zap.WarnLevel, "log @warn")
+	fac1, sink1 := spy.New(zap.DebugLevel)
+	fac2, sink2 := spy.New(zap.WarnLevel)
+	log := zap.New(zap.Tee(fac1, fac2))
 
 	log.Debug("log-dot-debug")
 	log.Info("log-dot-info")
@@ -43,16 +40,6 @@ func TestTeeLogsBoth(t *testing.T) {
 	log.Error("log-dot-error")
 
 	assert.Equal(t, []spy.Log{
-		{
-			Level:  zap.InfoLevel,
-			Msg:    "log @info",
-			Fields: []zap.Field{},
-		},
-		{
-			Level:  zap.WarnLevel,
-			Msg:    "log @warn",
-			Fields: []zap.Field{},
-		},
 		{
 			Level:  zap.DebugLevel,
 			Msg:    "log-dot-debug",
@@ -78,11 +65,6 @@ func TestTeeLogsBoth(t *testing.T) {
 	assert.Equal(t, []spy.Log{
 		{
 			Level:  zap.WarnLevel,
-			Msg:    "log @warn",
-			Fields: []zap.Field{},
-		},
-		{
-			Level:  zap.WarnLevel,
 			Msg:    "log-dot-warn",
 			Fields: []zap.Field{},
 		},
@@ -95,13 +77,12 @@ func TestTeeLogsBoth(t *testing.T) {
 }
 
 func TestTee_Panic(t *testing.T) {
-	log1, sink1 := spy.New(zap.DebugLevel)
-	log2, sink2 := spy.New(zap.WarnLevel)
-	log := zap.Tee(log1, log2)
+	fac1, sink1 := spy.New(zap.DebugLevel)
+	fac2, sink2 := spy.New(zap.WarnLevel)
+	log := zap.New(zap.Tee(fac1, fac2))
 
 	assert.Panics(t, func() { log.Panic("foo") }, "tee logger.Panic panics")
 	assert.Panics(t, func() { log.Check(zap.PanicLevel, "bar").Write() }, "tee logger.Check(PanicLevel).Write() panics")
-	assert.NotPanics(t, func() { log.Log(zap.PanicLevel, "baz") }, "tee logger.Log(PanicLevel) does not panic")
 
 	assert.Equal(t, []spy.Log{
 		{
@@ -112,11 +93,6 @@ func TestTee_Panic(t *testing.T) {
 		{
 			Level:  zap.PanicLevel,
 			Msg:    "bar",
-			Fields: []zap.Field{},
-		},
-		{
-			Level:  zap.PanicLevel,
-			Msg:    "baz",
 			Fields: []zap.Field{},
 		},
 	}, sink1.Logs())
@@ -130,11 +106,6 @@ func TestTee_Panic(t *testing.T) {
 		{
 			Level:  zap.PanicLevel,
 			Msg:    "bar",
-			Fields: []zap.Field{},
-		},
-		{
-			Level:  zap.PanicLevel,
-			Msg:    "baz",
 			Fields: []zap.Field{},
 		},
 	}, sink2.Logs())

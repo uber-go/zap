@@ -23,8 +23,9 @@ package zap
 import (
 	"errors"
 	"fmt"
+	"math"
 
-	"github.com/uber-go/atomic"
+	"go.uber.org/atomic"
 )
 
 var errMarshalNilLevel = errors.New("can't marshal a nil *Level to text")
@@ -70,14 +71,13 @@ const (
 	PanicLevel
 	// FatalLevel logs a message, then calls os.Exit(1).
 	FatalLevel
+
+	maxLevel = Level(math.MaxInt32)
 )
 
 // LevelEnablerFunc is a convenient way to implement LevelEnabler around an
 // anonymous function. It is also a valid Option to pass to a logger.
 type LevelEnablerFunc func(Level) bool
-
-// This allows an LevelEnablerFunc to be used as an option.
-func (f LevelEnablerFunc) apply(m *Meta) { m.LevelEnabler = f }
 
 // Enabled calls the wrapped function.
 func (f LevelEnablerFunc) Enabled(lvl Level) bool { return f(lvl) }

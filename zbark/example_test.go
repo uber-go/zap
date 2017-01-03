@@ -23,16 +23,18 @@ package zbark_test
 import (
 	"os"
 
-	"github.com/uber-go/zap"
-	"github.com/uber-go/zap/zbark"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zbark"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/uber-common/bark"
 )
 
 func ExampleBarkify() {
-	zapLogger := zap.New(zap.NewJSONEncoder(
-		zap.NoTime(), // discard timestamps in tests
+	zapLogger := zap.New(zap.WriterFacility(
+		zap.NewJSONEncoder(zap.NoTime()), // discard timestamps in tests
+		os.Stdout,
+		zap.InfoLevel,
 	))
 
 	// Wrap our structured logger to mimic bark.Logger.

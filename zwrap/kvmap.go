@@ -20,7 +20,7 @@
 
 package zwrap
 
-import "github.com/uber-go/zap"
+import "go.uber.org/zap"
 
 // KeyValueMap implements zap.KeyValue backed by a map.
 type KeyValueMap map[string]interface{}

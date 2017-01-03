@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/zap/spywrite"
+	"go.uber.org/zap/spywrite"
 )
 
 func newTextEncoder(opts ...TextOption) *textEncoder {
@@ -111,7 +111,6 @@ func TestTextEncoderFields(t *testing.T) {
 }
 
 func TestTextWriteEntry(t *testing.T) {
-	entry := &Entry{Level: InfoLevel, Message: "Something happened.", Time: epoch}
 	tests := []struct {
 		enc      Encoder
 		expected string
@@ -143,7 +142,11 @@ func TestTextWriteEntry(t *testing.T) {
 	for _, tt := range tests {
 		assert.NoError(
 			t,
-			tt.enc.WriteEntry(sink, entry.Message, entry.Level, entry.Time),
+			tt.enc.WriteEntry(sink, Entry{
+				Level:   InfoLevel,
+				Message: "Something happened.",
+				Time:    epoch,
+			}, nil),
 			"Unexpected failure writing entry with text time formatter %s.", tt.name,
 		)
 		assert.Equal(t, tt.expected, sink.Stripped(), "Unexpected output from text time formatter %s.", tt.name)
@@ -170,7 +173,11 @@ func TestTextWriteEntryLevels(t *testing.T) {
 	for _, tt := range tests {
 		assert.NoError(
 			t,
-			enc.WriteEntry(sink, "Fake message.", tt.level, epoch),
+			enc.WriteEntry(sink, Entry{
+				Message: "Fake message.",
+				Level:   tt.level,
+				Time:    epoch,
+			}, nil),
 			"Unexpected failure writing entry with level %s.", tt.level,
 		)
 		expected := fmt.Sprintf("[%s] Fake message.", tt.expected)
@@ -202,7 +209,11 @@ func TestTextWriteEntryFailure(t *testing.T) {
 			{spywrite.ShortWriter{}, "Expected an error on partial writes to sink."},
 		}
 		for _, tt := range tests {
-			err := enc.WriteEntry(tt.sink, "hello", InfoLevel, time.Unix(0, 0))
+			err := enc.WriteEntry(tt.sink, Entry{
+				Message: "hello",
+				Level:   InfoLevel,
+				Time:    time.Unix(0, 0),
+			}, nil)
 			assert.Error(t, err, tt.msg)
 		}
 	})
@@ -210,13 +221,16 @@ func TestTextWriteEntryFailure(t *testing.T) {
 
 func TestTextTimeOptions(t *testing.T) {
 	epoch := time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
-	entry := &Entry{Level: InfoLevel, Message: "Something happened.", Time: epoch}
 
 	enc := NewTextEncoder()
 
 	sink := &testBuffer{}
 	enc.AddString("foo", "bar")
-	err := enc.WriteEntry(sink, entry.Message, entry.Level, entry.Time)
+	err := enc.WriteEntry(sink, Entry{
+		Level:   InfoLevel,
+		Message: "Something happened.",
+		Time:    epoch,
+	}, nil)
 	assert.NoError(t, err, "WriteEntry returned an unexpected error.")
 	assert.Equal(
 		t,

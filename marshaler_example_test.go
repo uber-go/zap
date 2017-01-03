@@ -21,9 +21,10 @@
 package zap_test
 
 import (
+	"os"
 	"time"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 type Auth struct {
@@ -62,7 +63,7 @@ func ExampleMarshaler() {
 		},
 	}
 
-	logger := zap.New(zap.NewJSONEncoder(zap.NoTime()))
+	logger := zap.New(zap.WriterFacility(zap.NewJSONEncoder(zap.NoTime()), os.Stdout, zap.InfoLevel))
 	logger.Info("Successful login.", zap.Marshaler("user", jane))
 
 	// Output:

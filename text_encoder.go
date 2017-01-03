@@ -160,20 +160,28 @@ func (enc *textEncoder) Clone() Encoder {
 	return clone
 }
 
-func (enc *textEncoder) WriteEntry(sink io.Writer, msg string, lvl Level, t time.Time) error {
+func (enc *textEncoder) WriteEntry(sink io.Writer, ent Entry, fields []Field) error {
 	if sink == nil {
 		return errNilSink
 	}
 
+	if ent.Caller.Defined {
+		ent.Message = fmt.Sprintf("%v: %v", ent.Caller, ent.Message)
+	}
+
 	final := textPool.Get().(*textEncoder)
 	final.truncate()
-	enc.addLevel(final, lvl)
-	enc.addTime(final, t)
-	enc.addMessage(final, msg)
+	enc.addLevel(final, ent.Level)
+	enc.addTime(final, ent.Time)
+	enc.addMessage(final, ent.Message)
 
 	if len(enc.bytes) > 0 {
 		final.bytes = append(final.bytes, ' ')
 		final.bytes = append(final.bytes, enc.bytes...)
+	}
+	addFields(final, fields) // NOTE: we could choose to add the log-site fields first before contextual ones
+	if ent.Stack != "" {
+		final.AddString("stacktrace", ent.Stack)
 	}
 	final.bytes = append(final.bytes, '\n')
 

@@ -21,17 +21,19 @@
 package zwrap_test
 
 import (
+	"os"
 	"time"
 
-	"github.com/uber-go/zap"
-	"github.com/uber-go/zap/zwrap"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zwrap"
 )
 
 func Example_standardize() {
-	zapLogger := zap.New(zap.NewJSONEncoder(
-		zap.NoTime(), // discard timestamps in tests
+	zapLogger := zap.New(zap.WriterFacility(
+		zap.NewJSONEncoder(zap.NoTime()), // discard timestamps in tests
+		zap.AddSync(os.Stdout),
+		zap.InfoLevel,
 	))
-
 	// Wrap our structured logger to mimic the standard library's log.Logger.
 	// We also specify that we want all calls to the standard logger's Print
 	// family of methods to log at zap's Warn level.
@@ -49,10 +51,12 @@ func Example_standardize() {
 }
 
 func Example_sample() {
-	zapLogger := zap.New(zap.NewJSONEncoder(
-		zap.NoTime(), // discard timestamps in tests
-	))
-	sampledLogger := zwrap.Sample(zapLogger, time.Second, 1, 100)
+	zapFac := zap.WriterFacility(
+		zap.NewJSONEncoder(zap.NoTime()), // discard timestamps in tests
+		zap.AddSync(os.Stdout),
+		zap.InfoLevel,
+	)
+	sampledLogger := zap.New(zwrap.Sample(zapFac, time.Second, 1, 100))
 
 	for i := 1; i < 110; i++ {
 		sampledLogger.With(zap.Int("n", i)).Error("Common failure.")

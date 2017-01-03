@@ -20,52 +20,52 @@
 
 package zap
 
-// Tee creates a Facility that duplicates log entries into two or more
-// facilities; if you call it with less than two, you get back the one facility
-// you passed (or nil in the pathological case).
-func Tee(facs ...Facility) Facility {
-	switch len(facs) {
-	case 0:
-		return nil
-	case 1:
-		return facs[0]
-	default:
-		return multiFacility(facs)
+// Facility is a destination for log entries. It can have pervasive fields
+// added with With().
+type Facility interface {
+	LevelEnabler
+
+	With([]Field) Facility
+	Check(Entry, *CheckedEntry) *CheckedEntry
+	Write(Entry, []Field) error
+}
+
+// WriterFacility creates a facility that writes logs to a WriteSyncer. By
+// default, if w is nil, os.Stdout is used.
+func WriterFacility(enc Encoder, ws WriteSyncer, enab LevelEnabler) Facility {
+	return ioFacility{
+		LevelEnabler: enab,
+		enc:          enc,
+		out:          newLockedWriteSyncer(ws),
 	}
 }
 
-type multiFacility []Facility
-
-func (mf multiFacility) With(fields []Field) Facility {
-	clone := make(multiFacility, len(mf))
-	for i := range mf {
-		clone[i] = mf[i].With(fields)
-	}
-	return clone
+type ioFacility struct {
+	LevelEnabler
+	enc Encoder
+	out WriteSyncer
 }
 
-func (mf multiFacility) Enabled(lvl Level) bool {
-	for i := range mf {
-		if mf[i].Enabled(lvl) {
-			return true
-		}
-	}
-	return false
+func (iof ioFacility) With(fields []Field) Facility {
+	iof.enc = iof.enc.Clone()
+	addFields(iof.enc, fields)
+	return iof
 }
 
-func (mf multiFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
-	for i := range mf {
-		ce = mf[i].Check(ent, ce)
+func (iof ioFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
+	if iof.Enabled(ent.Level) {
+		ce = ce.AddFacility(ent, iof)
 	}
 	return ce
 }
 
-func (mf multiFacility) Write(ent Entry, fields []Field) error {
-	var errs multiError
-	for i := range mf {
-		if err := mf[i].Write(ent, fields); err != nil {
-			errs = append(errs, err)
-		}
+func (iof ioFacility) Write(ent Entry, fields []Field) error {
+	if err := iof.enc.WriteEntry(iof.out, ent, fields); err != nil {
+		return err
 	}
-	return errs.asError()
+	if ent.Level > ErrorLevel {
+		// Sync on Panic and Fatal, since they may crash the program.
+		return iof.out.Sync()
+	}
+	return nil
 }

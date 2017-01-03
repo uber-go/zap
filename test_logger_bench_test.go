@@ -23,22 +23,14 @@ package zap_test
 import (
 	"testing"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 func withBenchedTee(b *testing.B, f func(zap.Logger)) {
-	logger := zap.Tee(
-		zap.New(
-			zap.NewJSONEncoder(),
-			zap.DebugLevel,
-			zap.DiscardOutput,
-		),
-		zap.New(
-			zap.NewJSONEncoder(),
-			zap.InfoLevel,
-			zap.DiscardOutput,
-		),
-	)
+	logger := zap.New(zap.Tee(
+		zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard, zap.DebugLevel),
+		zap.WriterFacility(zap.NewJSONEncoder(), zap.Discard, zap.InfoLevel),
+	))
 	b.ResetTimer()
 	f(logger)
 }
@@ -58,7 +50,7 @@ func BenchmarkTee_Check(b *testing.B) {
 			i := 0
 			for pb.Next() {
 				tt := cases[i]
-				if cm := logger.Check(tt.lvl, tt.msg); cm.OK() {
+				if cm := logger.Check(tt.lvl, tt.msg); cm != nil {
 					cm.Write(zap.Int("i", i))
 				}
 				i = (i + 1) % len(cases)

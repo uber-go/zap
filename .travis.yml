@@ -5,6 +5,7 @@ go:
   - 1.6
   - 1.7
   - tip
+go_import_path: go.uber.org/zap
 env:
   global:
     - GO15VENDOREXPERIMENT=1

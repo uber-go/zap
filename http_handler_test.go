@@ -30,8 +30,8 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/uber-go/zap"
-	"github.com/uber-go/zap/spy"
+	. "go.uber.org/zap"
+	"go.uber.org/zap/spy"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,7 +39,8 @@ import (
 
 func newHandler() (AtomicLevel, Logger) {
 	lvl := DynamicLevel()
-	logger, _ := spy.New(lvl)
+	fac, _ := spy.New(lvl)
+	logger := New(fac)
 	return lvl, logger
 }
 

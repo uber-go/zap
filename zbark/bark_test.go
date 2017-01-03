@@ -28,7 +28,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-common/bark"
@@ -59,7 +59,11 @@ func (l loggable) MarshalLog(kv zap.KeyValue) error {
 
 func newBark() (bark.Logger, *bytes.Buffer) {
 	buf := &bytes.Buffer{}
-	logger := zap.New(zap.NewJSONEncoder(), zap.DebugLevel, zap.Output(zap.AddSync(buf)))
+	logger := zap.New(zap.WriterFacility(
+		zap.NewJSONEncoder(),
+		zap.AddSync(buf),
+		zap.DebugLevel,
+	))
 	return Barkify(logger), buf
 }
 

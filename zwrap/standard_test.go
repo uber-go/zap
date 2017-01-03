@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,11 +33,11 @@ import (
 
 func newStd(lvl zap.Level) (StandardLogger, *bytes.Buffer, error) {
 	buf := &bytes.Buffer{}
-	logger := zap.New(
+	logger := zap.New(zap.WriterFacility(
 		zap.NewJSONEncoder(),
+		zap.AddSync(buf),
 		zap.DebugLevel,
-		zap.Output(zap.AddSync(buf)),
-	)
+	))
 	std, err := Standardize(logger, lvl)
 	return std, buf, err
 }

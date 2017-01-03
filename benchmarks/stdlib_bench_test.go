@@ -25,8 +25,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/uber-go/zap"
-	"github.com/uber-go/zap/zwrap"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zwrap"
 )
 
 func BenchmarkStandardLibraryWithoutFields(b *testing.B) {
@@ -41,11 +41,11 @@ func BenchmarkStandardLibraryWithoutFields(b *testing.B) {
 
 func BenchmarkZapStandardizeWithoutFields(b *testing.B) {
 	logger, err := zwrap.Standardize(
-		zap.New(
+		zap.New(zap.WriterFacility(
 			zap.NewJSONEncoder(),
+			zap.Discard,
 			zap.DebugLevel,
-			zap.DiscardOutput,
-		),
+		)),
 		zap.InfoLevel,
 	)
 	if err != nil {
