@@ -34,16 +34,16 @@ const (
 	boolType
 	floatType
 	intType
+	intsType
 	int64Type
 	uintType
 	uint64Type
 	uintptrType
 	stringType
+	stringsType
 	marshalerType
 	objectType
 	stringerType
-	intsType
-	stringsType
 	errorType
 	skipType
 )
