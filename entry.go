@@ -154,8 +154,6 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 	case WriteThenPanic:
 		panic(msg)
 	}
-
-	return
 }
 
 // AddFacility adds a facility that has agreed to log this entry. It's intended
