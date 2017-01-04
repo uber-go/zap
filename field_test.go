@@ -223,7 +223,17 @@ func TestIntsFieldQuick(t *testing.T) {
 
 func TestStringsFieldQuick(t *testing.T) {
 	if err := quick.Check(
-		func(strings []string) bool { return compareJSON(t, Object("k", strings), Strings("k", strings)) },
+		func(ss []string) bool {
+			// zap doesn't handle some characters common in HTML in the same way
+			// as the standard library, since we don't need to be browser-safe.
+			// TODO (go18): When we only need to support Go 1.8+, use the standard library's SetEscapeHTML.
+			for i := range ss {
+				if strings.ContainsAny(ss[i], "<>&") {
+					return true
+				}
+			}
+			return compareJSON(t, Object("k", ss), Strings("k", ss))
+		},
 		quickConfig,
 	); err != nil {
 		t.Error(err.Error())
