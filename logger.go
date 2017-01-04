@@ -21,7 +21,6 @@
 package zap
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -31,7 +30,6 @@ import (
 var (
 	_exit              = os.Exit // for tests
 	_defaultCallerSkip = 3       // for logger.callerSkip
-	errCaller          = errors.New("failed to get caller")
 )
 
 // A Logger enables leveled, structured logging. All methods are safe for
@@ -148,7 +146,8 @@ func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
 	if log.addCaller {
 		ce.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip))
 		if !ce.Entry.Caller.Defined {
-			log.InternalError("addCaller", errCaller)
+			fmt.Fprintf(log.errorOutput, "%v addCaller error: failed to get caller\n", time.Now().UTC())
+			log.errorOutput.Sync()
 		}
 	}
 
@@ -172,14 +171,6 @@ func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 	if ce := log.Check(lvl, msg); ce != nil {
 		ce.Write(fields...)
 	}
-}
-
-// InternalError prints an internal error message to the configured
-// ErrorOutput. This method should only be used to report internal logger
-// problems and should not be used to report user-caused problems.
-func (log *logger) InternalError(cause string, err error) {
-	fmt.Fprintf(log.errorOutput, "%v %s error: %v\n", time.Now().UTC(), cause, err)
-	log.errorOutput.Sync()
 }
 
 // Facility returns the destination that logs entries are written to.
