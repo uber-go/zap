@@ -59,8 +59,19 @@ func Development() Option {
 // AddCaller configures the Logger to annotate each message with the filename
 // and line number of zap's caller.
 func AddCaller() Option {
+	return AddCallerSkip(0)
+}
+
+// AddCallerSkip configures the Logger to annotate each message with the filename
+// and line number of a caller outside of zap; which caller in the stack is
+// controlled by the skip argument. If more than one AddCallerSkip option is
+// provided, then the maximum skip amount is used.
+func AddCallerSkip(skip int) Option {
 	return optionFunc(func(log *logger) {
 		log.addCaller = true
+		if n := skip + _defaultCallerSkip; n > log.callerSkip {
+			log.callerSkip = n
+		}
 	})
 }
 
