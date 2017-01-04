@@ -212,6 +212,8 @@ func (f Field) AddTo(kv KeyValue) {
 		kv.AddFloat64(f.key, math.Float64frombits(uint64(f.ival)))
 	case intType:
 		kv.AddInt(f.key, int(f.ival))
+	case intsType:
+		kv.AddInts(f.key, f.obj.([]int))
 	case int64Type:
 		kv.AddInt64(f.key, f.ival)
 	case uintType:
@@ -222,14 +224,12 @@ func (f Field) AddTo(kv KeyValue) {
 		kv.AddUintptr(f.key, uintptr(f.ival))
 	case stringType:
 		kv.AddString(f.key, f.str)
+	case stringsType:
+		kv.AddStrings(f.key, f.obj.([]string))
 	case stringerType:
 		kv.AddString(f.key, f.obj.(fmt.Stringer).String())
 	case marshalerType:
 		err = kv.AddMarshaler(f.key, f.obj.(LogMarshaler))
-	case intsType:
-		kv.AddInts(f.key, f.obj.([]int))
-	case stringsType:
-		kv.AddStrings(f.key, f.obj.([]string))
 	case objectType:
 		err = kv.AddObject(f.key, f.obj)
 	case errorType:
