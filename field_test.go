@@ -30,11 +30,12 @@ import (
 	"testing/quick"
 	"time"
 
-	"os"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// Don't let generative tests eat lots of time.
+var quickConfig = &quick.Config{MaxCount: 100}
 
 type fakeUser struct{ name string }
 
@@ -60,7 +61,7 @@ func assertFieldJSON(t testing.TB, expected string, field Field) {
 		"Unexpected JSON output after applying field %+v.", field)
 }
 
-func getEncodedStr(field Field) string {
+func encodeField(field Field) string {
 	enc := newJSONEncoder()
 	defer enc.Free()
 
@@ -197,41 +198,34 @@ func TestIntsField(t *testing.T) {
 	assertCanBeReused(t, Ints("foo", []int{1, 2, 3}))
 }
 
-func intsCompare(ints []int) bool {
-	sobj := getEncodedStr(Object("foo", ints))
-	sints := getEncodedStr(Ints("foo", ints))
-	if sobj != sints {
-		os.Stderr.WriteString("mis-match\n   sobj: " + sobj + "\n  sints: " + sints + "\n")
+func compareJSON(t testing.TB, reflected, typed Field) bool {
+	reflectedOutput := encodeField(reflected)
+	typedOutput := encodeField(typed)
+	if reflectedOutput != typedOutput {
+		t.Logf(
+			"Reflection-based field doesn't match strongly-typed field.\n\tReflected: %s\n\tTyped: %s\n",
+			reflectedOutput,
+			typedOutput,
+		)
 		return false
 	}
-
 	return true
 }
 
 func TestIntsFieldQuick(t *testing.T) {
-	err := quick.Check(intsCompare, &quick.Config{MaxCountScale: 100.0})
-	if err != nil {
+	if err := quick.Check(
+		func(ints []int) bool { return compareJSON(t, Object("k", ints), Ints("k", ints)) },
+		quickConfig,
+	); err != nil {
 		t.Error(err.Error())
 	}
 }
 
-func stringsCompare(strs []string) bool {
-	// test currently fails if strs contains below chars
-	// strs = []string{"&"}
-	sobj := getEncodedStr(Object("foo", strs))
-	sstrs := getEncodedStr(Strings("foo", strs))
-	if sobj != sstrs {
-		os.Stderr.WriteString("mis-match\n   sobj: " + sobj + "\n  sstrs: " + sstrs + "\n")
-		return false
-	}
-
-	return true
-}
-
-// Test currently fails
 func TestStringsFieldQuick(t *testing.T) {
-	err := quick.Check(stringsCompare, &quick.Config{MaxCountScale: 100.0})
-	if err != nil {
+	if err := quick.Check(
+		func(strings []string) bool { return compareJSON(t, Object("k", strings), Strings("k", strings)) },
+		quickConfig,
+	); err != nil {
 		t.Error(err.Error())
 	}
 }

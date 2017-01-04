@@ -46,24 +46,28 @@ func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
 }
 
 func BenchmarkZapJSONInts(b *testing.B) {
-	ts := time.Unix(0, 0)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			enc := NewJSONEncoder()
 			enc.AddInts("ints", []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
-			enc.WriteEntry(ioutil.Discard, "fake", DebugLevel, ts)
+			enc.WriteEntry(ioutil.Discard, Entry{
+				Message: "fake",
+				Level: DebugLevel,
+			}, nil)
 			enc.Free()
 		}
 	})
 }
 
 func BenchmarkZapJSONStrings(b *testing.B) {
-	ts := time.Unix(0, 0)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			enc := NewJSONEncoder()
 			enc.AddStrings("strings", []string{"bar 1", "bar 2", "bar 3", "bar 4", "bar 5", "bar 6", "bar 7", "bar 8", "bar 9", "bar 10"})
-			enc.WriteEntry(ioutil.Discard, "fake", DebugLevel, ts)
+			enc.WriteEntry(ioutil.Discard, Entry{
+				Message: "fake",
+				Level: DebugLevel,
+			}, nil)
 			enc.Free()
 		}
 	})
