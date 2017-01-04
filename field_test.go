@@ -226,7 +226,7 @@ func TestStringsFieldQuick(t *testing.T) {
 		func(ss []string) bool {
 			// zap doesn't handle some characters common in HTML in the same way
 			// as the standard library, since we don't need to be browser-safe.
-			// TODO (go18): When we only need to support Go 1.8+, use the standard library's SetEscapeHTML.
+			// TODO (go17): When we only need to support Go 1.7+, use the standard library's SetEscapeHTML.
 			for i := range ss {
 				if strings.ContainsAny(ss[i], "<>&") {
 					return true
