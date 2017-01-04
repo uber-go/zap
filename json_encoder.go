@@ -169,9 +169,9 @@ func (enc *jsonEncoder) AddMarshaler(key string, obj LogMarshaler) error {
 // is JSON-escaped.
 func (enc *jsonEncoder) AddInts(key string, vals []int) {
 	enc.beginArray(key)
-	for i, val := range vals {
+	for i := range vals {
 		enc.addArraySep(i)
-		enc.addInt64(int64(val))
+		enc.addInt64(int64(vals[i]))
 	}
 	enc.endArray()
 }
@@ -180,9 +180,9 @@ func (enc *jsonEncoder) AddInts(key string, vals []int) {
 // and the slice elements are JSON-escaped.
 func (enc *jsonEncoder) AddStrings(key string, vals []string) {
 	enc.beginArray(key)
-	for i, val := range vals {
+	for i := range vals {
 		enc.addArraySep(i)
-		enc.addAndQuoteString(val)
+		enc.addAndQuoteString(vals[i])
 	}
 	enc.endArray()
 }
@@ -332,4 +332,3 @@ func (enc *jsonEncoder) addArraySep(idx int) {
 	}
 	enc.bytes = append(enc.bytes, ',')
 }
-
