@@ -143,6 +143,8 @@ func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
 		return ce
 	}
 
+	ce.ErrorOutput = log.errorOutput
+
 	if log.addCaller {
 		ce.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip))
 		if !ce.Entry.Caller.Defined {
@@ -168,9 +170,7 @@ func (log *logger) Fatal(msg string, fields ...Field)  { log.Log(FatalLevel, msg
 
 func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 	if ce := log.Check(lvl, msg); ce != nil {
-		if err := ce.Write(fields...); err != nil {
-			log.InternalError("write", err)
-		}
+		ce.Write(fields...)
 	}
 }
 

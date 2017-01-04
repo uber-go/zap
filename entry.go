@@ -101,6 +101,7 @@ const (
 // Write, and MUST NOT be retained after calling their Write() method.
 type CheckedEntry struct {
 	Entry
+	ErrorOutput WriteSyncer
 	safeToWrite bool
 	should      CheckWriteAction
 	facs        []Facility
@@ -111,17 +112,21 @@ type CheckedEntry struct {
 // Write writes the entry to any Facility references stored, returning any
 // errors, and returns the CheckedEntry reference to a pool for immediate
 // re-use. Write finally does any panic or fatal exiting that should happen.
-func (ce *CheckedEntry) Write(fields ...Field) error {
+func (ce *CheckedEntry) Write(fields ...Field) {
 	if ce == nil {
-		return nil
+		return
 	}
 
 	if !ce.safeToWrite {
-		// this races with (*CheckedEntry).AddFacility; recover a log entry for
-		// debugging, which may be an amalgamation of both the prior one
-		// returned to pool, and any new one being set
-		ent := ce.Entry
-		return fmt.Errorf("race-prone write detected circa log entry %+v", ent)
+		if ce.ErrorOutput != nil {
+			// this races with (*CheckedEntry).AddFacility; recover a log entry for
+			// debugging, which may be an amalgamation of both the prior one
+			// returned to pool, and any new one being set
+			ent := ce.Entry
+			fmt.Fprintf(ce.ErrorOutput, "%v race-prone write dropped circa log entry %+v\n", time.Now().UTC(), ent)
+			ce.ErrorOutput.Sync()
+		}
+		return
 	}
 	ce.safeToWrite = false
 
@@ -129,6 +134,12 @@ func (ce *CheckedEntry) Write(fields ...Field) error {
 	for i := range ce.facs {
 		if err := ce.facs[i].Write(ce.Entry, fields); err != nil {
 			errs = append(errs, err)
+		}
+	}
+	if ce.ErrorOutput != nil {
+		if err := errs.asError(); err != nil {
+			fmt.Fprintf(ce.ErrorOutput, "%v write error: %v\n", time.Now().UTC(), err)
+			ce.ErrorOutput.Sync()
 		}
 	}
 
@@ -144,7 +155,7 @@ func (ce *CheckedEntry) Write(fields ...Field) error {
 		panic(msg)
 	}
 
-	return errs.asError()
+	return
 }
 
 // AddFacility adds a facility that has agreed to log this entry. It's intended
