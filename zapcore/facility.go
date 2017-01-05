@@ -27,14 +27,23 @@ import (
 	"go.uber.org/atomic"
 )
 
+// EntryWriter is a destination for log entttries.  It can have pervasive
+// fields added with With().
+type EntryWriter interface {
+	Write(Entry, []Field) error
+	With([]Field) EntryWriter
+}
+
 // Facility is a destination for log entries. It can have pervasive fields
 // added with With().
 type Facility interface {
 	LevelEnabler
 
+	// Spiritually this embeds EntryWriter with a promoted With return type.
 	With([]Field) Facility
-	Check(Entry, *CheckedEntry) *CheckedEntry
 	Write(Entry, []Field) error
+
+	Check(Entry, *CheckedEntry) *CheckedEntry
 }
 
 // WriterFacility creates a facility that writes logs to a WriteSyncer. By
