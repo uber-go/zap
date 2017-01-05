@@ -35,7 +35,8 @@ type EntryWriter interface {
 }
 
 // Facility is a destination for log entries. It can have pervasive fields
-// added with With().
+// added with With(). Most concrete destinations should implement EntryWriter
+// and use EntryWriterFacility.
 type Facility interface {
 	LevelEnabler
 
@@ -44,6 +45,34 @@ type Facility interface {
 	Write(Entry, []Field) error
 
 	Check(Entry, *CheckedEntry) *CheckedEntry
+}
+
+type writerFacility struct {
+	LevelEnabler
+	EntryWriter
+}
+
+// EntryWriterFacility creates a facility by combining a destination
+// EntryWriter and a LevelEnabler.
+func EntryWriterFacility(enab LevelEnabler, ew EntryWriter) Facility {
+	return &writerFacility{
+		LevelEnabler: enab,
+		EntryWriter:  ew,
+	}
+}
+
+func (wf *writerFacility) With(fields []Field) Facility {
+	return &writerFacility{
+		LevelEnabler: wf.LevelEnabler,
+		EntryWriter:  wf.EntryWriter.With(fields),
+	}
+}
+
+func (wf *writerFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
+	if wf.Enabled(ent.Level) {
+		return ce.AddFacility(ent, wf)
+	}
+	return ce
 }
 
 // WriterFacility creates a facility that writes logs to a WriteSyncer. By
