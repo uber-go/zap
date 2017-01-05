@@ -78,48 +78,38 @@ func (wf *writerFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 // WriterFacility creates a facility that writes logs to a WriteSyncer. By
 // default, if w is nil, os.Stdout is used.
 func WriterFacility(enc Encoder, ws WriteSyncer, enab LevelEnabler) Facility {
-	return &ioFacility{
-		LevelEnabler: enab,
-		enc:          enc,
-		out:          Lock(ws),
-	}
+	return EntryWriterFacility(enab, &ioEntryWriter{
+		enc: enc,
+		out: Lock(ws),
+	})
 }
 
-type ioFacility struct {
-	LevelEnabler
+type ioEntryWriter struct {
 	enc Encoder
 	out WriteSyncer
 }
 
-func (iof *ioFacility) With(fields []Field) Facility {
-	clone := iof.clone()
+func (ew *ioEntryWriter) With(fields []Field) EntryWriter {
+	clone := ew.clone()
 	addFields(clone.enc, fields)
 	return clone
 }
 
-func (iof *ioFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
-	if iof.Enabled(ent.Level) {
-		return ce.AddFacility(ent, iof)
-	}
-	return ce
-}
-
-func (iof *ioFacility) Write(ent Entry, fields []Field) error {
-	if err := iof.enc.WriteEntry(iof.out, ent, fields); err != nil {
+func (ew *ioEntryWriter) Write(ent Entry, fields []Field) error {
+	if err := ew.enc.WriteEntry(ew.out, ent, fields); err != nil {
 		return err
 	}
 	if ent.Level > ErrorLevel {
 		// Since we may be crashing the program, sync the output.
-		return iof.out.Sync()
+		return ew.out.Sync()
 	}
 	return nil
 }
 
-func (iof *ioFacility) clone() *ioFacility {
-	return &ioFacility{
-		LevelEnabler: iof.LevelEnabler,
-		enc:          iof.enc.Clone(),
-		out:          iof.out,
+func (ew *ioEntryWriter) clone() *ioEntryWriter {
+	return &ioEntryWriter{
+		enc: ew.enc.Clone(),
+		out: ew.out,
 	}
 }
 
