@@ -374,7 +374,16 @@ func TestLoggerAddCaller(t *testing.T) {
 	withJSONLogger(t, DebugLevel, opts(AddCaller()), func(logger Logger, buf *testBuffer) {
 		logger.Info("Callers.")
 		assert.Regexp(t,
-			`"caller":"[^"]+/logger_test.go:[\d]+","msg":"Callers\."`,
+			`"caller":"[^"]+/logger_test.go:375","msg":"Callers\."`,
+			buf.Stripped(), "Expected to find package name and file name in output.")
+	})
+}
+
+func TestLoggerAddCallerSkip(t *testing.T) {
+	withJSONLogger(t, DebugLevel, opts(AddCallerSkip(1)), func(logger Logger, buf *testBuffer) {
+		logger.Info("Callers.")
+		assert.Regexp(t,
+			`"caller":"[^"]+/logger_test.go:76","msg":"Callers\."`,
 			buf.Stripped(), "Expected to find package name and file name in output.")
 	})
 }
