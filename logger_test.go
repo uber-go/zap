@@ -339,6 +339,7 @@ func TestLoggerAddCaller(t *testing.T) {
 	log3 := New(
 		WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
 		ErrorOutput(errSink), AddCaller(), AddCallerSkip(1), AddCallerSkip(1))
+	// TODO: wrap(logger) family to be tested by upcoming sugared logger
 
 	log1.Info("mess1")
 	log2.Info("mess2")
