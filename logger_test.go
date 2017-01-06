@@ -336,7 +336,7 @@ func TestLoggerAddCaller(t *testing.T) {
 }
 
 func TestLoggerAddCallerSkip(t *testing.T) {
-	withJSONLogger(t, DebugLevel, opts(AddCallerSkip(1)), func(logger Logger, buf *testBuffer) {
+	withJSONLogger(t, DebugLevel, opts(AddCaller(), AddCallerSkip(1)), func(logger Logger, buf *testBuffer) {
 		logger.Info("Callers.")
 		assert.Regexp(t,
 			`"caller":"[^"]+/common_test.go:\d+","msg":"Callers\."`,
