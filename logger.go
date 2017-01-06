@@ -107,6 +107,10 @@ func (log *logger) With(fields ...Field) Logger {
 }
 
 func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
+	return log.check(lvl, msg)
+}
+
+func (log *logger) check(lvl Level, msg string) *CheckedEntry {
 	// Create basic checked entry thru the facility; this will be non-nil if
 	// the log message will actually be written somewhere.
 	ent := Entry{
@@ -156,50 +160,49 @@ func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
 }
 
 func (log *logger) Debug(msg string, fields ...Field) {
-	if ce := log.Check(DebugLevel, msg); ce != nil {
+	if ce := log.check(DebugLevel, msg); ce != nil {
 		ce.Write(fields...)
 	}
 }
 
 func (log *logger) Info(msg string, fields ...Field) {
-	if ce := log.Check(InfoLevel, msg); ce != nil {
+	if ce := log.check(InfoLevel, msg); ce != nil {
 		ce.Write(fields...)
 	}
 }
 
 func (log *logger) Warn(msg string, fields ...Field) {
-	if ce := log.Check(WarnLevel, msg); ce != nil {
+	if ce := log.check(WarnLevel, msg); ce != nil {
 		ce.Write(fields...)
 	}
 }
 
 func (log *logger) Error(msg string, fields ...Field) {
-	if ce := log.Check(ErrorLevel, msg); ce != nil {
+	if ce := log.check(ErrorLevel, msg); ce != nil {
 		ce.Write(fields...)
 	}
 }
 
 func (log *logger) DPanic(msg string, fields ...Field) {
-	if ce := log.Check(DPanicLevel, msg); ce != nil {
+	if ce := log.check(DPanicLevel, msg); ce != nil {
 		ce.Write(fields...)
 	}
 }
 
 func (log *logger) Panic(msg string, fields ...Field) {
-	if ce := log.Check(PanicLevel, msg); ce != nil {
+	if ce := log.check(PanicLevel, msg); ce != nil {
 		ce.Write(fields...)
 	}
 }
 
 func (log *logger) Fatal(msg string, fields ...Field) {
-	if ce := log.Check(FatalLevel, msg); ce != nil {
+	if ce := log.check(FatalLevel, msg); ce != nil {
 		ce.Write(fields...)
 	}
 }
 
-
 func (log *logger) Log(lvl Level, msg string, fields ...Field) {
-	if ce := log.Check(lvl, msg); ce != nil {
+	if ce := log.check(lvl, msg); ce != nil {
 		ce.Write(fields...)
 	}
 }

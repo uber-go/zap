@@ -343,12 +343,18 @@ func TestLoggerAddCaller(t *testing.T) {
 	log1.Info("mess1")
 	log2.Info("mess2")
 	log3.Info("mess3")
+	log1.Check(InfoLevel, "mess4").Write()
+	log2.Check(InfoLevel, "mess5").Write()
+	log3.Check(InfoLevel, "mess6").Write()
 
 	lines := sink.Lines()
 	for i, testCase := range []struct{ pat, name string }{
 		{`"caller":"[^"]+/logger_test.go:\d+","msg":"mess1"`, "log1.Info"},
 		{`"caller":"[^"]+/testing.go:\d+","msg":"mess2"`, "log2.Info"},
 		{`"caller":"[^"]+/src/runtime/.*:\d+","msg":"mess3"`, "log3.Info"},
+		{`"caller":"[^"]+/logger_test.go:\d+","msg":"mess4"`, "log1.Check(Info)"},
+		{`"caller":"[^"]+/testing.go:\d+","msg":"mess5"`, "log2.Check(Info)"},
+		{`"caller":"[^"]+/src/runtime/.*:\d+","msg":"mess6"`, "log3.Check(Info)"},
 	} {
 		assert.Regexp(t,
 			testCase.pat,
