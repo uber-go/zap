@@ -140,7 +140,7 @@ func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
 	ce.ErrorOutput = log.errorOutput
 
 	if log.addCaller {
-		ce.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip + 3))
+		ce.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip + 2))
 		if !ce.Entry.Caller.Defined {
 			fmt.Fprintf(log.errorOutput, "%v addCaller error: failed to get caller\n", time.Now().UTC())
 			log.errorOutput.Sync()
@@ -155,13 +155,48 @@ func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
 	return ce
 }
 
-func (log *logger) Debug(msg string, fields ...Field)  { log.Log(DebugLevel, msg, fields...) }
-func (log *logger) Info(msg string, fields ...Field)   { log.Log(InfoLevel, msg, fields...) }
-func (log *logger) Warn(msg string, fields ...Field)   { log.Log(WarnLevel, msg, fields...) }
-func (log *logger) Error(msg string, fields ...Field)  { log.Log(ErrorLevel, msg, fields...) }
-func (log *logger) DPanic(msg string, fields ...Field) { log.Log(DPanicLevel, msg, fields...) }
-func (log *logger) Panic(msg string, fields ...Field)  { log.Log(PanicLevel, msg, fields...) }
-func (log *logger) Fatal(msg string, fields ...Field)  { log.Log(FatalLevel, msg, fields...) }
+func (log *logger) Debug(msg string, fields ...Field) {
+	if ce := log.Check(DebugLevel, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+func (log *logger) Info(msg string, fields ...Field) {
+	if ce := log.Check(InfoLevel, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+func (log *logger) Warn(msg string, fields ...Field) {
+	if ce := log.Check(WarnLevel, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+func (log *logger) Error(msg string, fields ...Field) {
+	if ce := log.Check(ErrorLevel, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+func (log *logger) DPanic(msg string, fields ...Field) {
+	if ce := log.Check(DPanicLevel, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+func (log *logger) Panic(msg string, fields ...Field) {
+	if ce := log.Check(PanicLevel, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+func (log *logger) Fatal(msg string, fields ...Field) {
+	if ce := log.Check(FatalLevel, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
 
 func (log *logger) Log(lvl Level, msg string, fields ...Field) {
 	if ce := log.Check(lvl, msg); ce != nil {
