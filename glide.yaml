@@ -3,6 +3,7 @@ license: MIT
 import:
 - package: github.com/uber-common/bark
 - package: go.uber.org/atomic
+- package: github.com/rs/xlog
 testImport:
 - package: github.com/Sirupsen/logrus
 - package: github.com/apex/log
@@ -21,7 +22,6 @@ testImport:
 - package: golang.org/x/tools
   subpackages:
   - cover
-- package: golang.org/x/tools/cover
 - package: github.com/golang/lint
   subpackages:
   - golint

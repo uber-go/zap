@@ -1,16 +1,34 @@
-hash: 4cc8fc30ee17b2d6c783a0daf74a1140c9cabc209be57a701505660674f212cc
-updated: 2016-12-08T18:23:01.675037107+01:00
+hash: 83e854052288e4a1cec48cfb84f10ab72abc0fd775dad65265ae374825992d75
+updated: 2017-01-06T20:27:51.354639162+03:00
 imports:
 - name: github.com/cactus/go-statsd-client
   version: d8eabe07bc70ff9ba6a56836cde99d1ea3d005f7
   subpackages:
   - statsd
+- name: github.com/rs/xlog
+  version: ee33a676e5f4bbda5b80dace72043f7e3b61ebda
+  subpackages:
+  - internal/term
 - name: github.com/Sirupsen/logrus
   version: 881bee4e20a5d11a6a88a5667c6f292072ac1963
 - name: github.com/uber-common/bark
   version: 8841a0f8e7ca869284ccb29c08a14cf3f4310f46
+- name: github.com/uber-go/atomic
+  version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
+- name: github.com/uber-go/zap
+  version: a5783ee4b216a927da8f839c45cfbf9d694e1467
+  subpackages:
+  - zwrap
 - name: go.uber.org/atomic
   version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
+- name: go.uber.org/zap
+  version: a5783ee4b216a927da8f839c45cfbf9d694e1467
+  subpackages:
+  - zwrap
+  - spywrite
+  - zbark
+  - spy
+  - testutils
 - name: golang.org/x/sys
   version: 478fcf54317e52ab69f40bb4c7a1520288d7f7ea
   subpackages:
@@ -54,11 +72,21 @@ testImports:
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
+- name: github.com/rs/xhandler
+  version: ed27b6fd65218132ee50cd95f38474a3d8a2cd12
+- name: github.com/rs/xid
+  version: 7ad1944187bff4393fd47fd2b786ef24bc268d98
+- name: github.com/Sirupsen/logrus
+  version: 881bee4e20a5d11a6a88a5667c6f292072ac1963
 - name: github.com/stretchr/testify
   version: 18a02ba4a312f95da08ff4cfc0055750ce50ae9e
   subpackages:
   - assert
   - require
+- name: golang.org/x/net
+  version: 905989bd20b7c354fd28a61074eed1c8f49ebc89
+  subpackages:
+  - context
 - name: golang.org/x/tools
   version: 3d92dd60033c312e3ae7cac319c792271cf67e37
   subpackages:
