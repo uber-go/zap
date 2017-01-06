@@ -327,21 +327,32 @@ func TestJSONLoggerSyncsOutput(t *testing.T) {
 }
 
 func TestLoggerAddCaller(t *testing.T) {
-	withJSONLogger(t, DebugLevel, opts(AddCaller()), func(logger Logger, buf *testBuffer) {
-		logger.Info("Callers.")
-		assert.Regexp(t,
-			`"caller":"[^"]+/logger_test.go:\d+","msg":"Callers\."`,
-			buf.Stripped(), "Expected to find package name and file name in output.")
-	})
-}
+	sink := &testBuffer{}
+	errSink := &testBuffer{}
 
-func TestLoggerAddCallerSkip(t *testing.T) {
-	withJSONLogger(t, DebugLevel, opts(AddCaller(), AddCallerSkip(1)), func(logger Logger, buf *testBuffer) {
-		logger.Info("Callers.")
+	log1 := New(
+		WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
+		ErrorOutput(errSink), AddCaller())
+	log2 := New(
+		WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
+		ErrorOutput(errSink), AddCaller(), AddCallerSkip(1))
+
+	log1.Info("mess1")
+	log2.Info("mess2")
+
+	lines := sink.Lines()
+	for i, testCase := range []struct{ pat, name string }{
+		{`"caller":"[^"]+/logger_test.go:\d+","msg":"mess1"`, "log1.Info"},
+		{`"caller":"[^"]+/testing.go:\d+","msg":"mess2"`, "log2.Info"},
+	} {
 		assert.Regexp(t,
-			`"caller":"[^"]+/common_test.go:\d+","msg":"Callers\."`,
-			buf.Stripped(), "Expected to find package name and file name in output.")
-	})
+			testCase.pat,
+			lines[i],
+			"Expected to find package name and file name in %s output.",
+			testCase.name)
+	}
+
+	assert.Empty(t, errSink.String(), "Expected error sink to be empty.")
 }
 
 func TestLoggerAddCallerFail(t *testing.T) {
