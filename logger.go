@@ -27,10 +27,7 @@ import (
 	"time"
 )
 
-var (
-	_exit              = os.Exit // for tests
-	_defaultCallerSkip = 3       // for logger.callerSkip
-)
+var _exit = os.Exit // for tests
 
 // A Logger enables leveled, structured logging. All methods are safe for
 // concurrent use.
@@ -88,7 +85,6 @@ func New(fac Facility, options ...Option) Logger {
 		fac:         fac,
 		errorOutput: newLockedWriteSyncer(os.Stderr),
 		addStack:    maxLevel, // TODO: better an `always false` level enabler
-		callerSkip:  _defaultCallerSkip,
 	}
 	for _, opt := range options {
 		opt.apply(log)
@@ -144,7 +140,7 @@ func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
 	ce.ErrorOutput = log.errorOutput
 
 	if log.addCaller {
-		ce.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip))
+		ce.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip + 3))
 		if !ce.Entry.Caller.Defined {
 			fmt.Fprintf(log.errorOutput, "%v addCaller error: failed to get caller\n", time.Now().UTC())
 			log.errorOutput.Sync()
