@@ -336,14 +336,19 @@ func TestLoggerAddCaller(t *testing.T) {
 	log2 := New(
 		WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
 		ErrorOutput(errSink), AddCaller(), AddCallerSkip(1))
+	log3 := New(
+		WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
+		ErrorOutput(errSink), AddCaller(), AddCallerSkip(1), AddCallerSkip(1))
 
 	log1.Info("mess1")
 	log2.Info("mess2")
+	log3.Info("mess3")
 
 	lines := sink.Lines()
 	for i, testCase := range []struct{ pat, name string }{
 		{`"caller":"[^"]+/logger_test.go:\d+","msg":"mess1"`, "log1.Info"},
 		{`"caller":"[^"]+/testing.go:\d+","msg":"mess2"`, "log2.Info"},
+		{`"caller":"[^"]+/src/runtime/.*:\d+","msg":"mess3"`, "log3.Info"},
 	} {
 		assert.Regexp(t,
 			testCase.pat,
