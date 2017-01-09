@@ -327,44 +327,61 @@ func TestJSONLoggerSyncsOutput(t *testing.T) {
 }
 
 func TestLoggerAddCaller(t *testing.T) {
-	sink := &testBuffer{}
-	errSink := &testBuffer{}
-
-	log1 := New(
-		WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
-		ErrorOutput(errSink), AddCaller())
-	log2 := New(
-		WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
-		ErrorOutput(errSink), AddCaller(), AddCallerSkip(1))
-	log3 := New(
-		WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
-		ErrorOutput(errSink), AddCaller(), AddCallerSkip(1), AddCallerSkip(1))
-	// TODO: wrap(logger) family to be tested by upcoming sugared logger
-
-	log1.Info("mess1")
-	log2.Info("mess2")
-	log3.Info("mess3")
-	log1.Check(InfoLevel, "mess4").Write()
-	log2.Check(InfoLevel, "mess5").Write()
-	log3.Check(InfoLevel, "mess6").Write()
-
-	lines := sink.Lines()
-	for i, testCase := range []struct{ pat, name string }{
-		{`"caller":"[^"]+/logger_test.go:\d+","msg":"mess1"`, "log1.Info"},
-		{`"caller":"[^"]+/testing.go:\d+","msg":"mess2"`, "log2.Info"},
-		{`"caller":"[^"]+/src/runtime/.*:\d+","msg":"mess3"`, "log3.Info"},
-		{`"caller":"[^"]+/logger_test.go:\d+","msg":"mess4"`, "log1.Check(Info)"},
-		{`"caller":"[^"]+/testing.go:\d+","msg":"mess5"`, "log2.Check(Info)"},
-		{`"caller":"[^"]+/src/runtime/.*:\d+","msg":"mess6"`, "log3.Check(Info)"},
+	for i, testCase := range []struct {
+		makeLogger    func(sink, errSink *testBuffer) Logger
+		expectedLines []struct{ pat, name string }
+	}{
+		{
+			makeLogger: func(sink, errSink *testBuffer) Logger {
+				return New(
+					WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
+					ErrorOutput(errSink), AddCaller(),
+				)
+			},
+			expectedLines: []struct{ pat, name string }{
+				{`"caller":"[^"]+/logger_test.go:\d+","msg":"mess","i":0`, "log1.Info"},
+				{`"caller":"[^"]+/logger_test.go:\d+","msg":"mess","i":1`, "log1.Check(Info)"},
+			},
+		},
+		{
+			makeLogger: func(sink, errSink *testBuffer) Logger {
+				return New(
+					WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
+					ErrorOutput(errSink), AddCaller(), AddCallerSkip(1),
+				)
+			},
+			expectedLines: []struct{ pat, name string }{
+				{`"caller":"[^"]+/testing.go:\d+","msg":"mess","i":2`, "log2.Info"},
+				{`"caller":"[^"]+/testing.go:\d+","msg":"mess","i":3`, "log2.Check(Info)"},
+			},
+		},
+		{
+			makeLogger: func(sink, errSink *testBuffer) Logger {
+				return New(
+					WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
+					ErrorOutput(errSink), AddCaller(), AddCallerSkip(1), AddCallerSkip(1),
+				)
+			},
+			expectedLines: []struct{ pat, name string }{
+				{`"caller":"[^"]+/src/runtime/.*:\d+","msg":"mess","i":4`, "log3.Info"},
+				{`"caller":"[^"]+/src/runtime/.*:\d+","msg":"mess","i":5`, "log3.Check(Info)"},
+			},
+		},
+		// TODO: wrap(logger) family to be tested by upcoming sugared logger
 	} {
-		assert.Regexp(t,
-			testCase.pat,
-			lines[i],
-			"Expected to find package name and file name in %s output.",
-			testCase.name)
+		sink := &testBuffer{}
+		errSink := &testBuffer{}
+		logger := testCase.makeLogger(sink, errSink)
+		logger.Info("mess", Int("i", 2*i))
+		logger.Check(InfoLevel, "mess").Write(Int("i", 2*i+1))
+		lines := sink.Lines()
+		for i, expectedLine := range testCase.expectedLines {
+			assert.Regexp(t,
+				expectedLine.pat, lines[i],
+				"Expected to find package name and file name in %s output.", expectedLine.name)
+		}
+		assert.Empty(t, errSink.String(), "Expected error sink to be empty.")
 	}
-
-	assert.Empty(t, errSink.String(), "Expected error sink to be empty.")
 }
 
 func TestLoggerAddCallerFail(t *testing.T) {
