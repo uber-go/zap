@@ -46,9 +46,7 @@ type Logger interface {
 	// accumulated on the logger, as well as any fields added at the log site.
 	//
 	// Calling Panic should panic() and calling Fatal should terminate the
-	// process, but calling Log(PanicLevel, ...) or Log(FatalLevel, ...) should
-	// not. It may not be possible for compatibility wrappers to comply with
-	// this last part (e.g. the bark wrapper).
+	// process.
 	Debug(string, ...Field)
 	Info(string, ...Field)
 	Warn(string, ...Field)
@@ -201,12 +199,6 @@ func (log *logger) Panic(msg string, fields ...Field) {
 
 func (log *logger) Fatal(msg string, fields ...Field) {
 	if ce := log.check(FatalLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
-}
-
-func (log *logger) Log(lvl Level, msg string, fields ...Field) {
-	if ce := log.check(lvl, msg); ce != nil {
 		ce.Write(fields...)
 	}
 }
