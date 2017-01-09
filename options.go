@@ -64,10 +64,8 @@ func AddCaller() Option {
 	})
 }
 
-// AddCallerSkip configures the Logger to annotate each message with the filename
-// and line number of a caller outside of zap; which caller in the stack is
-// controlled by the skip argument. If more than one AddCallerSkip option is
-// provided, then the maximum skip amount is used.
+// AddCallerSkip increases the number of callers skipped by caller annotation
+// (as enabled by the AddCaller option).
 func AddCallerSkip(skip int) Option {
 	return optionFunc(func(log *logger) {
 		log.callerSkip += skip
