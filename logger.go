@@ -111,6 +111,10 @@ func (log *logger) Check(lvl Level, msg string) *CheckedEntry {
 }
 
 func (log *logger) check(lvl Level, msg string) *CheckedEntry {
+	// check must always be called directly by another `logger` entry function
+	// (e.g. Check, Log, Info, etc)
+	const callerSkipOffset = 2
+
 	// Create basic checked entry thru the facility; this will be non-nil if
 	// the log message will actually be written somewhere.
 	ent := Entry{
@@ -144,7 +148,7 @@ func (log *logger) check(lvl Level, msg string) *CheckedEntry {
 	ce.ErrorOutput = log.errorOutput
 
 	if log.addCaller {
-		ce.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip + 2))
+		ce.Entry.Caller = MakeEntryCaller(runtime.Caller(log.callerSkip + callerSkipOffset))
 		if !ce.Entry.Caller.Defined {
 			fmt.Fprintf(log.errorOutput, "%v addCaller error: failed to get caller\n", time.Now().UTC())
 			log.errorOutput.Sync()
