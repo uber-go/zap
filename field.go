@@ -34,11 +34,13 @@ const (
 	boolType
 	floatType
 	intType
+	intsType
 	int64Type
 	uintType
 	uint64Type
 	uintptrType
 	stringType
+	stringsType
 	marshalerType
 	objectType
 	stringerType
@@ -171,6 +173,16 @@ func Marshaler(key string, val LogMarshaler) Field {
 	return Field{key: key, fieldType: marshalerType, obj: val}
 }
 
+// Ints constructs a Field with the given key and value. Marshaling ints is lazy.
+func Ints(key string, val []int) Field {
+	return Field{key: key, fieldType: intsType, obj: val}
+}
+
+// Strings constructs a Field with the given key and value. Marshaling strings is lazy.
+func Strings(key string, val []string) Field {
+	return Field{key: key, fieldType: stringsType, obj: val}
+}
+
 // Object constructs a field with the given key and an arbitrary object. It uses
 // an encoding-appropriate, reflection-based function to lazily serialize nearly
 // any object into the logging context, but it's relatively slow and
@@ -200,6 +212,8 @@ func (f Field) AddTo(kv KeyValue) {
 		kv.AddFloat64(f.key, math.Float64frombits(uint64(f.ival)))
 	case intType:
 		kv.AddInt(f.key, int(f.ival))
+	case intsType:
+		kv.AddInts(f.key, f.obj.([]int))
 	case int64Type:
 		kv.AddInt64(f.key, f.ival)
 	case uintType:
@@ -210,6 +224,8 @@ func (f Field) AddTo(kv KeyValue) {
 		kv.AddUintptr(f.key, uintptr(f.ival))
 	case stringType:
 		kv.AddString(f.key, f.str)
+	case stringsType:
+		kv.AddStrings(f.key, f.obj.([]string))
 	case stringerType:
 		kv.AddString(f.key, f.obj.(fmt.Stringer).String())
 	case marshalerType:

@@ -27,11 +27,15 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/quick"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// Don't let generative tests eat lots of time.
+var quickConfig = &quick.Config{MaxCount: 100}
 
 type fakeUser struct{ name string }
 
@@ -55,6 +59,14 @@ func assertFieldJSON(t testing.TB, expected string, field Field) {
 	field.AddTo(enc)
 	assert.Equal(t, expected, string(enc.bytes),
 		"Unexpected JSON output after applying field %+v.", field)
+}
+
+func encodeField(field Field) string {
+	enc := newJSONEncoder()
+	defer enc.Free()
+
+	field.AddTo(enc)
+	return string(enc.bytes)
 }
 
 func assertNotEqualFieldJSON(t testing.TB, expected string, field Field) {
@@ -172,6 +184,72 @@ func TestMarshalerField(t *testing.T) {
 
 	assertFieldJSON(t, `"foo":{"name":"phil"}`, Marshaler("foo", fakeUser{"phil"}))
 	assertCanBeReused(t, Marshaler("foo", fakeUser{"phil"}))
+}
+
+func TestIntsField(t *testing.T) {
+	assertFieldJSON(t, `"foo":[]`, Object("foo", []int{}))
+	assertFieldJSON(t, `"foo":[1]`, Object("foo", []int{1}))
+	assertFieldJSON(t, `"foo":[1,2,3]`, Object("foo", []int{1, 2, 3}))
+
+	assertFieldJSON(t, `"foo":[]`, Ints("foo", []int{}))
+	assertFieldJSON(t, `"foo":[1]`, Ints("foo", []int{1}))
+	assertFieldJSON(t, `"foo":[1,2,3]`, Ints("foo", []int{1, 2, 3}))
+
+	assertCanBeReused(t, Ints("foo", []int{1, 2, 3}))
+}
+
+func compareJSON(t testing.TB, reflected, typed Field) bool {
+	reflectedOutput := encodeField(reflected)
+	typedOutput := encodeField(typed)
+	if reflectedOutput != typedOutput {
+		t.Logf(
+			"Reflection-based field doesn't match strongly-typed field.\n\tReflected: %s\n\tTyped: %s\n",
+			reflectedOutput,
+			typedOutput,
+		)
+		return false
+	}
+	return true
+}
+
+func TestIntsFieldQuick(t *testing.T) {
+	if err := quick.Check(
+		func(ints []int) bool { return compareJSON(t, Object("k", ints), Ints("k", ints)) },
+		quickConfig,
+	); err != nil {
+		t.Error(err.Error())
+	}
+}
+
+func TestStringsFieldQuick(t *testing.T) {
+	if err := quick.Check(
+		func(ss []string) bool {
+			// zap doesn't handle some characters common in HTML in the same way
+			// as the standard library, since we don't need to be browser-safe.
+			// TODO (go17): When we only need to support Go 1.7+, use the standard library's SetEscapeHTML.
+			for i := range ss {
+				if strings.ContainsAny(ss[i], "<>&") {
+					return true
+				}
+			}
+			return compareJSON(t, Object("k", ss), Strings("k", ss))
+		},
+		quickConfig,
+	); err != nil {
+		t.Error(err.Error())
+	}
+}
+
+func TestStringsField(t *testing.T) {
+	assertFieldJSON(t, `"foo":[]`, Object("foo", []string{}))
+	assertFieldJSON(t, `"foo":["bar 1"]`, Object("foo", []string{"bar 1"}))
+	assertFieldJSON(t, `"foo":["bar 1","bar 2","bar 3"]`, Object("foo", []string{"bar 1", "bar 2", "bar 3"}))
+
+	assertFieldJSON(t, `"foo":[]`, Strings("foo", []string{}))
+	assertFieldJSON(t, `"foo":["bar 1"]`, Strings("foo", []string{"bar 1"}))
+	assertFieldJSON(t, `"foo":["bar 1","bar 2","bar 3"]`, Strings("foo", []string{"bar 1", "bar 2", "bar 3"}))
+
+	assertCanBeReused(t, Strings("foo", []string{"bar 1", "bar 2", "bar 3"}))
 }
 
 func TestObjectField(t *testing.T) {

@@ -98,9 +98,7 @@ func (enc *jsonEncoder) Free() {
 // value are JSON-escaped.
 func (enc *jsonEncoder) AddString(key, val string) {
 	enc.addKey(key)
-	enc.bytes = append(enc.bytes, '"')
-	enc.safeAddString(val)
-	enc.bytes = append(enc.bytes, '"')
+	enc.addAndQuoteString(val)
 }
 
 // AddBool adds a string key and a boolean value to the encoder's fields. The
@@ -120,7 +118,7 @@ func (enc *jsonEncoder) AddInt(key string, val int) {
 // is JSON-escaped.
 func (enc *jsonEncoder) AddInt64(key string, val int64) {
 	enc.addKey(key)
-	enc.bytes = strconv.AppendInt(enc.bytes, val, 10)
+	enc.addInt64(val)
 }
 
 // AddUint adds a string key and integer value to the encoder's fields. The key
@@ -165,6 +163,28 @@ func (enc *jsonEncoder) AddMarshaler(key string, obj LogMarshaler) error {
 	err := obj.MarshalLog(enc)
 	enc.bytes = append(enc.bytes, '}')
 	return err
+}
+
+// AddInts adds a string key and integer slice to the encoder's fields. The key
+// is JSON-escaped.
+func (enc *jsonEncoder) AddInts(key string, vals []int) {
+	enc.beginArray(key)
+	for i := range vals {
+		enc.addArraySep(i)
+		enc.addInt64(int64(vals[i]))
+	}
+	enc.endArray()
+}
+
+// AddStrings adds a string key and string slice to the encoder's fields. The key
+// and the slice elements are JSON-escaped.
+func (enc *jsonEncoder) AddStrings(key string, vals []string) {
+	enc.beginArray(key)
+	for i := range vals {
+		enc.addArraySep(i)
+		enc.addAndQuoteString(vals[i])
+	}
+	enc.endArray()
 }
 
 // AddObject uses reflection to add an arbitrary object to the logging context.
@@ -249,6 +269,16 @@ func (enc *jsonEncoder) addKey(key string) {
 	enc.bytes = append(enc.bytes, '"', ':')
 }
 
+func (enc *jsonEncoder) addAndQuoteString(val string) {
+	enc.bytes = append(enc.bytes, '"')
+	enc.safeAddString(val)
+	enc.bytes = append(enc.bytes, '"')
+}
+
+func (enc *jsonEncoder) addInt64(val int64) {
+	enc.bytes = strconv.AppendInt(enc.bytes, val, 10)
+}
+
 // safeAddString JSON-escapes a string and appends it to the internal buffer.
 // Unlike the standard library's escaping function, it doesn't attempt to
 // protect the user from browser vulnerabilities or JSONP-related problems.
@@ -285,4 +315,20 @@ func (enc *jsonEncoder) safeAddString(s string) {
 		enc.bytes = append(enc.bytes, s[i:i+size]...)
 		i += size
 	}
+}
+
+func (enc *jsonEncoder) beginArray(key string) {
+	enc.addKey(key)
+	enc.bytes = append(enc.bytes, '[')
+}
+
+func (enc *jsonEncoder) endArray() {
+	enc.bytes = append(enc.bytes, ']')
+}
+
+func (enc *jsonEncoder) addArraySep(idx int) {
+	if idx == 0 {
+		return
+	}
+	enc.bytes = append(enc.bytes, ',')
 }

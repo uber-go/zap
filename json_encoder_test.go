@@ -140,6 +140,10 @@ func TestJSONEncoderFields(t *testing.T) {
 		{"marshaler", `"k":{}`, func(e Encoder) {
 			assert.Error(t, e.AddMarshaler("k", loggable{false}), "Expected an error calling MarshalLog.")
 		}},
+		{"[]int, using reflection", `"k":[1,2,3]`, func(e Encoder) { e.AddObject("k", []int{1, 2, 3}) }},
+		{"[]string, using reflection", `"k":["foo","bar"]`, func(e Encoder) { e.AddObject("k", []string{"foo", "bar"}) }},
+		{"[]int", `"k":[1,2,3]`, func(e Encoder) { e.AddInts("k", []int{1, 2, 3}) }},
+		{"[]string", `"k":["foo","bar"]`, func(e Encoder) { e.AddStrings("k", []string{"foo", "bar"}) }},
 		{"arbitrary object", `"k":{"loggable":"yes"}`, func(e Encoder) {
 			assert.NoError(t, e.AddObject("k", map[string]string{"loggable": "yes"}), "Unexpected error JSON-serializing a map.")
 		}},

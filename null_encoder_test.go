@@ -54,6 +54,10 @@ func TestNullEncoderFields(t *testing.T) {
 		{"marshaler", func(e Encoder) {
 			assert.NoError(t, e.AddMarshaler("k", loggable{true}), "Unexpected error calling MarshalLog.")
 		}},
+		{"[]int", func(e Encoder) { e.AddInts("k", []int{1, 2, 3}) }},
+		{"[]string", func(e Encoder) {
+			e.AddStrings("k", []string{"bar 1", "bar 2", "bar 3"})
+		}},
 		{"arbitrary object", func(e Encoder) {
 			assert.NoError(t, e.AddObject("k", map[string]string{"": ""}), "Unexpected error.")
 		}},
