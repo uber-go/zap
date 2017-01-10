@@ -21,114 +21,54 @@
 package zap
 
 import (
-	"bytes"
-	"flag"
-	"strings"
+	"sync"
 	"testing"
+
+	"go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestLevelEnablerFunc(t *testing.T) {
-	enab := LevelEnablerFunc(func(l Level) bool { return l == DebugLevel })
-	opts := []Option{Fields(Int("foo", 42))}
-	withJSONLogger(t, enab, opts, func(log Logger, buf *testBuffer) {
-		log.Debug("@debug", Int("logger", 0))
-		log.Info("@info", Int("logger", 0))
-		assert.Equal(t, []string{
-			`{"level":"debug","msg":"@debug","foo":42,"logger":0}`,
-		}, buf.Lines())
-	})
-}
-
-func TestLevelString(t *testing.T) {
-	tests := map[Level]string{
-		DebugLevel:  "debug",
-		InfoLevel:   "info",
-		WarnLevel:   "warn",
-		ErrorLevel:  "error",
-		DPanicLevel: "dpanic",
-		PanicLevel:  "panic",
-		FatalLevel:  "fatal",
-		Level(-42):  "Level(-42)",
-	}
-
-	for lvl, stringLevel := range tests {
-		assert.Equal(t, stringLevel, lvl.String())
-	}
-}
-
-func TestLevelText(t *testing.T) {
+	enab := LevelEnablerFunc(func(l zapcore.Level) bool { return l == zapcore.InfoLevel })
 	tests := []struct {
-		text  string
-		level Level
+		level   zapcore.Level
+		enabled bool
 	}{
-		{"debug", DebugLevel},
-		{"info", InfoLevel},
-		{"warn", WarnLevel},
-		{"error", ErrorLevel},
-		{"dpanic", DPanicLevel},
-		{"panic", PanicLevel},
-		{"fatal", FatalLevel},
+		{DebugLevel, false},
+		{InfoLevel, true},
+		{WarnLevel, false},
+		{ErrorLevel, false},
+		{DPanicLevel, false},
+		{PanicLevel, false},
+		{FatalLevel, false},
 	}
 	for _, tt := range tests {
-		lvl := tt.level
-		marshaled, err := lvl.MarshalText()
-		assert.NoError(t, err, "Unexpected error marshaling level %v to text.", &lvl)
-		assert.Equal(t, tt.text, string(marshaled), "Marshaling level %v to text yielded unexpected result.", &lvl)
-
-		var unmarshaled Level
-		err = unmarshaled.UnmarshalText([]byte(tt.text))
-		assert.NoError(t, err, `Unexpected error unmarshaling text "%v" to level.`, tt.text)
-		assert.Equal(t, tt.level, unmarshaled, `Text "%v" unmarshaled to an unexpected level.`, tt.text)
+		assert.Equal(t, tt.enabled, enab.Enabled(tt.level), "Unexpected result applying LevelEnablerFunc to %s", tt.level)
 	}
 }
 
-func TestLevelNils(t *testing.T) {
-	var l *Level
-
-	// The String() method will not handle nil level properly.
-	assert.Panics(t, func() {
-		assert.Equal(t, "Level(nil)", l.String(), "Unexpected result stringifying nil *Level.")
-	}, "Level(nil).String() should panic")
-
-	_, err := l.MarshalText()
-	assert.Equal(t, errMarshalNilLevel, err, "Expected errMarshalNilLevel.")
-
-	assert.Panics(t, func() {
-		var l *Level
-		l.UnmarshalText([]byte("debug"))
-	}, "Expected to panic when unmarshaling into a null pointer.")
+func TestDynamicLevel(t *testing.T) {
+	lvl := DynamicLevel()
+	assert.Equal(t, InfoLevel, lvl.Level(), "Unexpected initial level.")
+	lvl.SetLevel(ErrorLevel)
+	assert.Equal(t, ErrorLevel, lvl.Level(), "Unexpected level after SetLevel.")
 }
 
-func TestLevelUnmarshalUnknownText(t *testing.T) {
-	var l Level
-	err := l.UnmarshalText([]byte("foo"))
-	assert.Contains(t, err.Error(), "unrecognized level", "Expected unmarshaling arbitrary text to fail.")
-}
-
-func TestLevelAsFlagValue(t *testing.T) {
-	var (
-		lvl Level
-		buf bytes.Buffer
-	)
-
-	fs := flag.NewFlagSet("levelTest", flag.ContinueOnError)
-	fs.SetOutput(&buf)
-	fs.Var(&lvl, "level", "a log level")
-
-	// changing works
-	assert.Equal(t, InfoLevel, lvl)
-	assert.NoError(t, fs.Parse([]string{"-level", "warn"}))
-	assert.Equal(t, WarnLevel, lvl)
-	assert.NoError(t, fs.Parse([]string{"-level", "debug"}))
-	assert.Equal(t, DebugLevel, lvl)
-
-	// errors work
-	assert.Error(t, fs.Parse([]string{"-level", "nope"}))
-	assert.Equal(t,
-		`invalid value "nope" for flag -level: unrecognized level: "nope"`,
-		strings.Split(buf.String(), "\n")[0],
-		"expected error output")
-	buf.Reset()
+func TestDynamicLevelMutation(t *testing.T) {
+	lvl := DynamicLevel()
+	lvl.SetLevel(WarnLevel)
+	// Trigger races for non-atomic level mutations.
+	proceed := make(chan struct{})
+	wg := &sync.WaitGroup{}
+	runConcurrently(10, 100, wg, func() {
+		<-proceed
+		assert.Equal(t, WarnLevel, lvl.Level())
+	})
+	runConcurrently(10, 100, wg, func() {
+		<-proceed
+		lvl.SetLevel(WarnLevel)
+	})
+	close(proceed)
+	wg.Wait()
 }

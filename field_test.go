@@ -21,57 +21,36 @@
 package zap
 
 import (
-	"encoding/json"
 	"errors"
 	"net"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"go.uber.org/zap/zapcore"
+
+	"math"
+
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-type fakeUser struct{ name string }
+var (
+	// Compiler complains about constants overflowing, so store this in a variable.
+	maxUint64 = uint64(math.MaxUint64)
+)
 
-func (f fakeUser) MarshalLog(kv KeyValue) error {
-	if f.name == "fail" {
-		return errors.New("fail")
-	}
-	kv.AddString("name", f.name)
+type username string
+
+func (n username) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("username", string(n))
 	return nil
 }
 
-func assertFieldJSON(t testing.TB, expected string, field Field) {
-	enc := newJSONEncoder()
-	defer enc.Free()
-
-	var out interface{}
-	err := json.Unmarshal([]byte("{"+expected+"}"), &out)
-	require.NoError(t, err,
-		"Expected JSON snippet %q must be valid for use in an object.", expected)
-
-	field.AddTo(enc)
-	assert.Equal(t, expected, string(enc.bytes),
-		"Unexpected JSON output after applying field %+v.", field)
-}
-
-func assertNotEqualFieldJSON(t testing.TB, expected string, field Field) {
-	enc := newJSONEncoder()
-	defer enc.Free()
-
-	field.AddTo(enc)
-	assert.NotEqual(t, expected, string(enc.bytes),
-		"Unexpected JSON output after applying field %+v.", field)
-}
-
-func assertCanBeReused(t testing.TB, field Field) {
+func assertCanBeReused(t testing.TB, field zapcore.Field) {
 	var wg sync.WaitGroup
 
 	for i := 0; i < 100; i++ {
-		enc := NewJSONEncoder()
-		defer enc.Free()
+		enc := make(zapcore.MapObjectEncoder)
 
 		// Ensure using the field in multiple encoders in separate goroutines
 		// does not cause any races or panics.
@@ -87,141 +66,53 @@ func assertCanBeReused(t testing.TB, field Field) {
 	wg.Wait()
 }
 
-func TestSkipField(t *testing.T) {
-	assertFieldJSON(t, ``, Skip())
-	assertCanBeReused(t, Skip())
-}
+func TestFieldConstructors(t *testing.T) {
+	// Interface types.
+	fail := errors.New("fail")
+	addr := net.ParseIP("1.2.3.4")
+	name := username("phil")
+	ints := []int{5, 6}
+	nested := zapcore.Fields{String("name", "phil"), Int("age", 42)}
 
-func TestTrueBoolField(t *testing.T) {
-	assertFieldJSON(t, `"foo":true`, Bool("foo", true))
-	assertCanBeReused(t, Bool("foo", true))
-}
+	tests := []struct {
+		name   string
+		field  zapcore.Field
+		expect zapcore.Field
+	}{
+		{"Skip", zapcore.Field{Type: zapcore.SkipType}, Skip()},
+		{"Bool", zapcore.Field{Key: "k", Type: zapcore.BoolType, Integer: 1}, Bool("k", true)},
+		{"Bool", zapcore.Field{Key: "k", Type: zapcore.BoolType, Integer: 1}, Bool("k", true)},
+		{"Int", zapcore.Field{Key: "k", Type: zapcore.Int64Type, Integer: 1}, Int("k", 1)},
+		{"Int64", zapcore.Field{Key: "k", Type: zapcore.Int64Type, Integer: 1}, Int64("k", 1)},
+		{"Uint", zapcore.Field{Key: "k", Type: zapcore.Uint64Type, Integer: 1}, Uint("k", 1)},
+		{"Uint64", zapcore.Field{Key: "k", Type: zapcore.Uint64Type, Integer: 1}, Uint64("k", 1)},
+		{"Uint64", zapcore.Field{Key: "k", Type: zapcore.Uint64Type, Integer: int64(maxUint64)}, Uint64("k", maxUint64)},
+		{"Uintptr", zapcore.Field{Key: "k", Type: zapcore.Uint64Type, Integer: 10}, Uintptr("k", 0xa)},
+		{"Error", Skip(), Error(nil)},
+		{"Error", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: fail}, Error(fail)},
+		{"String", zapcore.Field{Key: "k", Type: zapcore.StringType, String: "foo"}, String("k", "foo")},
+		{"Time", zapcore.Field{Key: "k", Type: zapcore.Int64Type, Integer: 0}, Time("k", time.Unix(0, 0))},
+		{"Time", zapcore.Field{Key: "k", Type: zapcore.Int64Type, Integer: 1000}, Time("k", time.Unix(1, 0))},
+		{"Duration", zapcore.Field{Key: "k", Type: zapcore.Int64Type, Integer: 1}, Duration("k", time.Nanosecond)},
+		{"Stringer", zapcore.Field{Key: "k", Type: zapcore.StringerType, Interface: addr}, Stringer("k", addr)},
+		{"Base64", zapcore.Field{Key: "k", Type: zapcore.StringType, String: "YWIxMg=="}, Base64("k", []byte("ab12"))},
+		{"Object", zapcore.Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: name}, Object("k", name)},
+		{"Reflect", zapcore.Field{Key: "k", Type: zapcore.ReflectType, Interface: ints}, Reflect("k", ints)},
+		{"Nest", zapcore.Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: nested}, Nest("k", nested...)},
+	}
 
-func TestFalseBoolField(t *testing.T) {
-	assertFieldJSON(t, `"bar":false`, Bool("bar", false))
-	assertCanBeReused(t, Bool("bar", false))
-}
-
-func TestUnlikeBoolField(t *testing.T) {
-	assertNotEqualFieldJSON(t, `"foo":true`, Bool("foo", false))
-	assertNotEqualFieldJSON(t, `"bar":false`, Bool("bar", true))
-}
-
-func TestFloat64Field(t *testing.T) {
-	assertFieldJSON(t, `"foo":1.314`, Float64("foo", 1.314))
-	assertCanBeReused(t, Float64("foo", 1.314))
-}
-
-func TestIntField(t *testing.T) {
-	assertFieldJSON(t, `"foo":1`, Int("foo", 1))
-	assertCanBeReused(t, Int("foo", 1))
-}
-
-func TestInt64Field(t *testing.T) {
-	assertFieldJSON(t, `"foo":1`, Int64("foo", int64(1)))
-	assertCanBeReused(t, Int64("foo", int64(1)))
-}
-
-func TestUintField(t *testing.T) {
-	assertFieldJSON(t, `"foo":1`, Uint("foo", 1))
-	assertCanBeReused(t, Uint("foo", 1))
-}
-
-func TestUint64Field(t *testing.T) {
-	assertFieldJSON(t, `"foo":1`, Uint64("foo", uint64(1)))
-	assertCanBeReused(t, Uint64("foo", uint64(1)))
-}
-
-func TestUintptrField(t *testing.T) {
-	assertFieldJSON(t, `"foo":10`, Uintptr("foo", uintptr(0xa)))
-	assertCanBeReused(t, Uintptr("foo", uintptr(0xa)))
-}
-
-func TestStringField(t *testing.T) {
-	assertFieldJSON(t, `"foo":"bar"`, String("foo", "bar"))
-	assertCanBeReused(t, String("foo", "bar"))
-}
-
-func TestStringerField(t *testing.T) {
-	ip := net.ParseIP("1.2.3.4")
-	assertFieldJSON(t, `"foo":"1.2.3.4"`, Stringer("foo", ip))
-	assertCanBeReused(t, Stringer("foo", ip))
-}
-
-func TestTimeField(t *testing.T) {
-	assertFieldJSON(t, `"foo":0`, Time("foo", time.Unix(0, 0)))
-	assertFieldJSON(t, `"foo":1.5`, Time("foo", time.Unix(1, int64(500*time.Millisecond))))
-	assertCanBeReused(t, Time("foo", time.Unix(0, 0)))
-}
-
-func TestErrField(t *testing.T) {
-	assertFieldJSON(t, `"error":"fail"`, Error(errors.New("fail")))
-	assertFieldJSON(t, ``, Error(nil))
-	assertCanBeReused(t, Error(errors.New("fail")))
-}
-
-func TestDurationField(t *testing.T) {
-	assertFieldJSON(t, `"foo":1`, Duration("foo", time.Nanosecond))
-	assertCanBeReused(t, Duration("foo", time.Nanosecond))
-}
-
-func TestMarshalerField(t *testing.T) {
-	// Marshaling the user failed, so we expect an empty object and an error
-	// message.
-	assertFieldJSON(t, `"foo":{},"fooError":"fail"`, Marshaler("foo", fakeUser{"fail"}))
-
-	assertFieldJSON(t, `"foo":{"name":"phil"}`, Marshaler("foo", fakeUser{"phil"}))
-	assertCanBeReused(t, Marshaler("foo", fakeUser{"phil"}))
-}
-
-func TestObjectField(t *testing.T) {
-	assertFieldJSON(t, `"foo":[5,6]`, Object("foo", []int{5, 6}))
-	assertCanBeReused(t, Object("foo", []int{5, 6}))
-}
-
-func TestNestField(t *testing.T) {
-	assertFieldJSON(t, `"foo":{"name":"phil","age":42}`,
-		Nest("foo", String("name", "phil"), Int("age", 42)),
-	)
-	// Marshaling the user failed, so we expect an empty object and an error
-	// message.
-	assertFieldJSON(t, `"foo":{"user":{},"userError":"fail"}`,
-		Nest("foo", Marshaler("user", fakeUser{"fail"})),
-	)
-
-	nest := Nest("foo", String("name", "phil"), Int("age", 42))
-	assertCanBeReused(t, nest)
-}
-
-func TestBase64Field(t *testing.T) {
-	assertFieldJSON(t, `"foo":"YWIxMg=="`,
-		Base64("foo", []byte("ab12")),
-	)
-	assertCanBeReused(t, Base64("foo", []byte("bar")))
-}
-
-func TestLogMarshalerFunc(t *testing.T) {
-	assertFieldJSON(t, `"foo":{"name":"phil"}`,
-		Marshaler("foo", LogMarshalerFunc(fakeUser{"phil"}.MarshalLog)))
+	for _, tt := range tests {
+		if !assert.Equal(t, tt.expect, tt.field, "Unexpected output from convenience field constructor %s.", tt.name) {
+			t.Logf("type expected: %T\nGot: %T", tt.expect.Interface, tt.field.Interface)
+		}
+		assertCanBeReused(t, tt.field)
+	}
 }
 
 func TestStackField(t *testing.T) {
-	enc := newJSONEncoder()
-	defer enc.Free()
-
-	Stack().AddTo(enc)
-	output := string(enc.bytes)
-
-	require.True(t, strings.HasPrefix(output, `"stacktrace":`), "Stacktrace added under an unexpected key.")
-	assert.Contains(t, output[13:], "zap.TestStackField", "Expected stacktrace to contain caller.")
-}
-
-func TestUnknownField(t *testing.T) {
-	enc := NewJSONEncoder()
-	defer enc.Free()
-
-	for _, ft := range []fieldType{unknownType, -42} {
-		field := Field{fieldType: ft}
-		assert.Panics(t, func() { field.AddTo(enc) }, "Expected panic when using a field of unknown type.")
-	}
+	f := Stack()
+	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
+	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
+	assert.Contains(t, f.String, "zap.TestStackField", "Expected stacktrace to contain caller.")
+	assertCanBeReused(t, f)
 }
