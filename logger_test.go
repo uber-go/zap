@@ -23,7 +23,6 @@ package zap
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -33,49 +32,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func opts(opts ...Option) []Option {
-	return opts
-}
-
-type stubbedExit struct {
-	Status *int
-}
-
-func (se *stubbedExit) Unstub() {
-	_exit = os.Exit
-}
-
-func (se *stubbedExit) AssertNoExit(t testing.TB) {
-	assert.Nil(t, se.Status, "Unexpected exit.")
-}
-
-func (se *stubbedExit) AssertStatus(t testing.TB, expected int) {
-	if assert.NotNil(t, se.Status, "Expected to exit.") {
-		assert.Equal(t, expected, *se.Status, "Unexpected exit code.")
-	}
-}
-
-func stubExit() *stubbedExit {
-	stub := &stubbedExit{}
-	_exit = func(s int) { stub.Status = &s }
-	return stub
-}
-
-func withJSONLogger(t testing.TB, enab LevelEnabler, opts []Option, f func(Logger, *testBuffer)) {
-	sink := &testBuffer{}
-	errSink := &testBuffer{}
-
-	allOpts := make([]Option, 0, 2+len(opts))
-	allOpts = append(allOpts, ErrorOutput(errSink))
-	allOpts = append(allOpts, opts...)
-	logger := New(
-		WriterFacility(newJSONEncoder(NoTime()), sink, enab),
-		allOpts...)
-
-	f(logger, sink)
-	assert.Empty(t, errSink.String(), "Expected error sink to be empty.")
-}
 
 func TestDynamicLevel(t *testing.T) {
 	lvl := DynamicLevel()
@@ -371,12 +327,61 @@ func TestJSONLoggerSyncsOutput(t *testing.T) {
 }
 
 func TestLoggerAddCaller(t *testing.T) {
-	withJSONLogger(t, DebugLevel, opts(AddCaller()), func(logger Logger, buf *testBuffer) {
-		logger.Info("Callers.")
-		assert.Regexp(t,
-			`"caller":"[^"]+/logger_test.go:[\d]+","msg":"Callers\."`,
-			buf.Stripped(), "Expected to find package name and file name in output.")
-	})
+	for i, testCase := range []struct {
+		makeLogger    func(sink, errSink *testBuffer) Logger
+		expectedLines []struct{ pat, name string }
+	}{
+		{
+			makeLogger: func(sink, errSink *testBuffer) Logger {
+				return New(
+					WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
+					ErrorOutput(errSink), AddCaller(),
+				)
+			},
+			expectedLines: []struct{ pat, name string }{
+				{`"caller":"[^"]+/logger_test.go:\d+","msg":"mess","i":0`, "log1.Info"},
+				{`"caller":"[^"]+/logger_test.go:\d+","msg":"mess","i":1`, "log1.Check(Info)"},
+			},
+		},
+		{
+			makeLogger: func(sink, errSink *testBuffer) Logger {
+				return New(
+					WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
+					ErrorOutput(errSink), AddCaller(), AddCallerSkip(1),
+				)
+			},
+			expectedLines: []struct{ pat, name string }{
+				{`"caller":"[^"]+/testing.go:\d+","msg":"mess","i":2`, "log2.Info"},
+				{`"caller":"[^"]+/testing.go:\d+","msg":"mess","i":3`, "log2.Check(Info)"},
+			},
+		},
+		{
+			makeLogger: func(sink, errSink *testBuffer) Logger {
+				return New(
+					WriterFacility(newJSONEncoder(NoTime()), sink, DebugLevel),
+					ErrorOutput(errSink), AddCaller(), AddCallerSkip(1), AddCallerSkip(1),
+				)
+			},
+			expectedLines: []struct{ pat, name string }{
+				{`"caller":"[^"]+/src/runtime/.*:\d+","msg":"mess","i":4`, "log3.Info"},
+				{`"caller":"[^"]+/src/runtime/.*:\d+","msg":"mess","i":5`, "log3.Check(Info)"},
+			},
+		},
+		// TODO: wrap(logger) family to be tested by upcoming sugared logger
+	} {
+		sink := &testBuffer{}
+		errSink := &testBuffer{}
+		logger := testCase.makeLogger(sink, errSink)
+		logger.Info("mess", Int("i", 2*i))
+		logger.Check(InfoLevel, "mess").Write(Int("i", 2*i+1))
+		lines := sink.Lines()
+		for i, expectedLine := range testCase.expectedLines {
+			assert.Regexp(t,
+				expectedLine.pat, lines[i],
+				"Expected to find package name and file name in %s output.", expectedLine.name)
+		}
+		assert.Empty(t, errSink.String(), "Expected error sink to be empty.")
+	}
 }
 
 func TestLoggerAddCallerFail(t *testing.T) {
@@ -433,16 +438,4 @@ func TestLoggerConcurrent(t *testing.T) {
 		expected := `{"level":"info","msg":"info","foo":"bar"}` + "\n"
 		assert.Equal(t, strings.Repeat(expected, 100), buf.String())
 	})
-}
-
-func runConcurrently(goroutines, iterations int, wg *sync.WaitGroup, f func()) {
-	wg.Add(goroutines)
-	for g := 0; g < goroutines; g++ {
-		go func() {
-			defer wg.Done()
-			for i := 0; i < iterations; i++ {
-				f()
-			}
-		}()
-	}
 }
