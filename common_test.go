@@ -21,54 +21,22 @@
 package zap
 
 import (
-	"os"
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zapcore"
 )
 
 func opts(opts ...Option) []Option {
 	return opts
 }
 
-type stubbedExit struct {
-	Status *int
-}
-
-func (se *stubbedExit) Unstub() {
-	_exit = os.Exit
-}
-
-func (se *stubbedExit) AssertNoExit(t testing.TB) {
-	assert.Nil(t, se.Status, "Unexpected exit.")
-}
-
-func (se *stubbedExit) AssertStatus(t testing.TB, expected int) {
-	if assert.NotNil(t, se.Status, "Expected to exit.") {
-		assert.Equal(t, expected, *se.Status, "Unexpected exit code.")
-	}
-}
-
-func stubExit() *stubbedExit {
-	stub := &stubbedExit{}
-	_exit = func(s int) { stub.Status = &s }
-	return stub
-}
-
-func withJSONLogger(t testing.TB, enab LevelEnabler, opts []Option, f func(Logger, *testBuffer)) {
-	sink := &testBuffer{}
-	errSink := &testBuffer{}
-
-	allOpts := make([]Option, 0, 2+len(opts))
-	allOpts = append(allOpts, ErrorOutput(errSink))
-	allOpts = append(allOpts, opts...)
-	logger := New(
-		WriterFacility(newJSONEncoder(NoTime()), sink, enab),
-		allOpts...)
-
-	f(logger, sink)
-	assert.Empty(t, errSink.String(), "Expected error sink to be empty.")
+// Here specifically to introduce an easily-identifiable filename for testing
+// stacktraces and caller skips.
+func withLogger(t testing.TB, e zapcore.LevelEnabler, opts []Option, f func(Logger, *zapcore.ObservedLogs)) {
+	fac, logs := zapcore.NewObserver(e, 1024)
+	log := New(fac, opts...)
+	f(log, logs)
 }
 
 func runConcurrently(goroutines, iterations int, wg *sync.WaitGroup, f func()) {

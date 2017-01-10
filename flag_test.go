@@ -25,18 +25,20 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"go.uber.org/zap/zapcore"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestLevelFlag(t *testing.T) {
 	tests := []struct {
 		args      []string
-		wantLevel Level
+		wantLevel zapcore.Level
 		wantErr   bool
 	}{
 		{
 			args:      nil,
-			wantLevel: InfoLevel,
+			wantLevel: zapcore.InfoLevel,
 		},
 		{
 			args:    []string{"--level", "unknown"},
@@ -44,7 +46,7 @@ func TestLevelFlag(t *testing.T) {
 		},
 		{
 			args:      []string{"--level", "error"},
-			wantLevel: ErrorLevel,
+			wantLevel: zapcore.ErrorLevel,
 		},
 	}
 

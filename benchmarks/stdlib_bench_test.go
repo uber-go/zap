@@ -24,9 +24,7 @@ import (
 	"io/ioutil"
 	"log"
 	"testing"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zwrap"
+	"time"
 )
 
 func BenchmarkStandardLibraryWithoutFields(b *testing.B) {
@@ -39,22 +37,24 @@ func BenchmarkStandardLibraryWithoutFields(b *testing.B) {
 	})
 }
 
-func BenchmarkZapStandardizeWithoutFields(b *testing.B) {
-	logger, err := zwrap.Standardize(
-		zap.New(zap.WriterFacility(
-			zap.NewJSONEncoder(),
-			zap.Discard,
-			zap.DebugLevel,
-		)),
-		zap.InfoLevel,
-	)
-	if err != nil {
-		panic("Failed to Standardize a zap.Logger.")
-	}
+func BenchmarkStandardLibraryWithFormatting(b *testing.B) {
+	logger := log.New(ioutil.Discard, "", log.LstdFlags)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			logger.Println("Go fast.")
+			logger.Printf(
+				"Go fast. %v %v %v %s %v %v %v %v %v %s\n",
+				1,
+				int64(1),
+				3.0,
+				"four!",
+				true,
+				time.Unix(0, 0),
+				errExample,
+				time.Second,
+				_jane,
+				"done!",
+			)
 		}
 	})
 }

@@ -27,7 +27,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zwrap"
+	"go.uber.org/zap/testutils"
+	"go.uber.org/zap/zapcore"
 )
 
 var errExample = errors.New("fail")
@@ -38,10 +39,10 @@ type user struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func (u user) MarshalLog(kv zap.KeyValue) error {
-	kv.AddString("name", u.Name)
-	kv.AddString("email", u.Email)
-	kv.AddInt64("created_at", u.CreatedAt.UnixNano())
+func (u user) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("name", u.Name)
+	enc.AddString("email", u.Email)
+	enc.AddInt64("created_at", u.CreatedAt.UnixNano())
 	return nil
 }
 
@@ -51,8 +52,27 @@ var _jane = user{
 	CreatedAt: time.Date(1980, 1, 1, 12, 0, 0, 0, time.UTC),
 }
 
-func fakeFields() []zap.Field {
-	return []zap.Field{
+// TODO: remove this when we figure out a new config & options story.
+func benchEncoder() zapcore.Encoder {
+	msgF := func(msg string) zapcore.Field {
+		return zapcore.Field{Type: zapcore.StringType, String: msg, Key: "msg"}
+	}
+	timeF := func(t time.Time) zapcore.Field {
+		millis := t.UnixNano() / int64(time.Millisecond)
+		return zapcore.Field{Type: zapcore.Int64Type, Integer: millis, Key: "ts"}
+	}
+	levelF := func(l zapcore.Level) zapcore.Field {
+		return zapcore.Field{Type: zapcore.StringType, String: l.String(), Key: "level"}
+	}
+	return zapcore.NewJSONEncoder(zapcore.JSONConfig{
+		MessageFormatter: msgF,
+		TimeFormatter:    timeF,
+		LevelFormatter:   levelF,
+	})
+}
+
+func fakeFields() []zapcore.Field {
+	return []zapcore.Field{
 		zap.Int("int", 1),
 		zap.Int64("int64", 2),
 		zap.Float64("float", 3.0),
@@ -61,7 +81,7 @@ func fakeFields() []zap.Field {
 		zap.Time("time", time.Unix(0, 0)),
 		zap.Error(errExample),
 		zap.Duration("duration", time.Second),
-		zap.Marshaler("user-defined type", _jane),
+		zap.Object("user-defined type", _jane),
 		zap.String("another string", "done!"),
 	}
 }
@@ -75,9 +95,9 @@ func fakeMessages(n int) []string {
 }
 
 func BenchmarkZapDisabledLevelsWithoutFields(b *testing.B) {
-	logger := zap.New(zap.WriterFacility(
-		zap.NewJSONEncoder(),
-		zap.Discard,
+	logger := zap.New(zapcore.WriterFacility(
+		benchEncoder(),
+		&testutils.Discarder{},
 		zap.ErrorLevel,
 	))
 	b.ResetTimer()
@@ -91,9 +111,9 @@ func BenchmarkZapDisabledLevelsWithoutFields(b *testing.B) {
 func BenchmarkZapDisabledLevelsAccumulatedContext(b *testing.B) {
 	context := fakeFields()
 	logger := zap.New(
-		zap.WriterFacility(
-			zap.NewJSONEncoder(),
-			zap.Discard,
+		zapcore.WriterFacility(
+			benchEncoder(),
+			&testutils.Discarder{},
 			zap.ErrorLevel,
 		),
 		zap.Fields(context...),
@@ -107,9 +127,9 @@ func BenchmarkZapDisabledLevelsAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapDisabledLevelsAddingFields(b *testing.B) {
-	logger := zap.New(zap.WriterFacility(
-		zap.NewJSONEncoder(),
-		zap.Discard,
+	logger := zap.New(zapcore.WriterFacility(
+		benchEncoder(),
+		&testutils.Discarder{},
 		zap.ErrorLevel,
 	))
 	b.ResetTimer()
@@ -121,9 +141,9 @@ func BenchmarkZapDisabledLevelsAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapDisabledLevelsCheckAddingFields(b *testing.B) {
-	logger := zap.New(zap.WriterFacility(
-		zap.NewJSONEncoder(),
-		zap.Discard,
+	logger := zap.New(zapcore.WriterFacility(
+		benchEncoder(),
+		&testutils.Discarder{},
 		zap.ErrorLevel,
 	))
 	b.ResetTimer()
@@ -137,9 +157,9 @@ func BenchmarkZapDisabledLevelsCheckAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapAddingFields(b *testing.B) {
-	logger := zap.New(zap.WriterFacility(
-		zap.NewJSONEncoder(),
-		zap.Discard,
+	logger := zap.New(zapcore.WriterFacility(
+		benchEncoder(),
+		&testutils.Discarder{},
 		zap.DebugLevel,
 	))
 	b.ResetTimer()
@@ -153,9 +173,9 @@ func BenchmarkZapAddingFields(b *testing.B) {
 func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 	context := fakeFields()
 	logger := zap.New(
-		zap.WriterFacility(
-			zap.NewJSONEncoder(),
-			zap.Discard,
+		zapcore.WriterFacility(
+			benchEncoder(),
+			&testutils.Discarder{},
 			zap.DebugLevel,
 		),
 		zap.Fields(context...),
@@ -169,9 +189,9 @@ func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapWithoutFields(b *testing.B) {
-	logger := zap.New(zap.WriterFacility(
-		zap.NewJSONEncoder(),
-		zap.Discard,
+	logger := zap.New(zapcore.WriterFacility(
+		benchEncoder(),
+		&testutils.Discarder{},
 		zap.DebugLevel,
 	))
 	b.ResetTimer()
@@ -184,9 +204,9 @@ func BenchmarkZapWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleWithoutFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zap.New(zwrap.Sample(zap.WriterFacility(
-		zap.NewJSONEncoder(),
-		zap.Discard,
+	logger := zap.New(zapcore.Sample(zapcore.WriterFacility(
+		benchEncoder(),
+		&testutils.Discarder{},
 		zap.DebugLevel,
 	), time.Second, 10, 10000))
 	b.ResetTimer()
@@ -201,9 +221,9 @@ func BenchmarkZapSampleWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleAddingFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zap.New(zwrap.Sample(zap.WriterFacility(
-		zap.NewJSONEncoder(),
-		zap.Discard,
+	logger := zap.New(zapcore.Sample(zapcore.WriterFacility(
+		benchEncoder(),
+		&testutils.Discarder{},
 		zap.DebugLevel,
 	), time.Second, 10, 10000))
 	b.ResetTimer()
@@ -218,9 +238,9 @@ func BenchmarkZapSampleAddingFields(b *testing.B) {
 
 func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zap.New(zwrap.Sample(zap.WriterFacility(
-		zap.NewJSONEncoder(),
-		zap.Discard,
+	logger := zap.New(zapcore.Sample(zapcore.WriterFacility(
+		benchEncoder(),
+		&testutils.Discarder{},
 		zap.DebugLevel,
 	), time.Second, 10, 10000))
 	b.ResetTimer()
@@ -237,9 +257,9 @@ func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleCheckAddingFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zap.New(zwrap.Sample(zap.WriterFacility(
-		zap.NewJSONEncoder(),
-		zap.Discard,
+	logger := zap.New(zapcore.Sample(zapcore.WriterFacility(
+		benchEncoder(),
+		&testutils.Discarder{},
 		zap.DebugLevel,
 	), time.Second, 10, 10000))
 	b.ResetTimer()
