@@ -64,6 +64,14 @@ func AddCaller() Option {
 	})
 }
 
+// AddCallerSkip increases the number of callers skipped by caller annotation
+// (as enabled by the AddCaller option).
+func AddCallerSkip(skip int) Option {
+	return optionFunc(func(log *logger) {
+		log.callerSkip += skip
+	})
+}
+
 // AddStacks configures the Logger to record a stack trace for all messages at
 // or above a given level. Keep in mind that this is (relatively speaking)
 // quite expensive.
