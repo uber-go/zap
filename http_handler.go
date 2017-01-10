@@ -24,6 +24,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"go.uber.org/zap/zapcore"
 )
 
 // ServeHTTP supports changing logging level with an HTTP request.
@@ -36,7 +38,7 @@ func (lvl AtomicLevel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Error string `json:"error"`
 	}
 	type payload struct {
-		Level *Level `json:"level"`
+		Level *zapcore.Level `json:"level"`
 	}
 
 	enc := json.NewEncoder(w)

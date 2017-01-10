@@ -20,23 +20,17 @@
 
 package zap
 
-import "flag"
+import (
+	"flag"
 
-type levelValue Level
+	"go.uber.org/zap/zapcore"
+)
 
 // LevelFlag defines a Level flag with specified name, default value and
 // usage string. The return value is the address of a Level value that stores
 // the value of the flag.
-func LevelFlag(name string, defaultLevel Level, usage string) *Level {
-	level := defaultLevel
-	flag.Var((*levelValue)(&level), name, usage)
-	return &level
-}
-
-func (l *levelValue) Set(s string) error {
-	return (*Level)(l).UnmarshalText([]byte(s))
-}
-
-func (l *levelValue) String() string {
-	return (*Level)(l).String()
+func LevelFlag(name string, defaultLevel zapcore.Level, usage string) *zapcore.Level {
+	lvl := defaultLevel
+	flag.Var(&lvl, name, usage)
+	return &lvl
 }

@@ -22,7 +22,6 @@ package zap
 
 import "time"
 
-func timeToSeconds(t time.Time) float64 {
-	nanos := float64(t.UnixNano())
-	return nanos / float64(time.Second)
+func timeToMillis(t time.Time) int64 {
+	return t.UnixNano() / int64(time.Millisecond)
 }
