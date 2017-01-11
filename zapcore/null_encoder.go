@@ -34,11 +34,8 @@ func (nullEncoder) Free() {}
 
 func (nullEncoder) AddString(_, _ string)                       {}
 func (nullEncoder) AddBool(_ string, _ bool)                    {}
-func (nullEncoder) AddInt(_ string, _ int)                      {}
 func (nullEncoder) AddInt64(_ string, _ int64)                  {}
-func (nullEncoder) AddUint(_ string, _ uint)                    {}
 func (nullEncoder) AddUint64(_ string, _ uint64)                {}
-func (nullEncoder) AddUintptr(_ string, _ uintptr)              {}
 func (nullEncoder) AddFloat64(_ string, _ float64)              {}
 func (nullEncoder) AddObject(_ string, _ ObjectMarshaler) error { return nil }
 func (nullEncoder) AddReflected(_ string, _ interface{}) error  { return nil }

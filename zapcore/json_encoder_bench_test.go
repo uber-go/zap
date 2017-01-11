@@ -50,7 +50,7 @@ func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		enc := newJSONEncoder(cfg)
 		enc.AddObject("nested", ObjectMarshalerFunc(func(enc ObjectEncoder) error {
-			enc.AddInt("i", i)
+			enc.AddInt64("i", int64(i))
 			return nil
 		}))
 		enc.free()
@@ -63,7 +63,7 @@ func BenchmarkZapJSON(b *testing.B) {
 		for pb.Next() {
 			enc := newJSONEncoder(cfg)
 			enc.AddString("str", "foo")
-			enc.AddInt("int", 1)
+			enc.AddInt64("int", 1)
 			enc.AddInt64("int64", 1)
 			enc.AddFloat64("float64", 1.0)
 			enc.AddString("string1", "\n")
@@ -92,8 +92,8 @@ func BenchmarkStandardJSON(b *testing.B) {
 		Time:    time.Unix(0, 0),
 		Fields: map[string]interface{}{
 			"str":     "foo",
-			"int":     int(1),
-			"int64":   int64(1),
+			"int64-1": int(1),
+			"int64-2": int64(1),
 			"float64": float64(1.0),
 			"string1": "\n",
 			"string2": "💩",
