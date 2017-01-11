@@ -254,22 +254,16 @@ func (s *sampler) With(fields []Field) Facility {
 }
 
 func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
-	if s.sampled(ent) {
-		ce = s.Facility.Check(ent, ce)
+	if !s.Enabled(ent.Level) {
+		return ce
 	}
-	return ce
-}
-
-func (s *sampler) sampled(ent Entry) bool {
-	if !s.Facility.Enabled(ent.Level) {
-		return false
+	if n := s.counts.Inc(ent.Message); n > s.first {
+		if n == s.first+1 {
+			time.AfterFunc(s.tick, func() { s.counts.Reset(ent.Message) })
+		}
+		if (n-s.first)%s.thereafter != 0 {
+			return ce
+		}
 	}
-	n := s.counts.Inc(ent.Message)
-	if n <= s.first {
-		return true
-	}
-	if n == s.first+1 {
-		time.AfterFunc(s.tick, func() { s.counts.Reset(ent.Message) })
-	}
-	return (n-s.first)%s.thereafter == 0
+	return s.Facility.Check(ent, ce)
 }
