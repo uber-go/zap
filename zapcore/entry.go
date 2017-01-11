@@ -174,13 +174,6 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 		}
 	}
 
-	if ce.ErrorOutput != nil {
-		if err := errs.asError(); err != nil {
-			fmt.Fprintf(ce.ErrorOutput, "%v write error: %v\n", time.Now().UTC(), err)
-			ce.ErrorOutput.Sync()
-		}
-	}
-
 	should, msg := ce.should, ce.Message
 	putCheckedEntry(ce)
 
