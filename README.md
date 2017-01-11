@@ -25,10 +25,6 @@ dashboarding, and accurate message bucketing. In short, it helps you get the
 most out of tools like ELK, Splunk, and Sentry. All log messages are
 JSON-serialized, though PRs to support other formats are welcome.
 
-For compatibility with the standard library and [bark][], zap provides the
-`zwrap.Standardize` and `zbark.Barkify` wrappers. Both are slower than the core
-zap logger, but faster than the libraries they replace.
-
 ## Performance
 
 For applications that log in the hot path, reflection-based serialization and
@@ -80,8 +76,9 @@ Log a static string, without any context or `printf`-style formatting:
 
 ## Development Status: Beta
 Ready for adventurous users, but we're planning several breaking changes before
-releasing version 1.0. [This project][v1] tracks our progress toward a stable
-release.
+releasing version 1.0. [This milestone][v1] tracks our progress toward a stable
+ release. The `zap.Logger` API itself won't change much, but constructing and
+ composing loggers will change quite a bit.
 
 <hr>
 Released under the [MIT License](LICENSE.txt).
@@ -98,5 +95,4 @@ pinned in zap's [glide.lock][] file. [↩](#anchor-versions)
 [cov]: https://coveralls.io/github/uber-go/zap?branch=master
 [benchmarking suite]: https://go.uber.org/zap/tree/master/benchmarks
 [glide.lock]: https://go.uber.org/zap/blob/master/glide.lock
-[bark]: https://go.uber.org/bark
-[v1]: https://go.uber.org/zap/projects/1
+[v1]: https://github.com/uber-go/zap/milestone/1
