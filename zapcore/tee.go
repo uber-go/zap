@@ -20,6 +20,8 @@
 
 package zapcore
 
+import "go.uber.org/zap/internal/multierror"
+
 // Tee creates a Facility that duplicates log entries into two or more
 // facilities; if you call it with less than two, you get back the one facility
 // you passed (or nil in the pathological case).
@@ -62,11 +64,9 @@ func (mf multiFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 }
 
 func (mf multiFacility) Write(ent Entry, fields []Field) error {
-	var errs multiError
+	var errs *multierror.Error
 	for i := range mf {
-		if err := mf[i].Write(ent, fields); err != nil {
-			errs = append(errs, err)
-		}
+		errs = errs.Append(mf[i].Write(ent, fields))
 	}
-	return errs.asError()
+	return errs.AsError()
 }

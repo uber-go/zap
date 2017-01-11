@@ -21,9 +21,10 @@
 package zapcore
 
 import (
-	"bytes"
 	"io"
 	"sync"
+
+	"go.uber.org/zap/internal/multierror"
 )
 
 // A WriteSyncer is an io.Writer that can also flush any buffered data. Note
@@ -97,50 +98,24 @@ func MultiWriteSyncer(ws ...WriteSyncer) WriteSyncer {
 // the smallest number is returned even though Write() is called on
 // all of them.
 func (ws multiWriteSyncer) Write(p []byte) (int, error) {
-	var errs multiError
+	var errs *multierror.Error
 	nWritten := 0
 	for _, w := range ws {
 		n, err := w.Write(p)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		errs = errs.Append(err)
 		if nWritten == 0 && n != 0 {
 			nWritten = n
 		} else if n < nWritten {
 			nWritten = n
 		}
 	}
-	return nWritten, errs.asError()
+	return nWritten, errs.AsError()
 }
 
 func (ws multiWriteSyncer) Sync() error {
-	var errs multiError
+	var errs *multierror.Error
 	for _, w := range ws {
-		if err := w.Sync(); err != nil {
-			errs = append(errs, err)
-		}
+		errs = errs.Append(w.Sync())
 	}
-	return errs.asError()
-}
-
-type multiError []error
-
-func (m multiError) asError() error {
-	switch len(m) {
-	case 0:
-		return nil
-	case 1:
-		return m[0]
-	default:
-		return m
-	}
-}
-
-func (m multiError) Error() string {
-	sb := bytes.Buffer{}
-	for _, err := range m {
-		sb.WriteString(err.Error())
-		sb.WriteString(" ")
-	}
-	return sb.String()
+	return errs.AsError()
 }
