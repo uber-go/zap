@@ -27,9 +27,12 @@ import (
 )
 
 func TestTeeLogsBoth(t *testing.T) {
-	fac1, logs1 := NewObserver(DebugLevel, 10)
-	fac2, logs2 := NewObserver(WarnLevel, 10)
-	tee := Tee(fac1, fac2)
+	o1, logs1 := NewObserver(10)
+	o2, logs2 := NewObserver(10)
+	tee := Tee(
+		EntryWriterFacility(DebugLevel, o1),
+		EntryWriterFacility(WarnLevel, o2),
+	)
 
 	debugEntry := Entry{Level: DebugLevel, Message: "log-at-debug"}
 	infoEntry := Entry{Level: InfoLevel, Message: "log-at-info"}

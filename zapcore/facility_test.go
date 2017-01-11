@@ -35,7 +35,8 @@ func makeInt64Field(key string, val int) Field {
 }
 
 func TestObserverWith(t *testing.T) {
-	sf1, logs := NewObserver(InfoLevel, 10)
+	o, logs := NewObserver(10)
+	sf1 := EntryWriterFacility(InfoLevel, o)
 
 	// need to pad out enough initial fields so that the underlying slice cap()
 	// gets ahead of its len() so that the sf3/4 With append's could choose
@@ -133,7 +134,8 @@ func writeIter(fac Facility, n int, lvl Level) {
 }
 
 func fakeSampler(lvl LevelEnabler, tick time.Duration, first, thereafter int) (Facility, *ObservedLogs) {
-	fac, logs := NewObserver(lvl, 128)
+	o, logs := NewObserver(128)
+	fac := EntryWriterFacility(lvl, o)
 	fac = Sample(fac, tick, first, thereafter)
 	return fac, logs
 }

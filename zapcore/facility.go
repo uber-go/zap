@@ -178,45 +178,33 @@ func (o *ObservedLogs) AllUntimed() []ObservedLog {
 	return ret
 }
 
-type observerFacility struct {
-	LevelEnabler
+type observerEntryWriter struct {
 	sink    *ObservedLogs
 	context []Field
 }
 
-// NewObserver creates a new facility that buffers logs in memory (without any
-// encoding). It's particularly useful in tests, though it can serve a variety
-// of other purposes as well. This constructor returns the facility itself and
-// a function to retrieve the observed logs.
-func NewObserver(enab LevelEnabler, cap int) (Facility, *ObservedLogs) {
-	fac := &observerFacility{
-		LevelEnabler: enab,
-		sink:         &ObservedLogs{cap: cap, logs: make([]ObservedLog, 0, cap)},
-	}
-	return fac, fac.sink
+// NewObserver creates a new entry writer that buffers logs in memory (without
+// any encoding). It's particularly useful in tests, though it can serve a
+// variety of other purposes as well. This constructor returns the entry writer
+// itself and a function to retrieve the observed logs.
+func NewObserver(cap int) (EntryWriter, *ObservedLogs) {
+	sink := &ObservedLogs{cap: cap, logs: make([]ObservedLog, 0, cap)}
+	return &observerEntryWriter{sink: sink}, sink
 }
 
-func (o *observerFacility) With(fields []Field) Facility {
-	return &observerFacility{
-		LevelEnabler: o.LevelEnabler,
-		sink:         o.sink,
-		context:      append(o.context[:len(o.context):len(o.context)], fields...),
+func (o *observerEntryWriter) With(fields []Field) EntryWriter {
+	return &observerEntryWriter{
+		sink:    o.sink,
+		context: append(o.context[:len(o.context):len(o.context)], fields...),
 	}
 }
 
-func (o *observerFacility) Write(ent Entry, fields []Field) error {
+func (o *observerEntryWriter) Write(ent Entry, fields []Field) error {
 	all := make([]Field, 0, len(fields)+len(o.context))
 	all = append(all, o.context...)
 	all = append(all, fields...)
 	o.sink.Add(ent, all)
 	return nil
-}
-
-func (o *observerFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
-	if o.Enabled(ent.Level) {
-		ce = ce.AddFacility(ent, o)
-	}
-	return ce
 }
 
 type counters struct {
