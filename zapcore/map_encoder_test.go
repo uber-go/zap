@@ -36,9 +36,8 @@ func TestMapEncoderAdd(t *testing.T) {
 	enc := make(MapObjectEncoder)
 	enc.AddBool("b", true)
 	enc.AddFloat64("f64", 1.56)
-	enc.AddInt("int", 5)
 	enc.AddInt64("i64", math.MaxInt64)
-	enc.AddUintptr("uintptr", uintptr(0xdeadbeef))
+	enc.AddUint64("uint64", 42)
 	enc.AddString("s", "string")
 
 	assert.NoError(t, enc.AddReflected("reflect", arbitraryObj), "Expected AddReflected to succeed.")
@@ -47,9 +46,8 @@ func TestMapEncoderAdd(t *testing.T) {
 	want := MapObjectEncoder{
 		"b":       true,
 		"f64":     1.56,
-		"int":     5,
 		"i64":     int64(math.MaxInt64),
-		"uintptr": uintptr(0xdeadbeef),
+		"uint64":  uint64(42),
 		"s":       "string",
 		"reflect": arbitraryObj,
 		"object": MapObjectEncoder{

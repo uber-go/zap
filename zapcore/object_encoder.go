@@ -26,11 +26,8 @@ package zapcore
 type ObjectEncoder interface {
 	AddBool(key string, value bool)
 	AddFloat64(key string, value float64)
-	AddInt(key string, value int)
 	AddInt64(key string, value int64)
-	AddUint(key string, value uint)
 	AddUint64(key string, value uint64)
-	AddUintptr(key string, value uintptr)
 	AddObject(key string, marshaler ObjectMarshaler) error
 	// AddReflected uses reflection to serialize arbitrary objects, so it's slow
 	// and allocation-heavy.

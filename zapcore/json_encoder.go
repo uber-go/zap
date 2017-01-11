@@ -93,26 +93,14 @@ func (enc *jsonEncoder) AddBool(key string, val bool) {
 	enc.bytes = strconv.AppendBool(enc.bytes, val)
 }
 
-func (enc *jsonEncoder) AddInt(key string, val int) {
-	enc.AddInt64(key, int64(val))
-}
-
 func (enc *jsonEncoder) AddInt64(key string, val int64) {
 	enc.addKey(key)
 	enc.bytes = strconv.AppendInt(enc.bytes, val, 10)
 }
 
-func (enc *jsonEncoder) AddUint(key string, val uint) {
-	enc.AddUint64(key, uint64(val))
-}
-
 func (enc *jsonEncoder) AddUint64(key string, val uint64) {
 	enc.addKey(key)
 	enc.bytes = strconv.AppendUint(enc.bytes, val, 10)
-}
-
-func (enc *jsonEncoder) AddUintptr(key string, val uintptr) {
-	enc.AddUint64(key, uint64(val))
 }
 
 func (enc *jsonEncoder) AddFloat64(key string, val float64) {

@@ -31,20 +31,11 @@ func (m MapObjectEncoder) AddBool(k string, v bool) { m[k] = v }
 // AddFloat64 adds the value under the specified key to the map.
 func (m MapObjectEncoder) AddFloat64(k string, v float64) { m[k] = v }
 
-// AddInt adds the value under the specified key to the map.
-func (m MapObjectEncoder) AddInt(k string, v int) { m[k] = v }
-
 // AddInt64 adds the value under the specified key to the map.
 func (m MapObjectEncoder) AddInt64(k string, v int64) { m[k] = v }
 
-// AddUint adds the value under the specified key to the map.
-func (m MapObjectEncoder) AddUint(k string, v uint) { m[k] = v }
-
 // AddUint64 adds the value under the specified key to the map.
 func (m MapObjectEncoder) AddUint64(k string, v uint64) { m[k] = v }
-
-// AddUintptr adds the value under the specified key to the map.
-func (m MapObjectEncoder) AddUintptr(k string, v uintptr) { m[k] = v }
 
 // AddReflected adds the value under the specified key to the map.
 func (m MapObjectEncoder) AddReflected(k string, v interface{}) error {
