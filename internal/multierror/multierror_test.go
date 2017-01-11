@@ -62,7 +62,7 @@ func TestMultiErrorAsError(t *testing.T) {
 func TestErrorAppend(t *testing.T) {
 	foo := errors.New("foo")
 	bar := errors.New("bar")
-	for _, base := range []*Error{nil, &Error{}} {
+	for _, base := range []*Error{nil, {}} {
 		base = base.Append(nil).Append(foo).Append(nil).Append(bar)
 		assert.Equal(t, errSlice{foo, bar}, base.errs, "Collected errors don't match expectations.")
 	}
