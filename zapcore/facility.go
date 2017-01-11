@@ -234,6 +234,8 @@ func Sample(fac Facility, tick time.Duration, first, thereafter int) Facility {
 	}
 }
 
+// samplre must be a Facility, and not an EntryWriter, since it must make a
+// stateful `Check` decision, while leaving `Enabled` pure.
 type sampler struct {
 	Facility
 
