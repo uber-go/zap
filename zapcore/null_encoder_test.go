@@ -38,12 +38,9 @@ func TestNullEncoderFields(t *testing.T) {
 		{"string", func(e Encoder) { e.AddString("k", "v") }},
 		{"bool", func(e Encoder) { e.AddBool("k", true) }},
 		{"bool", func(e Encoder) { e.AddBool("k", false) }},
-		{"int", func(e Encoder) { e.AddInt("k", 42) }},
 		{"int64", func(e Encoder) { e.AddInt64("k", math.MaxInt64) }},
 		{"int64", func(e Encoder) { e.AddInt64("k", math.MinInt64) }},
-		{"uint", func(e Encoder) { e.AddUint("k", 42) }},
 		{"uint64", func(e Encoder) { e.AddUint64("k", math.MaxUint64) }},
-		{"uintptr", func(e Encoder) { e.AddUintptr("k", uintptr(math.MaxUint64)) }},
 		{"float64", func(e Encoder) { e.AddFloat64("k", 1.0) }},
 		{"ObjectMarshaler", func(e Encoder) {
 			assert.NoError(t, e.AddObject("k", loggable{true}), "Unexpected error calling MarshalLogObject.")
