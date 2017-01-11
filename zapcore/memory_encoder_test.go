@@ -27,22 +27,45 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMapEncoderAdd(t *testing.T) {
+func TestMapObjectEncoderAdd(t *testing.T) {
 	arbitraryObj := map[string]interface{}{
 		"foo": "bar",
 		"baz": 5,
 	}
 
 	enc := make(MapObjectEncoder)
+	// ObjectEncoder methods.
 	enc.AddBool("b", true)
 	enc.AddFloat64("f64", 1.56)
 	enc.AddInt64("i64", math.MaxInt64)
 	enc.AddUint64("uint64", 42)
 	enc.AddString("s", "string")
-
 	assert.NoError(t, enc.AddReflected("reflect", arbitraryObj), "Expected AddReflected to succeed.")
 	assert.NoError(t, enc.AddObject("object", loggable{true}), "Expected AddObject to succeed.")
+	// Array types.
+	assert.NoError(t, enc.AddArray("array", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
+		arr.AppendBool(true)
+		arr.AppendBool(false)
+		arr.AppendBool(true)
+		return nil
+	})), "Expected AddArray to succeed.")
+	assert.NoError(t, enc.AddArray("arrays-of-arrays", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
+		enc.AppendArray(ArrayMarshalerFunc(func(e ArrayEncoder) error {
+			e.AppendBool(true)
+			return nil
+		}))
+		return nil
+	})), "Expected AddArray to succeed.")
+	// Nested objects and arrays.
+	assert.NoError(t, enc.AddArray("turduckens", turduckens(2)), "Expected AddObject to succeed.")
+	assert.NoError(t, enc.AddObject("turducken", turducken{}), "Expected AddObject to succeed.")
 
+	wantTurducken := MapObjectEncoder{
+		"ducks": []interface{}{
+			MapObjectEncoder{"in": "chicken"},
+			MapObjectEncoder{"in": "chicken"},
+		},
+	}
 	want := MapObjectEncoder{
 		"b":       true,
 		"f64":     1.56,
@@ -53,6 +76,10 @@ func TestMapEncoderAdd(t *testing.T) {
 		"object": MapObjectEncoder{
 			"loggable": "yes",
 		},
+		"array":            []interface{}{true, false, true},
+		"arrays-of-arrays": []interface{}{[]interface{}{true}},
+		"turducken":        wantTurducken,
+		"turduckens":       []interface{}{wantTurducken, wantTurducken},
 	}
 	assert.Equal(t, want, enc, "Encoder's final state is unexpected.")
 }

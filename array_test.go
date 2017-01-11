@@ -18,19 +18,48 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package zap
 
-// ObjectEncoder is an encoding-agnostic interface to add structured data to the
-// logging context. Like maps, ObjectEncoders aren't safe for concurrent use
-// (though typical use shouldn't require locks).
-type ObjectEncoder interface {
-	AddBool(key string, value bool)
-	AddFloat64(key string, value float64)
-	AddInt64(key string, value int64)
-	AddUint64(key string, value uint64)
-	AddObject(key string, marshaler ObjectMarshaler) error
-	// AddReflected uses reflection to serialize arbitrary objects, so it's slow
-	// and allocation-heavy.
-	AddReflected(key string, value interface{}) error
-	AddString(key, value string)
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"go.uber.org/zap/zapcore"
+)
+
+func TestArrayWrappers(t *testing.T) {
+	tests := []struct {
+		desc     string
+		array    zapcore.ArrayMarshaler
+		expected []interface{}
+	}{
+		{
+			"arrays",
+			Arrays([]zapcore.ArrayMarshaler{
+				Bools([]bool{true}),
+				Bools([]bool{false}),
+			}),
+			[]interface{}{
+				[]interface{}{true},
+				[]interface{}{false},
+			},
+		},
+		{
+			"objects",
+			Objects([]zapcore.ObjectMarshaler{
+				zapcore.ObjectMarshalerFunc(func(_ zapcore.ObjectEncoder) error { return nil }),
+				zapcore.ObjectMarshalerFunc(func(_ zapcore.ObjectEncoder) error { return nil }),
+			}),
+			[]interface{}{zapcore.MapObjectEncoder{}, zapcore.MapObjectEncoder{}},
+		},
+		{"bools", Bools([]bool{true, false}), []interface{}{true, false}},
+	}
+
+	for _, tt := range tests {
+		enc := make(zapcore.MapObjectEncoder)
+		Array("k", tt.array).AddTo(enc)
+		assert.Equal(t, tt.expected, enc["k"], "%s: unexpected map contents.", tt.desc)
+		assert.Equal(t, 1, len(enc), "%s: found extra keys in map: %v", tt.desc, enc)
+	}
 }

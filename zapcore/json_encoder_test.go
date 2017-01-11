@@ -31,10 +31,37 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.uber.org/zap/internal/multierror"
 	"go.uber.org/zap/testutils"
 )
 
 var epoch = time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
+
+// Nested Array- and ObjectMarshalers.
+type turducken struct{}
+
+func (t turducken) MarshalLogObject(enc ObjectEncoder) error {
+	return enc.AddArray("ducks", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
+		for i := 0; i < 2; i++ {
+			arr.AppendObject(ObjectMarshalerFunc(func(inner ObjectEncoder) error {
+				inner.AddString("in", "chicken")
+				return nil
+			}))
+		}
+		return nil
+	}))
+}
+
+type turduckens int
+
+func (t turduckens) MarshalLogArray(enc ArrayEncoder) error {
+	var errs *multierror.Error
+	tur := turducken{}
+	for i := 0; i < int(t); i++ {
+		errs = errs.Append(enc.AppendObject(tur))
+	}
+	return errs.AsError()
+}
 
 func newJSONEncoder(cfg JSONConfig) *jsonEncoder {
 	return NewJSONEncoder(cfg).(*jsonEncoder)
@@ -66,6 +93,14 @@ func (l loggable) MarshalLogObject(enc ObjectEncoder) error {
 	return nil
 }
 
+func (l loggable) MarshalLogArray(enc ArrayEncoder) error {
+	if !l.bool {
+		return errors.New("can't marshal")
+	}
+	enc.AppendBool(true)
+	return nil
+}
+
 func assertOutput(t testing.TB, desc string, expected string, f func(Encoder)) {
 	withJSONEncoder(func(enc *jsonEncoder) {
 		f(enc)
@@ -84,7 +119,7 @@ func assertOutput(t testing.TB, desc string, expected string, f func(Encoder)) {
 	})
 }
 
-func TestJSONEncoderFields(t *testing.T) {
+func TestJSONEncoderObjectFields(t *testing.T) {
 	tests := []struct {
 		desc     string
 		expected string
@@ -112,13 +147,41 @@ func TestJSONEncoderFields(t *testing.T) {
 		{"float64", `"k":"+Inf"`, func(e Encoder) { e.AddFloat64("k", math.Inf(1)) }},
 		{"float64", `"k":"-Inf"`, func(e Encoder) { e.AddFloat64("k", math.Inf(-1)) }},
 		{"ObjectMarshaler", `"k":{"loggable":"yes"}`, func(e Encoder) {
-			assert.NoError(t, e.AddObject("k", loggable{true}), "Unexpected error calling MarshalObject.")
+			assert.NoError(t, e.AddObject("k", loggable{true}), "Unexpected error calling MarshalLogObject.")
 		}},
 		{"ObjectMarshaler", `"k\\":{"loggable":"yes"}`, func(e Encoder) {
-			assert.NoError(t, e.AddObject(`k\`, loggable{true}), "Unexpected error calling MarshalObject.")
+			assert.NoError(t, e.AddObject(`k\`, loggable{true}), "Unexpected error calling MarshalLogObject.")
 		}},
 		{"ObjectMarshaler", `"k":{}`, func(e Encoder) {
-			assert.Error(t, e.AddObject("k", loggable{false}), "Expected an error calling MarshalObject.")
+			assert.Error(t, e.AddObject("k", loggable{false}), "Expected an error calling MarshalLogObject.")
+		}},
+		{
+			"ObjectMarshaler(ArrayMarshaler(ObjectMarshaler))",
+			`"turducken":{"ducks":[{"in":"chicken"},{"in":"chicken"}]}`,
+			func(e Encoder) {
+				assert.NoError(
+					t,
+					e.AddObject("turducken", turducken{}),
+					"Unexpected error calling MarshalLogObject with nested ObjectMarshalers and ArrayMarshalers.",
+				)
+			},
+		},
+		{
+			"ArrayMarshaler(ObjectMarshaler(ArrayMarshaler(ObjectMarshaler)))",
+			`"turduckens":[{"ducks":[{"in":"chicken"},{"in":"chicken"}]},{"ducks":[{"in":"chicken"},{"in":"chicken"}]}]`,
+			func(e Encoder) {
+				assert.NoError(
+					t,
+					e.AddArray("turduckens", turduckens(2)),
+					"Unexpected error calling MarshalLogObject with nested ObjectMarshalers and ArrayMarshalers.",
+				)
+			},
+		},
+		{"ArrayMarshaler", `"k\\":[true]`, func(e Encoder) {
+			assert.NoError(t, e.AddArray(`k\`, loggable{true}), "Unexpected error calling MarshalLogArray.")
+		}},
+		{"ArrayMarshaler", `"k":[]`, func(e Encoder) {
+			assert.Error(t, e.AddArray("k", loggable{false}), "Expected an error calling MarshalLogArray.")
 		}},
 		{"arbitrary object", `"k":{"loggable":"yes"}`, func(e Encoder) {
 			assert.NoError(t, e.AddReflected("k", map[string]string{"loggable": "yes"}), "Unexpected error JSON-serializing a map.")
@@ -133,6 +196,57 @@ func TestJSONEncoderFields(t *testing.T) {
 
 	for _, tt := range tests {
 		assertOutput(t, tt.desc, tt.expected, tt.f)
+	}
+}
+
+func TestJSONEncoderArrayTypes(t *testing.T) {
+	tests := []struct {
+		desc        string
+		f           func(ArrayEncoder) error
+		expected    string
+		shouldError bool
+	}{
+		// arrays of ObjectMarshalers are covered by the turducken test above.
+		{
+			"arrays of arrays",
+			func(arr ArrayEncoder) error {
+				arr.AppendArray(ArrayMarshalerFunc(func(enc ArrayEncoder) error {
+					enc.AppendBool(true)
+					return nil
+				}))
+				arr.AppendArray(ArrayMarshalerFunc(func(enc ArrayEncoder) error {
+					enc.AppendBool(true)
+					return nil
+				}))
+				return nil
+			},
+			`[[true],[true]]`,
+			false,
+		},
+		{
+			"bools",
+			func(arr ArrayEncoder) error {
+				arr.AppendBool(true)
+				arr.AppendBool(false)
+				return nil
+			},
+			`[true,false]`,
+			false,
+		},
+	}
+
+	for _, tt := range tests {
+		f := func(enc Encoder) error {
+			return enc.AddArray("array", ArrayMarshalerFunc(tt.f))
+		}
+		assertOutput(t, tt.desc, `"array":`+tt.expected, func(enc Encoder) {
+			err := f(enc)
+			if tt.shouldError {
+				assert.Error(t, err, "Expected an error adding array to JSON encoder.")
+			} else {
+				assert.NoError(t, err, "Unexpected error adding array to JSON encoder.")
+			}
+		})
 	}
 }
 
