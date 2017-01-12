@@ -156,14 +156,14 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 	}
 
 	final.bytes = append(final.bytes, '{')
-	enc.LevelFormatter(ent.Level).AddTo(final)
-	enc.TimeFormatter(ent.Time).AddTo(final)
+	final.LevelFormatter(ent.Level).AddTo(final)
+	final.TimeFormatter(ent.Time).AddTo(final)
 	if ent.Caller.Defined {
 		// NOTE: we add the field here for parity compromise with text
 		// prepending, while not actually mutating the message string.
 		final.AddString("caller", ent.Caller.String())
 	}
-	enc.MessageFormatter(ent.Message).AddTo(final)
+	final.MessageFormatter(ent.Message).AddTo(final)
 	if len(enc.bytes) > 0 {
 		if len(final.bytes) > 1 {
 			// All the formatters may have been no-ops.
