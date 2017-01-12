@@ -27,7 +27,7 @@ type ObjectMarshaler interface {
 	MarshalLogObject(ObjectEncoder) error
 }
 
-// ObjectMarshalerFunc is a type adapter that allows using a function as a
+// ObjectMarshalerFunc is a type adapter that turns a function into an
 // ObjectMarshaler.
 type ObjectMarshalerFunc func(ObjectEncoder) error
 
@@ -36,4 +36,18 @@ func (f ObjectMarshalerFunc) MarshalLogObject(enc ObjectEncoder) error {
 	return f(enc)
 }
 
-// TODO: Add LogArrayMarshaler and ArrayEncoder interfaces.
+// ArrayMarshaler allows user-defined types to efficiently add themselves to the
+// logging context, and to selectively omit information which shouldn't be
+// included in logs (e.g., passwords).
+type ArrayMarshaler interface {
+	MarshalLogArray(ArrayEncoder) error
+}
+
+// ArrayMarshalerFunc is a type adapter that turns a function into an
+// ArrayMarshaler.
+type ArrayMarshalerFunc func(ArrayEncoder) error
+
+// MarshalLogArray calls the underlying function.
+func (f ArrayMarshalerFunc) MarshalLogArray(enc ArrayEncoder) error {
+	return f(enc)
+}

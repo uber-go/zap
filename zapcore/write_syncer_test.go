@@ -115,13 +115,6 @@ func TestMultiWriteSyncerSync_NoErrorsOnDiscard(t *testing.T) {
 	assert.NoError(t, ws.Sync(), "Expected error-free sync to /dev/null")
 }
 
-func TestMultiError_WrapsStrings(t *testing.T) {
-	err := multiError{errors.New("battlestar"), errors.New("galactaca")}
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "battlestar")
-	assert.Contains(t, err.Error(), "galactaca")
-}
-
 func TestMultiWriteSyncerSync_AllCalled(t *testing.T) {
 	failed, second := &testutils.Buffer{}, &testutils.Buffer{}
 

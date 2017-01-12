@@ -18,55 +18,54 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+// Package multierror provides a simple way to treat a collection of errors as
+// a single error.
+package multierror
 
-import "go.uber.org/zap/internal/multierror"
+import "go.uber.org/zap/internal/buffers"
 
-// Tee creates a Facility that duplicates log entries into two or more
-// facilities; if you call it with less than two, you get back the one facility
-// you passed (or nil in the pathological case).
-func Tee(facs ...Facility) Facility {
-	switch len(facs) {
+// implement the standard lib's error interface on a private type so that we
+// can't forget to call Error.AsError().
+type errSlice []error
+
+func (es errSlice) Error() string {
+	b := buffers.Get()
+	for i, err := range es {
+		if i > 0 {
+			b = append(b, ';', ' ')
+		}
+		b = append(b, err.Error()...)
+	}
+	ret := string(b)
+	buffers.Put(b)
+	return ret
+}
+
+// Error wraps a []error to implement the error interface.
+type Error struct {
+	errs errSlice
+}
+
+// AsError converts the collection to a single error value.
+//
+// Note that failing to use AsError will almost certainly lead to bugs with
+// non-nil interfaces containing nil concrete values.
+func (e Error) AsError() error {
+	switch len(e.errs) {
 	case 0:
-		// TODO: return NullFacility?
 		return nil
 	case 1:
-		return facs[0]
+		return e.errs[0]
 	default:
-		return multiFacility(facs)
+		return e.errs
 	}
 }
 
-type multiFacility []Facility
-
-func (mf multiFacility) With(fields []Field) Facility {
-	clone := make(multiFacility, len(mf))
-	for i := range mf {
-		clone[i] = mf[i].With(fields)
+// Append adds an error to the collection. Adding a nil error is a no-op.
+func (e Error) Append(err error) Error {
+	if err == nil {
+		return e
 	}
-	return clone
-}
-
-func (mf multiFacility) Enabled(lvl Level) bool {
-	for i := range mf {
-		if mf[i].Enabled(lvl) {
-			return true
-		}
-	}
-	return false
-}
-
-func (mf multiFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
-	for i := range mf {
-		ce = mf[i].Check(ent, ce)
-	}
-	return ce
-}
-
-func (mf multiFacility) Write(ent Entry, fields []Field) error {
-	var errs multierror.Error
-	for i := range mf {
-		errs = errs.Append(mf[i].Write(ent, fields))
-	}
-	return errs.AsError()
+	e.errs = append(e.errs, err)
+	return e
 }

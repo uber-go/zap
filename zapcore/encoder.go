@@ -22,6 +22,32 @@ package zapcore
 
 import "io"
 
+// ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a
+// map- or struct-like object to the logging context. Like maps, ObjectEncoders
+// aren't safe for concurrent use (though typical use shouldn't require locks).
+type ObjectEncoder interface {
+	AddBool(key string, value bool)
+	AddFloat64(key string, value float64)
+	AddInt64(key string, value int64)
+	AddUint64(key string, value uint64)
+	AddObject(key string, marshaler ObjectMarshaler) error
+	AddArray(key string, marshaler ArrayMarshaler) error
+	// AddReflected uses reflection to serialize arbitrary objects, so it's slow
+	// and allocation-heavy.
+	AddReflected(key string, value interface{}) error
+	AddString(key, value string)
+}
+
+// ArrayEncoder is a strongly-typed, encoding-agnostic interface for adding
+// array-like objects to the logging context. Of note, it supports mixed-type
+// arrays even though they aren't typical in Go. Like slices, ArrayEncoders
+// aren't safe for concurrent use (though typical use shouldn't require locks).
+type ArrayEncoder interface {
+	AppendArray(ArrayMarshaler) error
+	AppendObject(ObjectMarshaler) error
+	AppendBool(bool)
+}
+
 // Encoder is a format-agnostic interface for all log entry marshalers. Since
 // log encoders don't need to support the same wide range of use cases as
 // general-purpose marshalers, it's possible to make them faster and

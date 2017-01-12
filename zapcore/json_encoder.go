@@ -90,7 +90,7 @@ func (enc *jsonEncoder) AddString(key, val string) {
 
 func (enc *jsonEncoder) AddBool(key string, val bool) {
 	enc.addKey(key)
-	enc.bytes = strconv.AppendBool(enc.bytes, val)
+	enc.AppendBool(val)
 }
 
 func (enc *jsonEncoder) AddInt64(key string, val int64) {
@@ -119,10 +119,12 @@ func (enc *jsonEncoder) AddFloat64(key string, val float64) {
 
 func (enc *jsonEncoder) AddObject(key string, obj ObjectMarshaler) error {
 	enc.addKey(key)
-	enc.bytes = append(enc.bytes, '{')
-	err := obj.MarshalLogObject(enc)
-	enc.bytes = append(enc.bytes, '}')
-	return err
+	return enc.AppendObject(obj)
+}
+
+func (enc *jsonEncoder) AddArray(key string, arr ArrayMarshaler) error {
+	enc.addKey(key)
+	return enc.AppendArray(arr)
 }
 
 func (enc *jsonEncoder) AddReflected(key string, obj interface{}) error {
@@ -133,6 +135,27 @@ func (enc *jsonEncoder) AddReflected(key string, obj interface{}) error {
 	enc.addKey(key)
 	enc.bytes = append(enc.bytes, marshaled...)
 	return nil
+}
+
+func (enc *jsonEncoder) AppendArray(arr ArrayMarshaler) error {
+	enc.separateElements()
+	enc.bytes = append(enc.bytes, '[')
+	err := arr.MarshalLogArray(enc)
+	enc.bytes = append(enc.bytes, ']')
+	return err
+}
+
+func (enc *jsonEncoder) AppendObject(obj ObjectMarshaler) error {
+	enc.separateElements()
+	enc.bytes = append(enc.bytes, '{')
+	err := obj.MarshalLogObject(enc)
+	enc.bytes = append(enc.bytes, '}')
+	return err
+}
+
+func (enc *jsonEncoder) AppendBool(val bool) {
+	enc.separateElements()
+	enc.bytes = strconv.AppendBool(enc.bytes, val)
 }
 
 func (enc *jsonEncoder) Clone() Encoder {
@@ -193,13 +216,23 @@ func (enc *jsonEncoder) free() {
 }
 
 func (enc *jsonEncoder) addKey(key string) {
-	last := len(enc.bytes) - 1
-	if last >= 0 && enc.bytes[last] != '{' {
-		enc.bytes = append(enc.bytes, ',')
-	}
+	enc.separateElements()
 	enc.bytes = append(enc.bytes, '"')
 	enc.safeAddString(key)
 	enc.bytes = append(enc.bytes, '"', ':')
+}
+
+func (enc *jsonEncoder) separateElements() {
+	last := len(enc.bytes) - 1
+	if last < 0 {
+		return
+	}
+	switch enc.bytes[last] {
+	case '{', '[', ':', ',':
+		return
+	default:
+		enc.bytes = append(enc.bytes, ',')
+	}
 }
 
 // safeAddString JSON-escapes a string and appends it to the internal buffer.

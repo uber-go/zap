@@ -25,30 +25,62 @@ package zapcore
 // helpful in tests.
 type MapObjectEncoder map[string]interface{}
 
-// AddBool adds the value under the specified key to the map.
+// AddBool implements ObjectEncoder.
 func (m MapObjectEncoder) AddBool(k string, v bool) { m[k] = v }
 
-// AddFloat64 adds the value under the specified key to the map.
+// AddFloat64 implements ObjectEncoder.
 func (m MapObjectEncoder) AddFloat64(k string, v float64) { m[k] = v }
 
-// AddInt64 adds the value under the specified key to the map.
+// AddInt64 implements ObjectEncoder.
 func (m MapObjectEncoder) AddInt64(k string, v int64) { m[k] = v }
 
-// AddUint64 adds the value under the specified key to the map.
+// AddUint64 implements ObjectEncoder.
 func (m MapObjectEncoder) AddUint64(k string, v uint64) { m[k] = v }
 
-// AddReflected adds the value under the specified key to the map.
+// AddReflected implements ObjectEncoder.
 func (m MapObjectEncoder) AddReflected(k string, v interface{}) error {
 	m[k] = v
 	return nil
 }
 
-// AddString adds the value under the specified key to the map.
+// AddString implements ObjectEncoder.
 func (m MapObjectEncoder) AddString(k string, v string) { m[k] = v }
 
-// AddObject adds the value under the specified key to the map.
+// AddObject implements ObjectEncoder.
 func (m MapObjectEncoder) AddObject(k string, v ObjectMarshaler) error {
 	newMap := make(MapObjectEncoder)
 	m[k] = newMap
 	return v.MarshalLogObject(newMap)
+}
+
+// AddArray implements ObjectEncoder.
+func (m MapObjectEncoder) AddArray(key string, v ArrayMarshaler) error {
+	arr := &sliceArrayEncoder{}
+	err := v.MarshalLogArray(arr)
+	m[key] = arr.elems
+	return err
+}
+
+// sliceArrayEncoder is an ArrayEncoder backed by a simple []interface{}. Like
+// the MapObjectEncoder, it's not designed for production use.
+type sliceArrayEncoder struct {
+	elems []interface{}
+}
+
+func (s *sliceArrayEncoder) AppendArray(v ArrayMarshaler) error {
+	enc := &sliceArrayEncoder{}
+	err := v.MarshalLogArray(enc)
+	s.elems = append(s.elems, enc.elems)
+	return err
+}
+
+func (s *sliceArrayEncoder) AppendObject(v ObjectMarshaler) error {
+	m := make(MapObjectEncoder)
+	err := v.MarshalLogObject(m)
+	s.elems = append(s.elems, m)
+	return err
+}
+
+func (s *sliceArrayEncoder) AppendBool(v bool) {
+	s.elems = append(s.elems, v)
 }
