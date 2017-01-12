@@ -22,9 +22,10 @@ package zapcore
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"testing"
 	"time"
+
+	"github.com/uber-go/zap/internal/buffers"
 )
 
 func testJSONConfig() JSONConfig {
@@ -53,7 +54,6 @@ func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
 			enc.AddInt64("i", int64(i))
 			return nil
 		}))
-		enc.free()
 	}
 }
 
@@ -71,11 +71,11 @@ func BenchmarkZapJSON(b *testing.B) {
 			enc.AddString("string3", "🤔")
 			enc.AddString("string4", "🙊")
 			enc.AddBool("bool", true)
-			enc.WriteEntry(ioutil.Discard, Entry{
+			buf, _ := enc.EncodeEntry(Entry{
 				Message: "fake",
 				Level:   DebugLevel,
 			}, nil)
-			enc.free()
+			buffers.Put(buf)
 		}
 	})
 }

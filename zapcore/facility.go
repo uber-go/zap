@@ -21,8 +21,12 @@
 package zapcore
 
 import (
+	"fmt"
+	"io"
 	"sync"
 	"time"
+
+	"github.com/uber-go/zap/internal/buffers"
 
 	"go.uber.org/atomic"
 )
@@ -67,7 +71,13 @@ func (iof *ioFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 }
 
 func (iof *ioFacility) Write(ent Entry, fields []Field) error {
-	if err := iof.enc.WriteEntry(iof.out, ent, fields); err != nil {
+	buf, err := iof.enc.EncodeEntry(ent, fields)
+	if err != nil {
+		return err
+	}
+	err = checkPartialWrite(iof.out, buf)
+	buffers.Put(buf)
+	if err != nil {
 		return err
 	}
 	if ent.Level > ErrorLevel {
@@ -266,4 +276,17 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 		}
 	}
 	return s.Facility.Check(ent, ce)
+}
+
+// checkPartialWrite writes to an io.Writer, and upgrades partial writes to an
+// error if no other write error occured.
+func checkPartialWrite(w io.Writer, buf []byte) error {
+	n, err := w.Write(buf)
+	if err != nil {
+		return err
+	}
+	if n != len(buf) {
+		return fmt.Errorf("incomplete write: only wrote %v of %v bytes", n, len(buf))
+	}
+	return nil
 }

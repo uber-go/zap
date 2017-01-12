@@ -113,7 +113,7 @@ func TestWriterFacilitySyncsOutput(t *testing.T) {
 	}
 }
 
-func TestWriterFacilityWriteEntryFailure(t *testing.T) {
+func TestWriterFacilityWriteFailure(t *testing.T) {
 	fac := WriterFacility(
 		NewJSONEncoder(testJSONConfig()),
 		Lock(AddSync(&testutils.FailWriter{})),
