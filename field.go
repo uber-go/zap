@@ -141,9 +141,8 @@ func Object(key string, val zapcore.ObjectMarshaler) zapcore.Field {
 }
 
 // Array constructs a field with the given key and ArrayMarshaler. It provides
-// a flexible, but still type-safe and efficient, way to add array-like
-// user-defined types to the logging context. The struct's MarshalLogArray
-// method is called lazily.
+// a flexible, but still type-safe and efficient, way to add array-like types
+// to the logging context. The struct's MarshalLogArray method is called lazily.
 func Array(key string, val zapcore.ArrayMarshaler) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.ArrayMarshalerType, Interface: val}
 }

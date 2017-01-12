@@ -23,7 +23,7 @@ package zapcore
 import "io"
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a
-// map[string]interface{} to the logging context. Like maps, ObjectEncoders
+// map- or struct-like object to the logging context. Like maps, ObjectEncoders
 // aren't safe for concurrent use (though typical use shouldn't require locks).
 type ObjectEncoder interface {
 	AddBool(key string, value bool)
@@ -38,9 +38,10 @@ type ObjectEncoder interface {
 	AddString(key, value string)
 }
 
-// ArrayEncoder is a strongly-typed, encoding-agnostic interface for adding a
-// []interface{} to the logging context. Like slices, ArrayEncoders aren't safe
-// for concurrent use (though typical use shouldn't require locks).
+// ArrayEncoder is a strongly-typed, encoding-agnostic interface for adding
+// array-like objects to the logging context. Of note, it supports mixed-type
+// arrays even though they aren't typical in Go. Like slices, ArrayEncoders
+// aren't safe for concurrent use (though typical use shouldn't require locks).
 type ArrayEncoder interface {
 	AppendArray(ArrayMarshaler) error
 	AppendObject(ObjectMarshaler) error
