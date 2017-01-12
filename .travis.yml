@@ -17,5 +17,6 @@ install:
 script:
   - make lint
   - make test
+  - make bench
 after_success:
   - make coveralls
