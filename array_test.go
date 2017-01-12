@@ -18,47 +18,50 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package zap
 
 import (
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zapcore"
 )
 
-func TestMapEncoderAdd(t *testing.T) {
-	arbitraryObj := map[string]interface{}{
-		"foo": "bar",
-		"baz": 5,
+func BenchmarkBoolsArrayMarshaler(b *testing.B) {
+	// Keep this benchmark here to capture the overhead of the ArrayMarshaler
+	// wrapper.
+	bs := make([]bool, 50)
+	enc := zapcore.NewJSONEncoder(zapcore.JSONConfig{})
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Bools("array", bs).AddTo(enc.Clone())
 	}
-
-	enc := make(MapObjectEncoder)
-	enc.AddBool("b", true)
-	enc.AddFloat64("f64", 1.56)
-	enc.AddInt64("i64", math.MaxInt64)
-	enc.AddUint64("uint64", 42)
-	enc.AddString("s", "string")
-
-	assert.NoError(t, enc.AddReflected("reflect", arbitraryObj), "Expected AddReflected to succeed.")
-	assert.NoError(t, enc.AddObject("object", loggable{true}), "Expected AddObject to succeed.")
-
-	want := MapObjectEncoder{
-		"b":       true,
-		"f64":     1.56,
-		"i64":     int64(math.MaxInt64),
-		"uint64":  uint64(42),
-		"s":       "string",
-		"reflect": arbitraryObj,
-		"object": MapObjectEncoder{
-			"loggable": "yes",
-		},
-	}
-	assert.Equal(t, want, enc, "Encoder's final state is unexpected.")
 }
 
-func TestKeyValueMapAddFails(t *testing.T) {
-	enc := make(MapObjectEncoder)
-	assert.Error(t, enc.AddObject("object", loggable{false}), "Expected AddObject to fail.")
-	assert.Equal(t, MapObjectEncoder{"object": MapObjectEncoder{}}, enc, "Expected encoder to use empty values on errors.")
+func BenchmarkBoolsReflect(b *testing.B) {
+	bs := make([]bool, 50)
+	enc := zapcore.NewJSONEncoder(zapcore.JSONConfig{})
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Reflect("array", bs).AddTo(enc.Clone())
+	}
+}
+
+func TestArrayWrappers(t *testing.T) {
+	tests := []struct {
+		desc     string
+		field    zapcore.Field
+		expected []interface{}
+	}{
+		{"empty bools", Bools("", []bool{}), []interface{}(nil)},
+		{"bools", Bools("", []bool{true, false}), []interface{}{true, false}},
+	}
+
+	for _, tt := range tests {
+		enc := make(zapcore.MapObjectEncoder)
+		tt.field.Key = "k"
+		tt.field.AddTo(enc)
+		assert.Equal(t, tt.expected, enc["k"], "%s: unexpected map contents.", tt.desc)
+		assert.Equal(t, 1, len(enc), "%s: found extra keys in map: %v", tt.desc, enc)
+	}
 }

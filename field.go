@@ -133,9 +133,9 @@ func Duration(key string, val time.Duration) zapcore.Field {
 }
 
 // Object constructs a field with the given key and ObjectMarshaler. It
-// provides a flexible, but still type-safe and efficient, way to add
-// user-defined types to the logging context. The struct's MarshalLogObject
-// method is called lazily.
+// provides a flexible, but still type-safe and efficient, way to add map- or
+// struct-like user-defined types to the logging context. The struct's
+// MarshalLogObject method is called lazily.
 func Object(key string, val zapcore.ObjectMarshaler) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.ObjectMarshalerType, Interface: val}
 }

@@ -18,19 +18,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package zap
 
-// ObjectEncoder is an encoding-agnostic interface to add structured data to the
-// logging context. Like maps, ObjectEncoders aren't safe for concurrent use
-// (though typical use shouldn't require locks).
-type ObjectEncoder interface {
-	AddBool(key string, value bool)
-	AddFloat64(key string, value float64)
-	AddInt64(key string, value int64)
-	AddUint64(key string, value uint64)
-	AddObject(key string, marshaler ObjectMarshaler) error
-	// AddReflected uses reflection to serialize arbitrary objects, so it's slow
-	// and allocation-heavy.
-	AddReflected(key string, value interface{}) error
-	AddString(key, value string)
+import "go.uber.org/zap/zapcore"
+
+// Array constructs a field with the given key and ArrayMarshaler. It provides
+// a flexible, but still type-safe and efficient, way to add array-like types
+// to the logging context. The struct's MarshalLogArray method is called lazily.
+func Array(key string, val zapcore.ArrayMarshaler) zapcore.Field {
+	return zapcore.Field{Key: key, Type: zapcore.ArrayMarshalerType, Interface: val}
+}
+
+// Bools constructs a field that carries a slice of bools.
+func Bools(key string, bs []bool) zapcore.Field {
+	return Array(key, bools(bs))
+}
+
+type bools []bool
+
+func (bs bools) MarshalLogArray(arr zapcore.ArrayEncoder) error {
+	for i := range bs {
+		arr.AppendBool(bs[i])
+	}
+	return nil
 }

@@ -44,6 +44,8 @@ const (
 	StringType
 	// ObjectMarshalerType indicates that the field carries an ObjectMarshaler.
 	ObjectMarshalerType
+	// ArrayMarshalerType indicates that the field carries an ArrayMarshaler.
+	ArrayMarshalerType
 	// ReflectType indicates that the field carries an interface{}, which should
 	// be serialized using reflection.
 	ReflectType
@@ -86,6 +88,8 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		enc.AddString(f.Key, f.Interface.(fmt.Stringer).String())
 	case ObjectMarshalerType:
 		err = enc.AddObject(f.Key, f.Interface.(ObjectMarshaler))
+	case ArrayMarshalerType:
+		err = enc.AddArray(f.Key, f.Interface.(ArrayMarshaler))
 	case ReflectType:
 		err = enc.AddReflected(f.Key, f.Interface)
 	case ErrorType:
