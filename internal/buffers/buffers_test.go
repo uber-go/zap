@@ -20,11 +20,17 @@
 
 package buffers
 
-import "testing"
-import "github.com/stretchr/testify/assert"
+import (
+	"sync"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestBuffers(t *testing.T) {
+	var wg sync.WaitGroup
 	for g := 0; g < 10; g++ {
+		wg.Add(1)
 		go func() {
 			for i := 0; i < 100; i++ {
 				buf := Get()
@@ -32,6 +38,8 @@ func TestBuffers(t *testing.T) {
 				assert.NotZero(t, cap(buf), "Expected non-zero capacity")
 				Put(buf)
 			}
+			wg.Done()
 		}()
 	}
+	wg.Wait()
 }
