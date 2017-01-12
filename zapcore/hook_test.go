@@ -42,9 +42,9 @@ func TestHooks(t *testing.T) {
 		intField := makeInt64Field("foo", 42)
 		ent := Entry{Message: "bar", Level: tt.entryLevel}
 
-		var called bool
+		var called int
 		f := func(e Entry) error {
-			called = true
+			called++
 			assert.Equal(t, ent, e, "Hook called with unexpected Entry.")
 			return nil
 		}
@@ -55,7 +55,7 @@ func TestHooks(t *testing.T) {
 		}
 
 		if tt.expectCall {
-			assert.True(t, called, "Expected to call hook.")
+			assert.Equal(t, 1, called, "Expected to call hook once.")
 			assert.Equal(
 				t,
 				[]ObservedLog{{Entry: ent, Context: []Field{intField}}},
@@ -63,7 +63,7 @@ func TestHooks(t *testing.T) {
 				"Unexpected logs written out.",
 			)
 		} else {
-			assert.False(t, called, "Didn't expect to call hook.")
+			assert.Equal(t, 0, called, "Didn't expect to call hook.")
 			assert.Equal(t, 0, logs.Len(), "Unexpected logs written out.")
 		}
 	}

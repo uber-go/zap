@@ -30,9 +30,10 @@ type hooked struct {
 // Hooked wraps a facility and runs a collection of user-defined callback hooks
 // each time a message is logged.
 func Hooked(fac Facility, hooks ...func(Entry) error) Facility {
+	funcs := append([]func(Entry) error{}, hooks...)
 	return &hooked{
 		Facility: fac,
-		funcs:    hooks,
+		funcs:    funcs,
 	}
 }
 
@@ -52,8 +53,8 @@ func (h *hooked) With(fields []Field) Facility {
 
 func (h *hooked) Write(ent Entry, _ []Field) error {
 	var errs multierror.Error
-	for _, f := range h.funcs {
-		errs = errs.Append(f(ent))
+	for i := range h.funcs {
+		errs = errs.Append(h.funcs[i](ent))
 	}
 	return errs.AsError()
 }
