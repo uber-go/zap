@@ -98,7 +98,7 @@ func MultiWriteSyncer(ws ...WriteSyncer) WriteSyncer {
 // the smallest number is returned even though Write() is called on
 // all of them.
 func (ws multiWriteSyncer) Write(p []byte) (int, error) {
-	var errs *multierror.Error
+	var errs multierror.Error
 	nWritten := 0
 	for _, w := range ws {
 		n, err := w.Write(p)
@@ -113,7 +113,7 @@ func (ws multiWriteSyncer) Write(p []byte) (int, error) {
 }
 
 func (ws multiWriteSyncer) Sync() error {
-	var errs *multierror.Error
+	var errs multierror.Error
 	for _, w := range ws {
 		errs = errs.Append(w.Sync())
 	}

@@ -22,7 +22,7 @@
 // a single error.
 package multierror
 
-import "go.uber.org/zap/buffers"
+import "go.uber.org/zap/internal/buffers"
 
 // implement the standard lib's error interface on a private type so that we
 // can't forget to call Error.AsError().
@@ -50,10 +50,7 @@ type Error struct {
 //
 // Note that failing to use AsError will almost certainly lead to bugs with
 // non-nil interfaces containing nil concrete values.
-func (e *Error) AsError() error {
-	if e == nil {
-		return nil
-	}
+func (e Error) AsError() error {
 	switch len(e.errs) {
 	case 0:
 		return nil
@@ -65,12 +62,9 @@ func (e *Error) AsError() error {
 }
 
 // Append adds an error to the collection. Adding a nil error is a no-op.
-func (e *Error) Append(err error) *Error {
+func (e Error) Append(err error) Error {
 	if err == nil {
 		return e
-	}
-	if e == nil {
-		e = &Error{}
 	}
 	e.errs = append(e.errs, err)
 	return e

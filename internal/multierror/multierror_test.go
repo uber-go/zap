@@ -43,27 +43,32 @@ func TestErrorSliceString(t *testing.T) {
 	}
 }
 
+func TestMultiErrorIsntAnError(t *testing.T) {
+	// Ensure that Error doesn't satisfy the standard lib's error interface, so
+	// that we're forced to always call AsError.
+	var errs interface{} = Error{}
+	_, ok := errs.(error)
+	assert.False(t, ok, "Error unexpectedly satisfies standard lib's error interface.")
+}
+
 func TestMultiErrorAsError(t *testing.T) {
-	assert.Nil(t, (*Error)(nil).AsError(), "Expected calling AsError on nil to return nil.")
-	assert.Nil(t, (&Error{}).AsError(), "Expected calling AsError with no accumulated errors to return nil.")
+	assert.Nil(t, (Error{}).AsError(), "Expected calling AsError with no accumulated errors to return nil.")
 
 	e := errors.New("foo")
 	assert.Equal(
 		t,
 		e,
-		(&Error{errSlice{e}}).AsError(),
+		(Error{errSlice{e}}).AsError(),
 		"Expected AsError with single error to return the original error.",
 	)
 
-	m := &Error{errSlice{errors.New("foo"), errors.New("bar")}}
+	m := Error{errSlice{errors.New("foo"), errors.New("bar")}}
 	assert.Equal(t, m.errs, m.AsError(), "Unexpected AsError output with multiple errors.")
 }
 
 func TestErrorAppend(t *testing.T) {
 	foo := errors.New("foo")
 	bar := errors.New("bar")
-	for _, base := range []*Error{nil, {}} {
-		base = base.Append(nil).Append(foo).Append(nil).Append(bar)
-		assert.Equal(t, errSlice{foo, bar}, base.errs, "Collected errors don't match expectations.")
-	}
+	multi := (Error{}).Append(nil).Append(foo).Append(nil).Append(bar)
+	assert.Equal(t, errSlice{foo, bar}, multi.errs, "Collected errors don't match expectations.")
 }

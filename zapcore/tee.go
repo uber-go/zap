@@ -64,7 +64,7 @@ func (mf multiFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 }
 
 func (mf multiFacility) Write(ent Entry, fields []Field) error {
-	var errs *multierror.Error
+	var errs multierror.Error
 	for i := range mf {
 		errs = errs.Append(mf[i].Write(ent, fields))
 	}

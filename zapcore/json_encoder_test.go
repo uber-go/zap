@@ -55,7 +55,7 @@ func (t turducken) MarshalLogObject(enc ObjectEncoder) error {
 type turduckens int
 
 func (t turduckens) MarshalLogArray(enc ArrayEncoder) error {
-	var errs *multierror.Error
+	var errs multierror.Error
 	tur := turducken{}
 	for i := 0; i < int(t); i++ {
 		errs = errs.Append(enc.AppendObject(tur))

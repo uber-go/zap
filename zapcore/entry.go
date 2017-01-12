@@ -162,7 +162,7 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 	}
 	ce.dirty = true
 
-	var errs *multierror.Error
+	var errs multierror.Error
 	for i := range ce.facs {
 		errs = errs.Append(ce.facs[i].Write(ce.Entry, fields))
 	}

@@ -20,56 +20,18 @@
 
 package zap
 
-import (
-	"go.uber.org/zap/internal/multierror"
-	"go.uber.org/zap/zapcore"
-)
+import "go.uber.org/zap/zapcore"
 
-// TODO: actually add an example showing off how to use these wrappers with the
-// Array field constructor.
-
-// Arrays wraps a slice of ArrayMarshalers so that it satisfies the
-// ArrayMarshaler interface. See the Array function for a usage example.
-func Arrays(as []zapcore.ArrayMarshaler) zapcore.ArrayMarshaler {
-	return arrayMarshalers(as)
+// Array constructs a field with the given key and ArrayMarshaler. It provides
+// a flexible, but still type-safe and efficient, way to add array-like types
+// to the logging context. The struct's MarshalLogArray method is called lazily.
+func Array(key string, val zapcore.ArrayMarshaler) zapcore.Field {
+	return zapcore.Field{Key: key, Type: zapcore.ArrayMarshalerType, Interface: val}
 }
 
-// Objects wraps a slice of ObjectMarshalers so that it satisfies the
-// ArrayMarshaler interface. See the Array function for a usage example.
-func Objects(os []zapcore.ObjectMarshaler) zapcore.ArrayMarshaler {
-	return objectMarshalers(os)
-}
-
-// Bools wraps a slice of bools so that it satisfies the ArrayMarshaler
-// interface. See the Array function for a usage example.
-func Bools(bs []bool) zapcore.ArrayMarshaler {
-	return bools(bs)
-}
-
-type arrayMarshalers []zapcore.ArrayMarshaler
-
-func (as arrayMarshalers) MarshalLogArray(arr zapcore.ArrayEncoder) error {
-	var errs *multierror.Error
-	for i := range as {
-		if as[i] == nil {
-			continue
-		}
-		errs = errs.Append(arr.AppendArray(as[i]))
-	}
-	return errs.AsError()
-}
-
-type objectMarshalers []zapcore.ObjectMarshaler
-
-func (os objectMarshalers) MarshalLogArray(arr zapcore.ArrayEncoder) error {
-	var errs *multierror.Error
-	for i := range os {
-		if os[i] == nil {
-			continue
-		}
-		errs = errs.Append(arr.AppendObject(os[i]))
-	}
-	return errs.AsError()
+// Bools constructs a field that carries a slice of bools.
+func Bools(key string, bs []bool) zapcore.Field {
+	return Array(key, bools(bs))
 }
 
 type bools []bool
