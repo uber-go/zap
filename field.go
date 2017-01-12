@@ -26,7 +26,7 @@ import (
 	"math"
 	"time"
 
-	"go.uber.org/zap/buffers"
+	"go.uber.org/zap/internal/buffers"
 	"go.uber.org/zap/zapcore"
 )
 
