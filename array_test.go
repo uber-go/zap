@@ -28,6 +28,26 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+func BenchmarkBoolsArrayMarshaler(b *testing.B) {
+	// Keep this benchmark here to capture the overhead of the ArrayMarshaler
+	// wrapper.
+	bs := make([]bool, 50)
+	enc := zapcore.NewJSONEncoder(zapcore.JSONConfig{})
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Array("array", Bools(bs)).AddTo(enc.Clone())
+	}
+}
+
+func BenchmarkBoolsReflect(b *testing.B) {
+	bs := make([]bool, 50)
+	enc := zapcore.NewJSONEncoder(zapcore.JSONConfig{})
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Reflect("array", bs).AddTo(enc.Clone())
+	}
+}
+
 func TestArrayWrappers(t *testing.T) {
 	tests := []struct {
 		desc     string
