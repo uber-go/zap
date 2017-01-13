@@ -30,8 +30,9 @@ import (
 	"testing"
 	"testing/quick"
 
+	"go.uber.org/zap/internal/multierror"
+
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/zap/internal/multierror"
 )
 
 func TestJSONClone(t *testing.T) {
