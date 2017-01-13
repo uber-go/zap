@@ -201,7 +201,7 @@ func Any(key string, value interface{}) zapcore.Field {
 	case time.Duration:
 		return Duration(key, val)
 	case fmt.Stringer:
-		return String(key, val.String())
+		return Stringer(key, val)
 	default:
 		return Reflect(key, val)
 	}
