@@ -23,7 +23,6 @@ package zapcore
 import (
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"runtime"
 	"testing"
@@ -32,7 +31,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.uber.org/zap/internal/multierror"
-	"go.uber.org/zap/testutils"
 )
 
 var epoch = time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
@@ -72,9 +70,7 @@ func assertJSON(t *testing.T, expected string, enc *jsonEncoder) {
 }
 
 func withJSONEncoder(f func(*jsonEncoder)) {
-	enc := newJSONEncoder(testJSONConfig())
-	f(enc)
-	enc.free()
+	f(newJSONEncoder(testJSONConfig()))
 }
 
 type noJSON struct{}
@@ -250,75 +246,63 @@ func TestJSONEncoderArrayTypes(t *testing.T) {
 	}
 }
 
-func TestJSONWriteEntry(t *testing.T) {
+func TestJSONEncodeEntry(t *testing.T) {
 	epoch := time.Unix(0, 0)
 	withJSONEncoder(func(enc *jsonEncoder) {
-		// If we somehow have a nil sink, we should return an error instead of
-		// panicing.
-		assert.Equal(t, errNilSink, enc.WriteEntry(nil, Entry{
-			Level:   InfoLevel,
-			Message: `hello\`,
-			Time:    epoch,
-		}, nil), "Expected an error writing to a nil sink.")
-
 		// Messages should be escaped.
-		sink := &testutils.Buffer{}
 		enc.AddString("foo", "bar")
-		err := enc.WriteEntry(sink, Entry{
+		buf, err := enc.EncodeEntry(Entry{
 			Level:   InfoLevel,
 			Message: `hello\`,
 			Time:    epoch,
 		}, nil)
-		assert.NoError(t, err, "WriteEntry returned an unexpected error.")
+		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
 		assert.Equal(
 			t,
-			`{"level":"info","ts":0,"msg":"hello\\","foo":"bar"}`,
-			sink.Stripped(),
+			`{"level":"info","ts":0,"msg":"hello\\","foo":"bar"}`+"\n",
+			string(buf),
 		)
 
 		// We should be able to re-use the encoder, preserving the accumulated
 		// fields.
-		sink.Reset()
-		err = enc.WriteEntry(sink, Entry{
+		buf, err = enc.EncodeEntry(Entry{
 			Level:   InfoLevel,
 			Message: `hello`,
 			Time:    time.Unix(0, 100*int64(time.Millisecond)),
 		}, nil)
-		assert.NoError(t, err, "WriteEntry returned an unexpected error.")
+		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
 		assert.Equal(
 			t,
-			`{"level":"info","ts":100,"msg":"hello","foo":"bar"}`,
-			sink.Stripped(),
+			`{"level":"info","ts":100,"msg":"hello","foo":"bar"}`+"\n",
+			string(buf),
 		)
 
 		// Stacktraces are included.
-		sink.Reset()
-		err = enc.WriteEntry(sink, Entry{
+		buf, err = enc.EncodeEntry(Entry{
 			Level:   InfoLevel,
 			Message: `hello`,
 			Time:    time.Unix(0, 100*int64(time.Millisecond)),
 			Stack:   "trace",
 		}, nil)
-		assert.NoError(t, err, "WriteEntry returned an unexpected error.")
+		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
 		assert.Equal(
 			t,
-			`{"level":"info","ts":100,"msg":"hello","foo":"bar","stacktrace":"trace"}`,
-			sink.Stripped(),
+			`{"level":"info","ts":100,"msg":"hello","foo":"bar","stacktrace":"trace"}`+"\n",
+			string(buf),
 		)
 
 		// Caller is included.
-		sink.Reset()
-		err = enc.WriteEntry(sink, Entry{
+		buf, err = enc.EncodeEntry(Entry{
 			Level:   InfoLevel,
 			Message: `hello`,
 			Time:    time.Unix(0, 100*int64(time.Millisecond)),
 			Caller:  MakeEntryCaller(runtime.Caller(0)),
 		}, nil)
-		assert.NoError(t, err, "WriteEntry returned an unexpected error.")
+		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
 		assert.Regexp(
 			t,
-			`{"level":"info","ts":100,"caller":"/.*zap/zapcore/json_encoder_test.go:\d+","msg":"hello","foo":"bar"}`,
-			sink.Stripped(),
+			`{"level":"info","ts":100,"caller":"/.*zap/zapcore/json_encoder_test.go:\d+","msg":"hello","foo":"bar"}`+"\n",
+			string(buf),
 		)
 	})
 }
@@ -338,26 +322,6 @@ func TestJSONClone(t *testing.T) {
 
 	assertJSON(t, `"foo":"bar"`, parent)
 	assertJSON(t, `"baz":"bing"`, clone.(*jsonEncoder))
-}
-
-func TestJSONWriteEntryFailure(t *testing.T) {
-	withJSONEncoder(func(enc *jsonEncoder) {
-		tests := []struct {
-			sink io.Writer
-			msg  string
-		}{
-			{&testutils.FailWriter{}, "Expected an error when writing to sink fails."},
-			{&testutils.ShortWriter{}, "Expected an error on partial writes to sink."},
-		}
-		for _, tt := range tests {
-			err := enc.WriteEntry(tt.sink, Entry{
-				Message: "hello",
-				Level:   InfoLevel,
-				Time:    time.Unix(0, 0),
-			}, nil)
-			assert.Error(t, err, tt.msg)
-		}
-	})
 }
 
 func TestJSONEscaping(t *testing.T) {

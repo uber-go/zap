@@ -20,8 +20,6 @@
 
 package zapcore
 
-import "io"
-
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a
 // map- or struct-like object to the logging context. Like maps, ObjectEncoders
 // aren't safe for concurrent use (though typical use shouldn't require locks).
@@ -54,7 +52,7 @@ type ArrayEncoder interface {
 // lower-allocation.
 //
 // Implementations of the ObjectEncoder interface's methods can, of course,
-// freely modify the receiver. However, the Clone and WriteEntry methods will
+// freely modify the receiver. However, the Clone and EncodeEntry methods will
 // be called concurrently and shouldn't modify the receiver.
 type Encoder interface {
 	ObjectEncoder
@@ -62,7 +60,8 @@ type Encoder interface {
 	// Clone copies the encoder, ensuring that adding fields to the copy doesn't
 	// affect the original.
 	Clone() Encoder
-	// Write a log entry and fields to the supplied writer, along with any
-	// accumulated context.
-	WriteEntry(io.Writer, Entry, []Field) error
+
+	// EncodeEntry encodes an entry and fields, along with any accumulated
+	// context, into a byte buffer and returns it.
+	EncodeEntry(Entry, []Field) ([]byte, error)
 }

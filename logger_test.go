@@ -247,7 +247,7 @@ func TestLoggerNoOpsDisabledLevels(t *testing.T) {
 	})
 }
 
-func TestLoggerWriteEntryFailure(t *testing.T) {
+func TestLoggerWriteFailure(t *testing.T) {
 	errSink := &testutils.Buffer{}
 	logger := New(
 		zapcore.WriterFacility(
