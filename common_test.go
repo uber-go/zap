@@ -24,6 +24,7 @@ import (
 	"sync"
 	"testing"
 
+	"go.uber.org/zap/internal/observer"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -33,10 +34,11 @@ func opts(opts ...Option) []Option {
 
 // Here specifically to introduce an easily-identifiable filename for testing
 // stacktraces and caller skips.
-func withLogger(t testing.TB, e zapcore.LevelEnabler, opts []Option, f func(Logger, *zapcore.ObservedLogs)) {
-	fac, logs := zapcore.NewObserver(e, 1024)
+func withLogger(t testing.TB, e zapcore.LevelEnabler, opts []Option, f func(Logger, *observer.ObservedLogs)) {
+	var logs observer.ObservedLogs
+	fac := observer.New(e, logs.Add, true)
 	log := New(fac, opts...)
-	f(log, logs)
+	f(log, &logs)
 }
 
 func runConcurrently(goroutines, iterations int, wg *sync.WaitGroup, f func()) {

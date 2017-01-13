@@ -18,17 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package zapcore_test
 
 import (
 	"testing"
+
+	"go.uber.org/zap/internal/observer"
+	. "go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTeeLogsBoth(t *testing.T) {
-	fac1, logs1 := NewObserver(DebugLevel, 10)
-	fac2, logs2 := NewObserver(WarnLevel, 10)
+	var logs1, logs2 observer.ObservedLogs
+	fac1 := observer.New(DebugLevel, logs1.Add, true)
+	fac2 := observer.New(WarnLevel, logs2.Add, true)
 	tee := Tee(fac1, fac2)
 
 	debugEntry := Entry{Level: DebugLevel, Message: "log-at-debug"}
@@ -41,14 +45,14 @@ func TestTeeLogsBoth(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, []ObservedLog{
+	assert.Equal(t, []observer.LoggedEntry{
 		{Entry: debugEntry, Context: []Field{}},
 		{Entry: infoEntry, Context: []Field{}},
 		{Entry: warnEntry, Context: []Field{}},
 		{Entry: errorEntry, Context: []Field{}},
 	}, logs1.All())
 
-	assert.Equal(t, []ObservedLog{
+	assert.Equal(t, []observer.LoggedEntry{
 		{Entry: warnEntry, Context: []Field{}},
 		{Entry: errorEntry, Context: []Field{}},
 	}, logs2.All())

@@ -18,12 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package zapcore_test
 
 import (
 	"testing"
 
 	"go.uber.org/zap/testutils"
+	. "go.uber.org/zap/zapcore"
 )
 
 func withBenchedTee(b *testing.B, f func(Facility)) {
