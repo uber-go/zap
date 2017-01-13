@@ -27,61 +27,89 @@ import (
 	"go.uber.org/atomic"
 )
 
+// EntryWriter is a destination for log entttries.  It can have pervasive
+// fields added with With().
+type EntryWriter interface {
+	Write(Entry, []Field) error
+	With([]Field) EntryWriter
+}
+
 // Facility is a destination for log entries. It can have pervasive fields
-// added with With().
+// added with With(). Most concrete destinations should implement EntryWriter
+// and use EntryWriterFacility.
 type Facility interface {
 	LevelEnabler
 
+	// Spiritually this embeds EntryWriter with a promoted With return type.
 	With([]Field) Facility
-	Check(Entry, *CheckedEntry) *CheckedEntry
 	Write(Entry, []Field) error
+
+	Check(Entry, *CheckedEntry) *CheckedEntry
+}
+
+type writerFacility struct {
+	LevelEnabler
+	EntryWriter
+}
+
+// EntryWriterFacility creates a facility by combining a destination
+// EntryWriter and a LevelEnabler.
+func EntryWriterFacility(enab LevelEnabler, ew EntryWriter) Facility {
+	return &writerFacility{
+		LevelEnabler: enab,
+		EntryWriter:  ew,
+	}
+}
+
+func (wf *writerFacility) With(fields []Field) Facility {
+	return &writerFacility{
+		LevelEnabler: wf.LevelEnabler,
+		EntryWriter:  wf.EntryWriter.With(fields),
+	}
+}
+
+func (wf *writerFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
+	if wf.Enabled(ent.Level) {
+		return ce.AddFacility(ent, wf)
+	}
+	return ce
 }
 
 // WriterFacility creates a facility that writes logs to a WriteSyncer. By
 // default, if w is nil, os.Stdout is used.
 func WriterFacility(enc Encoder, ws WriteSyncer, enab LevelEnabler) Facility {
-	return &ioFacility{
-		LevelEnabler: enab,
-		enc:          enc,
-		out:          Lock(ws),
-	}
+	return EntryWriterFacility(enab, &ioEntryWriter{
+		enc: enc,
+		out: Lock(ws),
+	})
 }
 
-type ioFacility struct {
-	LevelEnabler
+type ioEntryWriter struct {
 	enc Encoder
 	out WriteSyncer
 }
 
-func (iof *ioFacility) With(fields []Field) Facility {
-	clone := iof.clone()
+func (ew *ioEntryWriter) With(fields []Field) EntryWriter {
+	clone := ew.clone()
 	addFields(clone.enc, fields)
 	return clone
 }
 
-func (iof *ioFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
-	if iof.Enabled(ent.Level) {
-		return ce.AddFacility(ent, iof)
-	}
-	return ce
-}
-
-func (iof *ioFacility) Write(ent Entry, fields []Field) error {
-	if err := iof.enc.WriteEntry(iof.out, ent, fields); err != nil {
+func (ew *ioEntryWriter) Write(ent Entry, fields []Field) error {
+	if err := ew.enc.WriteEntry(ew.out, ent, fields); err != nil {
 		return err
 	}
 	if ent.Level > ErrorLevel {
 		// Since we may be crashing the program, sync the output.
-		return iof.out.Sync()
+		return ew.out.Sync()
 	}
 	return nil
 }
 
-func (iof *ioFacility) clone() *ioFacility {
-	return &ioFacility{
-		LevelEnabler: iof.LevelEnabler,
-		enc:          iof.enc.Clone(),
-		out:          iof.out,
+func (ew *ioEntryWriter) clone() *ioEntryWriter {
+	return &ioEntryWriter{
+		enc: ew.enc.Clone(),
+		out: ew.out,
 	}
 }
 
@@ -150,45 +178,33 @@ func (o *ObservedLogs) AllUntimed() []ObservedLog {
 	return ret
 }
 
-type observerFacility struct {
-	LevelEnabler
+type observerEntryWriter struct {
 	sink    *ObservedLogs
 	context []Field
 }
 
-// NewObserver creates a new facility that buffers logs in memory (without any
-// encoding). It's particularly useful in tests, though it can serve a variety
-// of other purposes as well. This constructor returns the facility itself and
-// a function to retrieve the observed logs.
-func NewObserver(enab LevelEnabler, cap int) (Facility, *ObservedLogs) {
-	fac := &observerFacility{
-		LevelEnabler: enab,
-		sink:         &ObservedLogs{cap: cap, logs: make([]ObservedLog, 0, cap)},
-	}
-	return fac, fac.sink
+// NewObserver creates a new entry writer that buffers logs in memory (without
+// any encoding). It's particularly useful in tests, though it can serve a
+// variety of other purposes as well. This constructor returns the entry writer
+// itself and a function to retrieve the observed logs.
+func NewObserver(cap int) (EntryWriter, *ObservedLogs) {
+	sink := &ObservedLogs{cap: cap, logs: make([]ObservedLog, 0, cap)}
+	return &observerEntryWriter{sink: sink}, sink
 }
 
-func (o *observerFacility) With(fields []Field) Facility {
-	return &observerFacility{
-		LevelEnabler: o.LevelEnabler,
-		sink:         o.sink,
-		context:      append(o.context[:len(o.context):len(o.context)], fields...),
+func (o *observerEntryWriter) With(fields []Field) EntryWriter {
+	return &observerEntryWriter{
+		sink:    o.sink,
+		context: append(o.context[:len(o.context):len(o.context)], fields...),
 	}
 }
 
-func (o *observerFacility) Write(ent Entry, fields []Field) error {
+func (o *observerEntryWriter) Write(ent Entry, fields []Field) error {
 	all := make([]Field, 0, len(fields)+len(o.context))
 	all = append(all, o.context...)
 	all = append(all, fields...)
 	o.sink.Add(ent, all)
 	return nil
-}
-
-func (o *observerFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
-	if o.Enabled(ent.Level) {
-		ce = ce.AddFacility(ent, o)
-	}
-	return ce
 }
 
 type counters struct {
@@ -234,6 +250,8 @@ func Sample(fac Facility, tick time.Duration, first, thereafter int) Facility {
 	}
 }
 
+// samplre must be a Facility, and not an EntryWriter, since it must make a
+// stateful `Check` decision, while leaving `Enabled` pure.
 type sampler struct {
 	Facility
 

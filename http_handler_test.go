@@ -39,8 +39,8 @@ import (
 
 func newHandler() (AtomicLevel, Logger) {
 	lvl := DynamicLevel()
-	fac, _ := zapcore.NewObserver(lvl, 1)
-	logger := New(fac)
+	o, _ := zapcore.NewObserver(1)
+	logger := New(zapcore.EntryWriterFacility(lvl, o))
 	return lvl, logger
 }
 

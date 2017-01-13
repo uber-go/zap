@@ -34,7 +34,8 @@ func opts(opts ...Option) []Option {
 // Here specifically to introduce an easily-identifiable filename for testing
 // stacktraces and caller skips.
 func withLogger(t testing.TB, e zapcore.LevelEnabler, opts []Option, f func(Logger, *zapcore.ObservedLogs)) {
-	fac, logs := zapcore.NewObserver(e, 1024)
+	o, logs := zapcore.NewObserver(1024)
+	fac := zapcore.EntryWriterFacility(e, o)
 	log := New(fac, opts...)
 	f(log, logs)
 }
