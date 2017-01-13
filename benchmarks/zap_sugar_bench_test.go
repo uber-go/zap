@@ -20,14 +20,13 @@
 
 package benchmarks
 
-/* FIXME (shah): Update to match new APIs.
-
 import (
 	"testing"
 	"time"
 
-	"github.com/uber-go/zap"
-	"github.com/uber-go/zap/zwrap"
+	"go.uber.org/zap"
+	"go.uber.org/zap/testutils"
+	"go.uber.org/zap/zapcore"
 )
 
 func fakeSugarFields() []interface{} {
@@ -45,18 +44,12 @@ func fakeSugarFields() []interface{} {
 	}
 }
 
-var newCoreLoggerDefaults = []zap.Option{
-	zap.ErrorLevel,
-	zap.DiscardOutput,
-}
-
-func newCoreLogger(options ...zap.Option) zap.Logger {
-	options = append(newCoreLoggerDefaults, options...)
-	return zap.New(zap.NewJSONEncoder(), options...)
-}
-
-func newSugarLogger(options ...zap.Option) zap.Sugar {
-	return zap.NewSugar(newCoreLogger(options...))
+func newSugarLogger(options ...zap.Option) *zap.SugaredLogger {
+	return zap.Sugar(zap.New(zapcore.WriterFacility(
+		benchEncoder(),
+		&testutils.Discarder{},
+		zap.ErrorLevel,
+	)))
 }
 
 func BenchmarkZapSugarDisabledLevelsWithoutFields(b *testing.B) {
@@ -119,32 +112,3 @@ func BenchmarkZapSugarWithoutFields(b *testing.B) {
 		}
 	})
 }
-
-func BenchmarkZapSugarSampleWithoutFields(b *testing.B) {
-	messages := fakeMessages(1000)
-	core := newCoreLogger()
-	logger := zap.NewSugar(zwrap.Sample(core, time.Second, 10, 10000))
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		i := 0
-		for pb.Next() {
-			i++
-			logger.Info(messages[i%1000])
-		}
-	})
-}
-
-func BenchmarkZapSugarSampleAddingFields(b *testing.B) {
-	messages := fakeMessages(1000)
-	core := newCoreLogger()
-	logger := zap.NewSugar(zwrap.Sample(core, time.Second, 10, 10000))
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		i := 0
-		for pb.Next() {
-			i++
-			logger.Info(messages[i%1000], fakeSugarFields()...)
-		}
-	})
-}
-*/
