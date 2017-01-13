@@ -113,13 +113,23 @@ func TestWriterFacilitySyncsOutput(t *testing.T) {
 	}
 }
 
-func TestWriterFacilityWriteEntryFailure(t *testing.T) {
+func TestWriterFacilityWriteFailure(t *testing.T) {
 	fac := WriterFacility(
 		NewJSONEncoder(testJSONConfig()),
-		Lock(AddSync(&testutils.FailWriter{})),
+		Lock(&testutils.FailWriter{}),
 		DebugLevel,
 	)
+	err := fac.Write(Entry{}, nil)
+	// Should log the error.
+	assert.Error(t, err, "Expected writing Entry to fail.")
+}
 
+func TestWriterFacilityShortWrite(t *testing.T) {
+	fac := WriterFacility(
+		NewJSONEncoder(testJSONConfig()),
+		Lock(&testutils.ShortWriter{}),
+		DebugLevel,
+	)
 	err := fac.Write(Entry{}, nil)
 	// Should log the error.
 	assert.Error(t, err, "Expected writing Entry to fail.")

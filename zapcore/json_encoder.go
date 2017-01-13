@@ -22,14 +22,12 @@ package zapcore
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
 	"math"
 	"strconv"
-	"sync"
 	"time"
 	"unicode/utf8"
+
+	"go.uber.org/zap/internal/buffers"
 )
 
 const (
@@ -37,19 +35,6 @@ const (
 	_hex = "0123456789abcdef"
 	// Initial buffer size for encoders.
 	_initialBufSize = 1024
-)
-
-var (
-	// errNilSink signals that Encoder.WriteEntry was called with a nil WriteSyncer.
-	errNilSink = errors.New("can't write encoded message a nil WriteSyncer")
-
-	// TODO: use the new buffers package instead of pooling encoders.
-	jsonPool = sync.Pool{New: func() interface{} {
-		return &jsonEncoder{
-			// Pre-allocate a reasonably-sized buffer for each encoder.
-			bytes: make([]byte, 0, _initialBufSize),
-		}
-	}}
 )
 
 // A JSONConfig sets configuration options for a JSON encoder.
@@ -75,10 +60,10 @@ type jsonEncoder struct {
 // pair) when unmarshaling, but users should attempt to avoid adding duplicate
 // keys.
 func NewJSONEncoder(cfg JSONConfig) Encoder {
-	enc := jsonPool.Get().(*jsonEncoder)
-	enc.truncate()
-	enc.JSONConfig = &cfg
-	return enc
+	return &jsonEncoder{
+		JSONConfig: &cfg,
+		bytes:      buffers.Get(),
+	}
 }
 
 func (enc *jsonEncoder) AddString(key, val string) {
@@ -159,29 +144,26 @@ func (enc *jsonEncoder) AppendBool(val bool) {
 }
 
 func (enc *jsonEncoder) Clone() Encoder {
-	clone := jsonPool.Get().(*jsonEncoder)
-	clone.truncate()
-	clone.bytes = append(clone.bytes, enc.bytes...)
-	clone.JSONConfig = enc.JSONConfig
+	clone := &jsonEncoder{JSONConfig: enc.JSONConfig}
+	clone.bytes = append(buffers.Get(), enc.bytes...)
 	return clone
 }
 
-func (enc *jsonEncoder) WriteEntry(sink io.Writer, ent Entry, fields []Field) error {
-	if sink == nil {
-		return errNilSink
+func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
+	final := &jsonEncoder{
+		JSONConfig: enc.JSONConfig,
+		bytes:      buffers.Get(),
 	}
 
-	final := jsonPool.Get().(*jsonEncoder)
-	final.truncate()
 	final.bytes = append(final.bytes, '{')
-	enc.LevelFormatter(ent.Level).AddTo(final)
-	enc.TimeFormatter(ent.Time).AddTo(final)
+	final.LevelFormatter(ent.Level).AddTo(final)
+	final.TimeFormatter(ent.Time).AddTo(final)
 	if ent.Caller.Defined {
 		// NOTE: we add the field here for parity compromise with text
 		// prepending, while not actually mutating the message string.
 		final.AddString("caller", ent.Caller.String())
 	}
-	enc.MessageFormatter(ent.Message).AddTo(final)
+	final.MessageFormatter(ent.Message).AddTo(final)
 	if len(enc.bytes) > 0 {
 		if len(final.bytes) > 1 {
 			// All the formatters may have been no-ops.
@@ -194,25 +176,11 @@ func (enc *jsonEncoder) WriteEntry(sink io.Writer, ent Entry, fields []Field) er
 		final.AddString("stacktrace", ent.Stack)
 	}
 	final.bytes = append(final.bytes, '}', '\n')
-
-	expectedBytes := len(final.bytes)
-	n, err := sink.Write(final.bytes)
-	final.free()
-	if err != nil {
-		return err
-	}
-	if n != expectedBytes {
-		return fmt.Errorf("incomplete write: only wrote %v of %v bytes", n, expectedBytes)
-	}
-	return nil
+	return final.bytes, nil
 }
 
 func (enc *jsonEncoder) truncate() {
 	enc.bytes = enc.bytes[:0]
-}
-
-func (enc *jsonEncoder) free() {
-	jsonPool.Put(enc)
 }
 
 func (enc *jsonEncoder) addKey(key string) {
