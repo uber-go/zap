@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/uber-go/zap/internal/buffers"
+	"go.uber.org/zap/internal/buffers"
 
 	"go.uber.org/atomic"
 )

@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/uber-go/zap/internal/buffers"
+	"go.uber.org/zap/internal/buffers"
 )
 
 func testJSONConfig() JSONConfig {
