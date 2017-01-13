@@ -31,6 +31,7 @@ import (
 	"testing"
 
 	. "go.uber.org/zap"
+	"go.uber.org/zap/internal/observer"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/assert"
@@ -39,7 +40,8 @@ import (
 
 func newHandler() (AtomicLevel, Logger) {
 	lvl := DynamicLevel()
-	fac, _ := zapcore.NewObserver(lvl, 1)
+	// XXX should be a discard facility
+	fac := observer.New(lvl, func(observer.LoggedEntry) error { return nil }, false)
 	logger := New(fac)
 	return lvl, logger
 }

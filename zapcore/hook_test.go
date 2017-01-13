@@ -18,12 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package zapcore_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.uber.org/zap/internal/observer"
+	. "go.uber.org/zap/zapcore"
 )
 
 func TestHooks(t *testing.T) {
@@ -38,7 +41,8 @@ func TestHooks(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		fac, logs := NewObserver(tt.facilityLevel, 1)
+		var logs observer.ObservedLogs
+		fac := observer.New(tt.facilityLevel, logs.Add, true)
 		intField := makeInt64Field("foo", 42)
 		ent := Entry{Message: "bar", Level: tt.entryLevel}
 
@@ -58,7 +62,7 @@ func TestHooks(t *testing.T) {
 			assert.Equal(t, 1, called, "Expected to call hook once.")
 			assert.Equal(
 				t,
-				[]ObservedLog{{Entry: ent, Context: []Field{intField}}},
+				[]observer.LoggedEntry{{Entry: ent, Context: []Field{intField}}},
 				logs.AllUntimed(),
 				"Unexpected logs written out.",
 			)
