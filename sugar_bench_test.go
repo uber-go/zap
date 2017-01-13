@@ -20,14 +20,18 @@
 
 package zap
 
-import "testing"
+import (
+	"testing"
+
+	"go.uber.org/zap/testutils"
+	"go.uber.org/zap/zapcore"
+)
 
 func withBenchedSugar(b *testing.B, f func(*SugaredLogger)) {
-	logger := Sugar(New(
-		NewJSONEncoder(),
+	logger := Sugar(New(zapcore.WriterFacility(zapcore.NewJSONEncoder(defaultEncoderConfig()),
+		&testutils.Discarder{},
 		DebugLevel,
-		DiscardOutput,
-	))
+	)))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
