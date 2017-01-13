@@ -44,16 +44,16 @@ func fakeSugarFields() []interface{} {
 	}
 }
 
-func newSugarLogger(options ...zap.Option) *zap.SugaredLogger {
+func newSugarLogger(lvl zapcore.Level, options ...zap.Option) *zap.SugaredLogger {
 	return zap.Sugar(zap.New(zapcore.WriterFacility(
 		benchEncoder(),
 		&testutils.Discarder{},
-		zap.ErrorLevel,
-	)))
+		lvl,
+	), options...))
 }
 
 func BenchmarkZapSugarDisabledLevelsWithoutFields(b *testing.B) {
-	logger := newSugarLogger()
+	logger := newSugarLogger(zap.ErrorLevel)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -64,7 +64,7 @@ func BenchmarkZapSugarDisabledLevelsWithoutFields(b *testing.B) {
 
 func BenchmarkZapSugarDisabledLevelsAccumulatedContext(b *testing.B) {
 	context := fakeFields()
-	logger := newSugarLogger(zap.Fields(context...))
+	logger := newSugarLogger(zap.ErrorLevel, zap.Fields(context...))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -74,7 +74,7 @@ func BenchmarkZapSugarDisabledLevelsAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapSugarDisabledLevelsAddingFields(b *testing.B) {
-	logger := newSugarLogger()
+	logger := newSugarLogger(zap.ErrorLevel)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -84,7 +84,7 @@ func BenchmarkZapSugarDisabledLevelsAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapSugarAddingFields(b *testing.B) {
-	logger := newSugarLogger()
+	logger := newSugarLogger(zap.DebugLevel)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -94,7 +94,7 @@ func BenchmarkZapSugarAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapSugarWithAccumulatedContext(b *testing.B) {
-	logger := newSugarLogger().With(fakeSugarFields()...)
+	logger := newSugarLogger(zap.DebugLevel).With(fakeSugarFields()...)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -104,7 +104,7 @@ func BenchmarkZapSugarWithAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapSugarWithoutFields(b *testing.B) {
-	logger := newSugarLogger()
+	logger := newSugarLogger(zap.DebugLevel)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
