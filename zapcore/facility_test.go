@@ -18,14 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package zapcore_test
 
 import (
 	"sync"
 	"testing"
 	"time"
 
+	"go.uber.org/zap/internal/observer"
 	"go.uber.org/zap/testutils"
+	. "go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -35,7 +37,8 @@ func makeInt64Field(key string, val int) Field {
 }
 
 func TestObserverWith(t *testing.T) {
-	sf1, logs := NewObserver(InfoLevel, 10)
+	var logs observer.ObservedLogs
+	sf1 := observer.New(InfoLevel, logs.Add, true)
 
 	// need to pad out enough initial fields so that the underlying slice cap()
 	// gets ahead of its len() so that the sf3/4 With append's could choose
@@ -53,7 +56,7 @@ func TestObserverWith(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, []ObservedLog{
+	assert.Equal(t, []observer.LoggedEntry{
 		{
 			Entry: ent,
 			Context: []Field{
@@ -142,16 +145,17 @@ func writeIter(fac Facility, n int, lvl Level) {
 	}
 }
 
-func fakeSampler(lvl LevelEnabler, tick time.Duration, first, thereafter int) (Facility, *ObservedLogs) {
-	fac, logs := NewObserver(lvl, 128)
+func fakeSampler(lvl LevelEnabler, tick time.Duration, first, thereafter int) (Facility, *observer.ObservedLogs) {
+	var logs observer.ObservedLogs
+	fac := observer.New(lvl, logs.Add, true)
 	fac = Sample(fac, tick, first, thereafter)
-	return fac, logs
+	return fac, &logs
 }
 
-func buildExpectation(level Level, nums ...int) []ObservedLog {
-	var expected []ObservedLog
+func buildExpectation(level Level, nums ...int) []observer.LoggedEntry {
+	var expected []observer.LoggedEntry
 	for _, n := range nums {
-		expected = append(expected, ObservedLog{
+		expected = append(expected, observer.LoggedEntry{
 			Entry:   Entry{Level: level},
 			Context: []Field{makeInt64Field("iter", n)},
 		})
@@ -193,7 +197,7 @@ func TestSamplerWithSharesCounters(t *testing.T) {
 		writeIter(second, i, InfoLevel)
 	}
 
-	expected := []ObservedLog{{
+	expected := []observer.LoggedEntry{{
 		Entry:   Entry{Level: InfoLevel},
 		Context: []Field{makeInt64Field("child", 1), makeInt64Field("iter", 1)},
 	}}

@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package zapcore_test
 
 import (
 	"encoding/json"
@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"go.uber.org/zap/internal/buffers"
+	. "go.uber.org/zap/zapcore"
 )
 
 func testJSONConfig() JSONConfig {
@@ -47,9 +48,8 @@ func testJSONConfig() JSONConfig {
 }
 
 func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
-	cfg := testJSONConfig()
 	for i := 0; i < b.N; i++ {
-		enc := newJSONEncoder(cfg)
+		enc := NewJSONEncoder(testJSONConfig())
 		enc.AddObject("nested", ObjectMarshalerFunc(func(enc ObjectEncoder) error {
 			enc.AddInt64("i", int64(i))
 			return nil
@@ -58,10 +58,9 @@ func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
 }
 
 func BenchmarkZapJSON(b *testing.B) {
-	cfg := testJSONConfig()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			enc := newJSONEncoder(cfg)
+			enc := NewJSONEncoder(testJSONConfig())
 			enc.AddString("str", "foo")
 			enc.AddInt64("int64-1", 1)
 			enc.AddInt64("int64-2", 2)
