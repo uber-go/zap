@@ -116,7 +116,7 @@ func TestWriterFacilitySyncsOutput(t *testing.T) {
 func TestWriterFacilityWriteFailure(t *testing.T) {
 	fac := WriterFacility(
 		NewJSONEncoder(testJSONConfig()),
-		Lock(AddSync(&testutils.FailWriter{})),
+		Lock(&testutils.FailWriter{}),
 		DebugLevel,
 	)
 	err := fac.Write(Entry{}, nil)
@@ -127,7 +127,7 @@ func TestWriterFacilityWriteFailure(t *testing.T) {
 func TestWriterFacilityShortWrite(t *testing.T) {
 	fac := WriterFacility(
 		NewJSONEncoder(testJSONConfig()),
-		Lock(AddSync(&testutils.ShortWriter{})),
+		Lock(&testutils.ShortWriter{}),
 		DebugLevel,
 	)
 	err := fac.Write(Entry{}, nil)
