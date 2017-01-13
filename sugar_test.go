@@ -20,164 +20,193 @@
 
 package zap
 
-/* FIXME (shah): Update to match new APIs.
+import (
+	"testing"
 
-// FIXME: add tests for trailing keys in key-value pairs.
-func withSugarLogger(t testing.TB, opts []Option, f func(Sugar, *testBuffer, *testBuffer)) {
-	sink := &testBuffer{}
-	errSink := &testBuffer{}
+	"github.com/stretchr/testify/assert"
 
-	allOpts := make([]Option, 0, 3+len(opts))
-	allOpts = append(allOpts, DebugLevel, Output(sink), ErrorOutput(errSink))
-	allOpts = append(allOpts, opts...)
-	logger := New(newJSONEncoder(NoTime()), allOpts...)
-	sugar := NewSugar(logger)
-
-	f(sugar, sink, errSink)
-}
-
-func TestSugarLog(t *testing.T) {
-	opts := opts(Fields(Int("foo", 42)))
-	withSugarLogger(t, opts, func(logger Sugar, out *testBuffer, _ *testBuffer) {
-		logger.Debug("debug message", "a", "b")
-		logger.Info("info message", "c", "d")
-		logger.Warn("warn message", "e", "f")
-		logger.Error("error message", "g", "h")
-		assert.Equal(t, []string{
-			`{"level":"debug","msg":"debug message","foo":42,"a":"b"}`,
-			`{"level":"info","msg":"info message","foo":42,"c":"d"}`,
-			`{"level":"warn","msg":"warn message","foo":42,"e":"f"}`,
-			`{"level":"error","msg":"error message","foo":42,"g":"h"}`,
-		}, out.Lines(), "Incorrect output from logger")
-	})
-}
-
-func TestSugarLogTypes(t *testing.T) {
-	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, _ *testBuffer) {
-		logger.Debug("")
-		logger.Debug("", "bool", true)
-		logger.Debug("", "float64", float64(1.23456789))
-		logger.Debug("", "int", int(-1))
-		logger.Debug("", "int64", int64(-1))
-		logger.Debug("", "uint", uint(1))
-		logger.Debug("", "uint64", uint64(1))
-		logger.Debug("", "string", "")
-		logger.Debug("", "time", time.Unix(0, 0))
-		logger.Debug("", "duration", time.Second)
-		logger.Debug("", "stringer", DebugLevel)
-		logger.Debug("", "object", []string{"foo", "bar"})
-		assert.Equal(t, []string{
-			`{"level":"debug","msg":""}`,
-			`{"level":"debug","msg":"","bool":true}`,
-			`{"level":"debug","msg":"","float64":1.23456789}`,
-			`{"level":"debug","msg":"","int":-1}`,
-			`{"level":"debug","msg":"","int64":-1}`,
-			`{"level":"debug","msg":"","uint":1}`,
-			`{"level":"debug","msg":"","uint64":1}`,
-			`{"level":"debug","msg":"","string":""}`,
-			`{"level":"debug","msg":"","time":0}`,
-			`{"level":"debug","msg":"","duration":1000000000}`,
-			`{"level":"debug","msg":"","stringer":"debug"}`,
-			`{"level":"debug","msg":"","object":["foo","bar"]}`,
-		}, out.Lines(), "Incorrect output from logger")
-	})
-}
-
-func TestSugarLogError(t *testing.T) {
-	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, _ *testBuffer) {
-		logger.Debug("with error", errors.New("this is a error"))
-		assert.Equal(t, []string{
-			`{"level":"debug","msg":"with error","error":"this is a error"}`,
-		}, out.Lines(), "Incorrect output from logger")
-	})
-}
-
-func TestSugarPanic(t *testing.T) {
-	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, _ *testBuffer) {
-		assert.Panics(t, func() { logger.Panic("foo") }, "Expected logging at Panic level to panic.")
-		assert.Equal(t, `{"level":"panic","msg":"foo"}`, out.Stripped(), "Unexpected output from panic-level Log.")
-	})
-}
-
-func TestSugarFatal(t *testing.T) {
-	stub := stubExit()
-	defer stub.Unstub()
-	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, _ *testBuffer) {
-		logger.Fatal("foo")
-		assert.Equal(t, `{"level":"fatal","msg":"foo"}`, out.Stripped(), "Unexpected output from fatal-level Log.")
-		stub.AssertStatus(t, 1)
-	})
-}
-
-func TestSugarDFatal(t *testing.T) {
-	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, _ *testBuffer) {
-		logger.DFatal("foo")
-		assert.Equal(t, `{"level":"error","msg":"foo"}`, out.Stripped(), "Unexpected output from dfatal")
-	})
-
-	stub := stubExit()
-	defer stub.Unstub()
-	opts := opts(Development())
-	withSugarLogger(t, opts, func(logger Sugar, out *testBuffer, _ *testBuffer) {
-		logger.DFatal("foo")
-		assert.Equal(t, `{"level":"fatal","msg":"foo"}`, out.Stripped(), "Unexpected output from DFatal in dev mode")
-		stub.AssertStatus(t, 1)
-	})
-}
-
-func TestSugarDFatalErrors(t *testing.T) {
-	opts := opts()
-	withSugarLogger(t, opts, func(logger Sugar, _ *testBuffer, err *testBuffer) {
-		logger.DFatal("foo", "bar")
-		assert.Equal(t, "invalid number of arguments", err.Stripped(), "Should log invalid number of arguments")
-	})
-}
-
-func TestSugarLogErrors(t *testing.T) {
-	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, err *testBuffer) {
-		logger.Log(InfoLevel, "foo", "a")
-		assert.Equal(t, `{"level":"info","msg":"foo"}`, out.Stripped(), "Should log invalid number of arguments")
-		assert.Equal(t, `invalid number of arguments`, err.Stripped(), "Should log invalid number of arguments")
-	})
-	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, err *testBuffer) {
-		logger.Log(InfoLevel, "foo", 1, "foo")
-		assert.Equal(t, `{"level":"info","msg":"foo"}`, out.Stripped(), "Should log invalid name type")
-		assert.Equal(t, `field name must be string`, err.Stripped(), "Should log invalid name type")
-	})
-	withSugarLogger(t, nil, func(logger Sugar, out *testBuffer, err *testBuffer) {
-		logger.Log(InfoLevel, "foo", "foo", errors.New("b"))
-		assert.Equal(t, `{"level":"info","msg":"foo"}`, out.Stripped(), "Should log error argument position is invalid")
-		assert.Equal(t, `error can only be the first argument`, err.Stripped(), "Should log error argument position is invalid")
-	})
-}
-
-func TestSugarLogDiscards(t *testing.T) {
-	withSugarLogger(t, opts(InfoLevel), func(logger Sugar, buf *testBuffer, _ *testBuffer) {
-		logger.Debug("should be discarded")
-		logger.Debug("should be discarded even with invalid arg count", "bla")
-		logger.Info("should be logged")
-		assert.Equal(t, []string{
-			`{"level":"info","msg":"should be logged"}`,
-		}, buf.Lines(), "")
-	})
-}
+	"go.uber.org/zap/internal/exit"
+	"go.uber.org/zap/zapcore"
+)
 
 func TestSugarWith(t *testing.T) {
-	opts := opts()
-	withSugarLogger(t, opts, func(logger Sugar, out *testBuffer, _ *testBuffer) {
-		child := logger.With("a", "b")
-		child.Debug("debug message", "c", "d")
-		assert.Equal(t, []string{
-			`{"level":"debug","msg":"debug message","a":"b","c":"d"}`,
-		}, out.Lines(), "Incorrect output from logger")
-	})
+	ignored := zapcore.ObservedLog{
+		Entry:   zapcore.Entry{Level: DPanicLevel, Message: oddNumberErrMsg},
+		Context: []zapcore.Field{Any("ignored", "should ignore")},
+	}
+
+	tests := []struct {
+		args     []interface{}
+		expected []zapcore.Field
+	}{
+		{nil, []zapcore.Field{}},
+		{[]interface{}{}, []zapcore.Field{}},
+		{[]interface{}{"foo", 42, true, "bar"}, []zapcore.Field{Int("foo", 42), String("true", "bar")}},
+	}
+
+	for _, tt := range tests {
+		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *zapcore.ObservedLogs) {
+			logger.With(tt.args...).Info("")
+			output := logs.AllUntimed()
+			assert.Equal(t, 1, len(output), "Expected only one message to be logged.")
+			assert.Equal(t, tt.expected, output[0].Context, "Unexpected message context.")
+		})
+
+		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *zapcore.ObservedLogs) {
+			oddArgs := append(tt.args, "should ignore")
+			logger.With(oddArgs...).Info("")
+			output := logs.AllUntimed()
+			assert.Equal(t, 2, len(output), "Expected an error to be logged along with the intended message.")
+			assert.Equal(t, ignored, output[0], "Expected the first message to be an error.")
+			assert.Equal(t, tt.expected, output[1].Context, "Unexpected context on intended message.")
+		})
+	}
 }
 
-func TestSugarWithErrors(t *testing.T) {
-	opts := opts()
-	withSugarLogger(t, opts, func(logger Sugar, _ *testBuffer, err *testBuffer) {
-		logger.With("a")
-		assert.Equal(t, "invalid number of arguments", err.Stripped(), "Should log invalid number of arguments")
-	})
+func TestSugarWithFields(t *testing.T) {
+	tests := [][]zapcore.Field{
+		{},
+		{String("foo", "bar"), Int("baz", 42)},
+	}
+	for _, fields := range tests {
+		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *zapcore.ObservedLogs) {
+			logger.WithFields(fields...).Info("")
+			output := logs.AllUntimed()
+			assert.Equal(t, 1, len(output), "Expected only one message to be logged.")
+			assert.Equal(t, fields, output[0].Context, "Unexpected message context.")
+		})
+	}
 }
-*/
+
+type stringerF func() string
+
+func (f stringerF) String() string { return f() }
+
+func TestSugarStructuredLogging(t *testing.T) {
+	tests := []struct {
+		msg       interface{}
+		expectMsg string
+	}{
+		{"foo", "foo"},
+		{true, "true"},
+		{stringerF(func() string { return "hello" }), "hello"},
+	}
+
+	// Common to all test cases.
+	context := []interface{}{"foo", "bar"}
+	extra := []interface{}{true, false}
+	expectedFields := []zapcore.Field{String("foo", "bar"), Bool("true", false)}
+
+	for _, tt := range tests {
+		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *zapcore.ObservedLogs) {
+			logger.With(context...).Debug(tt.msg, extra...)
+			logger.With(context...).Info(tt.msg, extra...)
+			logger.With(context...).Warn(tt.msg, extra...)
+			logger.With(context...).Error(tt.msg, extra...)
+			logger.With(context...).DPanic(tt.msg, extra...)
+
+			expected := make([]zapcore.ObservedLog, 5)
+			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+				expected[i] = zapcore.ObservedLog{
+					Entry:   zapcore.Entry{Message: tt.expectMsg, Level: lvl},
+					Context: expectedFields,
+				}
+			}
+			assert.Equal(t, expected, logs.AllUntimed(), "Unexpected log output.")
+		})
+	}
+}
+
+func TestSugarFormattedLogging(t *testing.T) {
+	tests := []struct {
+		format string
+		args   []interface{}
+		expect string
+	}{
+		{"", nil, ""},
+		{"foo", nil, "foo"},
+		{"", []interface{}{"foo"}, "%!(EXTRA string=foo)"},
+	}
+
+	// Common to all test cases.
+	context := []interface{}{"foo", "bar"}
+	expectedFields := []zapcore.Field{String("foo", "bar")}
+
+	for _, tt := range tests {
+		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *zapcore.ObservedLogs) {
+			logger.With(context...).Debugf(tt.format, tt.args...)
+			logger.With(context...).Infof(tt.format, tt.args...)
+			logger.With(context...).Warnf(tt.format, tt.args...)
+			logger.With(context...).Errorf(tt.format, tt.args...)
+			logger.With(context...).DPanicf(tt.format, tt.args...)
+
+			expected := make([]zapcore.ObservedLog, 5)
+			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+				expected[i] = zapcore.ObservedLog{
+					Entry:   zapcore.Entry{Message: tt.expect, Level: lvl},
+					Context: expectedFields,
+				}
+			}
+			assert.Equal(t, expected, logs.AllUntimed(), "Unexpected log output.")
+		})
+	}
+}
+
+func TestSugarPanicLogging(t *testing.T) {
+	tests := []struct {
+		loggerLevel zapcore.Level
+		f           func(*SugaredLogger)
+		expectedMsg string
+	}{
+		{FatalLevel, func(s *SugaredLogger) { s.Panic("foo") }, ""},
+		{PanicLevel, func(s *SugaredLogger) { s.Panic("foo") }, "foo"},
+		{DebugLevel, func(s *SugaredLogger) { s.Panic("foo") }, "foo"},
+		{FatalLevel, func(s *SugaredLogger) { s.Panicf("%s", "foo") }, ""},
+		{PanicLevel, func(s *SugaredLogger) { s.Panicf("%s", "foo") }, "foo"},
+		{DebugLevel, func(s *SugaredLogger) { s.Panicf("%s", "foo") }, "foo"},
+	}
+
+	for _, tt := range tests {
+		withSugar(t, tt.loggerLevel, nil, func(sugar *SugaredLogger, logs *zapcore.ObservedLogs) {
+			assert.Panics(t, func() { tt.f(sugar) }, "Expected panic-level logger calls to panic.")
+			if tt.expectedMsg != "" {
+				assert.Equal(t, []zapcore.ObservedLog{{
+					Context: []zapcore.Field{},
+					Entry:   zapcore.Entry{Message: tt.expectedMsg, Level: PanicLevel},
+				}}, logs.AllUntimed(), "Unexpected log output.")
+			} else {
+				assert.Equal(t, 0, logs.Len(), "Didn't expect any log output.")
+			}
+		})
+	}
+}
+
+func TestSugarFatalLogging(t *testing.T) {
+	tests := []struct {
+		loggerLevel zapcore.Level
+		f           func(*SugaredLogger)
+		expectedMsg string
+	}{
+		{FatalLevel + 1, func(s *SugaredLogger) { s.Fatal("foo") }, ""},
+		{FatalLevel, func(s *SugaredLogger) { s.Fatal("foo") }, "foo"},
+		{DebugLevel, func(s *SugaredLogger) { s.Fatal("foo") }, "foo"},
+		{FatalLevel + 1, func(s *SugaredLogger) { s.Fatalf("%s", "foo") }, ""},
+		{FatalLevel, func(s *SugaredLogger) { s.Fatalf("%s", "foo") }, "foo"},
+		{DebugLevel, func(s *SugaredLogger) { s.Fatalf("%s", "foo") }, "foo"},
+	}
+
+	for _, tt := range tests {
+		withSugar(t, tt.loggerLevel, nil, func(sugar *SugaredLogger, logs *zapcore.ObservedLogs) {
+			stub := exit.WithStub(func() { tt.f(sugar) })
+			assert.True(t, stub.Exited, "Expected all calls to fatal logger methods to exit process.")
+			if tt.expectedMsg != "" {
+				assert.Equal(t, []zapcore.ObservedLog{{
+					Context: []zapcore.Field{},
+					Entry:   zapcore.Entry{Message: tt.expectedMsg, Level: FatalLevel},
+				}}, logs.AllUntimed(), "Unexpected log output.")
+			} else {
+				assert.Equal(t, 0, logs.Len(), "Didn't expect any log output.")
+			}
+		})
+	}
+}
