@@ -156,3 +156,53 @@ func Reflect(key string, val interface{}) zapcore.Field {
 func Nest(key string, fields ...zapcore.Field) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.ObjectMarshalerType, Interface: zapcore.Fields(fields)}
 }
+
+// Any takes a key and an arbitrary value and chooses the best way to represent
+// them as a field, falling back to a reflection-based approach only if
+// necessary.
+func Any(key string, value interface{}) zapcore.Field {
+	switch val := value.(type) {
+	case zapcore.ObjectMarshaler:
+		return Object(key, val)
+	case bool:
+		return Bool(key, val)
+	case float64:
+		return Float64(key, val)
+	case float32:
+		return Float64(key, float64(val))
+	case int:
+		return Int(key, val)
+	case int64:
+		return Int64(key, val)
+	case int32:
+		return Int64(key, int64(val))
+	case int16:
+		return Int64(key, int64(val))
+	case int8:
+		return Int64(key, int64(val))
+	case uint:
+		return Uint(key, val)
+	case uint64:
+		return Uint64(key, val)
+	case uint32:
+		return Uint64(key, uint64(val))
+	case uint16:
+		return Uint64(key, uint64(val))
+	case uint8:
+		return Uint64(key, uint64(val))
+	case uintptr:
+		return Uintptr(key, val)
+	case string:
+		return String(key, val)
+	case error:
+		return String(key, val.Error())
+	case time.Time:
+		return Time(key, val)
+	case time.Duration:
+		return Duration(key, val)
+	case fmt.Stringer:
+		return String(key, val.String())
+	default:
+		return Reflect(key, val)
+	}
+}
