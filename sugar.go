@@ -66,7 +66,7 @@ func Desugar(s *SugaredLogger) Logger {
 //     Object("user", User{name: "alice"}),
 //   )
 func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
-	return &SugaredLogger{core: s.core.With(sweetenFields(args, s.core)...)}
+	return s.WithFields(sweetenFields(args, s.core)...)
 }
 
 // WithFields adds structured fields to the logger's context, just like the
