@@ -164,6 +164,8 @@ func Any(key string, value interface{}) zapcore.Field {
 	switch val := value.(type) {
 	case zapcore.ObjectMarshaler:
 		return Object(key, val)
+	case zapcore.ArrayMarshaler:
+		return Array(key, val)
 	case bool:
 		return Bool(key, val)
 	case float64:
@@ -194,12 +196,12 @@ func Any(key string, value interface{}) zapcore.Field {
 		return Uintptr(key, val)
 	case string:
 		return String(key, val)
-	case error:
-		return String(key, val.Error())
 	case time.Time:
 		return Time(key, val)
 	case time.Duration:
 		return Duration(key, val)
+	case error:
+		return String(key, val.Error())
 	case fmt.Stringer:
 		return Stringer(key, val)
 	default:

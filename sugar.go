@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const oddNumberErrMsg = "Passed an odd number of keys and values to SugaredLogger, ignoring last."
+const _oddNumberErrMsg = "Passed an odd number of keys and values to SugaredLogger, ignoring last."
 
 // A SugaredLogger wraps the core Logger functionality in a slower, but less
 // verbose, API.
@@ -66,7 +66,7 @@ func Desugar(s *SugaredLogger) Logger {
 //     Object("user", User{name: "alice"}),
 //   )
 func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
-	return s.WithFields(sweetenFields(args, s.core)...)
+	return s.WithFields(s.sweetenFields(args)...)
 }
 
 // WithFields adds structured fields to the logger's context, just like the
@@ -79,7 +79,7 @@ func (s *SugaredLogger) WithFields(fs ...zapcore.Field) *SugaredLogger {
 // are treated as they are in the With method.
 func (s *SugaredLogger) Debug(msg interface{}, keysAndValues ...interface{}) {
 	if ce := s.core.Check(DebugLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(sweetenFields(keysAndValues, s.core)...)
+		ce.Write(s.sweetenFields(keysAndValues)...)
 	}
 }
 
@@ -95,7 +95,7 @@ func (s *SugaredLogger) Debugf(template string, args ...interface{}) {
 // are treated as they are in the With method.
 func (s *SugaredLogger) Info(msg interface{}, keysAndValues ...interface{}) {
 	if ce := s.core.Check(InfoLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(sweetenFields(keysAndValues, s.core)...)
+		ce.Write(s.sweetenFields(keysAndValues)...)
 	}
 }
 
@@ -111,7 +111,7 @@ func (s *SugaredLogger) Infof(template string, args ...interface{}) {
 // are treated as they are in the With method.
 func (s *SugaredLogger) Warn(msg interface{}, keysAndValues ...interface{}) {
 	if ce := s.core.Check(WarnLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(sweetenFields(keysAndValues, s.core)...)
+		ce.Write(s.sweetenFields(keysAndValues)...)
 	}
 }
 
@@ -127,7 +127,7 @@ func (s *SugaredLogger) Warnf(template string, args ...interface{}) {
 // are treated as they are in the With method.
 func (s *SugaredLogger) Error(msg interface{}, keysAndValues ...interface{}) {
 	if ce := s.core.Check(ErrorLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(sweetenFields(keysAndValues, s.core)...)
+		ce.Write(s.sweetenFields(keysAndValues)...)
 	}
 }
 
@@ -144,7 +144,7 @@ func (s *SugaredLogger) Errorf(template string, args ...interface{}) {
 // method. (See Logger.DPanic for details.)
 func (s *SugaredLogger) DPanic(msg interface{}, keysAndValues ...interface{}) {
 	if ce := s.core.Check(DPanicLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(sweetenFields(keysAndValues, s.core)...)
+		ce.Write(s.sweetenFields(keysAndValues)...)
 	}
 }
 
@@ -161,7 +161,7 @@ func (s *SugaredLogger) DPanicf(template string, args ...interface{}) {
 // Keys and values are treated as they are in the With method.
 func (s *SugaredLogger) Panic(msg interface{}, keysAndValues ...interface{}) {
 	if ce := s.core.Check(PanicLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(sweetenFields(keysAndValues, s.core)...)
+		ce.Write(s.sweetenFields(keysAndValues)...)
 	}
 }
 
@@ -177,7 +177,7 @@ func (s *SugaredLogger) Panicf(template string, args ...interface{}) {
 // os.Exit(1). Keys and values are treated as they are in the With method.
 func (s *SugaredLogger) Fatal(msg interface{}, keysAndValues ...interface{}) {
 	if ce := s.core.Check(FatalLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(sweetenFields(keysAndValues, s.core)...)
+		ce.Write(s.sweetenFields(keysAndValues)...)
 	}
 }
 
@@ -190,12 +190,12 @@ func (s *SugaredLogger) Fatalf(template string, args ...interface{}) {
 	}
 }
 
-func sweetenFields(args []interface{}, errLogger Logger) []zapcore.Field {
+func (s *SugaredLogger) sweetenFields(args []interface{}) []zapcore.Field {
 	if len(args) == 0 {
 		return nil
 	}
 	if len(args)%2 == 1 {
-		errLogger.DPanic(oddNumberErrMsg, Any("ignored", args[len(args)-1]))
+		s.core.DPanic(_oddNumberErrMsg, Any("ignored", args[len(args)-1]))
 	}
 
 	fields := make([]zapcore.Field, len(args)/2)
