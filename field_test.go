@@ -22,16 +22,14 @@ package zap
 
 import (
 	"errors"
+	"math"
 	"net"
 	"sync"
 	"testing"
 	"time"
 
-	"go.uber.org/zap/zapcore"
-
-	"math"
-
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -100,6 +98,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Reflect", zapcore.Field{Key: "k", Type: zapcore.ReflectType, Interface: ints}, Reflect("k", ints)},
 		{"Nest", zapcore.Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: nested}, Nest("k", nested...)},
 		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
+		{"Any:ArrayMarshaler", Any("k", bools([]bool{true})), Array("k", bools([]bool{true}))},
 		{"Any:Bool", Any("k", true), Bool("k", true)},
 		{"Any:Float64", Any("k", 3.14), Float64("k", 3.14)},
 		// TODO (v1.0): We could use some approximately-equal logic here, but it's

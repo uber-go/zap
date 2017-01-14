@@ -32,7 +32,7 @@ import (
 
 func TestSugarWith(t *testing.T) {
 	ignored := observer.LoggedEntry{
-		Entry:   zapcore.Entry{Level: DPanicLevel, Message: oddNumberErrMsg},
+		Entry:   zapcore.Entry{Level: DPanicLevel, Message: _oddNumberErrMsg},
 		Context: []zapcore.Field{Any("ignored", "should ignore")},
 	}
 
