@@ -66,127 +66,99 @@ func Desugar(s *SugaredLogger) Logger {
 //     Object("user", User{name: "alice"}),
 //   )
 func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
-	return s.WithFields(s.sweetenFields(args)...)
-}
-
-// WithFields adds structured fields to the logger's context, just like the
-// standard Logger's With method.
-func (s *SugaredLogger) WithFields(fs ...zapcore.Field) *SugaredLogger {
-	return &SugaredLogger{core: s.core.With(fs...)}
+	return &SugaredLogger{core: s.core.With(s.sweetenFields(args)...)}
 }
 
 // Debug logs a message and some key-value pairs at DebugLevel. Keys and values
 // are treated as they are in the With method.
 func (s *SugaredLogger) Debug(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(DebugLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+	s.log(DebugLevel, sweetenMsg(msg), keysAndValues)
 }
 
 // Debugf uses fmt.Sprintf to construct a dynamic message and logs it at
 // DebugLevel. It doesn't add to the message's structured context.
 func (s *SugaredLogger) Debugf(template string, args ...interface{}) {
-	if ce := s.core.Check(DebugLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
-	}
+	s.log(DebugLevel, fmt.Sprintf(template, args...), nil)
 }
 
 // Info logs a message and some key-value pairs at InfoLevel. Keys and values
 // are treated as they are in the With method.
 func (s *SugaredLogger) Info(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(InfoLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+	s.log(InfoLevel, sweetenMsg(msg), keysAndValues)
 }
 
 // Infof uses fmt.Sprintf to construct a dynamic message and logs it at
 // InfoLevel. It doesn't add to the message's structured context.
 func (s *SugaredLogger) Infof(template string, args ...interface{}) {
-	if ce := s.core.Check(InfoLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
-	}
+	s.log(InfoLevel, fmt.Sprintf(template, args...), nil)
 }
 
 // Warn logs a message and some key-value pairs at WarnLevel. Keys and values
 // are treated as they are in the With method.
 func (s *SugaredLogger) Warn(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(WarnLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+	s.log(WarnLevel, sweetenMsg(msg), keysAndValues)
 }
 
 // Warnf uses fmt.Sprintf to construct a dynamic message and logs it at
 // WarnLevel. It doesn't add to the message's structured context.
 func (s *SugaredLogger) Warnf(template string, args ...interface{}) {
-	if ce := s.core.Check(WarnLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
-	}
+	s.log(WarnLevel, fmt.Sprintf(template, args...), nil)
 }
 
 // Error logs a message and some key-value pairs at ErrorLevel. Keys and values
 // are treated as they are in the With method.
 func (s *SugaredLogger) Error(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(ErrorLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+	s.log(ErrorLevel, sweetenMsg(msg), keysAndValues)
 }
 
 // Errorf uses fmt.Sprintf to construct a dynamic message and logs it at
 // ErrorLevel. It doesn't add to the message's structured context.
 func (s *SugaredLogger) Errorf(template string, args ...interface{}) {
-	if ce := s.core.Check(ErrorLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
-	}
+	s.log(ErrorLevel, fmt.Sprintf(template, args...), nil)
 }
 
 // DPanic logs a message and some key-value pairs using the underlying logger's
 // DPanic method. Keys and values are treated as they are in the With
 // method. (See Logger.DPanic for details.)
 func (s *SugaredLogger) DPanic(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(DPanicLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+	s.log(DPanicLevel, sweetenMsg(msg), keysAndValues)
 }
 
 // DPanicf uses fmt.Sprintf to construct a dynamic message, which is passed to
 // the underlying Logger's DPanic method. (See Logger.DPanic for details.) It
 // doesn't add to the message's structured context.
 func (s *SugaredLogger) DPanicf(template string, args ...interface{}) {
-	if ce := s.core.Check(DPanicLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
-	}
+	s.log(DPanicLevel, fmt.Sprintf(template, args...), nil)
 }
 
 // Panic logs a message and some key-value pairs at PanicLevel, then panics.
 // Keys and values are treated as they are in the With method.
 func (s *SugaredLogger) Panic(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(PanicLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+	s.log(PanicLevel, sweetenMsg(msg), keysAndValues)
 }
 
 // Panicf uses fmt.Sprintf to construct a dynamic message and logs it at
 // PanicLevel, then panics. It doesn't add to the message's structured context.
 func (s *SugaredLogger) Panicf(template string, args ...interface{}) {
-	if ce := s.core.Check(PanicLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
-	}
+	s.log(PanicLevel, fmt.Sprintf(template, args...), nil)
 }
 
 // Fatal logs a message and some key-value pairs at FatalLevel, then calls
 // os.Exit(1). Keys and values are treated as they are in the With method.
 func (s *SugaredLogger) Fatal(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(FatalLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+	s.log(FatalLevel, sweetenMsg(msg), keysAndValues)
 }
 
 // Fatalf uses fmt.Sprintf to construct a dynamic message and logs it at
 // FatalLevel, then calls os.Exit(1). It doesn't add to the message's
 // structured context.
 func (s *SugaredLogger) Fatalf(template string, args ...interface{}) {
-	if ce := s.core.Check(FatalLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
+	s.log(FatalLevel, fmt.Sprintf(template, args...), nil)
+}
+
+func (s *SugaredLogger) log(lvl zapcore.Level, msg string, context []interface{}) {
+	if ce := s.core.Check(lvl, msg); ce != nil {
+		ce.Write(s.sweetenFields(context)...)
 	}
 }
 
