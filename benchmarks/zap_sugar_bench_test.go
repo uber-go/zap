@@ -29,18 +29,18 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func fakeSugarFields() []interface{} {
-	return []interface{}{
-		errExample,
-		"int", 1,
-		"int64", 2,
-		"float", 3.0,
-		"string", "four!",
-		"stringer", zap.DebugLevel,
-		"bool", true,
-		"time", time.Unix(0, 0),
-		"duration", time.Second,
-		"another string", "done!",
+func fakeSugarFields() zap.Ctx {
+	return zap.Ctx{
+		"error":          errExample,
+		"int":            1,
+		"int64":          2,
+		"float":          3.0,
+		"string":         "four!",
+		"stringer":       zap.DebugLevel,
+		"bool":           true,
+		"time":           time.Unix(0, 0),
+		"duration":       time.Second,
+		"another string": "done!",
 	}
 }
 
@@ -63,8 +63,7 @@ func BenchmarkZapSugarDisabledLevelsWithoutFields(b *testing.B) {
 }
 
 func BenchmarkZapSugarDisabledLevelsAccumulatedContext(b *testing.B) {
-	context := fakeFields()
-	logger := newSugarLogger(zap.ErrorLevel, zap.Fields(context...))
+	logger := newSugarLogger(zap.ErrorLevel, zap.Fields(fakeFields()...))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -78,7 +77,7 @@ func BenchmarkZapSugarDisabledLevelsAddingFields(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			logger.Info("Should be discarded.", fakeSugarFields()...)
+			logger.InfoWith("Should be discarded.", fakeSugarFields())
 		}
 	})
 }
@@ -88,13 +87,13 @@ func BenchmarkZapSugarAddingFields(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			logger.Info("Go fast.", fakeSugarFields()...)
+			logger.InfoWith("Go fast.", fakeSugarFields())
 		}
 	})
 }
 
 func BenchmarkZapSugarWithAccumulatedContext(b *testing.B) {
-	logger := newSugarLogger(zap.DebugLevel).With(fakeSugarFields()...)
+	logger := newSugarLogger(zap.DebugLevel, zap.Fields(fakeFields()...))
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

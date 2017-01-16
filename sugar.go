@@ -26,10 +26,12 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const _oddNumberErrMsg = "Passed an odd number of keys and values to SugaredLogger, ignoring last."
+// A Ctx is a loosely-typed collection of structured log fields. It's a simple
+// alias to reduce the wordiness of log sites.
+type Ctx map[string]interface{}
 
-// A SugaredLogger wraps the core Logger functionality in a slower, but less
-// verbose, API.
+// A SugaredLogger wraps the core Logger functionality in a slightly slower,
+// but less verbose, API.
 type SugaredLogger struct {
 	core Logger
 }
@@ -46,169 +48,171 @@ func Desugar(s *SugaredLogger) Logger {
 	return s.core
 }
 
-// With adds a variadic number of key-value pairs to the logging context.
-// Even-indexed arguments are treated as keys, and are converted to strings
-// (with fmt.Sprint) if necessary. The keys are then zipped with the
-// odd-indexed values into typed fields using the Any field constructor.
+// With adds a loosely-typed collection of key-value pairs to the logging
+// context.
 //
 // For example,
-//   sugaredLogger.With(
-//     "hello", "world",
-//     "failure", errors.New("oh no"),
-//     "count", 42,
-//     "user", User{name: "alice"},
-//  )
-// is the equivalent of
-//   coreLogger.With(
+//   sugaredLogger.With(zap.Ctx{
+//     "hello": "world",
+//     "count": 42,
+//     "user": User{name: "alice"},
+//  })
+// is equivalent to
+//   logger.With(
 //     String("hello", "world"),
-//     String("failure", "oh no"),
 //     Int("count", 42),
-//     Object("user", User{name: "alice"}),
+//     Any("user", User{name: "alice"}),
 //   )
-func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
-	return s.WithFields(s.sweetenFields(args)...)
+func (s *SugaredLogger) With(fields Ctx) *SugaredLogger {
+	return &SugaredLogger{core: s.core.With(s.sweeten(fields)...)}
 }
 
-// WithFields adds structured fields to the logger's context, just like the
-// standard Logger's With method.
-func (s *SugaredLogger) WithFields(fs ...zapcore.Field) *SugaredLogger {
-	return &SugaredLogger{core: s.core.With(fs...)}
+// Debug logs a message, along with any context accumulated on the logger, at
+// DebugLevel.
+func (s *SugaredLogger) Debug(msg string) {
+	s.log(DebugLevel, msg, nil)
 }
 
-// Debug logs a message and some key-value pairs at DebugLevel. Keys and values
-// are treated as they are in the With method.
-func (s *SugaredLogger) Debug(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(DebugLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+// DebugWith adds to the logger's context, then logs a message and the combined
+// context at DebugLevel. For context that's only relevant at one log site,
+// it's faster than logger.With(ctx).Debug(msg).
+func (s *SugaredLogger) DebugWith(msg string, fields Ctx) {
+	s.log(DebugLevel, msg, fields)
 }
 
-// Debugf uses fmt.Sprintf to construct a dynamic message and logs it at
-// DebugLevel. It doesn't add to the message's structured context.
+// Debugf uses fmt.Sprintf to construct a templated message, then passes it to
+// Debug.
 func (s *SugaredLogger) Debugf(template string, args ...interface{}) {
-	if ce := s.core.Check(DebugLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
-	}
+	s.Debug(fmt.Sprintf(template, args...))
 }
 
-// Info logs a message and some key-value pairs at InfoLevel. Keys and values
-// are treated as they are in the With method.
-func (s *SugaredLogger) Info(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(InfoLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+// Info logs a message, along with any context accumulated on the logger, at
+// InfoLevel.
+func (s *SugaredLogger) Info(msg string) {
+	s.log(InfoLevel, msg, nil)
 }
 
-// Infof uses fmt.Sprintf to construct a dynamic message and logs it at
-// InfoLevel. It doesn't add to the message's structured context.
+// InfoWith adds to the logger's context, then logs a message and the combined
+// context at InfoLevel. For context that's only relevant at one log site,
+// it's faster than logger.With(ctx).Info(msg).
+func (s *SugaredLogger) InfoWith(msg string, fields Ctx) {
+	s.log(InfoLevel, msg, fields)
+}
+
+// Infof uses fmt.Sprintf to construct a templated message, then passes it to
+// Info.
 func (s *SugaredLogger) Infof(template string, args ...interface{}) {
-	if ce := s.core.Check(InfoLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
-	}
+	s.Info(fmt.Sprintf(template, args...))
 }
 
-// Warn logs a message and some key-value pairs at WarnLevel. Keys and values
-// are treated as they are in the With method.
-func (s *SugaredLogger) Warn(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(WarnLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+// Warn logs a message, along with any context accumulated on the logger, at
+// WarnLevel.
+func (s *SugaredLogger) Warn(msg string) {
+	s.log(WarnLevel, msg, nil)
 }
 
-// Warnf uses fmt.Sprintf to construct a dynamic message and logs it at
-// WarnLevel. It doesn't add to the message's structured context.
+// WarnWith adds to the logger's context, then logs a message and the combined
+// context at WarnLevel. For context that's only relevant at one log site,
+// it's faster than logger.With(ctx).Warn(msg).
+func (s *SugaredLogger) WarnWith(msg string, fields Ctx) {
+	s.log(WarnLevel, msg, fields)
+}
+
+// Warnf uses fmt.Sprintf to construct a templated message, then passes it to
+// Warn.
 func (s *SugaredLogger) Warnf(template string, args ...interface{}) {
-	if ce := s.core.Check(WarnLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
-	}
+	s.Warn(fmt.Sprintf(template, args...))
 }
 
-// Error logs a message and some key-value pairs at ErrorLevel. Keys and values
-// are treated as they are in the With method.
-func (s *SugaredLogger) Error(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(ErrorLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+// Error logs a message, along with any context accumulated on the logger, at
+// ErrorLevel.
+func (s *SugaredLogger) Error(msg string) {
+	s.log(ErrorLevel, msg, nil)
 }
 
-// Errorf uses fmt.Sprintf to construct a dynamic message and logs it at
-// ErrorLevel. It doesn't add to the message's structured context.
+// ErrorWith adds to the logger's context, then logs a message and the combined
+// context at ErrorLevel. For context that's only relevant at one log site,
+// it's faster than logger.With(ctx).Error(msg).
+func (s *SugaredLogger) ErrorWith(msg string, fields Ctx) {
+	s.log(ErrorLevel, msg, fields)
+}
+
+// Errorf uses fmt.Sprintf to construct a templated message, then passes it to
+// Error.
 func (s *SugaredLogger) Errorf(template string, args ...interface{}) {
-	if ce := s.core.Check(ErrorLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
-	}
+	s.Error(fmt.Sprintf(template, args...))
 }
 
-// DPanic logs a message and some key-value pairs using the underlying logger's
-// DPanic method. Keys and values are treated as they are in the With
-// method. (See Logger.DPanic for details.)
-func (s *SugaredLogger) DPanic(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(DPanicLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+// DPanic logs a message, along with any context accumulated on the logger, at
+// DPanicLevel.
+func (s *SugaredLogger) DPanic(msg string) {
+	s.log(DPanicLevel, msg, nil)
 }
 
-// DPanicf uses fmt.Sprintf to construct a dynamic message, which is passed to
-// the underlying Logger's DPanic method. (See Logger.DPanic for details.) It
-// doesn't add to the message's structured context.
+// DPanicWith adds to the logger's context, then logs a message and the combined
+// context at DPanicLevel. For context that's only relevant at one log site,
+// it's faster than logger.With(ctx).DPanic(msg).
+func (s *SugaredLogger) DPanicWith(msg string, fields Ctx) {
+	s.log(DPanicLevel, msg, fields)
+}
+
+// DPanicf uses fmt.Sprintf to construct a templated message, then passes it to
+// DPanic.
 func (s *SugaredLogger) DPanicf(template string, args ...interface{}) {
-	if ce := s.core.Check(DPanicLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
-	}
+	s.DPanic(fmt.Sprintf(template, args...))
 }
 
-// Panic logs a message and some key-value pairs at PanicLevel, then panics.
-// Keys and values are treated as they are in the With method.
-func (s *SugaredLogger) Panic(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(PanicLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+// Panic logs a message, along with any context accumulated on the logger, at
+// PanicLevel.
+func (s *SugaredLogger) Panic(msg string) {
+	s.log(PanicLevel, msg, nil)
 }
 
-// Panicf uses fmt.Sprintf to construct a dynamic message and logs it at
-// PanicLevel, then panics. It doesn't add to the message's structured context.
+// PanicWith adds to the logger's context, then logs a message and the combined
+// context at PanicLevel. For context that's only relevant at one log site,
+// it's faster than logger.With(ctx).Panic(msg).
+func (s *SugaredLogger) PanicWith(msg string, fields Ctx) {
+	s.log(PanicLevel, msg, fields)
+}
+
+// Panicf uses fmt.Sprintf to construct a templated message, then passes it to
+// Panic.
 func (s *SugaredLogger) Panicf(template string, args ...interface{}) {
-	if ce := s.core.Check(PanicLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
-	}
+	s.Panic(fmt.Sprintf(template, args...))
 }
 
-// Fatal logs a message and some key-value pairs at FatalLevel, then calls
-// os.Exit(1). Keys and values are treated as they are in the With method.
-func (s *SugaredLogger) Fatal(msg interface{}, keysAndValues ...interface{}) {
-	if ce := s.core.Check(FatalLevel, sweetenMsg(msg)); ce != nil {
-		ce.Write(s.sweetenFields(keysAndValues)...)
-	}
+// Fatal logs a message, along with any context accumulated on the logger, at
+// FatalLevel.
+func (s *SugaredLogger) Fatal(msg string) {
+	s.log(FatalLevel, msg, nil)
 }
 
-// Fatalf uses fmt.Sprintf to construct a dynamic message and logs it at
-// FatalLevel, then calls os.Exit(1). It doesn't add to the message's
-// structured context.
+// FatalWith adds to the logger's context, then logs a message and the combined
+// context at FatalLevel. For context that's only relevant at one log site,
+// it's faster than logger.With(ctx).Fatal(msg).
+func (s *SugaredLogger) FatalWith(msg string, fields Ctx) {
+	s.log(FatalLevel, msg, fields)
+}
+
+// Fatalf uses fmt.Sprintf to construct a templated message, then passes it to
+// Fatal.
 func (s *SugaredLogger) Fatalf(template string, args ...interface{}) {
-	if ce := s.core.Check(FatalLevel, fmt.Sprintf(template, args...)); ce != nil {
-		ce.Write()
+	s.Fatal(fmt.Sprintf(template, args...))
+}
+
+func (s *SugaredLogger) log(lvl zapcore.Level, msg string, fields Ctx) {
+	if ce := s.core.Check(lvl, msg); ce != nil {
+		ce.Write(s.sweeten(fields)...)
 	}
 }
 
-func (s *SugaredLogger) sweetenFields(args []interface{}) []zapcore.Field {
-	if len(args) == 0 {
+func (s *SugaredLogger) sweeten(fields Ctx) []zapcore.Field {
+	if len(fields) == 0 {
 		return nil
 	}
-	if len(args)%2 == 1 {
-		s.core.DPanic(_oddNumberErrMsg, Any("ignored", args[len(args)-1]))
+	fs := make([]zapcore.Field, 0, len(fields))
+	for key := range fields {
+		fs = append(fs, Any(key, fields[key]))
 	}
-
-	fields := make([]zapcore.Field, len(args)/2)
-	for i := range fields {
-		key := sweetenMsg(args[2*i])
-		fields[i] = Any(key, args[2*i+1])
-	}
-	return fields
-}
-
-func sweetenMsg(msg interface{}) string {
-	if str, ok := msg.(string); ok {
-		return str
-	}
-	return fmt.Sprint(msg)
+	return fs
 }

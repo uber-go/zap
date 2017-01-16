@@ -39,8 +39,8 @@ const (
 	// ErrorLevel logs are high-priority. If an application is running smoothly,
 	// it shouldn't generate any error-level logs.
 	ErrorLevel = zapcore.ErrorLevel
-	// DPanicLevel logs are particularly important errors. In development the
-	// logger panics after writing the message.
+	// DPanicLevel logs are particularly important errors. In development mode,
+	// the logger panics after writing the message.
 	DPanicLevel = zapcore.DPanicLevel
 	// PanicLevel logs a message, then panics.
 	PanicLevel = zapcore.PanicLevel
