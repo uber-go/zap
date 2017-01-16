@@ -64,21 +64,6 @@ func TestSugarWith(t *testing.T) {
 	}
 }
 
-func TestSugarWithFields(t *testing.T) {
-	tests := [][]zapcore.Field{
-		{},
-		{String("foo", "bar"), Int("baz", 42)},
-	}
-	for _, fields := range tests {
-		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
-			logger.WithFields(fields...).Info("")
-			output := logs.AllUntimed()
-			assert.Equal(t, 1, len(output), "Expected only one message to be logged.")
-			assert.Equal(t, fields, output[0].Context, "Unexpected message context.")
-		})
-	}
-}
-
 type stringerF func() string
 
 func (f stringerF) String() string { return f() }
