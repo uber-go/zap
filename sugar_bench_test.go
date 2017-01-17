@@ -21,38 +21,38 @@
 package zap
 
 import (
-	"sync"
 	"testing"
 
-	"go.uber.org/zap/internal/observer"
+	"go.uber.org/zap/testutils"
 	"go.uber.org/zap/zapcore"
 )
 
-func opts(opts ...Option) []Option {
-	return opts
+func withBenchedSugar(b *testing.B, f func(*SugaredLogger)) {
+	logger := Sugar(New(zapcore.WriterFacility(zapcore.NewJSONEncoder(defaultEncoderConfig()),
+		&testutils.Discarder{},
+		DebugLevel,
+	)))
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			f(logger)
+		}
+	})
 }
 
-// Here specifically to introduce an easily-identifiable filename for testing
-// stacktraces and caller skips.
-func withLogger(t testing.TB, e zapcore.LevelEnabler, opts []Option, f func(Logger, *observer.ObservedLogs)) {
-	var logs observer.ObservedLogs
-	fac := observer.New(e, logs.Add, true)
-	log := New(fac, opts...)
-	f(log, &logs)
-}
-
-func withSugar(t testing.TB, e zapcore.LevelEnabler, opts []Option, f func(*SugaredLogger, *observer.ObservedLogs)) {
-	withLogger(t, e, opts, func(logger Logger, logs *observer.ObservedLogs) { f(Sugar(logger), logs) })
-}
-
-func runConcurrently(goroutines, iterations int, wg *sync.WaitGroup, f func()) {
-	wg.Add(goroutines)
-	for g := 0; g < goroutines; g++ {
-		go func() {
-			defer wg.Done()
-			for i := 0; i < iterations; i++ {
-				f()
-			}
-		}()
-	}
+func Benchmark10FieldsSugar(b *testing.B) {
+	withBenchedSugar(b, func(logger *SugaredLogger) {
+		logger.InfoWith("Ten fields.", Ctx{
+			"one":   1,
+			"two":   2,
+			"three": 3,
+			"four":  4,
+			"five":  5,
+			"six":   6,
+			"seven": 7,
+			"eight": 8,
+			"nine":  9,
+			"ten":   10,
+		})
+	})
 }

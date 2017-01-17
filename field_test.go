@@ -22,16 +22,14 @@ package zap
 
 import (
 	"errors"
+	"math"
 	"net"
 	"sync"
 	"testing"
 	"time"
 
-	"go.uber.org/zap/zapcore"
-
-	"math"
-
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -99,6 +97,31 @@ func TestFieldConstructors(t *testing.T) {
 		{"Object", zapcore.Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: name}, Object("k", name)},
 		{"Reflect", zapcore.Field{Key: "k", Type: zapcore.ReflectType, Interface: ints}, Reflect("k", ints)},
 		{"Nest", zapcore.Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: nested}, Nest("k", nested...)},
+		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
+		{"Any:ArrayMarshaler", Any("k", bools([]bool{true})), Array("k", bools([]bool{true}))},
+		{"Any:Bool", Any("k", true), Bool("k", true)},
+		{"Any:Float64", Any("k", 3.14), Float64("k", 3.14)},
+		// TODO (v1.0): We could use some approximately-equal logic here, but it's
+		// not worth it to test this one line. Before 1.0, we'll need to support
+		// float32s explicitly, which will make this test pass.
+		// {"Any:Float32", Any("k", float32(3.14)), Float32("k", 3.14)},
+		{"Any:Int", Any("k", 1), Int("k", 1)},
+		{"Any:Int64", Any("k", int64(1)), Int64("k", 1)},
+		{"Any:Int32", Any("k", int32(1)), Int64("k", 1)},
+		{"Any:Int16", Any("k", int16(1)), Int64("k", 1)},
+		{"Any:Int8", Any("k", int8(1)), Int64("k", 1)},
+		{"Any:Uint", Any("k", uint(1)), Uint("k", 1)},
+		{"Any:Uint64", Any("k", uint64(1)), Uint64("k", 1)},
+		{"Any:Uint32", Any("k", uint32(1)), Uint64("k", 1)},
+		{"Any:Uint16", Any("k", uint16(1)), Uint64("k", 1)},
+		{"Any:Uint8", Any("k", uint8(1)), Uint64("k", 1)},
+		{"Any:Uintptr", Any("k", uintptr(1)), Uintptr("k", 1)},
+		{"Any:String", Any("k", "v"), String("k", "v")},
+		{"Any:Error", Any("k", errors.New("v")), String("k", "v")},
+		{"Any:Time", Any("k", time.Unix(0, 0)), Time("k", time.Unix(0, 0))},
+		{"Any:Duration", Any("k", time.Second), Duration("k", time.Second)},
+		{"Any:Stringer", Any("k", addr), Stringer("k", addr)},
+		{"Any:Fallback", Any("k", struct{}{}), Reflect("k", struct{}{})},
 	}
 
 	for _, tt := range tests {
