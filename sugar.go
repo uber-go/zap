@@ -83,7 +83,7 @@ func (s *SugaredLogger) DebugWith(msg string, fields Ctx) {
 // Debugf uses fmt.Sprintf to construct a templated message, then passes it to
 // Debug.
 func (s *SugaredLogger) Debugf(template string, args ...interface{}) {
-	s.Debug(fmt.Sprintf(template, args...))
+	s.log(DebugLevel, fmt.Sprintf(template, args...), nil)
 }
 
 // Info logs a message, along with any context accumulated on the logger, at
@@ -102,7 +102,7 @@ func (s *SugaredLogger) InfoWith(msg string, fields Ctx) {
 // Infof uses fmt.Sprintf to construct a templated message, then passes it to
 // Info.
 func (s *SugaredLogger) Infof(template string, args ...interface{}) {
-	s.Info(fmt.Sprintf(template, args...))
+	s.log(InfoLevel, fmt.Sprintf(template, args...), nil)
 }
 
 // Warn logs a message, along with any context accumulated on the logger, at
@@ -121,7 +121,7 @@ func (s *SugaredLogger) WarnWith(msg string, fields Ctx) {
 // Warnf uses fmt.Sprintf to construct a templated message, then passes it to
 // Warn.
 func (s *SugaredLogger) Warnf(template string, args ...interface{}) {
-	s.Warn(fmt.Sprintf(template, args...))
+	s.log(WarnLevel, fmt.Sprintf(template, args...), nil)
 }
 
 // Error logs a message, along with any context accumulated on the logger, at
@@ -140,7 +140,7 @@ func (s *SugaredLogger) ErrorWith(msg string, fields Ctx) {
 // Errorf uses fmt.Sprintf to construct a templated message, then passes it to
 // Error.
 func (s *SugaredLogger) Errorf(template string, args ...interface{}) {
-	s.Error(fmt.Sprintf(template, args...))
+	s.log(ErrorLevel, fmt.Sprintf(template, args...), nil)
 }
 
 // DPanic logs a message, along with any context accumulated on the logger, at
@@ -159,7 +159,7 @@ func (s *SugaredLogger) DPanicWith(msg string, fields Ctx) {
 // DPanicf uses fmt.Sprintf to construct a templated message, then passes it to
 // DPanic.
 func (s *SugaredLogger) DPanicf(template string, args ...interface{}) {
-	s.DPanic(fmt.Sprintf(template, args...))
+	s.log(DPanicLevel, fmt.Sprintf(template, args...), nil)
 }
 
 // Panic logs a message, along with any context accumulated on the logger, at
@@ -178,7 +178,7 @@ func (s *SugaredLogger) PanicWith(msg string, fields Ctx) {
 // Panicf uses fmt.Sprintf to construct a templated message, then passes it to
 // Panic.
 func (s *SugaredLogger) Panicf(template string, args ...interface{}) {
-	s.Panic(fmt.Sprintf(template, args...))
+	s.log(PanicLevel, fmt.Sprintf(template, args...), nil)
 }
 
 // Fatal logs a message, along with any context accumulated on the logger, at
@@ -197,7 +197,7 @@ func (s *SugaredLogger) FatalWith(msg string, fields Ctx) {
 // Fatalf uses fmt.Sprintf to construct a templated message, then passes it to
 // Fatal.
 func (s *SugaredLogger) Fatalf(template string, args ...interface{}) {
-	s.Fatal(fmt.Sprintf(template, args...))
+	s.log(FatalLevel, fmt.Sprintf(template, args...), nil)
 }
 
 func (s *SugaredLogger) log(lvl zapcore.Level, msg string, fields Ctx) {
