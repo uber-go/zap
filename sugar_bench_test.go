@@ -42,7 +42,7 @@ func withBenchedSugar(b *testing.B, f func(*SugaredLogger)) {
 
 func Benchmark10FieldsSugar(b *testing.B) {
 	withBenchedSugar(b, func(logger *SugaredLogger) {
-		logger.Info("Ten fields, passed at the log site.",
+		logger.Infow("Ten fields, passed at the log site.",
 			"one", 1,
 			"two", 2,
 			"three", 3,

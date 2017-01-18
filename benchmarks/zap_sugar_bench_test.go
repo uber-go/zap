@@ -78,7 +78,7 @@ func BenchmarkZapSugarDisabledLevelsAddingFields(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			logger.Info("Should be discarded.", fakeSugarFields()...)
+			logger.Infow("Should be discarded.", fakeSugarFields()...)
 		}
 	})
 }
@@ -88,7 +88,7 @@ func BenchmarkZapSugarAddingFields(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			logger.Info("Go fast.", fakeSugarFields()...)
+			logger.Infow("Go fast.", fakeSugarFields()...)
 		}
 	})
 }
