@@ -170,6 +170,20 @@ func BenchmarkZapAddingFields(b *testing.B) {
 	})
 }
 
+func BenchmarkZapAddingFieldsAndStacktrace(b *testing.B) {
+	logger := zap.New(zapcore.WriterFacility(
+		benchEncoder(),
+		&testutils.Discarder{},
+		zap.DebugLevel,
+	), zap.AddStacks(zapcore.InfoLevel))
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Info("Go fast-ish with trace!", fakeFields()...)
+		}
+	})
+}
+
 func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 	context := fakeFields()
 	logger := zap.New(
