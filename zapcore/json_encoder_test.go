@@ -42,9 +42,10 @@ func TestJSONEncodeEntry(t *testing.T) {
 		// Messages should be escaped.
 		enc.AddString("foo", "bar")
 		buf, err := enc.EncodeEntry(Entry{
-			Level:   InfoLevel,
-			Message: `hello\`,
-			Time:    epoch,
+			LoggerName: "",
+			Level:      InfoLevel,
+			Message:    `hello\`,
+			Time:       epoch,
 		}, nil)
 		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
 		assert.Equal(
@@ -56,42 +57,45 @@ func TestJSONEncodeEntry(t *testing.T) {
 		// We should be able to re-use the encoder, preserving the accumulated
 		// fields.
 		buf, err = enc.EncodeEntry(Entry{
-			Level:   InfoLevel,
-			Message: `hello`,
-			Time:    time.Unix(0, 100*int64(time.Millisecond)),
+			LoggerName: "main",
+			Level:      InfoLevel,
+			Message:    `hello`,
+			Time:       time.Unix(0, 100*int64(time.Millisecond)),
 		}, nil)
 		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
 		assert.Equal(
 			t,
-			`{"level":"info","ts":100,"msg":"hello","foo":"bar"}`+"\n",
+			`{"level":"info","ts":100,"name":"main","msg":"hello","foo":"bar"}`+"\n",
 			string(buf),
 		)
 
 		// Stacktraces are included.
 		buf, err = enc.EncodeEntry(Entry{
-			Level:   InfoLevel,
-			Message: `hello`,
-			Time:    time.Unix(0, 100*int64(time.Millisecond)),
-			Stack:   "trace",
+			LoggerName: `main\`,
+			Level:      InfoLevel,
+			Message:    `hello`,
+			Time:       time.Unix(0, 100*int64(time.Millisecond)),
+			Stack:      "trace",
 		}, nil)
 		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
 		assert.Equal(
 			t,
-			`{"level":"info","ts":100,"msg":"hello","foo":"bar","stacktrace":"trace"}`+"\n",
+			`{"level":"info","ts":100,"name":"main\\","msg":"hello","foo":"bar","stacktrace":"trace"}`+"\n",
 			string(buf),
 		)
 
 		// Caller is included.
 		buf, err = enc.EncodeEntry(Entry{
-			Level:   InfoLevel,
-			Message: `hello`,
-			Time:    time.Unix(0, 100*int64(time.Millisecond)),
-			Caller:  MakeEntryCaller(runtime.Caller(0)),
+			LoggerName: "main.lib.foo",
+			Level:      InfoLevel,
+			Message:    `hello`,
+			Time:       time.Unix(0, 100*int64(time.Millisecond)),
+			Caller:     MakeEntryCaller(runtime.Caller(0)),
 		}, nil)
 		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
 		assert.Regexp(
 			t,
-			`{"level":"info","ts":100,"caller":"/.*zap/zapcore/json_encoder_test.go:\d+","msg":"hello","foo":"bar"}`+"\n",
+			`{"level":"info","ts":100,"name":"main.lib.foo","caller":"/.*zap/zapcore/json_encoder_test.go:\d+","msg":"hello","foo":"bar"}`+"\n",
 			string(buf),
 		)
 	})

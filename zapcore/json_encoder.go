@@ -42,6 +42,7 @@ type JSONConfig struct {
 	MessageFormatter func(string) Field
 	TimeFormatter    func(time.Time) Field
 	LevelFormatter   func(Level) Field
+	NameFormatter    func(string) Field
 }
 
 type jsonEncoder struct {
@@ -158,6 +159,7 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 	final.bytes = append(final.bytes, '{')
 	final.LevelFormatter(ent.Level).AddTo(final)
 	final.TimeFormatter(ent.Time).AddTo(final)
+	final.NameFormatter(ent.LoggerName).AddTo(final)
 	if ent.Caller.Defined {
 		// NOTE: we add the field here for parity compromise with text
 		// prepending, while not actually mutating the message string.

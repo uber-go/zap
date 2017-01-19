@@ -40,10 +40,17 @@ func testJSONConfig() JSONConfig {
 	levelF := func(l Level) Field {
 		return Field{Type: StringType, String: l.String(), Key: "level"}
 	}
+	nameF := func(n string) Field {
+		if n == "" {
+			return Field{Type: SkipType}
+		}
+		return Field{Type: StringType, String: n, Key: "name"}
+	}
 	return JSONConfig{
 		MessageFormatter: msgF,
 		TimeFormatter:    timeF,
 		LevelFormatter:   levelF,
+		NameFormatter:    nameF,
 	}
 }
 
