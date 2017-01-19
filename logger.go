@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"go.uber.org/zap/zapcore"
@@ -31,19 +32,26 @@ import (
 
 func defaultEncoderConfig() zapcore.JSONConfig {
 	msgF := func(msg string) zapcore.Field {
-		return zapcore.Field{Type: zapcore.StringType, String: msg, Key: "msg"}
+		return String("msg", msg)
 	}
 	timeF := func(t time.Time) zapcore.Field {
 		millis := t.UnixNano() / int64(time.Millisecond)
-		return zapcore.Field{Type: zapcore.Int64Type, Integer: millis, Key: "ts"}
+		return Int64("ts", millis)
 	}
 	levelF := func(l zapcore.Level) zapcore.Field {
-		return zapcore.Field{Type: zapcore.StringType, String: l.String(), Key: "level"}
+		return String("level", l.String())
+	}
+	nameF := func(n string) zapcore.Field {
+		if n == "" {
+			return Skip()
+		}
+		return String("name", n)
 	}
 	return zapcore.JSONConfig{
 		MessageFormatter: msgF,
 		TimeFormatter:    timeF,
 		LevelFormatter:   levelF,
+		NameFormatter:    nameF,
 	}
 }
 
@@ -52,6 +60,8 @@ func defaultEncoderConfig() zapcore.JSONConfig {
 type Logger interface {
 	// Create a child logger, and optionally add some context to that logger.
 	With(...zapcore.Field) Logger
+	// Add a sub-scope to the logger's name.
+	Named(string) Logger
 
 	// Check returns a CheckedEntry if logging a message at the specified level
 	// is enabled. It's a completely optional optimization; in high-performance
@@ -79,6 +89,7 @@ type logger struct {
 	fac zapcore.Facility
 
 	development bool
+	name        string
 	errorOutput zapcore.WriteSyncer
 
 	addCaller bool
@@ -109,18 +120,26 @@ func New(fac zapcore.Facility, options ...Option) Logger {
 	return log
 }
 
+func (log *logger) Named(s string) Logger {
+	if s == "" {
+		return log
+	}
+	l := log.clone()
+	if log.name == "" {
+		l.name = s
+	} else {
+		l.name = strings.Join([]string{l.name, s}, ".")
+	}
+	return l
+}
+
 func (log *logger) With(fields ...zapcore.Field) Logger {
 	if len(fields) == 0 {
 		return log
 	}
-	return &logger{
-		fac:         log.fac.With(fields),
-		development: log.development,
-		errorOutput: log.errorOutput,
-		addCaller:   log.addCaller,
-		addStack:    log.addStack,
-		callerSkip:  log.callerSkip,
-	}
+	l := log.clone()
+	l.fac = l.fac.With(fields)
+	return l
 }
 
 func (log *logger) Check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
@@ -135,9 +154,10 @@ func (log *logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	// Create basic checked entry thru the facility; this will be non-nil if
 	// the log message will actually be written somewhere.
 	ent := zapcore.Entry{
-		Time:    time.Now().UTC(),
-		Level:   lvl,
-		Message: msg,
+		LoggerName: log.name,
+		Time:       time.Now().UTC(),
+		Level:      lvl,
+		Message:    msg,
 	}
 	ce := log.fac.Check(ent, nil)
 
@@ -225,4 +245,16 @@ func (log *logger) Fatal(msg string, fields ...zapcore.Field) {
 // Facility returns the destination that logs entries are written to.
 func (log *logger) Facility() zapcore.Facility {
 	return log.fac
+}
+
+func (log *logger) clone() *logger {
+	return &logger{
+		fac:         log.fac,
+		name:        log.name,
+		development: log.development,
+		errorOutput: log.errorOutput,
+		addCaller:   log.addCaller,
+		addStack:    log.addStack,
+		callerSkip:  log.callerSkip,
+	}
 }
