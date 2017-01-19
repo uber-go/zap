@@ -27,6 +27,12 @@ import (
 	"go.uber.org/atomic"
 )
 
+func newCounters() *counters {
+	return &counters{
+		counts: make(map[string]*atomic.Uint64),
+	}
+}
+
 type counters struct {
 	sync.RWMutex
 	counts map[string]*atomic.Uint64
@@ -64,7 +70,7 @@ func Sample(fac Facility, tick time.Duration, first, thereafter int) Facility {
 	return &sampler{
 		Facility:   fac,
 		tick:       tick,
-		counts:     &counters{counts: make(map[string]*atomic.Uint64)},
+		counts:     newCounters(),
 		first:      uint64(first),
 		thereafter: uint64(thereafter),
 	}
