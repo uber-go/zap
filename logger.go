@@ -126,7 +126,7 @@ func (log *logger) log(lvl Level, msg string, fields []Field) {
 		return
 	}
 
-	t := time.Now().UTC()
+	t := time.Now().Local()
 	if err := log.Encode(log.Output, t, lvl, msg, fields); err != nil {
 		log.InternalError("encoder", err)
 	}
