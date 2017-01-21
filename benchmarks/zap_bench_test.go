@@ -55,19 +55,26 @@ var _jane = user{
 // TODO: remove this when we figure out a new config & options story.
 func benchEncoder() zapcore.Encoder {
 	msgF := func(msg string) zapcore.Field {
-		return zapcore.Field{Type: zapcore.StringType, String: msg, Key: "msg"}
+		return zap.String("msg", msg)
 	}
 	timeF := func(t time.Time) zapcore.Field {
 		millis := t.UnixNano() / int64(time.Millisecond)
-		return zapcore.Field{Type: zapcore.Int64Type, Integer: millis, Key: "ts"}
+		return zap.Int64("ts", millis)
 	}
 	levelF := func(l zapcore.Level) zapcore.Field {
-		return zapcore.Field{Type: zapcore.StringType, String: l.String(), Key: "level"}
+		return zap.String("level", l.String())
+	}
+	nameF := func(n string) zapcore.Field {
+		if n == "" {
+			return zap.Skip()
+		}
+		return zap.String("name", n)
 	}
 	return zapcore.NewJSONEncoder(zapcore.JSONConfig{
 		MessageFormatter: msgF,
 		TimeFormatter:    timeF,
 		LevelFormatter:   levelF,
+		NameFormatter:    nameF,
 	})
 }
 

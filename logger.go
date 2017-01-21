@@ -248,13 +248,6 @@ func (log *logger) Facility() zapcore.Facility {
 }
 
 func (log *logger) clone() *logger {
-	return &logger{
-		fac:         log.fac,
-		name:        log.name,
-		development: log.development,
-		errorOutput: log.errorOutput,
-		addCaller:   log.addCaller,
-		addStack:    log.addStack,
-		callerSkip:  log.callerSkip,
-	}
+	copy := *log
+	return &copy
 }
