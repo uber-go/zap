@@ -24,13 +24,20 @@ import (
 	"sync"
 	"time"
 
+	coreAtomic "sync/atomic"
+
 	"go.uber.org/atomic"
+	"go.uber.org/zap/internal/hash"
 )
 
 func newCounters() *counters {
 	return &counters{
 		counts: make(map[string]*atomic.Uint64),
 	}
+}
+
+func newCounters2() *counters2 {
+	return &counters2{}
 }
 
 type counters struct {
@@ -63,6 +70,25 @@ func (c *counters) Reset(key string) {
 	count := c.counts[key]
 	c.Unlock()
 	count.Store(0)
+}
+
+// TODO: replace counters with counters2 once proven
+const _counters2size = 4096
+
+type counters2 [_counters2size]uint64
+
+func (c *counters2) Inc(key string) uint64 {
+	i := c.hash(key) % _counters2size
+	return coreAtomic.AddUint64(&c[i], 1)
+}
+
+func (c *counters2) Reset(key string) {
+	i := c.hash(key) % _counters2size
+	coreAtomic.StoreUint64(&c[i], 0)
+}
+
+func (c *counters2) hash(key string) uint32 {
+	return hash.XSHRR(key) % _counters2size
 }
 
 // Sample creates a facility that samples incoming entries.
