@@ -74,7 +74,14 @@ func Desugar(s *SugaredLogger) Logger {
 // continues. Passing an odd number of arguments triggers similar behavior:
 // panics in development and errors in production.
 func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
-	return &SugaredLogger{core: s.core.With(s.sweetenFields(args)...)}
+	return s.WithFields(s.sweetenFields(args)...)
+}
+
+// WithFields adds structured fields to the logging context, much like the
+// base Logger. It allows the sugared logger to use more specialized
+// fields (like Stack).
+func (s *SugaredLogger) WithFields(fs ...zapcore.Field) *SugaredLogger {
+	return &SugaredLogger{core: s.core.With(fs...)}
 }
 
 // Debug uses fmt.Sprint to construct and log a message.
