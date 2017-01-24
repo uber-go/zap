@@ -31,7 +31,6 @@ import (
 
 func fakeSugarFields() []interface{} {
 	return []interface{}{
-		errExample,
 		"int", 1,
 		"int64", 2,
 		"float", 3.0,
