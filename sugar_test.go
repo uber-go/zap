@@ -44,6 +44,13 @@ func TestSugarWith(t *testing.T) {
 		{[]interface{}{}, []zapcore.Field{}, nil},
 		{[]interface{}{"should ignore"}, []zapcore.Field{}, []observer.LoggedEntry{ignored}},
 		{[]interface{}{"foo", 42, "true", "bar"}, []zapcore.Field{Int("foo", 42), String("true", "bar")}, nil},
+		{[]interface{}{Int("foo", 42)}, []zapcore.Field{Int("foo", 42)}, nil},
+		{[]interface{}{Int("foo", 42), "should ignore"}, []zapcore.Field{Int("foo", 42)}, []observer.LoggedEntry{ignored}},
+		{
+			[]interface{}{"first", "field", Int("foo", 42), "baz", "quux", "should ignore"},
+			[]zapcore.Field{String("first", "field"), Int("foo", 42), String("baz", "quux")},
+			[]observer.LoggedEntry{ignored},
+		},
 		{
 			args:     []interface{}{"foo", 42, true, "bar"},
 			expected: []zapcore.Field{Int("foo", 42), String("true", "bar")},

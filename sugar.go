@@ -49,39 +49,35 @@ func Desugar(s *SugaredLogger) Logger {
 	return s.core
 }
 
-// With adds a variadic number of key-value pairs to the logging context.
-// Even-indexed arguments are treated as keys and zipped with the odd-indexed
-// values using the Any field constructor.
+// With adds a variadic number of fields to the logging context. It accepts a
+// mix of strongly-typed zapcore.Field objects and loosely-typed key-value
+// pairs. When processing pairs, the first element of the pair is used as the
+// field key and the second as the field value.
 //
 // For example,
 //   sugaredLogger.With(
 //     "hello", "world",
 //     "failure", errors.New("oh no"),
+//     Stack(),
 //     "count", 42,
 //     "user", User{name: "alice"},
 //  )
 // is the equivalent of
-//   coreLogger.With(
+//   baseLogger.With(
 //     String("hello", "world"),
 //     String("failure", "oh no"),
+//     Stack(),
 //     Int("count", 42),
 //     Object("user", User{name: "alice"}),
 //   )
 //
-// Note that the keys should be strings. In development, passing a non-string
-// key panics. In production, the logger is more forgiving: a separate error is
-// logged, but the key is coerced to a string with fmt.Sprint and execution
-// continues. Passing an odd number of arguments triggers similar behavior:
-// panics in development and errors in production.
+// Note that the keys in key-value pairs should be strings. In development,
+// passing a non-string key panics. In production, the logger is more
+// forgiving: a separate error is logged, but the key is coerced to a string
+// with fmt.Sprint and execution continues. Passing an orphaned key triggers
+// similar behavior: panics in development and errors in production.
 func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
-	return s.WithFields(s.sweetenFields(args)...)
-}
-
-// WithFields adds structured fields to the logging context, much like the
-// base Logger. It allows the sugared logger to use more specialized
-// fields (like Stack).
-func (s *SugaredLogger) WithFields(fs ...zapcore.Field) *SugaredLogger {
-	return &SugaredLogger{core: s.core.With(fs...)}
+	return &SugaredLogger{core: s.core.With(s.sweetenFields(args)...)}
 }
 
 // Debug uses fmt.Sprint to construct and log a message.
@@ -212,25 +208,35 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []zapcore.Field {
 	if len(args) == 0 {
 		return nil
 	}
-	if len(args)%2 == 1 {
-		s.core.DPanic(_oddNumberErrMsg, Any("ignored", args[len(args)-1]))
-	}
 
-	fields := make([]zapcore.Field, len(args)/2)
-	for i := range fields {
-		keyIdx := 2 * i
-		val := args[keyIdx+1]
-		key, ok := args[keyIdx].(string)
+	// Allocate enough space for the common case; if users only pass structured
+	// fields, we'll need to grow the slice.
+	fields := make([]zapcore.Field, 0, len(args)/2)
+	var i int
+	for i < len(args) {
+		if f, ok := args[i].(zapcore.Field); ok {
+			fields = append(fields, f)
+			i++
+			continue
+		}
+		if i == len(args)-1 {
+			s.core.DPanic(_oddNumberErrMsg, Any("ignored", args[i]))
+			break
+		}
+		key, ok := args[i].(string)
+		val := args[i+1]
 		if !ok {
 			s.core.DPanic(
 				_nonStringKeyErrMsg,
-				Int("position", keyIdx),
-				Any("key", args[keyIdx]),
+				Int("position", i),
+				Any("key", args[i]),
 				Any("value", val),
 			)
-			key = fmt.Sprint(args[keyIdx])
+			key = fmt.Sprint(args[i])
 		}
-		fields[i] = Any(key, val)
+		fields = append(fields, Any(key, val))
+		i += 2
 	}
+
 	return fields
 }
