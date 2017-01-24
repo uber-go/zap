@@ -97,11 +97,12 @@ func (ec EntryCaller) String() string {
 // Entries are pooled, so any functions that accept them must be careful not to
 // retain references to them.
 type Entry struct {
-	Level   Level
-	Time    time.Time
-	Message string
-	Caller  EntryCaller
-	Stack   string
+	Level      Level
+	Time       time.Time
+	LoggerName string
+	Message    string
+	Caller     EntryCaller
+	Stack      string
 }
 
 // CheckWriteAction indicates what action to take after (*CheckedEntry).Write

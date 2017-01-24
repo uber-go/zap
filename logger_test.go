@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoggerDynamicLevel(t *testing.T) {
@@ -246,6 +247,33 @@ func TestLoggerNoOpsDisabledLevels(t *testing.T) {
 			"Expected logging at a disabled level to produce no output.",
 		)
 	})
+}
+
+func TestLoggerNames(t *testing.T) {
+	tests := []struct {
+		names    []string
+		expected string
+	}{
+		{nil, ""},
+		{[]string{"foo"}, "foo"},
+		{[]string{"foo", "bar"}, "foo.bar"},
+		{[]string{"foo.bar", "baz"}, "foo.bar.baz"},
+		// Garbage in, garbage out.
+		{[]string{"foo.", "bar"}, "foo..bar"},
+		{[]string{"foo", ".bar"}, "foo..bar"},
+		{[]string{"foo.", ".bar"}, "foo...bar"},
+	}
+
+	for _, tt := range tests {
+		withLogger(t, DebugLevel, nil, func(log Logger, logs *observer.ObservedLogs) {
+			for _, n := range tt.names {
+				log = log.Named(n)
+			}
+			log.Info("")
+			require.Equal(t, 1, logs.Len(), "Expected only one log entry to be written.")
+			assert.Equal(t, tt.expected, logs.AllUntimed()[0].Entry.LoggerName, "Unexpected logger name.")
+		})
+	}
 }
 
 func TestLoggerWriteFailure(t *testing.T) {
