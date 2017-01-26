@@ -38,10 +38,10 @@ func TestSugarWith(t *testing.T) {
 			Context: []zapcore.Field{Any("ignored", msg)},
 		}
 	}
-	nonString := func(pos int, key, val interface{}) observer.LoggedEntry {
+	nonString := func(pairs ...invalidPair) observer.LoggedEntry {
 		return observer.LoggedEntry{
 			Entry:   zapcore.Entry{Level: DPanicLevel, Message: _nonStringKeyErrMsg},
-			Context: []zapcore.Field{Int("position", pos), Any("key", key), Any("value", val)},
+			Context: []zapcore.Field{Array("invalid", invalidPairs(pairs))},
 		}
 	}
 
@@ -103,13 +103,16 @@ func TestSugarWith(t *testing.T) {
 			desc:     "one non-string key",
 			args:     []interface{}{"foo", 42, true, "bar"},
 			expected: []zapcore.Field{Int("foo", 42)},
-			errLogs:  []observer.LoggedEntry{nonString(2, true, "bar")},
+			errLogs:  []observer.LoggedEntry{nonString(invalidPair{2, true, "bar"})},
 		},
 		{
 			desc:     "pairs, structured fields, non-string keys, and a dangling key",
 			args:     []interface{}{"foo", 42, true, "bar", Int("structure", 11), 42, "reversed", "dangling"},
 			expected: []zapcore.Field{Int("foo", 42), Int("structure", 11)},
-			errLogs:  []observer.LoggedEntry{nonString(2, true, "bar"), nonString(5, 42, "reversed"), ignored("dangling")},
+			errLogs: []observer.LoggedEntry{
+				ignored("dangling"),
+				nonString(invalidPair{2, true, "bar"}, invalidPair{5, 42, "reversed"}),
+			},
 		},
 	}
 

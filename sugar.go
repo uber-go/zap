@@ -23,12 +23,13 @@ package zap
 import (
 	"fmt"
 
+	"go.uber.org/zap/internal/multierror"
 	"go.uber.org/zap/zapcore"
 )
 
 const (
 	_oddNumberErrMsg    = "Ignored key without a value."
-	_nonStringKeyErrMsg = "Ignored key-value pair with a non-string key."
+	_nonStringKeyErrMsg = "Ignored key-value pairs with non-string keys."
 )
 
 // A SugaredLogger wraps the core Logger functionality in a slower, but less
@@ -212,6 +213,8 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []zapcore.Field {
 	// Allocate enough space for the worst case; if users pass only structured
 	// fields, we shouldn't penalize them with extra allocations.
 	fields := make([]zapcore.Field, 0, len(args))
+	var invalid invalidPairs
+
 	for i := 0; i < len(args); {
 		// This is a strongly-typed field. Consume it and move on.
 		if f, ok := args[i].(zapcore.Field); ok {
@@ -227,20 +230,45 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []zapcore.Field {
 		}
 
 		// Consume this value and the next, treating them as a key-value pair. If the
-		// key isn't a string, log an error and move on.
+		// key isn't a string, add it to the slice of invalid pairs.
 		key, val := args[i], args[i+1]
 		if keyStr, ok := key.(string); !ok {
-			s.core.DPanic(
-				_nonStringKeyErrMsg,
-				Int("position", i),
-				Any("key", key),
-				Any("value", val),
-			)
+			// Subsequent errors are likely, so allocate once up front.
+			if cap(invalid) == 0 {
+				invalid = make(invalidPairs, 0, len(args)/2)
+			}
+			invalid = append(invalid, invalidPair{i, key, val})
 		} else {
 			fields = append(fields, Any(keyStr, val))
 		}
 		i += 2
 	}
 
+	// If we encountered any invalid key-value pairs, log an error.
+	if len(invalid) > 0 {
+		s.core.DPanic(_nonStringKeyErrMsg, Array("invalid", invalid))
+	}
 	return fields
+}
+
+type invalidPair struct {
+	position   int
+	key, value interface{}
+}
+
+func (p invalidPair) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddInt64("position", int64(p.position))
+	Any("key", p.key).AddTo(enc)
+	Any("value", p.value).AddTo(enc)
+	return nil
+}
+
+type invalidPairs []invalidPair
+
+func (ps invalidPairs) MarshalLogArray(enc zapcore.ArrayEncoder) error {
+	var errs multierror.Error
+	for i := range ps {
+		errs = errs.Append(enc.AppendObject(ps[i]))
+	}
+	return errs.AsError()
 }
