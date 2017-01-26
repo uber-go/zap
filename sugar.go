@@ -74,9 +74,9 @@ func Desugar(s *SugaredLogger) Logger {
 //
 // Note that the keys in key-value pairs should be strings. In development,
 // passing a non-string key panics. In production, the logger is more
-// forgiving: a separate error is logged, but the key is coerced to a string
-// with fmt.Sprint and execution continues. Passing an orphaned key triggers
-// similar behavior: panics in development and errors in production.
+// forgiving: a separate error is logged, but the key-value pair is skipped and
+// execution continues. Passing an orphaned key triggers similar behavior:
+// panics in development and errors in production.
 func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
 	return &SugaredLogger{core: s.core.With(s.sweetenFields(args)...)}
 }
