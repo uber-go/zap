@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	_oddNumberErrMsg    = "Passed an odd number of keys and values to SugaredLogger, ignoring last."
-	_nonStringKeyErrMsg = "Passed a non-string key."
+	_oddNumberErrMsg    = "Ignored key without a value."
+	_nonStringKeyErrMsg = "Ignored key-value pair with a non-string key."
 )
 
 // A SugaredLogger wraps the core Logger functionality in a slower, but less
@@ -209,32 +209,36 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []zapcore.Field {
 		return nil
 	}
 
-	// Allocate enough space for the common case; if users only pass structured
-	// fields, we'll need to grow the slice.
-	fields := make([]zapcore.Field, 0, len(args)/2)
-	var i int
-	for i < len(args) {
+	// Allocate enough space for the worst case; if users pass only structured
+	// fields, we shouldn't penalize them with extra allocations.
+	fields := make([]zapcore.Field, 0, len(args))
+	for i := 0; i < len(args); {
+		// This is a strongly-typed field. Consume it and move on.
 		if f, ok := args[i].(zapcore.Field); ok {
 			fields = append(fields, f)
 			i++
 			continue
 		}
+
+		// Make sure this element isn't a dangling key.
 		if i == len(args)-1 {
 			s.core.DPanic(_oddNumberErrMsg, Any("ignored", args[i]))
 			break
 		}
-		key, ok := args[i].(string)
-		val := args[i+1]
-		if !ok {
+
+		// Consume this value and the next, treating them as a key-value pair. If the
+		// key isn't a string, log an error and move on.
+		key, val := args[i], args[i+1]
+		if keyStr, ok := key.(string); !ok {
 			s.core.DPanic(
 				_nonStringKeyErrMsg,
 				Int("position", i),
-				Any("key", args[i]),
+				Any("key", key),
 				Any("value", val),
 			)
-			key = fmt.Sprint(args[i])
+		} else {
+			fields = append(fields, Any(keyStr, val))
 		}
-		fields = append(fields, Any(key, val))
 		i += 2
 	}
 

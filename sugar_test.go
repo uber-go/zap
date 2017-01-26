@@ -31,33 +31,85 @@ import (
 )
 
 func TestSugarWith(t *testing.T) {
-	ignored := observer.LoggedEntry{
-		Entry:   zapcore.Entry{Level: DPanicLevel, Message: _oddNumberErrMsg},
-		Context: []zapcore.Field{Any("ignored", "should ignore")},
+	// Convenience functions to create expected error logs.
+	ignored := func(msg string) observer.LoggedEntry {
+		return observer.LoggedEntry{
+			Entry:   zapcore.Entry{Level: DPanicLevel, Message: _oddNumberErrMsg},
+			Context: []zapcore.Field{Any("ignored", msg)},
+		}
 	}
+	nonString := func(pos int, key, val interface{}) observer.LoggedEntry {
+		return observer.LoggedEntry{
+			Entry:   zapcore.Entry{Level: DPanicLevel, Message: _nonStringKeyErrMsg},
+			Context: []zapcore.Field{Int("position", pos), Any("key", key), Any("value", val)},
+		}
+	}
+
 	tests := []struct {
+		desc     string
 		args     []interface{}
 		expected []zapcore.Field
 		errLogs  []observer.LoggedEntry
 	}{
-		{nil, []zapcore.Field{}, nil},
-		{[]interface{}{}, []zapcore.Field{}, nil},
-		{[]interface{}{"should ignore"}, []zapcore.Field{}, []observer.LoggedEntry{ignored}},
-		{[]interface{}{"foo", 42, "true", "bar"}, []zapcore.Field{Int("foo", 42), String("true", "bar")}, nil},
-		{[]interface{}{Int("foo", 42)}, []zapcore.Field{Int("foo", 42)}, nil},
-		{[]interface{}{Int("foo", 42), "should ignore"}, []zapcore.Field{Int("foo", 42)}, []observer.LoggedEntry{ignored}},
 		{
-			[]interface{}{"first", "field", Int("foo", 42), "baz", "quux", "should ignore"},
-			[]zapcore.Field{String("first", "field"), Int("foo", 42), String("baz", "quux")},
-			[]observer.LoggedEntry{ignored},
+			desc:     "nil args",
+			args:     nil,
+			expected: []zapcore.Field{},
+			errLogs:  nil,
 		},
 		{
-			args:     []interface{}{"foo", 42, true, "bar"},
+			desc:     "empty slice of args",
+			args:     []interface{}{},
+			expected: []zapcore.Field{},
+			errLogs:  nil,
+		},
+		{
+			desc:     "just a dangling key",
+			args:     []interface{}{"should ignore"},
+			expected: []zapcore.Field{},
+			errLogs:  []observer.LoggedEntry{ignored("should ignore")},
+		},
+		{
+			desc:     "well-formed key-value pairs",
+			args:     []interface{}{"foo", 42, "true", "bar"},
 			expected: []zapcore.Field{Int("foo", 42), String("true", "bar")},
-			errLogs: []observer.LoggedEntry{{
-				Entry:   zapcore.Entry{Level: DPanicLevel, Message: _nonStringKeyErrMsg},
-				Context: []zapcore.Field{Int("position", 2), Any("key", true), Any("value", "bar")},
-			}},
+			errLogs:  nil,
+		},
+		{
+			desc:     "just a structured field",
+			args:     []interface{}{Int("foo", 42)},
+			expected: []zapcore.Field{Int("foo", 42)},
+			errLogs:  nil,
+		},
+		{
+			desc:     "structured field and a dangling key",
+			args:     []interface{}{Int("foo", 42), "dangling"},
+			expected: []zapcore.Field{Int("foo", 42)},
+			errLogs:  []observer.LoggedEntry{ignored("dangling")},
+		},
+		{
+			desc:     "key-value pair and a dangling key",
+			args:     []interface{}{"foo", 42, "dangling"},
+			expected: []zapcore.Field{Int("foo", 42)},
+			errLogs:  []observer.LoggedEntry{ignored("dangling")},
+		},
+		{
+			desc:     "pairs, a structured field, and a dangling key",
+			args:     []interface{}{"first", "field", Int("foo", 42), "baz", "quux", "dangling"},
+			expected: []zapcore.Field{String("first", "field"), Int("foo", 42), String("baz", "quux")},
+			errLogs:  []observer.LoggedEntry{ignored("dangling")},
+		},
+		{
+			desc:     "one non-string key",
+			args:     []interface{}{"foo", 42, true, "bar"},
+			expected: []zapcore.Field{Int("foo", 42)},
+			errLogs:  []observer.LoggedEntry{nonString(2, true, "bar")},
+		},
+		{
+			desc:     "pairs, structured fields, non-string keys, and a dangling key",
+			args:     []interface{}{"foo", 42, true, "bar", Int("structure", 11), 42, "reversed", "dangling"},
+			expected: []zapcore.Field{Int("foo", 42), Int("structure", 11)},
+			errLogs:  []observer.LoggedEntry{nonString(2, true, "bar"), nonString(5, 42, "reversed"), ignored("dangling")},
 		},
 	}
 
@@ -67,11 +119,11 @@ func TestSugarWith(t *testing.T) {
 			output := logs.AllUntimed()
 			if len(tt.errLogs) > 0 {
 				for i := range tt.errLogs {
-					assert.Equal(t, tt.errLogs[i], output[i], "Unexpected error log at position %d.", i)
+					assert.Equal(t, tt.errLogs[i], output[i], "Unexpected error log at position %d for scenario %s.", i, tt.desc)
 				}
 			}
-			assert.Equal(t, len(tt.errLogs)+1, len(output), "Expected only one message to be logged.")
-			assert.Equal(t, tt.expected, output[len(tt.errLogs)].Context, "Unexpected message context.")
+			assert.Equal(t, len(tt.errLogs)+1, len(output), "Expected only one non-error message to be logged in scenario %s.", tt.desc)
+			assert.Equal(t, tt.expected, output[len(tt.errLogs)].Context, "Unexpected message context in scenario %s.", tt.desc)
 		})
 	}
 }
