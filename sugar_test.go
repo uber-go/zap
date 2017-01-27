@@ -32,7 +32,7 @@ import (
 
 func TestSugarWith(t *testing.T) {
 	// Convenience functions to create expected error logs.
-	ignored := func(msg string) observer.LoggedEntry {
+	ignored := func(msg interface{}) observer.LoggedEntry {
 		return observer.LoggedEntry{
 			Entry:   zapcore.Entry{Level: DPanicLevel, Message: _oddNumberErrMsg},
 			Context: []zapcore.Field{Any("ignored", msg)},
@@ -88,6 +88,12 @@ func TestSugarWith(t *testing.T) {
 			errLogs:  []observer.LoggedEntry{ignored("dangling")},
 		},
 		{
+			desc:     "structured field and a dangling non-string key",
+			args:     []interface{}{Int("foo", 42), 13},
+			expected: []zapcore.Field{Int("foo", 42)},
+			errLogs:  []observer.LoggedEntry{ignored(13)},
+		},
+		{
 			desc:     "key-value pair and a dangling key",
 			args:     []interface{}{"foo", 42, "dangling"},
 			expected: []zapcore.Field{Int("foo", 42)},
@@ -107,8 +113,8 @@ func TestSugarWith(t *testing.T) {
 		},
 		{
 			desc:     "pairs, structured fields, non-string keys, and a dangling key",
-			args:     []interface{}{"foo", 42, true, "bar", Int("structure", 11), 42, "reversed", "dangling"},
-			expected: []zapcore.Field{Int("foo", 42), Int("structure", 11)},
+			args:     []interface{}{"foo", 42, true, "bar", Int("structure", 11), 42, "reversed", "baz", "quux", "dangling"},
+			expected: []zapcore.Field{Int("foo", 42), Int("structure", 11), String("baz", "quux")},
 			errLogs: []observer.LoggedEntry{
 				ignored("dangling"),
 				nonString(invalidPair{2, true, "bar"}, invalidPair{5, 42, "reversed"}),
