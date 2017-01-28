@@ -23,12 +23,13 @@ package zap
 import (
 	"fmt"
 
+	"go.uber.org/zap/internal/multierror"
 	"go.uber.org/zap/zapcore"
 )
 
 const (
-	_oddNumberErrMsg    = "Passed an odd number of keys and values to SugaredLogger, ignoring last."
-	_nonStringKeyErrMsg = "Passed a non-string key."
+	_oddNumberErrMsg    = "Ignored key without a value."
+	_nonStringKeyErrMsg = "Ignored key-value pairs with non-string keys."
 )
 
 // A SugaredLogger wraps the core Logger functionality in a slower, but less
@@ -49,39 +50,35 @@ func Desugar(s *SugaredLogger) Logger {
 	return s.core
 }
 
-// With adds a variadic number of key-value pairs to the logging context.
-// Even-indexed arguments are treated as keys and zipped with the odd-indexed
-// values using the Any field constructor.
+// With adds a variadic number of fields to the logging context. It accepts a
+// mix of strongly-typed zapcore.Field objects and loosely-typed key-value
+// pairs. When processing pairs, the first element of the pair is used as the
+// field key and the second as the field value.
 //
 // For example,
 //   sugaredLogger.With(
 //     "hello", "world",
 //     "failure", errors.New("oh no"),
+//     Stack(),
 //     "count", 42,
 //     "user", User{name: "alice"},
 //  )
 // is the equivalent of
-//   coreLogger.With(
+//   baseLogger.With(
 //     String("hello", "world"),
 //     String("failure", "oh no"),
+//     Stack(),
 //     Int("count", 42),
 //     Object("user", User{name: "alice"}),
 //   )
 //
-// Note that the keys should be strings. In development, passing a non-string
-// key panics. In production, the logger is more forgiving: a separate error is
-// logged, but the key is coerced to a string with fmt.Sprint and execution
-// continues. Passing an odd number of arguments triggers similar behavior:
+// Note that the keys in key-value pairs should be strings. In development,
+// passing a non-string key panics. In production, the logger is more
+// forgiving: a separate error is logged, but the key-value pair is skipped and
+// execution continues. Passing an orphaned key triggers similar behavior:
 // panics in development and errors in production.
 func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
-	return s.WithFields(s.sweetenFields(args)...)
-}
-
-// WithFields adds structured fields to the logging context, much like the
-// base Logger. It allows the sugared logger to use more specialized
-// fields (like Stack).
-func (s *SugaredLogger) WithFields(fs ...zapcore.Field) *SugaredLogger {
-	return &SugaredLogger{core: s.core.With(fs...)}
+	return &SugaredLogger{core: s.core.With(s.sweetenFields(args)...)}
 }
 
 // Debug uses fmt.Sprint to construct and log a message.
@@ -212,25 +209,66 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []zapcore.Field {
 	if len(args) == 0 {
 		return nil
 	}
-	if len(args)%2 == 1 {
-		s.core.DPanic(_oddNumberErrMsg, Any("ignored", args[len(args)-1]))
+
+	// Allocate enough space for the worst case; if users pass only structured
+	// fields, we shouldn't penalize them with extra allocations.
+	fields := make([]zapcore.Field, 0, len(args))
+	var invalid invalidPairs
+
+	for i := 0; i < len(args); {
+		// This is a strongly-typed field. Consume it and move on.
+		if f, ok := args[i].(zapcore.Field); ok {
+			fields = append(fields, f)
+			i++
+			continue
+		}
+
+		// Make sure this element isn't a dangling key.
+		if i == len(args)-1 {
+			s.core.DPanic(_oddNumberErrMsg, Any("ignored", args[i]))
+			break
+		}
+
+		// Consume this value and the next, treating them as a key-value pair. If the
+		// key isn't a string, add it to the slice of invalid pairs.
+		key, val := args[i], args[i+1]
+		if keyStr, ok := key.(string); !ok {
+			// Subsequent errors are likely, so allocate once up front.
+			if cap(invalid) == 0 {
+				invalid = make(invalidPairs, 0, len(args)/2)
+			}
+			invalid = append(invalid, invalidPair{i, key, val})
+		} else {
+			fields = append(fields, Any(keyStr, val))
+		}
+		i += 2
 	}
 
-	fields := make([]zapcore.Field, len(args)/2)
-	for i := range fields {
-		keyIdx := 2 * i
-		val := args[keyIdx+1]
-		key, ok := args[keyIdx].(string)
-		if !ok {
-			s.core.DPanic(
-				_nonStringKeyErrMsg,
-				Int("position", keyIdx),
-				Any("key", args[keyIdx]),
-				Any("value", val),
-			)
-			key = fmt.Sprint(args[keyIdx])
-		}
-		fields[i] = Any(key, val)
+	// If we encountered any invalid key-value pairs, log an error.
+	if len(invalid) > 0 {
+		s.core.DPanic(_nonStringKeyErrMsg, Array("invalid", invalid))
 	}
 	return fields
+}
+
+type invalidPair struct {
+	position   int
+	key, value interface{}
+}
+
+func (p invalidPair) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddInt64("position", int64(p.position))
+	Any("key", p.key).AddTo(enc)
+	Any("value", p.value).AddTo(enc)
+	return nil
+}
+
+type invalidPairs []invalidPair
+
+func (ps invalidPairs) MarshalLogArray(enc zapcore.ArrayEncoder) error {
+	var errs multierror.Error
+	for i := range ps {
+		errs = errs.Append(enc.AppendObject(ps[i]))
+	}
+	return errs.AsError()
 }
