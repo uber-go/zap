@@ -43,6 +43,12 @@ func fakeSugarFields() []interface{} {
 	}
 }
 
+func fakeSugarFormatArgs() (string, []interface{}) {
+	template := "some args: %d %v %v %s %v %v %v %v %v"
+	args := []interface{}{1, 2, 3.0, "four!", zap.DebugLevel, true, time.Unix(0, 0), time.Second, "done!"}
+	return template, args
+}
+
 func newSugarLogger(lvl zapcore.Level, options ...zap.Option) *zap.SugaredLogger {
 	return zap.Sugar(zap.New(zapcore.WriterFacility(
 		benchEncoder(),
@@ -61,6 +67,17 @@ func BenchmarkZapSugarDisabledLevelsWithoutFields(b *testing.B) {
 	})
 }
 
+func BenchmarkZapSugarFmtDisabledLevelsWithoutFields(b *testing.B) {
+	logger := newSugarLogger(zap.ErrorLevel)
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			template, args := fakeSugarFormatArgs()
+			logger.Infof(template, args...)
+		}
+	})
+}
+
 func BenchmarkZapSugarDisabledLevelsAccumulatedContext(b *testing.B) {
 	context := fakeFields()
 	logger := newSugarLogger(zap.ErrorLevel, zap.Fields(context...))
@@ -68,6 +85,18 @@ func BenchmarkZapSugarDisabledLevelsAccumulatedContext(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			logger.Info("Should be discarded.")
+		}
+	})
+}
+
+func BenchmarkZapSugarFmtDisabledLevelsAccumulatedContext(b *testing.B) {
+	context := fakeFields()
+	logger := newSugarLogger(zap.ErrorLevel, zap.Fields(context...))
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			template, args := fakeSugarFormatArgs()
+			logger.Infof(template, args...)
 		}
 	})
 }
@@ -102,12 +131,34 @@ func BenchmarkZapSugarWithAccumulatedContext(b *testing.B) {
 	})
 }
 
+func BenchmarkZapSugarFmtWithAccumulatedContext(b *testing.B) {
+	logger := newSugarLogger(zap.DebugLevel).With(fakeSugarFields()...)
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			template, args := fakeSugarFormatArgs()
+			logger.Infof(template, args...)
+		}
+	})
+}
+
 func BenchmarkZapSugarWithoutFields(b *testing.B) {
 	logger := newSugarLogger(zap.DebugLevel)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			logger.Info("Go fast.")
+		}
+	})
+}
+
+func BenchmarkZapSugarFmtWithoutFields(b *testing.B) {
+	logger := newSugarLogger(zap.DebugLevel)
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			template, args := fakeSugarFormatArgs()
+			logger.Infof(template, args...)
 		}
 	})
 }
