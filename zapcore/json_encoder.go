@@ -67,40 +67,9 @@ func NewJSONEncoder(cfg JSONConfig) Encoder {
 	}
 }
 
-func (enc *jsonEncoder) AddString(key, val string) {
+func (enc *jsonEncoder) AddArray(key string, arr ArrayMarshaler) error {
 	enc.addKey(key)
-	enc.bytes = append(enc.bytes, '"')
-	enc.safeAddString(val)
-	enc.bytes = append(enc.bytes, '"')
-}
-
-func (enc *jsonEncoder) AddBool(key string, val bool) {
-	enc.addKey(key)
-	enc.AppendBool(val)
-}
-
-func (enc *jsonEncoder) AddInt64(key string, val int64) {
-	enc.addKey(key)
-	enc.bytes = strconv.AppendInt(enc.bytes, val, 10)
-}
-
-func (enc *jsonEncoder) AddUint64(key string, val uint64) {
-	enc.addKey(key)
-	enc.bytes = strconv.AppendUint(enc.bytes, val, 10)
-}
-
-func (enc *jsonEncoder) AddFloat64(key string, val float64) {
-	enc.addKey(key)
-	switch {
-	case math.IsNaN(val):
-		enc.bytes = append(enc.bytes, `"NaN"`...)
-	case math.IsInf(val, 1):
-		enc.bytes = append(enc.bytes, `"+Inf"`...)
-	case math.IsInf(val, -1):
-		enc.bytes = append(enc.bytes, `"-Inf"`...)
-	default:
-		enc.bytes = strconv.AppendFloat(enc.bytes, val, 'f', -1, 64)
-	}
+	return enc.AppendArray(arr)
 }
 
 func (enc *jsonEncoder) AddObject(key string, obj ObjectMarshaler) error {
@@ -108,9 +77,24 @@ func (enc *jsonEncoder) AddObject(key string, obj ObjectMarshaler) error {
 	return enc.AppendObject(obj)
 }
 
-func (enc *jsonEncoder) AddArray(key string, arr ArrayMarshaler) error {
+func (enc *jsonEncoder) AddBool(key string, val bool) {
 	enc.addKey(key)
-	return enc.AppendArray(arr)
+	enc.AppendBool(val)
+}
+
+func (enc *jsonEncoder) AddComplex128(key string, val complex128) {
+	enc.addKey(key)
+	enc.AppendComplex128(val)
+}
+
+func (enc *jsonEncoder) AddFloat64(key string, val float64) {
+	enc.addKey(key)
+	enc.AppendFloat64(val)
+}
+
+func (enc *jsonEncoder) AddInt64(key string, val int64) {
+	enc.addKey(key)
+	enc.AppendInt64(val)
 }
 
 func (enc *jsonEncoder) AddReflected(key string, obj interface{}) error {
@@ -121,6 +105,16 @@ func (enc *jsonEncoder) AddReflected(key string, obj interface{}) error {
 	enc.addKey(key)
 	enc.bytes = append(enc.bytes, marshaled...)
 	return nil
+}
+
+func (enc *jsonEncoder) AddString(key, val string) {
+	enc.addKey(key)
+	enc.AppendString(val)
+}
+
+func (enc *jsonEncoder) AddUint64(key string, val uint64) {
+	enc.addKey(key)
+	enc.AppendUint64(val)
 }
 
 func (enc *jsonEncoder) AppendArray(arr ArrayMarshaler) error {
@@ -143,6 +137,74 @@ func (enc *jsonEncoder) AppendBool(val bool) {
 	enc.separateElements()
 	enc.bytes = strconv.AppendBool(enc.bytes, val)
 }
+
+func (enc *jsonEncoder) AppendComplex128(val complex128) {
+	enc.separateElements()
+	// FIXME: do I need these casts?
+	r, i := float64(real(val)), float64(imag(val))
+	enc.bytes = append(enc.bytes, '"')
+	// Because we're always in a quoted string, we can use strconv without
+	// special-casing NaN and +/-Inf.
+	enc.bytes = strconv.AppendFloat(enc.bytes, r, 'f', -1, 64)
+	enc.bytes = append(enc.bytes, '+')
+	enc.bytes = strconv.AppendFloat(enc.bytes, i, 'f', -1, 64)
+	enc.bytes = append(enc.bytes, 'i', '"')
+}
+
+func (enc *jsonEncoder) AppendInt64(val int64) {
+	enc.separateElements()
+	enc.bytes = strconv.AppendInt(enc.bytes, val, 10)
+}
+
+func (enc *jsonEncoder) AppendReflected(val interface{}) error {
+	marshaled, err := json.Marshal(val)
+	if err != nil {
+		return err
+	}
+	enc.separateElements()
+	enc.bytes = append(enc.bytes, marshaled...)
+	return nil
+}
+
+func (enc *jsonEncoder) AppendString(val string) {
+	enc.separateElements()
+	enc.bytes = append(enc.bytes, '"')
+	enc.safeAddString(val)
+	enc.bytes = append(enc.bytes, '"')
+}
+
+func (enc *jsonEncoder) AppendUint64(val uint64) {
+	enc.separateElements()
+	enc.bytes = strconv.AppendUint(enc.bytes, val, 10)
+}
+
+func (enc *jsonEncoder) AddByte(k string, v byte)           { enc.AddUint8(k, uint8(v)) }
+func (enc *jsonEncoder) AddComplex64(k string, v complex64) { enc.AddComplex128(k, complex128(v)) }
+func (enc *jsonEncoder) AddFloat32(k string, v float32)     { enc.AddFloat64(k, float64(v)) }
+func (enc *jsonEncoder) AddInt(k string, v int)             { enc.AddInt64(k, int64(v)) }
+func (enc *jsonEncoder) AddInt32(k string, v int32)         { enc.AddInt64(k, int64(v)) }
+func (enc *jsonEncoder) AddInt16(k string, v int16)         { enc.AddInt64(k, int64(v)) }
+func (enc *jsonEncoder) AddInt8(k string, v int8)           { enc.AddInt64(k, int64(v)) }
+func (enc *jsonEncoder) AddRune(k string, v rune)           { enc.AddInt32(k, int32(v)) }
+func (enc *jsonEncoder) AddUint(k string, v uint)           { enc.AddUint64(k, uint64(v)) }
+func (enc *jsonEncoder) AddUint32(k string, v uint32)       { enc.AddUint64(k, uint64(v)) }
+func (enc *jsonEncoder) AddUint16(k string, v uint16)       { enc.AddUint64(k, uint64(v)) }
+func (enc *jsonEncoder) AddUint8(k string, v uint8)         { enc.AddUint64(k, uint64(v)) }
+func (enc *jsonEncoder) AddUintptr(k string, v uintptr)     { enc.AddUint64(k, uint64(v)) }
+func (enc *jsonEncoder) AppendByte(v byte)                  { enc.AppendUint8(uint8(v)) }
+func (enc *jsonEncoder) AppendComplex64(v complex64)        { enc.AppendComplex128(complex128(v)) }
+func (enc *jsonEncoder) AppendFloat64(v float64)            { enc.appendFloat(v, 64) }
+func (enc *jsonEncoder) AppendFloat32(v float32)            { enc.appendFloat(float64(v), 32) }
+func (enc *jsonEncoder) AppendInt(v int)                    { enc.AppendInt64(int64(v)) }
+func (enc *jsonEncoder) AppendInt32(v int32)                { enc.AppendInt64(int64(v)) }
+func (enc *jsonEncoder) AppendInt16(v int16)                { enc.AppendInt64(int64(v)) }
+func (enc *jsonEncoder) AppendInt8(v int8)                  { enc.AppendInt64(int64(v)) }
+func (enc *jsonEncoder) AppendRune(v rune)                  { enc.AppendInt32(int32(v)) }
+func (enc *jsonEncoder) AppendUint(v uint)                  { enc.AppendUint64(uint64(v)) }
+func (enc *jsonEncoder) AppendUint32(v uint32)              { enc.AppendUint64(uint64(v)) }
+func (enc *jsonEncoder) AppendUint16(v uint16)              { enc.AppendUint64(uint64(v)) }
+func (enc *jsonEncoder) AppendUint8(v uint8)                { enc.AppendUint64(uint64(v)) }
+func (enc *jsonEncoder) AppendUintptr(v uintptr)            { enc.AppendUint64(uint64(v)) }
 
 func (enc *jsonEncoder) Clone() Encoder {
 	clone := &jsonEncoder{JSONConfig: enc.JSONConfig}
@@ -202,6 +264,20 @@ func (enc *jsonEncoder) separateElements() {
 		return
 	default:
 		enc.bytes = append(enc.bytes, ',')
+	}
+}
+
+func (enc *jsonEncoder) appendFloat(val float64, bitSize int) {
+	enc.separateElements()
+	switch {
+	case math.IsNaN(val):
+		enc.bytes = append(enc.bytes, `"NaN"`...)
+	case math.IsInf(val, 1):
+		enc.bytes = append(enc.bytes, `"+Inf"`...)
+	case math.IsInf(val, -1):
+		enc.bytes = append(enc.bytes, `"-Inf"`...)
+	default:
+		enc.bytes = strconv.AppendFloat(enc.bytes, val, 'f', -1, bitSize)
 	}
 }
 

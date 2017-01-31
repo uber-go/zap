@@ -23,7 +23,6 @@ package zapcore
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"math/rand"
 	"reflect"
@@ -97,40 +96,55 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 		expected string
 		f        func(Encoder)
 	}{
-		{"string", `"k":"v"`, func(e Encoder) { e.AddString("k", "v") }},
-		{"string", `"k":""`, func(e Encoder) { e.AddString("k", "") }},
-		{"string", `"k\\":"v\\"`, func(e Encoder) { e.AddString(`k\`, `v\`) }},
+		{"bool", `"k\\":true`, func(e Encoder) { e.AddBool(`k\`, true) }}, // test key escaping once
 		{"bool", `"k":true`, func(e Encoder) { e.AddBool("k", true) }},
 		{"bool", `"k":false`, func(e Encoder) { e.AddBool("k", false) }},
-		{"bool", `"k\\":true`, func(e Encoder) { e.AddBool(`k\`, true) }},
-		{"int64", `"k":42`, func(e Encoder) { e.AddInt64("k", 42) }},
-		{"int64", `"k\\":42`, func(e Encoder) { e.AddInt64(`k\`, 42) }},
-		{"int64", fmt.Sprintf(`"k":%d`, math.MaxInt64), func(e Encoder) { e.AddInt64("k", math.MaxInt64) }},
-		{"int64", fmt.Sprintf(`"k":%d`, math.MinInt64), func(e Encoder) { e.AddInt64("k", math.MinInt64) }},
-		{"int64", fmt.Sprintf(`"k\\":%d`, math.MaxInt64), func(e Encoder) { e.AddInt64(`k\`, math.MaxInt64) }},
-		{"uint64", `"k":42`, func(e Encoder) { e.AddUint64("k", 42) }},
-		{"uint64", `"k\\":42`, func(e Encoder) { e.AddUint64(`k\`, 42) }},
-		{"uint64", fmt.Sprintf(`"k":%d`, uint64(math.MaxUint64)), func(e Encoder) { e.AddUint64("k", math.MaxUint64) }},
-		{"uint64", fmt.Sprintf(`"k\\":%d`, uint64(math.MaxUint64)), func(e Encoder) { e.AddUint64(`k\`, math.MaxUint64) }},
+		{"byte", `"k":1`, func(e Encoder) { e.AddByte("k", 1) }},
+		{"complex128", `"k":"1+2i"`, func(e Encoder) { e.AddComplex128("k", 1+2i) }},
+		{"complex64", `"k":"1+2i"`, func(e Encoder) { e.AddComplex64("k", 1+2i) }},
 		{"float64", `"k":1`, func(e Encoder) { e.AddFloat64("k", 1.0) }},
-		{"float64", `"k\\":1`, func(e Encoder) { e.AddFloat64(`k\`, 1.0) }},
 		{"float64", `"k":10000000000`, func(e Encoder) { e.AddFloat64("k", 1e10) }},
 		{"float64", `"k":"NaN"`, func(e Encoder) { e.AddFloat64("k", math.NaN()) }},
 		{"float64", `"k":"+Inf"`, func(e Encoder) { e.AddFloat64("k", math.Inf(1)) }},
 		{"float64", `"k":"-Inf"`, func(e Encoder) { e.AddFloat64("k", math.Inf(-1)) }},
-		{"ObjectMarshaler", `"k":{"loggable":"yes"}`, func(e Encoder) {
-			assert.NoError(t, e.AddObject("k", loggable{true}), "Unexpected error calling MarshalLogObject.")
-		}},
-		{"ObjectMarshaler", `"k\\":{"loggable":"yes"}`, func(e Encoder) {
-			assert.NoError(t, e.AddObject(`k\`, loggable{true}), "Unexpected error calling MarshalLogObject.")
-		}},
-		{"ObjectMarshaler", `"k":{}`, func(e Encoder) {
-			assert.Error(t, e.AddObject("k", loggable{false}), "Expected an error calling MarshalLogObject.")
-		}},
+		{"float32", `"k":1`, func(e Encoder) { e.AddFloat32("k", 1.0) }},
+		{"float32", `"k":10000000000`, func(e Encoder) { e.AddFloat32("k", 1e10) }},
+		{"float32", `"k":"NaN"`, func(e Encoder) { e.AddFloat32("k", float32(math.NaN())) }},
+		{"float32", `"k":"+Inf"`, func(e Encoder) { e.AddFloat32("k", float32(math.Inf(1))) }},
+		{"float32", `"k":"-Inf"`, func(e Encoder) { e.AddFloat32("k", float32(math.Inf(-1))) }},
+		{"int", `"k":42`, func(e Encoder) { e.AddInt("k", 42) }},
+		{"int64", `"k":42`, func(e Encoder) { e.AddInt64("k", 42) }},
+		{"int32", `"k":42`, func(e Encoder) { e.AddInt32("k", 42) }},
+		{"int16", `"k":42`, func(e Encoder) { e.AddInt16("k", 42) }},
+		{"int8", `"k":42`, func(e Encoder) { e.AddInt8("k", 42) }},
+		{"rune", `"k":42`, func(e Encoder) { e.AddRune("k", rune(42)) }},
+		{"string", `"k":"v\\"`, func(e Encoder) { e.AddString(`k`, `v\`) }},
+		{"string", `"k":"v"`, func(e Encoder) { e.AddString("k", "v") }},
+		{"string", `"k":""`, func(e Encoder) { e.AddString("k", "") }},
+		{"uint", `"k":42`, func(e Encoder) { e.AddUint("k", 42) }},
+		{"uint64", `"k":42`, func(e Encoder) { e.AddUint64("k", 42) }},
+		{"uint32", `"k":42`, func(e Encoder) { e.AddUint32("k", 42) }},
+		{"uint16", `"k":42`, func(e Encoder) { e.AddUint16("k", 42) }},
+		{"uint8", `"k":42`, func(e Encoder) { e.AddUint8("k", 42) }},
+		{"uintptr", `"k":42`, func(e Encoder) { e.AddUintptr("k", 42) }},
 		{
-			"ObjectMarshaler(ArrayMarshaler(ObjectMarshaler))",
-			`"turducken":{"ducks":[{"in":"chicken"},{"in":"chicken"}]}`,
-			func(e Encoder) {
+			desc:     "object (success)",
+			expected: `"k":{"loggable":"yes"}`,
+			f: func(e Encoder) {
+				assert.NoError(t, e.AddObject("k", loggable{true}), "Unexpected error calling MarshalLogObject.")
+			},
+		},
+		{
+			desc:     "object (error)",
+			expected: `"k":{}`,
+			f: func(e Encoder) {
+				assert.Error(t, e.AddObject("k", loggable{false}), "Expected an error calling MarshalLogObject.")
+			},
+		},
+		{
+			desc:     "object (with nested array)",
+			expected: `"turducken":{"ducks":[{"in":"chicken"},{"in":"chicken"}]}`,
+			f: func(e Encoder) {
 				assert.NoError(
 					t,
 					e.AddObject("turducken", turducken{}),
@@ -139,9 +153,9 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 			},
 		},
 		{
-			"ArrayMarshaler(ObjectMarshaler(ArrayMarshaler(ObjectMarshaler)))",
-			`"turduckens":[{"ducks":[{"in":"chicken"},{"in":"chicken"}]},{"ducks":[{"in":"chicken"},{"in":"chicken"}]}]`,
-			func(e Encoder) {
+			desc:     "array (with nested object)",
+			expected: `"turduckens":[{"ducks":[{"in":"chicken"},{"in":"chicken"}]},{"ducks":[{"in":"chicken"},{"in":"chicken"}]}]`,
+			f: func(e Encoder) {
 				assert.NoError(
 					t,
 					e.AddArray("turduckens", turduckens(2)),
@@ -149,21 +163,34 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 				)
 			},
 		},
-		{"ArrayMarshaler", `"k\\":[true]`, func(e Encoder) {
-			assert.NoError(t, e.AddArray(`k\`, loggable{true}), "Unexpected error calling MarshalLogArray.")
-		}},
-		{"ArrayMarshaler", `"k":[]`, func(e Encoder) {
-			assert.Error(t, e.AddArray("k", loggable{false}), "Expected an error calling MarshalLogArray.")
-		}},
-		{"arbitrary object", `"k":{"loggable":"yes"}`, func(e Encoder) {
-			assert.NoError(t, e.AddReflected("k", map[string]string{"loggable": "yes"}), "Unexpected error JSON-serializing a map.")
-		}},
-		{"arbitrary object", `"k\\":{"loggable":"yes"}`, func(e Encoder) {
-			assert.NoError(t, e.AddReflected(`k\`, map[string]string{"loggable": "yes"}), "Unexpected error JSON-serializing a map.")
-		}},
-		{"arbitrary object", "", func(e Encoder) {
-			assert.Error(t, e.AddReflected("k", noJSON{}), "Unexpected success JSON-serializing a noJSON.")
-		}},
+		{
+			desc:     "array (success)",
+			expected: `"k":[true]`,
+			f: func(e Encoder) {
+				assert.NoError(t, e.AddArray(`k`, loggable{true}), "Unexpected error calling MarshalLogArray.")
+			},
+		},
+		{
+			desc:     "array (error)",
+			expected: `"k":[]`,
+			f: func(e Encoder) {
+				assert.Error(t, e.AddArray("k", loggable{false}), "Expected an error calling MarshalLogArray.")
+			},
+		},
+		{
+			desc:     "reflect (success)",
+			expected: `"k":{"loggable":"yes"}`,
+			f: func(e Encoder) {
+				assert.NoError(t, e.AddReflected("k", map[string]string{"loggable": "yes"}), "Unexpected error JSON-serializing a map.")
+			},
+		},
+		{
+			desc:     "reflect (failure)",
+			expected: "",
+			f: func(e Encoder) {
+				assert.Error(t, e.AddReflected("k", noJSON{}), "Unexpected success JSON-serializing a noJSON.")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -171,53 +198,101 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 	}
 }
 
-func TestJSONEncoderArrayTypes(t *testing.T) {
+func TestJSONEncoderArrays(t *testing.T) {
 	tests := []struct {
-		desc        string
-		f           func(ArrayEncoder) error
-		expected    string
-		shouldError bool
+		desc     string
+		expected string // expect f to be called twice
+		f        func(ArrayEncoder)
 	}{
-		// arrays of ObjectMarshalers are covered by the turducken test above.
+		{"bool", `[true,true]`, func(e ArrayEncoder) { e.AppendBool(true) }},
+		{"byte", `[1,1]`, func(e ArrayEncoder) { e.AppendByte(1) }},
+		{"complex128", `["1+2i","1+2i"]`, func(e ArrayEncoder) { e.AppendComplex128(1 + 2i) }},
+		{"complex64", `["1+2i","1+2i"]`, func(e ArrayEncoder) { e.AppendComplex64(1 + 2i) }},
+		{"float64", `[3.14,3.14]`, func(e ArrayEncoder) { e.AppendFloat64(3.14) }},
+		{"float32", `[3.14,3.14]`, func(e ArrayEncoder) { e.AppendFloat32(3.14) }},
+		{"int", `[42,42]`, func(e ArrayEncoder) { e.AppendInt(42) }},
+		{"int64", `[42,42]`, func(e ArrayEncoder) { e.AppendInt64(42) }},
+		{"int32", `[42,42]`, func(e ArrayEncoder) { e.AppendInt32(42) }},
+		{"int16", `[42,42]`, func(e ArrayEncoder) { e.AppendInt16(42) }},
+		{"int8", `[42,42]`, func(e ArrayEncoder) { e.AppendInt8(42) }},
+		{"rune", `[1,1]`, func(e ArrayEncoder) { e.AppendRune(1) }},
+		{"string", `["k","k"]`, func(e ArrayEncoder) { e.AppendString("k") }},
+		{"string", `["k\\","k\\"]`, func(e ArrayEncoder) { e.AppendString(`k\`) }},
+		{"uint", `[42,42]`, func(e ArrayEncoder) { e.AppendUint(42) }},
+		{"uint64", `[42,42]`, func(e ArrayEncoder) { e.AppendUint64(42) }},
+		{"uint32", `[42,42]`, func(e ArrayEncoder) { e.AppendUint32(42) }},
+		{"uint16", `[42,42]`, func(e ArrayEncoder) { e.AppendUint16(42) }},
+		{"uint8", `[42,42]`, func(e ArrayEncoder) { e.AppendUint8(42) }},
+		{"uintptr", `[42,42]`, func(e ArrayEncoder) { e.AppendUintptr(42) }},
 		{
-			"arrays of arrays",
-			func(arr ArrayEncoder) error {
-				arr.AppendArray(ArrayMarshalerFunc(func(enc ArrayEncoder) error {
-					enc.AppendBool(true)
+			desc:     "arrays (success)",
+			expected: `[[true],[true]]`,
+			f: func(arr ArrayEncoder) {
+				assert.NoError(t, arr.AppendArray(ArrayMarshalerFunc(func(inner ArrayEncoder) error {
+					inner.AppendBool(true)
 					return nil
-				}))
-				arr.AppendArray(ArrayMarshalerFunc(func(enc ArrayEncoder) error {
-					enc.AppendBool(true)
-					return nil
-				}))
-				return nil
+				})), "Unexpected error appending an array.")
 			},
-			`[[true],[true]]`,
-			false,
 		},
 		{
-			"bools",
-			func(arr ArrayEncoder) error {
-				arr.AppendBool(true)
-				arr.AppendBool(false)
-				return nil
+			desc:     "arrays (error)",
+			expected: `[[true],[true]]`,
+			f: func(arr ArrayEncoder) {
+				assert.Error(t, arr.AppendArray(ArrayMarshalerFunc(func(inner ArrayEncoder) error {
+					inner.AppendBool(true)
+					return errors.New("fail")
+				})), "Expected an error appending an array.")
 			},
-			`[true,false]`,
-			false,
+		},
+		{
+			desc:     "objects (success)",
+			expected: `[{"loggable":"yes"},{"loggable":"yes"}]`,
+			f: func(arr ArrayEncoder) {
+				assert.NoError(t, arr.AppendObject(loggable{true}), "Unexpected error appending an object.")
+			},
+		},
+		{
+			desc:     "objects (error)",
+			expected: `[{},{}]`,
+			f: func(arr ArrayEncoder) {
+				assert.Error(t, arr.AppendObject(loggable{false}), "Expected an error appending an object.")
+			},
+		},
+		{
+			desc:     "reflect (success)",
+			expected: `[{"foo":5},{"foo":5}]`,
+			f: func(arr ArrayEncoder) {
+				assert.NoError(
+					t,
+					arr.AppendReflected(map[string]int{"foo": 5}),
+					"Unexpected an error appending an object with reflection.",
+				)
+			},
+		},
+		{
+			desc:     "reflect (error)",
+			expected: `[]`,
+			f: func(arr ArrayEncoder) {
+				assert.Error(
+					t,
+					arr.AppendReflected(noJSON{}),
+					"Unexpected an error appending an object with reflection.",
+				)
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		f := func(enc Encoder) error {
-			return enc.AddArray("array", ArrayMarshalerFunc(tt.f))
+			return enc.AddArray("array", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
+				tt.f(arr)
+				tt.f(arr)
+				return nil
+			}))
 		}
 		assertOutput(t, tt.desc, `"array":`+tt.expected, func(enc Encoder) {
 			err := f(enc)
-			if tt.shouldError {
-				assert.Error(t, err, "Expected an error adding array to JSON encoder.")
-			} else {
-				assert.NoError(t, err, "Unexpected error adding array to JSON encoder.")
-			}
+			assert.NoError(t, err, "Unexpected error adding array to JSON encoder.")
 		})
 	}
 }

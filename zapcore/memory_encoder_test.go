@@ -21,70 +21,231 @@
 package zapcore
 
 import (
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMapObjectEncoderAdd(t *testing.T) {
-	arbitraryObj := map[string]interface{}{
-		"foo": "bar",
-		"baz": 5,
-	}
-
-	enc := make(MapObjectEncoder)
-	// ObjectEncoder methods.
-	enc.AddBool("b", true)
-	enc.AddFloat64("f64", 1.56)
-	enc.AddInt64("i64", math.MaxInt64)
-	enc.AddUint64("uint64", 42)
-	enc.AddString("s", "string")
-	assert.NoError(t, enc.AddReflected("reflect", arbitraryObj), "Expected AddReflected to succeed.")
-	assert.NoError(t, enc.AddObject("object", loggable{true}), "Expected AddObject to succeed.")
-	// Array types.
-	assert.NoError(t, enc.AddArray("array", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
-		arr.AppendBool(true)
-		arr.AppendBool(false)
-		arr.AppendBool(true)
-		return nil
-	})), "Expected AddArray to succeed.")
-	assert.NoError(t, enc.AddArray("arrays-of-arrays", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
-		enc.AppendArray(ArrayMarshalerFunc(func(e ArrayEncoder) error {
-			e.AppendBool(true)
-			return nil
-		}))
-		return nil
-	})), "Expected AddArray to succeed.")
-	// Nested objects and arrays.
-	assert.NoError(t, enc.AddArray("turduckens", turduckens(2)), "Expected AddObject to succeed.")
-	assert.NoError(t, enc.AddObject("turducken", turducken{}), "Expected AddObject to succeed.")
-
+	// Expected output of a turducken.
 	wantTurducken := MapObjectEncoder{
 		"ducks": []interface{}{
 			MapObjectEncoder{"in": "chicken"},
 			MapObjectEncoder{"in": "chicken"},
 		},
 	}
-	want := MapObjectEncoder{
-		"b":       true,
-		"f64":     1.56,
-		"i64":     int64(math.MaxInt64),
-		"uint64":  uint64(42),
-		"s":       "string",
-		"reflect": arbitraryObj,
-		"object": MapObjectEncoder{
-			"loggable": "yes",
+
+	tests := []struct {
+		desc     string
+		f        func(ObjectEncoder)
+		expected interface{}
+	}{
+		{
+			desc: "AddObject",
+			f: func(e ObjectEncoder) {
+				assert.NoError(t, e.AddObject("k", loggable{true}), "Expected AddObject to succeed.")
+			},
+			expected: MapObjectEncoder{"loggable": "yes"},
 		},
-		"array":            []interface{}{true, false, true},
-		"arrays-of-arrays": []interface{}{[]interface{}{true}},
-		"turducken":        wantTurducken,
-		"turduckens":       []interface{}{wantTurducken, wantTurducken},
+		{
+			desc: "AddObject (nested)",
+			f: func(e ObjectEncoder) {
+				assert.NoError(t, e.AddObject("k", turducken{}), "Expected AddObject to succeed.")
+			},
+			expected: wantTurducken,
+		},
+		{
+			desc: "AddArray",
+			f: func(e ObjectEncoder) {
+				assert.NoError(t, e.AddArray("k", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
+					arr.AppendBool(true)
+					arr.AppendBool(false)
+					arr.AppendBool(true)
+					return nil
+				})), "Expected AddArray to succeed.")
+			},
+			expected: []interface{}{true, false, true},
+		},
+		{
+			desc: "AddArray (nested)",
+			f: func(e ObjectEncoder) {
+				assert.NoError(t, e.AddArray("k", turduckens(2)), "Expected AddArray to succeed.")
+			},
+			expected: []interface{}{wantTurducken, wantTurducken},
+		},
+		{
+			desc:     "AddBool",
+			f:        func(e ObjectEncoder) { e.AddBool("k", true) },
+			expected: true,
+		},
+		{
+			desc:     "AddByte",
+			f:        func(e ObjectEncoder) { e.AddByte("k", 1) },
+			expected: byte(1),
+		},
+		{
+			desc:     "AddComplex128",
+			f:        func(e ObjectEncoder) { e.AddComplex128("k", 1+2i) },
+			expected: 1 + 2i,
+		},
+		{
+			desc:     "AddComplex64",
+			f:        func(e ObjectEncoder) { e.AddComplex64("k", 1+2i) },
+			expected: complex64(1 + 2i),
+		},
+		{
+			desc:     "AddFloat64",
+			f:        func(e ObjectEncoder) { e.AddFloat64("k", 3.14) },
+			expected: 3.14,
+		},
+		{
+			desc:     "AddFloat32",
+			f:        func(e ObjectEncoder) { e.AddFloat32("k", 3.14) },
+			expected: float32(3.14),
+		},
+		{
+			desc:     "AddInt",
+			f:        func(e ObjectEncoder) { e.AddInt("k", 42) },
+			expected: 42,
+		},
+		{
+			desc:     "AddInt64",
+			f:        func(e ObjectEncoder) { e.AddInt64("k", 42) },
+			expected: int64(42),
+		},
+		{
+			desc:     "AddInt32",
+			f:        func(e ObjectEncoder) { e.AddInt32("k", 42) },
+			expected: int32(42),
+		},
+		{
+			desc:     "AddInt16",
+			f:        func(e ObjectEncoder) { e.AddInt16("k", 42) },
+			expected: int16(42),
+		},
+		{
+			desc:     "AddInt8",
+			f:        func(e ObjectEncoder) { e.AddInt8("k", 42) },
+			expected: int8(42),
+		},
+		{
+			desc:     "AddRune",
+			f:        func(e ObjectEncoder) { e.AddRune("k", 1) },
+			expected: rune(1),
+		},
+		{
+			desc:     "AddString",
+			f:        func(e ObjectEncoder) { e.AddString("k", "v") },
+			expected: "v",
+		},
+		{
+			desc:     "AddUint",
+			f:        func(e ObjectEncoder) { e.AddUint("k", 42) },
+			expected: uint(42),
+		},
+		{
+			desc:     "AddUint64",
+			f:        func(e ObjectEncoder) { e.AddUint64("k", 42) },
+			expected: uint64(42),
+		},
+		{
+			desc:     "AddUint32",
+			f:        func(e ObjectEncoder) { e.AddUint32("k", 42) },
+			expected: uint32(42),
+		},
+		{
+			desc:     "AddUint16",
+			f:        func(e ObjectEncoder) { e.AddUint16("k", 42) },
+			expected: uint16(42),
+		},
+		{
+			desc:     "AddUint8",
+			f:        func(e ObjectEncoder) { e.AddUint8("k", 42) },
+			expected: uint8(42),
+		},
+		{
+			desc:     "AddUintptr",
+			f:        func(e ObjectEncoder) { e.AddUintptr("k", 42) },
+			expected: uintptr(42),
+		},
+		{
+			desc: "AddReflected",
+			f: func(e ObjectEncoder) {
+				assert.NoError(t, e.AddReflected("k", map[string]interface{}{"foo": 5}), "Expected AddReflected to succeed.")
+			},
+			expected: map[string]interface{}{"foo": 5},
+		},
 	}
-	assert.Equal(t, want, enc, "Encoder's final state is unexpected.")
+
+	for _, tt := range tests {
+		enc := make(MapObjectEncoder)
+		tt.f(enc)
+		assert.Equal(t, tt.expected, enc["k"], "Unexpected encoder output.")
+	}
+}
+func TestSliceArrayEncoderAppend(t *testing.T) {
+	tests := []struct {
+		desc     string
+		f        func(ArrayEncoder)
+		expected interface{}
+	}{
+		// AppendObject and AppendArray are covered by the AddObject (nested) and
+		// AddArray (nested) cases above.
+		{"AppendBool", func(e ArrayEncoder) { e.AppendBool(true) }, true},
+		{"AppendByte", func(e ArrayEncoder) { e.AppendByte(1) }, byte(1)},
+		{"AppendComplex128", func(e ArrayEncoder) { e.AppendComplex128(1 + 2i) }, 1 + 2i},
+		{"AppendComplex64", func(e ArrayEncoder) { e.AppendComplex64(1 + 2i) }, complex64(1 + 2i)},
+		{"AppendFloat64", func(e ArrayEncoder) { e.AppendFloat64(3.14) }, 3.14},
+		{"AppendFloat32", func(e ArrayEncoder) { e.AppendFloat32(3.14) }, float32(3.14)},
+		{"AppendInt", func(e ArrayEncoder) { e.AppendInt(42) }, 42},
+		{"AppendInt64", func(e ArrayEncoder) { e.AppendInt64(42) }, int64(42)},
+		{"AppendInt32", func(e ArrayEncoder) { e.AppendInt32(42) }, int32(42)},
+		{"AppendInt16", func(e ArrayEncoder) { e.AppendInt16(42) }, int16(42)},
+		{"AppendInt8", func(e ArrayEncoder) { e.AppendInt8(42) }, int8(42)},
+		{"AppendRune", func(e ArrayEncoder) { e.AppendRune(42) }, rune(42)},
+		{"AppendString", func(e ArrayEncoder) { e.AppendString("foo") }, "foo"},
+		{"AppendUint", func(e ArrayEncoder) { e.AppendUint(42) }, uint(42)},
+		{"AppendUint64", func(e ArrayEncoder) { e.AppendUint64(42) }, uint64(42)},
+		{"AppendUint32", func(e ArrayEncoder) { e.AppendUint32(42) }, uint32(42)},
+		{"AppendUint16", func(e ArrayEncoder) { e.AppendUint16(42) }, uint16(42)},
+		{"AppendUint8", func(e ArrayEncoder) { e.AppendUint8(42) }, uint8(42)},
+		{"AppendUintptr", func(e ArrayEncoder) { e.AppendUintptr(42) }, uintptr(42)},
+		{
+			desc:     "AppendReflected",
+			f:        func(e ArrayEncoder) { e.AppendReflected(map[string]interface{}{"foo": 5}) },
+			expected: map[string]interface{}{"foo": 5},
+		},
+		{
+			desc: "AppendArray (arrays of arrays)",
+			f: func(e ArrayEncoder) {
+				e.AppendArray(ArrayMarshalerFunc(func(inner ArrayEncoder) error {
+					inner.AppendBool(true)
+					inner.AppendBool(false)
+					return nil
+				}))
+			},
+			expected: []interface{}{true, false},
+		},
+	}
+
+	for _, tt := range tests {
+		enc := make(MapObjectEncoder)
+		assert.NoError(t, enc.AddArray("k", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
+			tt.f(arr)
+			tt.f(arr)
+			return nil
+		})), "Expected AddArray to succeed.")
+
+		arr, ok := enc["k"].([]interface{})
+		if !ok {
+			t.Errorf("Test case %s didn't encode an array.", tt.desc)
+			continue
+		}
+		assert.Equal(t, []interface{}{tt.expected, tt.expected}, arr, "Unexpected encoder output.")
+	}
 }
 
-func TestKeyValueMapAddFails(t *testing.T) {
+func TestMapObjectEncoderReflectionFailures(t *testing.T) {
 	enc := make(MapObjectEncoder)
 	assert.Error(t, enc.AddObject("object", loggable{false}), "Expected AddObject to fail.")
 	assert.Equal(t, MapObjectEncoder{"object": MapObjectEncoder{}}, enc, "Expected encoder to use empty values on errors.")
