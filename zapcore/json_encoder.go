@@ -140,7 +140,7 @@ func (enc *jsonEncoder) AppendBool(val bool) {
 
 func (enc *jsonEncoder) AppendComplex128(val complex128) {
 	enc.separateElements()
-	// FIXME: do I need these casts?
+	// Cast to a platform-independent, fixed-size type.
 	r, i := float64(real(val)), float64(imag(val))
 	enc.bytes = append(enc.bytes, '"')
 	// Because we're always in a quoted string, we can use strconv without
