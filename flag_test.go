@@ -30,12 +30,42 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type flagTestCase struct {
+	args      []string
+	wantLevel zapcore.Level
+	wantErr   bool
+}
+
+func (tc flagTestCase) RunImplicitSet(t testing.TB) {
+	origCommandLine := flag.CommandLine
+	flag.CommandLine = flag.NewFlagSet("test", flag.ContinueOnError)
+	flag.CommandLine.SetOutput(ioutil.Discard)
+	defer func() { flag.CommandLine = origCommandLine }()
+
+	level := LevelFlag("level", InfoLevel, "")
+	tc.run(t, flag.CommandLine, level)
+}
+
+func (tc flagTestCase) RunExplicitSet(t testing.TB) {
+	var lvl zapcore.Level
+	set := flag.NewFlagSet("test", flag.ContinueOnError)
+	set.Var(&lvl, "level", "minimum enabled logging level")
+	tc.run(t, set, &lvl)
+}
+
+func (tc flagTestCase) run(t testing.TB, set *flag.FlagSet, actual *zapcore.Level) {
+	err := set.Parse(tc.args)
+	if tc.wantErr {
+		assert.Error(t, err, "Parse(%v) should fail.", tc.args)
+		return
+	}
+	if assert.NoError(t, err, "Parse(%v) should succeed.", tc.args) {
+		assert.Equal(t, tc.wantLevel, *actual, "Level mismatch.")
+	}
+}
+
 func TestLevelFlag(t *testing.T) {
-	tests := []struct {
-		args      []string
-		wantLevel zapcore.Level
-		wantErr   bool
-	}{
+	tests := []flagTestCase{
 		{
 			args:      nil,
 			wantLevel: zapcore.InfoLevel,
@@ -50,22 +80,8 @@ func TestLevelFlag(t *testing.T) {
 		},
 	}
 
-	origCommandLine := flag.CommandLine
-	defer func() { flag.CommandLine = origCommandLine }()
-
 	for _, tt := range tests {
-		flag.CommandLine = flag.NewFlagSet("test", flag.ContinueOnError)
-		flag.CommandLine.SetOutput(ioutil.Discard)
-		level := LevelFlag("level", InfoLevel, "")
-
-		err := flag.CommandLine.Parse(tt.args)
-		if tt.wantErr {
-			assert.Error(t, err, "Parse(%v) should fail", tt.args)
-			continue
-		}
-
-		if assert.NoError(t, err, "Parse(%v) shouldn't fail", tt.args) {
-			assert.Equal(t, tt.wantLevel, *level, "Level mismatch")
-		}
+		tt.RunExplicitSet(t)
+		tt.RunImplicitSet(t)
 	}
 }
