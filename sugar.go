@@ -50,6 +50,11 @@ func Desugar(s *SugaredLogger) Logger {
 	return s.core
 }
 
+// Named adds a sub-scope to the logger's name.
+func (s *SugaredLogger) Named(name string) *SugaredLogger {
+	return &SugaredLogger{core: s.core.Named(name)}
+}
+
 // With adds a variadic number of fields to the logging context. It accepts a
 // mix of strongly-typed zapcore.Field objects and loosely-typed key-value
 // pairs. When processing pairs, the first element of the pair is used as the
