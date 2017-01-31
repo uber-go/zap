@@ -215,7 +215,8 @@ func TestSugarTemplatedLogging(t *testing.T) {
 	}{
 		{"", nil, ""},
 		{"foo", nil, "foo"},
-		{"", []interface{}{"foo"}, "%!(EXTRA string=foo)"},
+		// If the user fails to pass a template, degrade to fmt.Sprint.
+		{"", []interface{}{"foo"}, "foo"},
 	}
 
 	// Common to all test cases.
