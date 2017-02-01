@@ -20,6 +20,20 @@
 
 package hash
 
+// FNV32 computes the 32-bit FNV-1 hash of s.
+func FNV32(s string) uint32 {
+	const (
+		offset32 = 2166136261
+		prime32  = 16777619
+	)
+	hash := uint32(offset32)
+	for i := 0; i < len(s); i++ {
+		hash *= prime32
+		hash ^= uint32(s[i])
+	}
+	return hash
+}
+
 // FNV32a computes the 32-bit FNV-1a hash of s.
 func FNV32a(s string) uint32 {
 	const (
