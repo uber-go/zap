@@ -25,26 +25,13 @@ package zapcore
 // helpful in tests.
 type MapObjectEncoder map[string]interface{}
 
-// AddBool implements ObjectEncoder.
-func (m MapObjectEncoder) AddBool(k string, v bool) { m[k] = v }
-
-// AddFloat64 implements ObjectEncoder.
-func (m MapObjectEncoder) AddFloat64(k string, v float64) { m[k] = v }
-
-// AddInt64 implements ObjectEncoder.
-func (m MapObjectEncoder) AddInt64(k string, v int64) { m[k] = v }
-
-// AddUint64 implements ObjectEncoder.
-func (m MapObjectEncoder) AddUint64(k string, v uint64) { m[k] = v }
-
-// AddReflected implements ObjectEncoder.
-func (m MapObjectEncoder) AddReflected(k string, v interface{}) error {
-	m[k] = v
-	return nil
+// AddArray implements ObjectEncoder.
+func (m MapObjectEncoder) AddArray(key string, v ArrayMarshaler) error {
+	arr := &sliceArrayEncoder{}
+	err := v.MarshalLogArray(arr)
+	m[key] = arr.elems
+	return err
 }
-
-// AddString implements ObjectEncoder.
-func (m MapObjectEncoder) AddString(k string, v string) { m[k] = v }
 
 // AddObject implements ObjectEncoder.
 func (m MapObjectEncoder) AddObject(k string, v ObjectMarshaler) error {
@@ -53,12 +40,67 @@ func (m MapObjectEncoder) AddObject(k string, v ObjectMarshaler) error {
 	return v.MarshalLogObject(newMap)
 }
 
-// AddArray implements ObjectEncoder.
-func (m MapObjectEncoder) AddArray(key string, v ArrayMarshaler) error {
-	arr := &sliceArrayEncoder{}
-	err := v.MarshalLogArray(arr)
-	m[key] = arr.elems
-	return err
+// AddBool implements ObjectEncoder.
+func (m MapObjectEncoder) AddBool(k string, v bool) { m[k] = v }
+
+// AddByte implements ObjectEncoder.
+func (m MapObjectEncoder) AddByte(k string, v byte) { m[k] = v }
+
+// AddComplex128 implements ObjectEncoder.
+func (m MapObjectEncoder) AddComplex128(k string, v complex128) { m[k] = v }
+
+// AddComplex64 implements ObjectEncoder.
+func (m MapObjectEncoder) AddComplex64(k string, v complex64) { m[k] = v }
+
+// AddFloat64 implements ObjectEncoder.
+func (m MapObjectEncoder) AddFloat64(k string, v float64) { m[k] = v }
+
+// AddFloat32 implements ObjectEncoder.
+func (m MapObjectEncoder) AddFloat32(k string, v float32) { m[k] = v }
+
+// AddInt implements ObjectEncoder.
+func (m MapObjectEncoder) AddInt(k string, v int) { m[k] = v }
+
+// AddInt64 implements ObjectEncoder.
+func (m MapObjectEncoder) AddInt64(k string, v int64) { m[k] = v }
+
+// AddInt32 implements ObjectEncoder.
+func (m MapObjectEncoder) AddInt32(k string, v int32) { m[k] = v }
+
+// AddInt16 implements ObjectEncoder.
+func (m MapObjectEncoder) AddInt16(k string, v int16) { m[k] = v }
+
+// AddInt8 implements ObjectEncoder.
+func (m MapObjectEncoder) AddInt8(k string, v int8) { m[k] = v }
+
+// AddRune implements ObjectEncoder.
+func (m MapObjectEncoder) AddRune(k string, v rune) { m[k] = v }
+
+// AddString implements ObjectEncoder.
+func (m MapObjectEncoder) AddString(k string, v string) { m[k] = v }
+
+// AddUint implements ObjectEncoder.
+func (m MapObjectEncoder) AddUint(k string, v uint) { m[k] = v }
+
+// AddUint64 implements ObjectEncoder.
+func (m MapObjectEncoder) AddUint64(k string, v uint64) { m[k] = v }
+
+// AddUint32 implements ObjectEncoder.
+func (m MapObjectEncoder) AddUint32(k string, v uint32) { m[k] = v }
+
+// AddUint16 implements ObjectEncoder.
+func (m MapObjectEncoder) AddUint16(k string, v uint16) { m[k] = v }
+
+// AddUint8 implements ObjectEncoder.
+func (m MapObjectEncoder) AddUint8(k string, v uint8) { m[k] = v }
+
+// AddUintptr implements ObjectEncoder.
+func (m MapObjectEncoder) AddUintptr(k string, v uintptr) { m[k] = v }
+
+// AddReflected implements ObjectEncoder.
+func (m MapObjectEncoder) AddReflected(k string, v interface{}) error {
+	m[k] = v
+	return nil
 }
 
 // sliceArrayEncoder is an ArrayEncoder backed by a simple []interface{}. Like
@@ -81,6 +123,27 @@ func (s *sliceArrayEncoder) AppendObject(v ObjectMarshaler) error {
 	return err
 }
 
-func (s *sliceArrayEncoder) AppendBool(v bool) {
+func (s *sliceArrayEncoder) AppendReflected(v interface{}) error {
 	s.elems = append(s.elems, v)
+	return nil
 }
+
+func (s *sliceArrayEncoder) AppendBool(v bool)             { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendByte(v byte)             { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendComplex128(v complex128) { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendComplex64(v complex64)   { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendFloat64(v float64)       { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendFloat32(v float32)       { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendInt(v int)               { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendInt64(v int64)           { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendInt32(v int32)           { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendInt16(v int16)           { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendInt8(v int8)             { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendRune(v rune)             { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendString(v string)         { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendUint(v uint)             { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendUint64(v uint64)         { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendUint32(v uint32)         { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendUint16(v uint16)         { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendUint8(v uint8)           { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendUintptr(v uintptr)       { s.elems = append(s.elems, v) }

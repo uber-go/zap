@@ -24,16 +24,34 @@ package zapcore
 // map- or struct-like object to the logging context. Like maps, ObjectEncoders
 // aren't safe for concurrent use (though typical use shouldn't require locks).
 type ObjectEncoder interface {
-	AddBool(key string, value bool)
-	AddFloat64(key string, value float64)
-	AddInt64(key string, value int64)
-	AddUint64(key string, value uint64)
-	AddObject(key string, marshaler ObjectMarshaler) error
+	// Logging-specific marshalers.
 	AddArray(key string, marshaler ArrayMarshaler) error
+	AddObject(key string, marshaler ObjectMarshaler) error
+
+	// Built-in types.
+	AddBool(key string, value bool)
+	AddByte(key string, value byte)
+	AddComplex128(key string, value complex128)
+	AddComplex64(key string, value complex64)
+	AddFloat64(key string, value float64)
+	AddFloat32(key string, value float32)
+	AddInt(key string, value int)
+	AddInt64(key string, value int64)
+	AddInt32(key string, value int32)
+	AddInt16(key string, value int16)
+	AddInt8(key string, value int8)
+	AddRune(key string, value rune)
+	AddString(key, value string)
+	AddUint(key string, value uint)
+	AddUint64(key string, value uint64)
+	AddUint32(key string, value uint32)
+	AddUint16(key string, value uint16)
+	AddUint8(key string, value uint8)
+	AddUintptr(key string, value uintptr)
+
 	// AddReflected uses reflection to serialize arbitrary objects, so it's slow
 	// and allocation-heavy.
 	AddReflected(key string, value interface{}) error
-	AddString(key, value string)
 }
 
 // ArrayEncoder is a strongly-typed, encoding-agnostic interface for adding
@@ -41,9 +59,34 @@ type ObjectEncoder interface {
 // arrays even though they aren't typical in Go. Like slices, ArrayEncoders
 // aren't safe for concurrent use (though typical use shouldn't require locks).
 type ArrayEncoder interface {
+	// Logging-specific marshalers.
 	AppendArray(ArrayMarshaler) error
 	AppendObject(ObjectMarshaler) error
+
+	// Built-in types.
 	AppendBool(bool)
+	AppendByte(byte)
+	AppendComplex128(complex128)
+	AppendComplex64(complex64)
+	AppendFloat64(float64)
+	AppendFloat32(float32)
+	AppendInt(int)
+	AppendInt64(int64)
+	AppendInt32(int32)
+	AppendInt16(int16)
+	AppendInt8(int8)
+	AppendRune(rune)
+	AppendString(string)
+	AppendUint(uint)
+	AppendUint64(uint64)
+	AppendUint32(uint32)
+	AppendUint16(uint16)
+	AppendUint8(uint8)
+	AppendUintptr(uintptr)
+
+	// AppendReflected uses reflection to serialize arbitrary objects, so it's
+	// slow and allocation-heavy.
+	AppendReflected(value interface{}) error
 }
 
 // Encoder is a format-agnostic interface for all log entry marshalers. Since
