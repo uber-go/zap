@@ -20,29 +20,19 @@
 
 package hash
 
-// xorstring converts a string into a uint64 by xoring together its
-// codepoints. It works by accumulating into a 64-bit "ring" which gets
-// rotated by the apparent "byte width" of each codepoint.
-func xorstring(s string) uint64 {
+// XSHRR hashes a string using the by threading each byte of it thru the PCG32
+// (XSH-RR) random number generator; between each iteration of the underlying
+// RNG, a byte of input is XOR'd into the state vector. It is very similar to
+// FNV64a, but with a final hardening step.
+func XSHRR(s string, m uint32) uint32 {
+	const mul = 6364136223846793005
 	var n uint64
 	for i := 0; i < len(s); i++ {
-		n = ((n & 0xff) >> 56) | (n << 8)
 		n ^= uint64(s[i])
+		n *= mul
 	}
-	return n
-}
-
-// xshrr computes a "randomly" rotated xorshift; this is the "XSH RR"
-// transformation borrowed from the PCG famiily of random generators. It
-// returns a 32-bit output from a 64-bit state.
-func xshrr64(n uint64) uint32 {
 	xorshifted := uint32(((n >> 18) ^ n) >> 27)
 	rot := uint32(n >> 59)
-	return (xorshifted >> rot) | (xorshifted << ((-rot) & 31))
-}
-
-// XSHRR hashes a string using the XSH-RR construction from the PCG family of
-// rando number generators. The returned number is under m (0 <= XSHRR(s, m) < m).
-func XSHRR(key string, m uint32) uint32 {
-	return xshrr64(xorstring(key)) % m
+	res := (xorshifted >> rot) | (xorshifted << ((-rot) & 31))
+	return res % m
 }
