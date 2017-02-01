@@ -280,6 +280,9 @@ func BenchmarkHashes(b *testing.B) {
 		{"XSHRR", func(k string) uint32 {
 			return hash.XSHRR(k, m)
 		}},
+		{"FNV32a", func(k string) uint32 {
+			return hash.FNV32a(k, m)
+		}},
 		{"CoreFNV32a", func(k string) uint32 {
 			h32a.Reset()
 			h32a.Write([]byte(k)) // err == nil always
