@@ -24,7 +24,7 @@ package hash
 // (XSH-RR) random number generator; between each iteration of the underlying
 // RNG, a byte of input is XOR'd into the state vector. It is very similar to
 // FNV64a, but with a final hardening step.
-func XSHRR(s string, m uint32) uint32 {
+func XSHRR(s string) uint32 {
 	const mul = 6364136223846793005
 	var n uint64
 	for i := 0; i < len(s); i++ {
@@ -34,5 +34,5 @@ func XSHRR(s string, m uint32) uint32 {
 	xorshifted := uint32(((n >> 18) ^ n) >> 27)
 	rot := uint32(n >> 59)
 	res := (xorshifted >> rot) | (xorshifted << ((-rot) & 31))
-	return res % m
+	return res
 }

@@ -20,8 +20,8 @@
 
 package hash
 
-// FNV32a computes the 32-bit FNV-1a hash of s, modulo m.
-func FNV32a(s string, m uint32) uint32 {
+// FNV32a computes the 32-bit FNV-1a hash of s.
+func FNV32a(s string) uint32 {
 	const (
 		offset32 = 2166136261
 		prime32  = 16777619
@@ -31,5 +31,5 @@ func FNV32a(s string, m uint32) uint32 {
 		hash ^= uint32(s[i])
 		hash *= prime32
 	}
-	return hash % m
+	return hash
 }

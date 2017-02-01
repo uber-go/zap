@@ -272,21 +272,16 @@ func runHashBenchmark(b *testing.B, h func(string) uint32) {
 
 func BenchmarkHashes(b *testing.B) {
 	h32a := fnv.New32a()
-	m := uint32(4096)
 	for _, tt := range []struct {
 		name string
 		f    func(k string) uint32
 	}{
-		{"XSHRR", func(k string) uint32 {
-			return hash.XSHRR(k, m)
-		}},
-		{"FNV32a", func(k string) uint32 {
-			return hash.FNV32a(k, m)
-		}},
+		{"XSHRR", hash.XSHRR},
+		{"FNV32a", hash.FNV32a},
 		{"CoreFNV32a", func(k string) uint32 {
 			h32a.Reset()
 			h32a.Write([]byte(k)) // err == nil always
-			return h32a.Sum32() % m
+			return h32a.Sum32()
 		}},
 	} {
 		b.Run(tt.name, func(b *testing.B) {
