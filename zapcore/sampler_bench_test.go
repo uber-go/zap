@@ -199,28 +199,6 @@ var counterTestCases = [][]string{
 func BenchmarkCounters_Inc(b *testing.B) {
 	for _, keys := range counterTestCases {
 		b.Run(fmt.Sprintf("%v keys", len(keys)), func(b *testing.B) {
-
-			counts := newCounters()
-			b.ResetTimer()
-			b.RunParallel(func(pb *testing.PB) {
-				i := 0
-				for pb.Next() {
-					counts.Inc(keys[i])
-					i++
-					if n := len(keys); i >= n {
-						i -= n
-					}
-				}
-			})
-
-		})
-	}
-
-}
-
-func BenchmarkCounters2_Inc(b *testing.B) {
-	for _, keys := range counterTestCases {
-		b.Run(fmt.Sprintf("%v keys", len(keys)), func(b *testing.B) {
 			counts := newCounters2()
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {

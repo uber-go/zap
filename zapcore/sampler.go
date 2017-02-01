@@ -21,74 +21,32 @@
 package zapcore
 
 import (
-	"sync"
+	"sync/atomic"
 	"time"
 
-	coreAtomic "sync/atomic"
-
-	"go.uber.org/atomic"
 	"go.uber.org/zap/internal/hash"
 )
 
+const _numCounters = 4096
+
+type counters [_numCounters]uint64
+
 func newCounters() *counters {
-	return &counters{
-		counts: make(map[string]*atomic.Uint64),
-	}
-}
-
-func newCounters2() *counters2 {
-	return &counters2{}
-}
-
-type counters struct {
-	sync.RWMutex
-	counts map[string]*atomic.Uint64
+	return &counters{}
 }
 
 func (c *counters) Inc(key string) uint64 {
-	c.RLock()
-	count, ok := c.counts[key]
-	c.RUnlock()
-	if ok {
-		return count.Inc()
-	}
-
-	c.Lock()
-	count, ok = c.counts[key]
-	if ok {
-		c.Unlock()
-		return count.Inc()
-	}
-
-	c.counts[key] = atomic.NewUint64(1)
-	c.Unlock()
-	return 1
+	i := c.hash(key) % _numCounters
+	return atomic.AddUint64(&c[i], 1)
 }
 
 func (c *counters) Reset(key string) {
-	c.Lock()
-	count := c.counts[key]
-	c.Unlock()
-	count.Store(0)
+	i := c.hash(key) % _numCounters
+	atomic.StoreUint64(&c[i], 0)
 }
 
-// TODO: replace counters with counters2 once proven
-const _counters2size = 4096
-
-type counters2 [_counters2size]uint64
-
-func (c *counters2) Inc(key string) uint64 {
-	i := c.hash(key) % _counters2size
-	return coreAtomic.AddUint64(&c[i], 1)
-}
-
-func (c *counters2) Reset(key string) {
-	i := c.hash(key) % _counters2size
-	coreAtomic.StoreUint64(&c[i], 0)
-}
-
-func (c *counters2) hash(key string) uint32 {
-	return hash.XSHRR(key) % _counters2size
+func (c *counters) hash(key string) uint32 {
+	return hash.XSHRR(key) % _numCounters
 }
 
 // Sample creates a facility that samples incoming entries.
