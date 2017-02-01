@@ -21,7 +21,9 @@
 package zap
 
 import (
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
@@ -54,7 +56,47 @@ func TestArrayWrappers(t *testing.T) {
 		expected []interface{}
 	}{
 		{"empty bools", Bools("", []bool{}), []interface{}(nil)},
+		{"empty bytes", Bytes("", []byte{}), []interface{}(nil)},
+		{"empty complex128s", Complex128s("", []complex128{}), []interface{}(nil)},
+		{"empty complex64s", Complex64s("", []complex64{}), []interface{}(nil)},
+		{"empty float64s", Float64s("", []float64{}), []interface{}(nil)},
+		{"empty float32s", Float32s("", []float32{}), []interface{}(nil)},
+		{"empty ints", Ints("", []int{}), []interface{}(nil)},
+		{"empty int64s", Int64s("", []int64{}), []interface{}(nil)},
+		{"empty int32s", Int32s("", []int32{}), []interface{}(nil)},
+		{"empty int16s", Int16s("", []int16{}), []interface{}(nil)},
+		{"empty int8s", Int8s("", []int8{}), []interface{}(nil)},
+		{"empty runes", Runes("", []rune{}), []interface{}(nil)},
+		{"empty strings", Strings("", []string{}), []interface{}(nil)},
+		{"empty uints", Uints("", []uint{}), []interface{}(nil)},
+		{"empty uint64s", Uint64s("", []uint64{}), []interface{}(nil)},
+		{"empty uint32s", Uint32s("", []uint32{}), []interface{}(nil)},
+		{"empty uint16s", Uint16s("", []uint16{}), []interface{}(nil)},
+		{"empty uint8s", Uint8s("", []uint8{}), []interface{}(nil)},
+		{"empty uintptrs", Uintptrs("", []uintptr{}), []interface{}(nil)},
+		{"empty errors", Errors("", []error{}), []interface{}(nil)},
+		{"empty durations", Durations("", []time.Duration{}), []interface{}(nil)},
 		{"bools", Bools("", []bool{true, false}), []interface{}{true, false}},
+		{"bytes", Bytes("", []byte{1, 2}), []interface{}{byte(1), byte(2)}},
+		{"complex128s", Complex128s("", []complex128{1 + 2i, 3 + 4i}), []interface{}{1 + 2i, 3 + 4i}},
+		{"complex64s", Complex64s("", []complex64{1 + 2i, 3 + 4i}), []interface{}{complex64(1 + 2i), complex64(3 + 4i)}},
+		{"float64s", Float64s("", []float64{1.2, 3.4}), []interface{}{1.2, 3.4}},
+		{"float32s", Float32s("", []float32{1.2, 3.4}), []interface{}{float32(1.2), float32(3.4)}},
+		{"ints", Ints("", []int{1, 2}), []interface{}{1, 2}},
+		{"int64s", Int64s("", []int64{1, 2}), []interface{}{int64(1), int64(2)}},
+		{"int32s", Int32s("", []int32{1, 2}), []interface{}{int32(1), int32(2)}},
+		{"int16s", Int16s("", []int16{1, 2}), []interface{}{int16(1), int16(2)}},
+		{"int8s", Int8s("", []int8{1, 2}), []interface{}{int8(1), int8(2)}},
+		{"runes", Runes("", []rune{1, 2}), []interface{}{rune(1), rune(2)}},
+		{"strings", Strings("", []string{"foo", "bar"}), []interface{}{"foo", "bar"}},
+		{"uints", Uints("", []uint{1, 2}), []interface{}{uint(1), uint(2)}},
+		{"uint64s", Uint64s("", []uint64{1, 2}), []interface{}{uint64(1), uint64(2)}},
+		{"uint32s", Uint32s("", []uint32{1, 2}), []interface{}{uint32(1), uint32(2)}},
+		{"uint16s", Uint16s("", []uint16{1, 2}), []interface{}{uint16(1), uint16(2)}},
+		{"uint8s", Uint8s("", []uint8{1, 2}), []interface{}{uint8(1), uint8(2)}},
+		{"uintptrs", Uintptrs("", []uintptr{1, 2}), []interface{}{uintptr(1), uintptr(2)}},
+		{"errors", Errors("", []error{nil, errors.New("foo"), nil, errors.New("bar")}), []interface{}{"foo", "bar"}},
+		{"durations", Durations("", []time.Duration{1, 2}), []interface{}{int64(1), int64(2)}},
 	}
 
 	for _, tt := range tests {
