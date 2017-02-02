@@ -27,26 +27,31 @@ import (
 	"go.uber.org/zap/internal/hash"
 )
 
-const _numCounters = 4096
-
-type counters [_numCounters]uint64
+const (
+	_numLevels        = maxLevel - minLevel
+	_countersPerLevel = 4096
+)
 
 func newCounters() *counters {
 	return &counters{}
 }
 
-func (c *counters) Inc(key string) uint64 {
-	i := c.hash(key) % _numCounters
-	return atomic.AddUint64(&c[i], 1)
+type counters [_numLevels][_countersPerLevel]uint64
+
+func (c *counters) Inc(lvl Level, key string) uint64 {
+	i := lvl - minLevel
+	j := c.hash(key) % _countersPerLevel
+	return atomic.AddUint64(&c[i][j], 1)
 }
 
-func (c *counters) Reset(key string) {
-	i := c.hash(key) % _numCounters
-	atomic.StoreUint64(&c[i], 0)
+func (c *counters) Reset(lvl Level, key string) {
+	i := lvl - minLevel
+	j := c.hash(key) % _countersPerLevel
+	atomic.StoreUint64(&c[i][j], 0)
 }
 
 func (c *counters) hash(key string) uint32 {
-	return hash.XSHRR(key) % _numCounters
+	return hash.XSHRR(key) % _countersPerLevel
 }
 
 // Sample creates a facility that samples incoming entries.
@@ -83,9 +88,10 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	if !s.Enabled(ent.Level) {
 		return ce
 	}
-	if n := s.counts.Inc(ent.Message); n > s.first {
+
+	if n := s.counts.Inc(ent.Level, ent.Message); n > s.first {
 		if n == s.first+1 {
-			time.AfterFunc(s.tick, func() { s.counts.Reset(ent.Message) })
+			time.AfterFunc(s.tick, func() { s.counts.Reset(ent.Level, ent.Message) })
 		}
 		if (n-s.first)%s.thereafter != 0 {
 			return ce
