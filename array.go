@@ -54,6 +54,11 @@ func Complex64s(key string, nums []complex64) zapcore.Field {
 	return Array(key, complex64s(nums))
 }
 
+// Durations constructs a field that carries a slice of time.Durations.
+func Durations(key string, ds []time.Duration) zapcore.Field {
+	return Array(key, durations(ds))
+}
+
 // Float64s constructs a field that carries a slice of floats.
 func Float64s(key string, nums []float64) zapcore.Field {
 	return Array(key, float64s(nums))
@@ -101,6 +106,11 @@ func Strings(key string, ss []string) zapcore.Field {
 	return Array(key, stringArray(ss))
 }
 
+// Times constructs a field that carries a slice of time.Times.
+func Times(key string, ts []time.Time) zapcore.Field {
+	return Array(key, times(ts))
+}
+
 // Uints constructs a field that carries a slice of unsigned integers.
 func Uints(key string, nums []uint) zapcore.Field {
 	return Array(key, uints(nums))
@@ -136,12 +146,6 @@ func Errors(key string, errs []error) zapcore.Field {
 	return Array(key, errArray(errs))
 }
 
-// Durations constructs a field that carries a slice of time.Durations. Like
-// Duration, it represents each duration as an integer number of nanoseconds.
-func Durations(key string, ds []time.Duration) zapcore.Field {
-	return Array(key, durations(ds))
-}
-
 type bools []bool
 
 func (bs bools) MarshalLogArray(arr zapcore.ArrayEncoder) error {
@@ -174,6 +178,15 @@ type complex64s []complex64
 func (nums complex64s) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	for i := range nums {
 		arr.AppendComplex64(nums[i])
+	}
+	return nil
+}
+
+type durations []time.Duration
+
+func (ds durations) MarshalLogArray(arr zapcore.ArrayEncoder) error {
+	for i := range ds {
+		arr.AppendDuration(ds[i])
 	}
 	return nil
 }
@@ -259,6 +272,15 @@ func (ss stringArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	return nil
 }
 
+type times []time.Time
+
+func (ts times) MarshalLogArray(arr zapcore.ArrayEncoder) error {
+	for i := range ts {
+		arr.AppendTime(ts[i])
+	}
+	return nil
+}
+
 type uints []uint
 
 func (nums uints) MarshalLogArray(arr zapcore.ArrayEncoder) error {
@@ -321,15 +343,6 @@ func (errs errArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 			continue
 		}
 		arr.AppendString(errs[i].Error())
-	}
-	return nil
-}
-
-type durations []time.Duration
-
-func (ds durations) MarshalLogArray(arr zapcore.ArrayEncoder) error {
-	for i := range ds {
-		arr.AppendInt64(int64(ds[i]))
 	}
 	return nil
 }

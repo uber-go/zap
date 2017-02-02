@@ -166,11 +166,10 @@ func Stringer(key string, val fmt.Stringer) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.StringerType, Interface: val}
 }
 
-// Time constructs a zapcore.Field with the given key and value. It represents a
-// time.Time as an integer number of milliseconds since epoch. Conversion to an
-// int64 happens eagerly.
+// Time constructs a zapcore.Field with the given key and value. The encoder
+// controls how the time is serialized.
 func Time(key string, val time.Time) zapcore.Field {
-	return Int64(key, timeToMillis(val))
+	return zapcore.Field{Key: key, Type: zapcore.TimeType, Integer: val.UnixNano()}
 }
 
 // Error constructs a field that lazily stores err.Error() under the key
@@ -200,10 +199,10 @@ func Stack() zapcore.Field {
 	return field
 }
 
-// Duration constructs a field with the given key and value. It represents
-// durations as an integer number of nanoseconds.
+// Duration constructs a field with the given key and value. The encoder
+// controls how the duration is serialized.
 func Duration(key string, val time.Duration) zapcore.Field {
-	return Int64(key, int64(val))
+	return zapcore.Field{Key: key, Type: zapcore.DurationType, Integer: int64(val)}
 }
 
 // Object constructs a field with the given key and ObjectMarshaler. It

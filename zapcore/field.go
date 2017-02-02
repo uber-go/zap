@@ -23,6 +23,7 @@ package zapcore
 import (
 	"fmt"
 	"math"
+	"time"
 )
 
 // A FieldType indicates which member of the Field union struct should be used
@@ -44,6 +45,8 @@ const (
 	Complex128Type
 	// Complex64Type indicates that the field carries a complex128.
 	Complex64Type
+	// DurationType indicates that the field carries a time.Duration.
+	DurationType
 	// Float64Type indicates that the field carries a float64.
 	Float64Type
 	// Float32Type indicates that the field carries a float32.
@@ -60,6 +63,8 @@ const (
 	RuneType
 	// StringType indicates that the field carries a string.
 	StringType
+	// TimeType indicates that the field carries a time.Time.
+	TimeType
 	// Uint64Type indicates that the field carries a uint64.
 	Uint64Type
 	// Uint32Type indicates that the field carries a uint32.
@@ -110,6 +115,8 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		enc.AddComplex128(f.Key, f.Interface.(complex128))
 	case Complex64Type:
 		enc.AddComplex64(f.Key, f.Interface.(complex64))
+	case DurationType:
+		enc.AddDuration(f.Key, time.Duration(f.Integer))
 	case Float64Type:
 		enc.AddFloat64(f.Key, math.Float64frombits(uint64(f.Integer)))
 	case Float32Type:
@@ -126,6 +133,8 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		enc.AddRune(f.Key, rune(f.Integer))
 	case StringType:
 		enc.AddString(f.Key, f.String)
+	case TimeType:
+		enc.AddTime(f.Key, time.Unix(0, f.Integer))
 	case Uint64Type:
 		enc.AddUint64(f.Key, uint64(f.Integer))
 	case Uint32Type:

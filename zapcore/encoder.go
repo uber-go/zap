@@ -20,6 +20,21 @@
 
 package zapcore
 
+import "time"
+
+// An EncoderConfig allows users to configure the concrete encoders supplied by
+// zapcore.
+type EncoderConfig struct {
+	// Set the keys used for each log entry.
+	MessageKey, LevelKey, TimeKey, NameKey, CallerKey, StacktraceKey string
+	// Configure the primitive representations of common complex types. For
+	// example, some users may want all time.Times serialized as floating-point
+	// seconds since epoch, while others may prefer ISO8601 strings.
+	EncodeLevel    func(Level, ArrayEncoder)
+	EncodeTime     func(time.Time, ArrayEncoder)
+	EncodeDuration func(time.Duration, ArrayEncoder)
+}
+
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a
 // map- or struct-like object to the logging context. Like maps, ObjectEncoders
 // aren't safe for concurrent use (though typical use shouldn't require locks).
@@ -33,6 +48,7 @@ type ObjectEncoder interface {
 	AddByte(key string, value byte)
 	AddComplex128(key string, value complex128)
 	AddComplex64(key string, value complex64)
+	AddDuration(key string, value time.Duration)
 	AddFloat64(key string, value float64)
 	AddFloat32(key string, value float32)
 	AddInt(key string, value int)
@@ -42,6 +58,7 @@ type ObjectEncoder interface {
 	AddInt8(key string, value int8)
 	AddRune(key string, value rune)
 	AddString(key, value string)
+	AddTime(key string, value time.Time)
 	AddUint(key string, value uint)
 	AddUint64(key string, value uint64)
 	AddUint32(key string, value uint32)
@@ -68,6 +85,7 @@ type ArrayEncoder interface {
 	AppendByte(byte)
 	AppendComplex128(complex128)
 	AppendComplex64(complex64)
+	AppendDuration(time.Duration)
 	AppendFloat64(float64)
 	AppendFloat32(float32)
 	AppendInt(int)
@@ -77,6 +95,7 @@ type ArrayEncoder interface {
 	AppendInt8(int8)
 	AppendRune(rune)
 	AppendString(string)
+	AppendTime(time.Time)
 	AppendUint(uint)
 	AppendUint64(uint64)
 	AppendUint32(uint32)
