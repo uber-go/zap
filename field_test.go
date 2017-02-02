@@ -48,7 +48,7 @@ func assertCanBeReused(t testing.TB, field zapcore.Field) {
 	var wg sync.WaitGroup
 
 	for i := 0; i < 100; i++ {
-		enc := make(zapcore.MapObjectEncoder)
+		enc := zapcore.NewMapObjectEncoder()
 
 		// Ensure using the field in multiple encoders in separate goroutines
 		// does not cause any races or panics.
