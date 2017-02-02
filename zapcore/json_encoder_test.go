@@ -22,6 +22,7 @@ package zapcore_test
 
 import (
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,7 +34,204 @@ import (
 var epoch = time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 func withJSONEncoder(f func(Encoder)) {
-	f(NewJSONEncoder(testJSONConfig()))
+	f(NewJSONEncoder(testEncoderConfig()))
+}
+
+func TestJSONEncoderConfiguration(t *testing.T) {
+	epoch := time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
+	entry := Entry{
+		LoggerName: "main",
+		Level:      InfoLevel,
+		Message:    `hello`,
+		Time:       epoch,
+		Stack:      "fake-stack",
+		Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42},
+	}
+	base := testEncoderConfig()
+	// expected: `{"level":"info","ts":100,"name":"main","caller":"foo.go:42","msg":"hello","stacktrace":"fake-stack"}`,
+
+	tests := []struct {
+		desc     string
+		cfg      EncoderConfig
+		extra    func(Encoder)
+		expected string
+	}{
+		{
+			desc: "use custom entry keys",
+			cfg: EncoderConfig{
+				LevelKey:          "L",
+				TimeKey:           "T",
+				MessageKey:        "M",
+				NameKey:           "N",
+				CallerKey:         "C",
+				StacktraceKey:     "S",
+				TimeFormatter:     base.TimeFormatter,
+				DurationFormatter: base.DurationFormatter,
+				LevelFormatter:    base.LevelFormatter,
+			},
+			expected: `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+		},
+		{
+			desc: "skip level if LevelKey is omitted",
+			cfg: EncoderConfig{
+				LevelKey:          "",
+				TimeKey:           "T",
+				MessageKey:        "M",
+				NameKey:           "N",
+				CallerKey:         "C",
+				StacktraceKey:     "S",
+				TimeFormatter:     base.TimeFormatter,
+				DurationFormatter: base.DurationFormatter,
+				LevelFormatter:    base.LevelFormatter,
+			},
+			expected: `{"T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+		},
+		{
+			desc: "skip timestamp if TimeKey is omitted",
+			cfg: EncoderConfig{
+				LevelKey:          "L",
+				TimeKey:           "",
+				MessageKey:        "M",
+				NameKey:           "N",
+				CallerKey:         "C",
+				StacktraceKey:     "S",
+				TimeFormatter:     base.TimeFormatter,
+				DurationFormatter: base.DurationFormatter,
+				LevelFormatter:    base.LevelFormatter,
+			},
+			expected: `{"L":"info","N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+		},
+		{
+			desc: "skip message if MessageKey is omitted",
+			cfg: EncoderConfig{
+				LevelKey:          "L",
+				TimeKey:           "T",
+				MessageKey:        "",
+				NameKey:           "N",
+				CallerKey:         "C",
+				StacktraceKey:     "S",
+				TimeFormatter:     base.TimeFormatter,
+				DurationFormatter: base.DurationFormatter,
+				LevelFormatter:    base.LevelFormatter,
+			},
+			expected: `{"L":"info","T":0,"N":"main","C":"foo.go:42","S":"fake-stack"}`,
+		},
+		{
+			desc: "skip name is NameKey is omitted",
+			cfg: EncoderConfig{
+				LevelKey:          "L",
+				TimeKey:           "T",
+				MessageKey:        "M",
+				NameKey:           "",
+				CallerKey:         "C",
+				StacktraceKey:     "S",
+				TimeFormatter:     base.TimeFormatter,
+				DurationFormatter: base.DurationFormatter,
+				LevelFormatter:    base.LevelFormatter,
+			},
+			expected: `{"L":"info","T":0,"C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+		},
+		{
+			desc: "skip caller if CallerKey is omitted",
+			cfg: EncoderConfig{
+				LevelKey:          "L",
+				TimeKey:           "T",
+				MessageKey:        "M",
+				NameKey:           "N",
+				CallerKey:         "",
+				StacktraceKey:     "S",
+				TimeFormatter:     base.TimeFormatter,
+				DurationFormatter: base.DurationFormatter,
+				LevelFormatter:    base.LevelFormatter,
+			},
+			expected: `{"L":"info","T":0,"N":"main","M":"hello","S":"fake-stack"}`,
+		},
+		{
+			desc: "skip stacktrace if StacktraceKey is omitted",
+			cfg: EncoderConfig{
+				LevelKey:          "L",
+				TimeKey:           "T",
+				MessageKey:        "M",
+				NameKey:           "N",
+				CallerKey:         "C",
+				StacktraceKey:     "",
+				TimeFormatter:     base.TimeFormatter,
+				DurationFormatter: base.DurationFormatter,
+				LevelFormatter:    base.LevelFormatter,
+			},
+			expected: `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello"}`,
+		},
+		{
+			desc: "use the supplied TimeFormatter, for both the entry and any times added",
+			cfg: EncoderConfig{
+				LevelKey:          "L",
+				TimeKey:           "T",
+				MessageKey:        "M",
+				NameKey:           "N",
+				CallerKey:         "C",
+				StacktraceKey:     "S",
+				TimeFormatter:     func(t time.Time, enc ArrayEncoder) { enc.AppendString(t.String()) },
+				DurationFormatter: base.DurationFormatter,
+				LevelFormatter:    base.LevelFormatter,
+			},
+			extra: func(enc Encoder) {
+				enc.AddTime("extra", epoch)
+				enc.AddArray("extras", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
+					enc.AppendTime(epoch)
+					return nil
+				}))
+			},
+			expected: `{"L":"info","T":"1970-01-01 00:00:00 +0000 UTC","N":"main","C":"foo.go:42","M":"hello","extra":"1970-01-01 00:00:00 +0000 UTC","extras":["1970-01-01 00:00:00 +0000 UTC"],"S":"fake-stack"}`,
+		},
+		{
+			desc: "use the supplied DurationFormatter for any durations added",
+			cfg: EncoderConfig{
+				LevelKey:          "L",
+				TimeKey:           "T",
+				MessageKey:        "M",
+				NameKey:           "N",
+				CallerKey:         "C",
+				StacktraceKey:     "S",
+				TimeFormatter:     base.TimeFormatter,
+				DurationFormatter: func(d time.Duration, enc ArrayEncoder) { enc.AppendString(d.String()) },
+				LevelFormatter:    base.LevelFormatter,
+			},
+			extra: func(enc Encoder) {
+				enc.AddDuration("extra", time.Second)
+				enc.AddArray("extras", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
+					enc.AppendDuration(time.Minute)
+					return nil
+				}))
+			},
+			expected: `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","extra":"1s","extras":["1m0s"],"S":"fake-stack"}`,
+		},
+		{
+			desc: "use the supplied LevelFormatter",
+			cfg: EncoderConfig{
+				LevelKey:          "L",
+				TimeKey:           "T",
+				MessageKey:        "M",
+				NameKey:           "N",
+				CallerKey:         "C",
+				StacktraceKey:     "S",
+				TimeFormatter:     base.TimeFormatter,
+				DurationFormatter: base.DurationFormatter,
+				LevelFormatter:    func(l Level, enc ArrayEncoder) { enc.AppendString(strings.ToUpper(l.String())) },
+			},
+			expected: `{"L":"INFO","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+		},
+	}
+
+	for i, tt := range tests {
+		enc := NewJSONEncoder(tt.cfg)
+		if tt.extra != nil {
+			tt.extra(enc)
+		}
+		buf, err := enc.EncodeEntry(entry, nil)
+		if assert.NoError(t, err, "Unexpected error encoding entry in case #%d.", i) {
+			assert.Equal(t, tt.expected+"\n", string(buf), "Unexpected output: expected to %v.", tt.desc)
+		}
+	}
 }
 
 func TestJSONEncodeEntry(t *testing.T) {

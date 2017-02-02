@@ -33,7 +33,7 @@ func BenchmarkBoolsArrayMarshaler(b *testing.B) {
 	// Keep this benchmark here to capture the overhead of the ArrayMarshaler
 	// wrapper.
 	bs := make([]bool, 50)
-	enc := zapcore.NewJSONEncoder(zapcore.JSONConfig{})
+	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Bools("array", bs).AddTo(enc.Clone())
@@ -42,7 +42,7 @@ func BenchmarkBoolsArrayMarshaler(b *testing.B) {
 
 func BenchmarkBoolsReflect(b *testing.B) {
 	bs := make([]bool, 50)
-	enc := zapcore.NewJSONEncoder(zapcore.JSONConfig{})
+	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Reflect("array", bs).AddTo(enc.Clone())
