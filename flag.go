@@ -29,6 +29,8 @@ import (
 // LevelFlag defines a Level flag with specified name, default value and
 // usage string. The return value is the address of a Level value that stores
 // the value of the flag.
+//
+// Note that you can also use any non-nil *Level as a flag.Value.
 func LevelFlag(name string, defaultLevel zapcore.Level, usage string) *zapcore.Level {
 	lvl := defaultLevel
 	flag.Var(&lvl, name, usage)
