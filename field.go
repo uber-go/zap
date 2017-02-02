@@ -213,12 +213,6 @@ func Object(key string, val zapcore.ObjectMarshaler) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.ObjectMarshalerType, Interface: val}
 }
 
-// Nest takes a key and a variadic number of zapcore.Fields and creates a nested
-// namespace.
-func Nest(key string, fields ...zapcore.Field) zapcore.Field {
-	return zapcore.Field{Key: key, Type: zapcore.ObjectMarshalerType, Interface: zapcore.Fields(fields)}
-}
-
 // Any takes a key and an arbitrary value and chooses the best way to represent
 // them as a field, falling back to a reflection-based approach only if
 // necessary.
