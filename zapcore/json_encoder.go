@@ -39,7 +39,8 @@ const (
 
 type jsonEncoder struct {
 	*EncoderConfig
-	bytes []byte
+	bytes          []byte
+	openNamespaces int
 }
 
 // NewJSONEncoder creates a fast, low-allocation JSON encoder. The encoder
@@ -102,6 +103,12 @@ func (enc *jsonEncoder) AddReflected(key string, obj interface{}) error {
 	enc.addKey(key)
 	enc.bytes = append(enc.bytes, marshaled...)
 	return nil
+}
+
+func (enc *jsonEncoder) OpenNamespace(key string) {
+	enc.addKey(key)
+	enc.bytes = append(enc.bytes, '{')
+	enc.openNamespaces++
 }
 
 func (enc *jsonEncoder) AddString(key, val string) {
@@ -211,21 +218,18 @@ func (enc *jsonEncoder) AppendUint8(v uint8)                { enc.AppendUint64(u
 func (enc *jsonEncoder) AppendUintptr(v uintptr)            { enc.AppendUint64(uint64(v)) }
 
 func (enc *jsonEncoder) Clone() Encoder {
-	clone := &jsonEncoder{EncoderConfig: enc.EncoderConfig}
+	clone := *enc
 	clone.bytes = append(buffers.Get(), enc.bytes...)
-	return clone
+	return &clone
 }
 
 func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
-	final := &jsonEncoder{
-		EncoderConfig: enc.EncoderConfig,
-		bytes:         buffers.Get(),
-	}
+	final := *enc
+	final.bytes = append(buffers.Get(), '{')
 
-	final.bytes = append(final.bytes, '{')
 	if final.LevelKey != "" {
 		final.addKey(final.LevelKey)
-		final.EncodeLevel(ent.Level, final)
+		final.EncodeLevel(ent.Level, &final)
 	}
 	if final.TimeKey != "" {
 		final.AddTime(final.TimeKey, ent.Time)
@@ -247,9 +251,13 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 		final.addElementSeparator()
 		final.bytes = append(final.bytes, enc.bytes...)
 	}
-	addFields(final, fields)
+	addFields(&final, fields)
 	if ent.Stack != "" && final.StacktraceKey != "" {
 		final.AddString(final.StacktraceKey, ent.Stack)
+	}
+	for final.openNamespaces > 0 {
+		final.bytes = append(final.bytes, '}')
+		final.openNamespaces--
 	}
 	final.bytes = append(final.bytes, '}', '\n')
 	return final.bytes, nil

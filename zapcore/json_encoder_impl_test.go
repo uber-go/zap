@@ -194,6 +194,19 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 				assert.Error(t, e.AddReflected("k", noJSON{}), "Unexpected success JSON-serializing a noJSON.")
 			},
 		},
+		{
+			desc: "namespace",
+			// EncodeEntry is responsible for closing all open namespaces.
+			expected: `"outermost":{"outer":{"foo":1,"inner":{"foo":2,"innermost":{`,
+			f: func(e Encoder) {
+				e.OpenNamespace("outermost")
+				e.OpenNamespace("outer")
+				e.AddInt("foo", 1)
+				e.OpenNamespace("inner")
+				e.AddInt("foo", 2)
+				e.OpenNamespace("innermost")
+			},
+		},
 	}
 
 	for _, tt := range tests {

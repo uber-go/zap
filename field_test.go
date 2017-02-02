@@ -48,7 +48,7 @@ func assertCanBeReused(t testing.TB, field zapcore.Field) {
 	var wg sync.WaitGroup
 
 	for i := 0; i < 100; i++ {
-		enc := make(zapcore.MapObjectEncoder)
+		enc := zapcore.NewMapObjectEncoder()
 
 		// Ensure using the field in multiple encoders in separate goroutines
 		// does not cause any races or panics.
@@ -70,7 +70,6 @@ func TestFieldConstructors(t *testing.T) {
 	addr := net.ParseIP("1.2.3.4")
 	name := username("phil")
 	ints := []int{5, 6}
-	nested := zapcore.Fields{String("name", "phil"), Int("age", 42)}
 
 	tests := []struct {
 		name   string
@@ -105,7 +104,6 @@ func TestFieldConstructors(t *testing.T) {
 		{"Stringer", zapcore.Field{Key: "k", Type: zapcore.StringerType, Interface: addr}, Stringer("k", addr)},
 		{"Base64", zapcore.Field{Key: "k", Type: zapcore.StringType, String: "YWIxMg=="}, Base64("k", []byte("ab12"))},
 		{"Object", zapcore.Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: name}, Object("k", name)},
-		{"Nest", zapcore.Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: nested}, Nest("k", nested...)},
 		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
 		{"Any:ArrayMarshaler", Any("k", bools([]bool{true})), Array("k", bools([]bool{true}))},
 		{"Any:Bool", Any("k", true), Bool("k", true)},
@@ -132,6 +130,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:Duration", Any("k", time.Second), Duration("k", time.Second)},
 		{"Any:Stringer", Any("k", addr), Stringer("k", addr)},
 		{"Any:Fallback", Any("k", struct{}{}), Reflect("k", struct{}{})},
+		{"Namespace", Namespace("k"), zapcore.Field{Key: "k", Type: zapcore.NamespaceType}},
 	}
 
 	for _, tt := range tests {

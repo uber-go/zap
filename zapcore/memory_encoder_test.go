@@ -29,10 +29,10 @@ import (
 
 func TestMapObjectEncoderAdd(t *testing.T) {
 	// Expected output of a turducken.
-	wantTurducken := MapObjectEncoder{
+	wantTurducken := map[string]interface{}{
 		"ducks": []interface{}{
-			MapObjectEncoder{"in": "chicken"},
-			MapObjectEncoder{"in": "chicken"},
+			map[string]interface{}{"in": "chicken"},
+			map[string]interface{}{"in": "chicken"},
 		},
 	}
 
@@ -46,7 +46,7 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 			f: func(e ObjectEncoder) {
 				assert.NoError(t, e.AddObject("k", loggable{true}), "Expected AddObject to succeed.")
 			},
-			expected: MapObjectEncoder{"loggable": "yes"},
+			expected: map[string]interface{}{"loggable": "yes"},
 		},
 		{
 			desc: "AddObject (nested)",
@@ -186,12 +186,32 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 			},
 			expected: map[string]interface{}{"foo": 5},
 		},
+		{
+			desc: "OpenNamespace",
+			f: func(e ObjectEncoder) {
+				e.OpenNamespace("k")
+				e.AddInt("foo", 1)
+				e.OpenNamespace("middle")
+				e.AddInt("foo", 2)
+				e.OpenNamespace("inner")
+				e.AddInt("foo", 3)
+			},
+			expected: map[string]interface{}{
+				"foo": 1,
+				"middle": map[string]interface{}{
+					"foo": 2,
+					"inner": map[string]interface{}{
+						"foo": 3,
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
-		enc := make(MapObjectEncoder)
+		enc := NewMapObjectEncoder()
 		tt.f(enc)
-		assert.Equal(t, tt.expected, enc["k"], "Unexpected encoder output.")
+		assert.Equal(t, tt.expected, enc.Fields["k"], "Unexpected encoder output.")
 	}
 }
 func TestSliceArrayEncoderAppend(t *testing.T) {
@@ -242,14 +262,14 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		enc := make(MapObjectEncoder)
+		enc := NewMapObjectEncoder()
 		assert.NoError(t, enc.AddArray("k", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
 			tt.f(arr)
 			tt.f(arr)
 			return nil
 		})), "Expected AddArray to succeed.")
 
-		arr, ok := enc["k"].([]interface{})
+		arr, ok := enc.Fields["k"].([]interface{})
 		if !ok {
 			t.Errorf("Test case %s didn't encode an array.", tt.desc)
 			continue
@@ -259,7 +279,12 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 }
 
 func TestMapObjectEncoderReflectionFailures(t *testing.T) {
-	enc := make(MapObjectEncoder)
+	enc := NewMapObjectEncoder()
 	assert.Error(t, enc.AddObject("object", loggable{false}), "Expected AddObject to fail.")
-	assert.Equal(t, MapObjectEncoder{"object": MapObjectEncoder{}}, enc, "Expected encoder to use empty values on errors.")
+	assert.Equal(
+		t,
+		map[string]interface{}{"object": map[string]interface{}{}},
+		enc.Fields,
+		"Expected encoder to use empty values on errors.",
+	)
 }

@@ -160,6 +160,15 @@ func Reflect(key string, val interface{}) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.ReflectType, Interface: val}
 }
 
+// Namespace creates a named, isolated scope within the logger's context. All
+// subsequent fields will be added to the new namespace.
+//
+// This can help to prevent key collisions when injecting loggers into
+// sub-components or third-party libraries.
+func Namespace(key string) zapcore.Field {
+	return zapcore.Field{Key: key, Type: zapcore.NamespaceType}
+}
+
 // Stringer constructs a field with the given key and the output of the value's
 // String method. The Stringer's String method is called lazily.
 func Stringer(key string, val fmt.Stringer) zapcore.Field {
@@ -211,12 +220,6 @@ func Duration(key string, val time.Duration) zapcore.Field {
 // MarshalLogObject method is called lazily.
 func Object(key string, val zapcore.ObjectMarshaler) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.ObjectMarshalerType, Interface: val}
-}
-
-// Nest takes a key and a variadic number of zapcore.Fields and creates a nested
-// namespace.
-func Nest(key string, fields ...zapcore.Field) zapcore.Field {
-	return zapcore.Field{Key: key, Type: zapcore.ObjectMarshalerType, Interface: zapcore.Fields(fields)}
 }
 
 // Any takes a key and an arbitrary value and chooses the best way to represent
