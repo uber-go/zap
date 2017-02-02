@@ -18,11 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package zapcore_test
 
 import (
 	"fmt"
 	"testing"
+	"time"
+
+	"go.uber.org/zap/testutils"
+	. "go.uber.org/zap/zapcore"
 )
 
 var counterTestCases = [][]string{
@@ -196,15 +200,25 @@ var counterTestCases = [][]string{
 	},
 }
 
-func BenchmarkCounters_Inc(b *testing.B) {
+func BenchmarkSampler_Check(b *testing.B) {
 	for _, keys := range counterTestCases {
 		b.Run(fmt.Sprintf("%v keys", len(keys)), func(b *testing.B) {
-			counts := newCounters2()
+			fac := Sample(
+				WriterFacility(
+					NewJSONEncoder(testEncoderConfig()),
+					&testutils.Discarder{},
+					DebugLevel,
+				),
+				time.Millisecond, 1, 1000)
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				i := 0
 				for pb.Next() {
-					counts.Inc(keys[i])
+					ent := Entry{
+						Level:   DebugLevel + Level(i%4),
+						Message: keys[i],
+					}
+					_ = fac.Check(ent, nil)
 					i++
 					if n := len(keys); i >= n {
 						i -= n
