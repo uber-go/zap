@@ -69,6 +69,10 @@ type ObjectEncoder interface {
 	// AddReflected uses reflection to serialize arbitrary objects, so it's slow
 	// and allocation-heavy.
 	AddReflected(key string, value interface{}) error
+	// OpenNamespace opens an isolated namespace where all subsequent fields will
+	// be added. Applications can use namespaces to prevent key collisions when
+	// injecting loggers into sub-components or third-party libraries.
+	OpenNamespace(key string)
 }
 
 // ArrayEncoder is a strongly-typed, encoding-agnostic interface for adding

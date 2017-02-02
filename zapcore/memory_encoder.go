@@ -123,6 +123,13 @@ func (m *MapObjectEncoder) AddReflected(k string, v interface{}) error {
 	return nil
 }
 
+// OpenNamespace implements ObjectEncoder.
+func (m *MapObjectEncoder) OpenNamespace(k string) {
+	ns := make(map[string]interface{})
+	m.cur[k] = ns
+	m.cur = ns
+}
+
 // sliceArrayEncoder is an ArrayEncoder backed by a simple []interface{}. Like
 // the MapObjectEncoder, it's not designed for production use.
 type sliceArrayEncoder struct {

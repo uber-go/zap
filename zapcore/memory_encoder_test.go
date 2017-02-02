@@ -186,6 +186,26 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 			},
 			expected: map[string]interface{}{"foo": 5},
 		},
+		{
+			desc: "OpenNamespace",
+			f: func(e ObjectEncoder) {
+				e.OpenNamespace("k")
+				e.AddInt("foo", 1)
+				e.OpenNamespace("middle")
+				e.AddInt("foo", 2)
+				e.OpenNamespace("inner")
+				e.AddInt("foo", 3)
+			},
+			expected: map[string]interface{}{
+				"foo": 1,
+				"middle": map[string]interface{}{
+					"foo": 2,
+					"inner": map[string]interface{}{
+						"foo": 3,
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

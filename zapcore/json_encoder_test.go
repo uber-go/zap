@@ -298,3 +298,17 @@ func TestJSONEncodeEntry(t *testing.T) {
 		)
 	})
 }
+
+func TestJSONEncodeEntryClosesNamespaces(t *testing.T) {
+	withJSONEncoder(func(enc Encoder) {
+		enc.OpenNamespace("outer")
+		enc.OpenNamespace("inner")
+		buf, err := enc.EncodeEntry(Entry{Message: `hello`, Time: time.Unix(0, 0)}, nil)
+		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
+		assert.Equal(
+			t,
+			`{"level":"info","ts":0,"msg":"hello","outer":{"inner":{}}}`+"\n",
+			string(buf),
+		)
+	})
+}
