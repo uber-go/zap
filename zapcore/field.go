@@ -78,6 +78,9 @@ const (
 	// ReflectType indicates that the field carries an interface{}, which should
 	// be serialized using reflection.
 	ReflectType
+	// NamespaceType signals the beginning of an isolated namespace. All
+	// subsequent fields should be added to the new namespace.
+	NamespaceType
 	// StringerType indicates that the field carries a fmt.Stringer.
 	StringerType
 	// ErrorType indicates that the field carries an error.
@@ -147,6 +150,8 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		enc.AddUintptr(f.Key, uintptr(f.Integer))
 	case ReflectType:
 		err = enc.AddReflected(f.Key, f.Interface)
+	case NamespaceType:
+		enc.OpenNamespace(f.Key)
 	case StringerType:
 		enc.AddString(f.Key, f.Interface.(fmt.Stringer).String())
 	case ErrorType:

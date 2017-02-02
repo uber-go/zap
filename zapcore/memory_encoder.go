@@ -25,90 +25,111 @@ import "time"
 // MapObjectEncoder is an ObjectEncoder backed by a simple
 // map[string]interface{}. It's not fast enough for production use, but it's
 // helpful in tests.
-type MapObjectEncoder map[string]interface{}
+type MapObjectEncoder struct {
+	// Fields contains the entire encoded log context.
+	Fields map[string]interface{}
+	// cur is a pointer to the namespace we're currently writing to.
+	cur map[string]interface{}
+}
+
+// NewMapObjectEncoder creates a new map-backed ObjectEncoder.
+func NewMapObjectEncoder() *MapObjectEncoder {
+	m := make(map[string]interface{})
+	return &MapObjectEncoder{
+		Fields: m,
+		cur:    m,
+	}
+}
 
 // AddArray implements ObjectEncoder.
-func (m MapObjectEncoder) AddArray(key string, v ArrayMarshaler) error {
+func (m *MapObjectEncoder) AddArray(key string, v ArrayMarshaler) error {
 	arr := &sliceArrayEncoder{}
 	err := v.MarshalLogArray(arr)
-	m[key] = arr.elems
+	m.cur[key] = arr.elems
 	return err
 }
 
 // AddObject implements ObjectEncoder.
-func (m MapObjectEncoder) AddObject(k string, v ObjectMarshaler) error {
-	newMap := make(MapObjectEncoder)
-	m[k] = newMap
+func (m *MapObjectEncoder) AddObject(k string, v ObjectMarshaler) error {
+	newMap := NewMapObjectEncoder()
+	m.cur[k] = newMap.Fields
 	return v.MarshalLogObject(newMap)
 }
 
 // AddBool implements ObjectEncoder.
-func (m MapObjectEncoder) AddBool(k string, v bool) { m[k] = v }
+func (m *MapObjectEncoder) AddBool(k string, v bool) { m.cur[k] = v }
 
 // AddByte implements ObjectEncoder.
-func (m MapObjectEncoder) AddByte(k string, v byte) { m[k] = v }
+func (m *MapObjectEncoder) AddByte(k string, v byte) { m.cur[k] = v }
 
 // AddDuration implements ObjectEncoder.
-func (m MapObjectEncoder) AddDuration(k string, v time.Duration) { m[k] = v }
+func (m MapObjectEncoder) AddDuration(k string, v time.Duration) { m.cur[k] = v }
 
 // AddComplex128 implements ObjectEncoder.
-func (m MapObjectEncoder) AddComplex128(k string, v complex128) { m[k] = v }
+func (m *MapObjectEncoder) AddComplex128(k string, v complex128) { m.cur[k] = v }
 
 // AddComplex64 implements ObjectEncoder.
-func (m MapObjectEncoder) AddComplex64(k string, v complex64) { m[k] = v }
+func (m *MapObjectEncoder) AddComplex64(k string, v complex64) { m.cur[k] = v }
 
 // AddFloat64 implements ObjectEncoder.
-func (m MapObjectEncoder) AddFloat64(k string, v float64) { m[k] = v }
+func (m *MapObjectEncoder) AddFloat64(k string, v float64) { m.cur[k] = v }
 
 // AddFloat32 implements ObjectEncoder.
-func (m MapObjectEncoder) AddFloat32(k string, v float32) { m[k] = v }
+func (m *MapObjectEncoder) AddFloat32(k string, v float32) { m.cur[k] = v }
 
 // AddInt implements ObjectEncoder.
-func (m MapObjectEncoder) AddInt(k string, v int) { m[k] = v }
+func (m *MapObjectEncoder) AddInt(k string, v int) { m.cur[k] = v }
 
 // AddInt64 implements ObjectEncoder.
-func (m MapObjectEncoder) AddInt64(k string, v int64) { m[k] = v }
+func (m *MapObjectEncoder) AddInt64(k string, v int64) { m.cur[k] = v }
 
 // AddInt32 implements ObjectEncoder.
-func (m MapObjectEncoder) AddInt32(k string, v int32) { m[k] = v }
+func (m *MapObjectEncoder) AddInt32(k string, v int32) { m.cur[k] = v }
 
 // AddInt16 implements ObjectEncoder.
-func (m MapObjectEncoder) AddInt16(k string, v int16) { m[k] = v }
+func (m *MapObjectEncoder) AddInt16(k string, v int16) { m.cur[k] = v }
 
 // AddInt8 implements ObjectEncoder.
-func (m MapObjectEncoder) AddInt8(k string, v int8) { m[k] = v }
+func (m *MapObjectEncoder) AddInt8(k string, v int8) { m.cur[k] = v }
 
 // AddRune implements ObjectEncoder.
-func (m MapObjectEncoder) AddRune(k string, v rune) { m[k] = v }
+func (m *MapObjectEncoder) AddRune(k string, v rune) { m.cur[k] = v }
 
 // AddString implements ObjectEncoder.
-func (m MapObjectEncoder) AddString(k string, v string) { m[k] = v }
+func (m *MapObjectEncoder) AddString(k string, v string) { m.cur[k] = v }
 
 // AddTime implements ObjectEncoder.
-func (m MapObjectEncoder) AddTime(k string, v time.Time) { m[k] = v }
+func (m MapObjectEncoder) AddTime(k string, v time.Time) { m.cur[k] = v }
 
 // AddUint implements ObjectEncoder.
-func (m MapObjectEncoder) AddUint(k string, v uint) { m[k] = v }
+func (m *MapObjectEncoder) AddUint(k string, v uint) { m.cur[k] = v }
 
 // AddUint64 implements ObjectEncoder.
-func (m MapObjectEncoder) AddUint64(k string, v uint64) { m[k] = v }
+func (m *MapObjectEncoder) AddUint64(k string, v uint64) { m.cur[k] = v }
 
 // AddUint32 implements ObjectEncoder.
-func (m MapObjectEncoder) AddUint32(k string, v uint32) { m[k] = v }
+func (m *MapObjectEncoder) AddUint32(k string, v uint32) { m.cur[k] = v }
 
 // AddUint16 implements ObjectEncoder.
-func (m MapObjectEncoder) AddUint16(k string, v uint16) { m[k] = v }
+func (m *MapObjectEncoder) AddUint16(k string, v uint16) { m.cur[k] = v }
 
 // AddUint8 implements ObjectEncoder.
-func (m MapObjectEncoder) AddUint8(k string, v uint8) { m[k] = v }
+func (m *MapObjectEncoder) AddUint8(k string, v uint8) { m.cur[k] = v }
 
 // AddUintptr implements ObjectEncoder.
-func (m MapObjectEncoder) AddUintptr(k string, v uintptr) { m[k] = v }
+func (m *MapObjectEncoder) AddUintptr(k string, v uintptr) { m.cur[k] = v }
 
 // AddReflected implements ObjectEncoder.
-func (m MapObjectEncoder) AddReflected(k string, v interface{}) error {
-	m[k] = v
+func (m *MapObjectEncoder) AddReflected(k string, v interface{}) error {
+	m.cur[k] = v
 	return nil
+}
+
+// OpenNamespace implements ObjectEncoder.
+func (m *MapObjectEncoder) OpenNamespace(k string) {
+	ns := make(map[string]interface{})
+	m.cur[k] = ns
+	m.cur = ns
 }
 
 // sliceArrayEncoder is an ArrayEncoder backed by a simple []interface{}. Like
@@ -125,9 +146,9 @@ func (s *sliceArrayEncoder) AppendArray(v ArrayMarshaler) error {
 }
 
 func (s *sliceArrayEncoder) AppendObject(v ObjectMarshaler) error {
-	m := make(MapObjectEncoder)
+	m := NewMapObjectEncoder()
 	err := v.MarshalLogObject(m)
-	s.elems = append(s.elems, m)
+	s.elems = append(s.elems, m.Fields)
 	return err
 }
 

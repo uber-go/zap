@@ -102,10 +102,10 @@ func TestArrayWrappers(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		enc := make(zapcore.MapObjectEncoder)
+		enc := zapcore.NewMapObjectEncoder()
 		tt.field.Key = "k"
 		tt.field.AddTo(enc)
-		assert.Equal(t, tt.expected, enc["k"], "%s: unexpected map contents.", tt.desc)
-		assert.Equal(t, 1, len(enc), "%s: found extra keys in map: %v", tt.desc, enc)
+		assert.Equal(t, tt.expected, enc.Fields["k"], "%s: unexpected map contents.", tt.desc)
+		assert.Equal(t, 1, len(enc.Fields), "%s: found extra keys in map: %v", tt.desc, enc.Fields)
 	}
 }
