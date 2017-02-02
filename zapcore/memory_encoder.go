@@ -26,8 +26,10 @@ import "time"
 // map[string]interface{}. It's not fast enough for production use, but it's
 // helpful in tests.
 type MapObjectEncoder struct {
+	// Fields contains the entire encoded log context.
 	Fields map[string]interface{}
-	cur    map[string]interface{}
+	// cur is a pointer to the namespace we're currently writing to.
+	cur map[string]interface{}
 }
 
 // NewMapObjectEncoder creates a new map-backed ObjectEncoder.
@@ -61,7 +63,7 @@ func (m *MapObjectEncoder) AddBool(k string, v bool) { m.cur[k] = v }
 func (m *MapObjectEncoder) AddByte(k string, v byte) { m.cur[k] = v }
 
 // AddDuration implements ObjectEncoder.
-func (m MapObjectEncoder) AddDuration(k string, v time.Duration) { m[k] = v }
+func (m MapObjectEncoder) AddDuration(k string, v time.Duration) { m.cur[k] = v }
 
 // AddComplex128 implements ObjectEncoder.
 func (m *MapObjectEncoder) AddComplex128(k string, v complex128) { m.cur[k] = v }
@@ -97,7 +99,7 @@ func (m *MapObjectEncoder) AddRune(k string, v rune) { m.cur[k] = v }
 func (m *MapObjectEncoder) AddString(k string, v string) { m.cur[k] = v }
 
 // AddTime implements ObjectEncoder.
-func (m MapObjectEncoder) AddTime(k string, v time.Time) { m[k] = v }
+func (m MapObjectEncoder) AddTime(k string, v time.Time) { m.cur[k] = v }
 
 // AddUint implements ObjectEncoder.
 func (m *MapObjectEncoder) AddUint(k string, v uint) { m.cur[k] = v }
