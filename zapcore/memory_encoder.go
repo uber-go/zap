@@ -20,6 +20,8 @@
 
 package zapcore
 
+import "time"
+
 // MapObjectEncoder is an ObjectEncoder backed by a simple
 // map[string]interface{}. It's not fast enough for production use, but it's
 // helpful in tests.
@@ -45,6 +47,9 @@ func (m MapObjectEncoder) AddBool(k string, v bool) { m[k] = v }
 
 // AddByte implements ObjectEncoder.
 func (m MapObjectEncoder) AddByte(k string, v byte) { m[k] = v }
+
+// AddDuration implements ObjectEncoder.
+func (m MapObjectEncoder) AddDuration(k string, v time.Duration) { m[k] = v }
 
 // AddComplex128 implements ObjectEncoder.
 func (m MapObjectEncoder) AddComplex128(k string, v complex128) { m[k] = v }
@@ -78,6 +83,9 @@ func (m MapObjectEncoder) AddRune(k string, v rune) { m[k] = v }
 
 // AddString implements ObjectEncoder.
 func (m MapObjectEncoder) AddString(k string, v string) { m[k] = v }
+
+// AddTime implements ObjectEncoder.
+func (m MapObjectEncoder) AddTime(k string, v time.Time) { m[k] = v }
 
 // AddUint implements ObjectEncoder.
 func (m MapObjectEncoder) AddUint(k string, v uint) { m[k] = v }
@@ -128,22 +136,24 @@ func (s *sliceArrayEncoder) AppendReflected(v interface{}) error {
 	return nil
 }
 
-func (s *sliceArrayEncoder) AppendBool(v bool)             { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendByte(v byte)             { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendComplex128(v complex128) { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendComplex64(v complex64)   { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendFloat64(v float64)       { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendFloat32(v float32)       { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendInt(v int)               { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendInt64(v int64)           { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendInt32(v int32)           { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendInt16(v int16)           { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendInt8(v int8)             { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendRune(v rune)             { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendString(v string)         { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendUint(v uint)             { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendUint64(v uint64)         { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendUint32(v uint32)         { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendUint16(v uint16)         { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendUint8(v uint8)           { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendUintptr(v uintptr)       { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendBool(v bool)              { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendByte(v byte)              { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendComplex128(v complex128)  { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendComplex64(v complex64)    { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendDuration(v time.Duration) { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendFloat64(v float64)        { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendFloat32(v float32)        { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendInt(v int)                { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendInt64(v int64)            { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendInt32(v int32)            { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendInt16(v int16)            { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendInt8(v int8)              { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendRune(v rune)              { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendString(v string)          { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendTime(v time.Time)         { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendUint(v uint)              { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendUint64(v uint64)          { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendUint32(v uint32)          { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendUint16(v uint16)          { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendUint8(v uint8)            { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendUintptr(v uintptr)        { s.elems = append(s.elems, v) }

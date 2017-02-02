@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"math"
 	"strconv"
+	"time"
 	"unicode/utf8"
 
 	"go.uber.org/zap/internal/buffers"
@@ -78,6 +79,11 @@ func (enc *jsonEncoder) AddComplex128(key string, val complex128) {
 	enc.AppendComplex128(val)
 }
 
+func (enc *jsonEncoder) AddDuration(key string, val time.Duration) {
+	enc.addKey(key)
+	enc.AppendDuration(val)
+}
+
 func (enc *jsonEncoder) AddFloat64(key string, val float64) {
 	enc.addKey(key)
 	enc.AppendFloat64(val)
@@ -101,6 +107,11 @@ func (enc *jsonEncoder) AddReflected(key string, obj interface{}) error {
 func (enc *jsonEncoder) AddString(key, val string) {
 	enc.addKey(key)
 	enc.AppendString(val)
+}
+
+func (enc *jsonEncoder) AddTime(key string, val time.Time) {
+	enc.addKey(key)
+	enc.AppendTime(val)
 }
 
 func (enc *jsonEncoder) AddUint64(key string, val uint64) {
@@ -184,6 +195,7 @@ func (enc *jsonEncoder) AddUint8(k string, v uint8)         { enc.AddUint64(k, u
 func (enc *jsonEncoder) AddUintptr(k string, v uintptr)     { enc.AddUint64(k, uint64(v)) }
 func (enc *jsonEncoder) AppendByte(v byte)                  { enc.AppendUint8(uint8(v)) }
 func (enc *jsonEncoder) AppendComplex64(v complex64)        { enc.AppendComplex128(complex128(v)) }
+func (enc *jsonEncoder) AppendDuration(val time.Duration)   { enc.DurationFormatter(val, enc) }
 func (enc *jsonEncoder) AppendFloat64(v float64)            { enc.appendFloat(v, 64) }
 func (enc *jsonEncoder) AppendFloat32(v float32)            { enc.appendFloat(float64(v), 32) }
 func (enc *jsonEncoder) AppendInt(v int)                    { enc.AppendInt64(int64(v)) }
@@ -191,6 +203,7 @@ func (enc *jsonEncoder) AppendInt32(v int32)                { enc.AppendInt64(in
 func (enc *jsonEncoder) AppendInt16(v int16)                { enc.AppendInt64(int64(v)) }
 func (enc *jsonEncoder) AppendInt8(v int8)                  { enc.AppendInt64(int64(v)) }
 func (enc *jsonEncoder) AppendRune(v rune)                  { enc.AppendInt32(int32(v)) }
+func (enc *jsonEncoder) AppendTime(val time.Time)           { enc.TimeFormatter(val, enc) }
 func (enc *jsonEncoder) AppendUint(v uint)                  { enc.AppendUint64(uint64(v)) }
 func (enc *jsonEncoder) AppendUint32(v uint32)              { enc.AppendUint64(uint64(v)) }
 func (enc *jsonEncoder) AppendUint16(v uint16)              { enc.AppendUint64(uint64(v)) }
@@ -215,8 +228,7 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 		final.LevelFormatter(ent.Level, final)
 	}
 	if final.TimeKey != "" {
-		final.addKey(final.TimeKey)
-		final.TimeFormatter(ent.Time, final)
+		final.AddTime(final.TimeKey, ent.Time)
 	}
 	if ent.LoggerName != "" && final.NameKey != "" {
 		final.addKey(final.NameKey)
