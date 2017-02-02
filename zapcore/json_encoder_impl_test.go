@@ -28,6 +28,7 @@ import (
 	"reflect"
 	"testing"
 	"testing/quick"
+	"time"
 
 	"go.uber.org/zap/internal/multierror"
 
@@ -302,11 +303,14 @@ func assertJSON(t *testing.T, expected string, enc *jsonEncoder) {
 }
 
 func assertOutput(t testing.TB, desc string, expected string, f func(Encoder)) {
-	enc := &jsonEncoder{}
+	enc := &jsonEncoder{EncoderConfig: &EncoderConfig{
+		TimeFormatter:     func(t time.Time, enc ArrayEncoder) { enc.AppendInt64(t.UnixNano() / int64(time.Millisecond)) },
+		DurationFormatter: func(d time.Duration, enc ArrayEncoder) { enc.AppendInt64(int64(d)) },
+	}}
 	f(enc)
 	assert.Equal(t, expected, string(enc.bytes), "Unexpected encoder output after adding a %s.", desc)
 
-	enc = &jsonEncoder{}
+	enc.truncate()
 	enc.AddString("foo", "bar")
 	f(enc)
 	expectedPrefix := `"foo":"bar"`

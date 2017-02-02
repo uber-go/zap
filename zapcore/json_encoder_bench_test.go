@@ -29,34 +29,23 @@ import (
 	. "go.uber.org/zap/zapcore"
 )
 
-func testJSONConfig() JSONConfig {
-	msgF := func(msg string) Field {
-		return Field{Type: StringType, String: msg, Key: "msg"}
-	}
-	timeF := func(t time.Time) Field {
-		millis := t.UnixNano() / int64(time.Millisecond)
-		return Field{Type: Int64Type, Integer: millis, Key: "ts"}
-	}
-	levelF := func(l Level) Field {
-		return Field{Type: StringType, String: l.String(), Key: "level"}
-	}
-	nameF := func(n string) Field {
-		if n == "" {
-			return Field{Type: SkipType}
-		}
-		return Field{Type: StringType, String: n, Key: "name"}
-	}
-	return JSONConfig{
-		MessageFormatter: msgF,
-		TimeFormatter:    timeF,
-		LevelFormatter:   levelF,
-		NameFormatter:    nameF,
+func testEncoderConfig() EncoderConfig {
+	return EncoderConfig{
+		MessageKey:        "msg",
+		LevelKey:          "level",
+		NameKey:           "name",
+		TimeKey:           "ts",
+		CallerKey:         "caller",
+		StacktraceKey:     "stacktrace",
+		TimeFormatter:     func(t time.Time, enc ArrayEncoder) { enc.AppendInt64(t.UnixNano() / int64(time.Millisecond)) },
+		LevelFormatter:    func(l Level, enc ArrayEncoder) { enc.AppendString(l.String()) },
+		DurationFormatter: func(d time.Duration, enc ArrayEncoder) { enc.AppendInt64(int64(d)) },
 	}
 }
 
 func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		enc := NewJSONEncoder(testJSONConfig())
+		enc := NewJSONEncoder(testEncoderConfig())
 		enc.AddObject("nested", ObjectMarshalerFunc(func(enc ObjectEncoder) error {
 			enc.AddInt64("i", int64(i))
 			return nil
@@ -67,7 +56,7 @@ func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
 func BenchmarkZapJSON(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			enc := NewJSONEncoder(testJSONConfig())
+			enc := NewJSONEncoder(testEncoderConfig())
 			enc.AddString("str", "foo")
 			enc.AddInt64("int64-1", 1)
 			enc.AddInt64("int64-2", 2)

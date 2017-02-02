@@ -106,7 +106,7 @@ func TestWriterFacilitySyncsOutput(t *testing.T) {
 	for _, tt := range tests {
 		sink := &testutils.Discarder{}
 		fac := WriterFacility(
-			NewJSONEncoder(testJSONConfig()),
+			NewJSONEncoder(testEncoderConfig()),
 			sink,
 			DebugLevel,
 		)
@@ -118,7 +118,7 @@ func TestWriterFacilitySyncsOutput(t *testing.T) {
 
 func TestWriterFacilityWriteFailure(t *testing.T) {
 	fac := WriterFacility(
-		NewJSONEncoder(testJSONConfig()),
+		NewJSONEncoder(testEncoderConfig()),
 		Lock(&testutils.FailWriter{}),
 		DebugLevel,
 	)
@@ -129,7 +129,7 @@ func TestWriterFacilityWriteFailure(t *testing.T) {
 
 func TestWriterFacilityShortWrite(t *testing.T) {
 	fac := WriterFacility(
-		NewJSONEncoder(testJSONConfig()),
+		NewJSONEncoder(testEncoderConfig()),
 		Lock(&testutils.ShortWriter{}),
 		DebugLevel,
 	)

@@ -29,8 +29,8 @@ import (
 
 func withBenchedTee(b *testing.B, f func(Facility)) {
 	fac := Tee(
-		WriterFacility(NewJSONEncoder(testJSONConfig()), &testutils.Discarder{}, DebugLevel),
-		WriterFacility(NewJSONEncoder(testJSONConfig()), &testutils.Discarder{}, InfoLevel),
+		WriterFacility(NewJSONEncoder(testEncoderConfig()), &testutils.Discarder{}, DebugLevel),
+		WriterFacility(NewJSONEncoder(testEncoderConfig()), &testutils.Discarder{}, InfoLevel),
 	)
 	b.ResetTimer()
 	f(fac)

@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"math"
 	"strconv"
-	"time"
 	"unicode/utf8"
 
 	"go.uber.org/zap/internal/buffers"
@@ -37,16 +36,8 @@ const (
 	_initialBufSize = 1024
 )
 
-// A JSONConfig sets configuration options for a JSON encoder.
-type JSONConfig struct {
-	MessageFormatter func(string) Field
-	TimeFormatter    func(time.Time) Field
-	LevelFormatter   func(Level) Field
-	NameFormatter    func(string) Field
-}
-
 type jsonEncoder struct {
-	*JSONConfig
+	*EncoderConfig
 	bytes []byte
 }
 
@@ -60,10 +51,10 @@ type jsonEncoder struct {
 // libraries will ignore duplicate key-value pairs (typically keeping the last
 // pair) when unmarshaling, but users should attempt to avoid adding duplicate
 // keys.
-func NewJSONEncoder(cfg JSONConfig) Encoder {
+func NewJSONEncoder(cfg EncoderConfig) Encoder {
 	return &jsonEncoder{
-		JSONConfig: &cfg,
-		bytes:      buffers.Get(),
+		EncoderConfig: &cfg,
+		bytes:         buffers.Get(),
 	}
 }
 
@@ -207,37 +198,46 @@ func (enc *jsonEncoder) AppendUint8(v uint8)                { enc.AppendUint64(u
 func (enc *jsonEncoder) AppendUintptr(v uintptr)            { enc.AppendUint64(uint64(v)) }
 
 func (enc *jsonEncoder) Clone() Encoder {
-	clone := &jsonEncoder{JSONConfig: enc.JSONConfig}
+	clone := &jsonEncoder{EncoderConfig: enc.EncoderConfig}
 	clone.bytes = append(buffers.Get(), enc.bytes...)
 	return clone
 }
 
 func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 	final := &jsonEncoder{
-		JSONConfig: enc.JSONConfig,
-		bytes:      buffers.Get(),
+		EncoderConfig: enc.EncoderConfig,
+		bytes:         buffers.Get(),
 	}
 
 	final.bytes = append(final.bytes, '{')
-	final.LevelFormatter(ent.Level).AddTo(final)
-	final.TimeFormatter(ent.Time).AddTo(final)
-	final.NameFormatter(ent.LoggerName).AddTo(final)
-	if ent.Caller.Defined {
+	if final.LevelKey != "" {
+		final.addKey(final.LevelKey)
+		final.LevelFormatter(ent.Level, final)
+	}
+	if final.TimeKey != "" {
+		final.addKey(final.TimeKey)
+		final.TimeFormatter(ent.Time, final)
+	}
+	if ent.LoggerName != "" && final.NameKey != "" {
+		final.addKey(final.NameKey)
+		final.AppendString(ent.LoggerName)
+	}
+	if ent.Caller.Defined && final.CallerKey != "" {
 		// NOTE: we add the field here for parity compromise with text
 		// prepending, while not actually mutating the message string.
-		final.AddString("caller", ent.Caller.String())
+		final.AddString(final.CallerKey, ent.Caller.String())
 	}
-	final.MessageFormatter(ent.Message).AddTo(final)
+	if final.MessageKey != "" {
+		final.addKey(enc.MessageKey)
+		final.AppendString(ent.Message)
+	}
 	if len(enc.bytes) > 0 {
-		if len(final.bytes) > 1 {
-			// All the formatters may have been no-ops.
-			final.bytes = append(final.bytes, ',')
-		}
+		final.separateElements()
 		final.bytes = append(final.bytes, enc.bytes...)
 	}
 	addFields(final, fields)
-	if ent.Stack != "" {
-		final.AddString("stacktrace", ent.Stack)
+	if ent.Stack != "" && final.StacktraceKey != "" {
+		final.AddString(final.StacktraceKey, ent.Stack)
 	}
 	final.bytes = append(final.bytes, '}', '\n')
 	return final.bytes, nil
