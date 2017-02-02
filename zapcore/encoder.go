@@ -20,6 +20,21 @@
 
 package zapcore
 
+import "time"
+
+// An EncoderConfig allows users to configure the concrete encoders supplied by
+// zapcore.
+type EncoderConfig struct {
+	// Set the keys used for each log entry.
+	MessageKey, LevelKey, TimeKey, NameKey, CallerKey, StacktraceKey string
+	// Configure the primitive representations of common complex types. For
+	// example, some users may want all time.Times serialized as floating-point
+	// seconds since epoch, while others may prefer ISO8601 strings.
+	LevelFormatter    func(Level, ArrayEncoder)
+	TimeFormatter     func(time.Time, ArrayEncoder)
+	DurationFormatter func(time.Duration, ArrayEncoder)
+}
+
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a
 // map- or struct-like object to the logging context. Like maps, ObjectEncoders
 // aren't safe for concurrent use (though typical use shouldn't require locks).
