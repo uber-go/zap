@@ -30,9 +30,9 @@ type EncoderConfig struct {
 	// Configure the primitive representations of common complex types. For
 	// example, some users may want all time.Times serialized as floating-point
 	// seconds since epoch, while others may prefer ISO8601 strings.
-	LevelFormatter    func(Level, ArrayEncoder)
-	TimeFormatter     func(time.Time, ArrayEncoder)
-	DurationFormatter func(time.Duration, ArrayEncoder)
+	EncodeLevel    func(Level, ArrayEncoder)
+	EncodeTime     func(time.Time, ArrayEncoder)
+	EncodeDuration func(time.Duration, ArrayEncoder)
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a

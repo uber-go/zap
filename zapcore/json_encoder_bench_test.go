@@ -31,15 +31,15 @@ import (
 
 func testEncoderConfig() EncoderConfig {
 	return EncoderConfig{
-		MessageKey:        "msg",
-		LevelKey:          "level",
-		NameKey:           "name",
-		TimeKey:           "ts",
-		CallerKey:         "caller",
-		StacktraceKey:     "stacktrace",
-		TimeFormatter:     func(t time.Time, enc ArrayEncoder) { enc.AppendInt64(t.UnixNano() / int64(time.Millisecond)) },
-		LevelFormatter:    func(l Level, enc ArrayEncoder) { enc.AppendString(l.String()) },
-		DurationFormatter: func(d time.Duration, enc ArrayEncoder) { enc.AppendInt64(int64(d)) },
+		MessageKey:     "msg",
+		LevelKey:       "level",
+		NameKey:        "name",
+		TimeKey:        "ts",
+		CallerKey:      "caller",
+		StacktraceKey:  "stacktrace",
+		EncodeTime:     func(t time.Time, enc ArrayEncoder) { enc.AppendInt64(t.UnixNano() / int64(time.Millisecond)) },
+		EncodeLevel:    func(l Level, enc ArrayEncoder) { enc.AppendString(l.String()) },
+		EncodeDuration: func(d time.Duration, enc ArrayEncoder) { enc.AppendInt64(int64(d)) },
 	}
 }
 

@@ -55,14 +55,14 @@ var _jane = user{
 // TODO: remove this when we figure out a new config & options story.
 func benchEncoder() zapcore.Encoder {
 	return zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-		MessageKey:        "msg",
-		LevelKey:          "level",
-		TimeKey:           "ts",
-		CallerKey:         "caller",
-		StacktraceKey:     "stacktrace",
-		TimeFormatter:     func(t time.Time, enc zapcore.ArrayEncoder) { enc.AppendInt64(t.UnixNano() / int64(time.Millisecond)) },
-		DurationFormatter: func(d time.Duration, enc zapcore.ArrayEncoder) { enc.AppendInt64(int64(d)) },
-		LevelFormatter:    func(l zapcore.Level, enc zapcore.ArrayEncoder) { enc.AppendString(l.String()) },
+		MessageKey:     "msg",
+		LevelKey:       "level",
+		TimeKey:        "ts",
+		CallerKey:      "caller",
+		StacktraceKey:  "stacktrace",
+		EncodeTime:     func(t time.Time, enc zapcore.ArrayEncoder) { enc.AppendInt64(t.UnixNano() / int64(time.Millisecond)) },
+		EncodeDuration: func(d time.Duration, enc zapcore.ArrayEncoder) { enc.AppendInt64(int64(d)) },
+		EncodeLevel:    func(l zapcore.Level, enc zapcore.ArrayEncoder) { enc.AppendString(l.String()) },
 	})
 }
 
