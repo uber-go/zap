@@ -37,16 +37,8 @@ const (
 	_initialBufSize = 1024
 )
 
-// A JSONConfig sets configuration options for a JSON encoder.
-type JSONConfig struct {
-	MessageFormatter func(string) Field
-	TimeFormatter    func(time.Time) Field
-	LevelFormatter   func(Level) Field
-	NameFormatter    func(string) Field
-}
-
 type jsonEncoder struct {
-	*JSONConfig
+	*EncoderConfig
 	bytes []byte
 }
 
@@ -60,10 +52,10 @@ type jsonEncoder struct {
 // libraries will ignore duplicate key-value pairs (typically keeping the last
 // pair) when unmarshaling, but users should attempt to avoid adding duplicate
 // keys.
-func NewJSONEncoder(cfg JSONConfig) Encoder {
+func NewJSONEncoder(cfg EncoderConfig) Encoder {
 	return &jsonEncoder{
-		JSONConfig: &cfg,
-		bytes:      buffers.Get(),
+		EncoderConfig: &cfg,
+		bytes:         buffers.Get(),
 	}
 }
 
@@ -85,6 +77,11 @@ func (enc *jsonEncoder) AddBool(key string, val bool) {
 func (enc *jsonEncoder) AddComplex128(key string, val complex128) {
 	enc.addKey(key)
 	enc.AppendComplex128(val)
+}
+
+func (enc *jsonEncoder) AddDuration(key string, val time.Duration) {
+	enc.addKey(key)
+	enc.AppendDuration(val)
 }
 
 func (enc *jsonEncoder) AddFloat64(key string, val float64) {
@@ -112,13 +109,18 @@ func (enc *jsonEncoder) AddString(key, val string) {
 	enc.AppendString(val)
 }
 
+func (enc *jsonEncoder) AddTime(key string, val time.Time) {
+	enc.addKey(key)
+	enc.AppendTime(val)
+}
+
 func (enc *jsonEncoder) AddUint64(key string, val uint64) {
 	enc.addKey(key)
 	enc.AppendUint64(val)
 }
 
 func (enc *jsonEncoder) AppendArray(arr ArrayMarshaler) error {
-	enc.separateElements()
+	enc.addElementSeparator()
 	enc.bytes = append(enc.bytes, '[')
 	err := arr.MarshalLogArray(enc)
 	enc.bytes = append(enc.bytes, ']')
@@ -126,7 +128,7 @@ func (enc *jsonEncoder) AppendArray(arr ArrayMarshaler) error {
 }
 
 func (enc *jsonEncoder) AppendObject(obj ObjectMarshaler) error {
-	enc.separateElements()
+	enc.addElementSeparator()
 	enc.bytes = append(enc.bytes, '{')
 	err := obj.MarshalLogObject(enc)
 	enc.bytes = append(enc.bytes, '}')
@@ -134,12 +136,12 @@ func (enc *jsonEncoder) AppendObject(obj ObjectMarshaler) error {
 }
 
 func (enc *jsonEncoder) AppendBool(val bool) {
-	enc.separateElements()
+	enc.addElementSeparator()
 	enc.bytes = strconv.AppendBool(enc.bytes, val)
 }
 
 func (enc *jsonEncoder) AppendComplex128(val complex128) {
-	enc.separateElements()
+	enc.addElementSeparator()
 	// Cast to a platform-independent, fixed-size type.
 	r, i := float64(real(val)), float64(imag(val))
 	enc.bytes = append(enc.bytes, '"')
@@ -152,7 +154,7 @@ func (enc *jsonEncoder) AppendComplex128(val complex128) {
 }
 
 func (enc *jsonEncoder) AppendInt64(val int64) {
-	enc.separateElements()
+	enc.addElementSeparator()
 	enc.bytes = strconv.AppendInt(enc.bytes, val, 10)
 }
 
@@ -161,20 +163,20 @@ func (enc *jsonEncoder) AppendReflected(val interface{}) error {
 	if err != nil {
 		return err
 	}
-	enc.separateElements()
+	enc.addElementSeparator()
 	enc.bytes = append(enc.bytes, marshaled...)
 	return nil
 }
 
 func (enc *jsonEncoder) AppendString(val string) {
-	enc.separateElements()
+	enc.addElementSeparator()
 	enc.bytes = append(enc.bytes, '"')
 	enc.safeAddString(val)
 	enc.bytes = append(enc.bytes, '"')
 }
 
 func (enc *jsonEncoder) AppendUint64(val uint64) {
-	enc.separateElements()
+	enc.addElementSeparator()
 	enc.bytes = strconv.AppendUint(enc.bytes, val, 10)
 }
 
@@ -193,6 +195,7 @@ func (enc *jsonEncoder) AddUint8(k string, v uint8)         { enc.AddUint64(k, u
 func (enc *jsonEncoder) AddUintptr(k string, v uintptr)     { enc.AddUint64(k, uint64(v)) }
 func (enc *jsonEncoder) AppendByte(v byte)                  { enc.AppendUint8(uint8(v)) }
 func (enc *jsonEncoder) AppendComplex64(v complex64)        { enc.AppendComplex128(complex128(v)) }
+func (enc *jsonEncoder) AppendDuration(val time.Duration)   { enc.EncodeDuration(val, enc) }
 func (enc *jsonEncoder) AppendFloat64(v float64)            { enc.appendFloat(v, 64) }
 func (enc *jsonEncoder) AppendFloat32(v float32)            { enc.appendFloat(float64(v), 32) }
 func (enc *jsonEncoder) AppendInt(v int)                    { enc.AppendInt64(int64(v)) }
@@ -200,6 +203,7 @@ func (enc *jsonEncoder) AppendInt32(v int32)                { enc.AppendInt64(in
 func (enc *jsonEncoder) AppendInt16(v int16)                { enc.AppendInt64(int64(v)) }
 func (enc *jsonEncoder) AppendInt8(v int8)                  { enc.AppendInt64(int64(v)) }
 func (enc *jsonEncoder) AppendRune(v rune)                  { enc.AppendInt32(int32(v)) }
+func (enc *jsonEncoder) AppendTime(val time.Time)           { enc.EncodeTime(val, enc) }
 func (enc *jsonEncoder) AppendUint(v uint)                  { enc.AppendUint64(uint64(v)) }
 func (enc *jsonEncoder) AppendUint32(v uint32)              { enc.AppendUint64(uint64(v)) }
 func (enc *jsonEncoder) AppendUint16(v uint16)              { enc.AppendUint64(uint64(v)) }
@@ -207,37 +211,45 @@ func (enc *jsonEncoder) AppendUint8(v uint8)                { enc.AppendUint64(u
 func (enc *jsonEncoder) AppendUintptr(v uintptr)            { enc.AppendUint64(uint64(v)) }
 
 func (enc *jsonEncoder) Clone() Encoder {
-	clone := &jsonEncoder{JSONConfig: enc.JSONConfig}
+	clone := &jsonEncoder{EncoderConfig: enc.EncoderConfig}
 	clone.bytes = append(buffers.Get(), enc.bytes...)
 	return clone
 }
 
 func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 	final := &jsonEncoder{
-		JSONConfig: enc.JSONConfig,
-		bytes:      buffers.Get(),
+		EncoderConfig: enc.EncoderConfig,
+		bytes:         buffers.Get(),
 	}
 
 	final.bytes = append(final.bytes, '{')
-	final.LevelFormatter(ent.Level).AddTo(final)
-	final.TimeFormatter(ent.Time).AddTo(final)
-	final.NameFormatter(ent.LoggerName).AddTo(final)
-	if ent.Caller.Defined {
+	if final.LevelKey != "" {
+		final.addKey(final.LevelKey)
+		final.EncodeLevel(ent.Level, final)
+	}
+	if final.TimeKey != "" {
+		final.AddTime(final.TimeKey, ent.Time)
+	}
+	if ent.LoggerName != "" && final.NameKey != "" {
+		final.addKey(final.NameKey)
+		final.AppendString(ent.LoggerName)
+	}
+	if ent.Caller.Defined && final.CallerKey != "" {
 		// NOTE: we add the field here for parity compromise with text
 		// prepending, while not actually mutating the message string.
-		final.AddString("caller", ent.Caller.String())
+		final.AddString(final.CallerKey, ent.Caller.String())
 	}
-	final.MessageFormatter(ent.Message).AddTo(final)
+	if final.MessageKey != "" {
+		final.addKey(enc.MessageKey)
+		final.AppendString(ent.Message)
+	}
 	if len(enc.bytes) > 0 {
-		if len(final.bytes) > 1 {
-			// All the formatters may have been no-ops.
-			final.bytes = append(final.bytes, ',')
-		}
+		final.addElementSeparator()
 		final.bytes = append(final.bytes, enc.bytes...)
 	}
 	addFields(final, fields)
-	if ent.Stack != "" {
-		final.AddString("stacktrace", ent.Stack)
+	if ent.Stack != "" && final.StacktraceKey != "" {
+		final.AddString(final.StacktraceKey, ent.Stack)
 	}
 	final.bytes = append(final.bytes, '}', '\n')
 	return final.bytes, nil
@@ -248,13 +260,13 @@ func (enc *jsonEncoder) truncate() {
 }
 
 func (enc *jsonEncoder) addKey(key string) {
-	enc.separateElements()
+	enc.addElementSeparator()
 	enc.bytes = append(enc.bytes, '"')
 	enc.safeAddString(key)
 	enc.bytes = append(enc.bytes, '"', ':')
 }
 
-func (enc *jsonEncoder) separateElements() {
+func (enc *jsonEncoder) addElementSeparator() {
 	last := len(enc.bytes) - 1
 	if last < 0 {
 		return
@@ -268,7 +280,7 @@ func (enc *jsonEncoder) separateElements() {
 }
 
 func (enc *jsonEncoder) appendFloat(val float64, bitSize int) {
-	enc.separateElements()
+	enc.addElementSeparator()
 	switch {
 	case math.IsNaN(val):
 		enc.bytes = append(enc.bytes, `"NaN"`...)

@@ -22,6 +22,7 @@ package zapcore
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -94,6 +95,11 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 			expected: complex64(1 + 2i),
 		},
 		{
+			desc:     "AddDuration",
+			f:        func(e ObjectEncoder) { e.AddDuration("k", time.Millisecond) },
+			expected: time.Millisecond,
+		},
+		{
 			desc:     "AddFloat64",
 			f:        func(e ObjectEncoder) { e.AddFloat64("k", 3.14) },
 			expected: 3.14,
@@ -137,6 +143,11 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 			desc:     "AddString",
 			f:        func(e ObjectEncoder) { e.AddString("k", "v") },
 			expected: "v",
+		},
+		{
+			desc:     "AddTime",
+			f:        func(e ObjectEncoder) { e.AddTime("k", time.Unix(0, 100)) },
+			expected: time.Unix(0, 100),
 		},
 		{
 			desc:     "AddUint",
@@ -195,6 +206,7 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 		{"AppendByte", func(e ArrayEncoder) { e.AppendByte(1) }, byte(1)},
 		{"AppendComplex128", func(e ArrayEncoder) { e.AppendComplex128(1 + 2i) }, 1 + 2i},
 		{"AppendComplex64", func(e ArrayEncoder) { e.AppendComplex64(1 + 2i) }, complex64(1 + 2i)},
+		{"AppendDuration", func(e ArrayEncoder) { e.AppendDuration(time.Second) }, time.Second},
 		{"AppendFloat64", func(e ArrayEncoder) { e.AppendFloat64(3.14) }, 3.14},
 		{"AppendFloat32", func(e ArrayEncoder) { e.AppendFloat32(3.14) }, float32(3.14)},
 		{"AppendInt", func(e ArrayEncoder) { e.AppendInt(42) }, 42},
@@ -204,6 +216,7 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 		{"AppendInt8", func(e ArrayEncoder) { e.AppendInt8(42) }, int8(42)},
 		{"AppendRune", func(e ArrayEncoder) { e.AppendRune(42) }, rune(42)},
 		{"AppendString", func(e ArrayEncoder) { e.AppendString("foo") }, "foo"},
+		{"AppendTime", func(e ArrayEncoder) { e.AppendTime(time.Unix(0, 100)) }, time.Unix(0, 100)},
 		{"AppendUint", func(e ArrayEncoder) { e.AppendUint(42) }, uint(42)},
 		{"AppendUint64", func(e ArrayEncoder) { e.AppendUint64(42) }, uint64(42)},
 		{"AppendUint32", func(e ArrayEncoder) { e.AppendUint32(42) }, uint32(42)},
