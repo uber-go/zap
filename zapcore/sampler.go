@@ -51,7 +51,7 @@ func (c *counters) Reset(lvl Level, key string) {
 }
 
 func (c *counters) hash(key string) uint32 {
-	return hash.XSHRR(key) % _countersPerLevel
+	return hash.XSHRR(key)
 }
 
 // Sample creates a facility that samples incoming entries.
