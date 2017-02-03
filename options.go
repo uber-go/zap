@@ -24,19 +24,19 @@ import "go.uber.org/zap/zapcore"
 
 // Option is used to set options for the logger.
 type Option interface {
-	apply(*logger)
+	apply(*Logger)
 }
 
 // optionFunc wraps a func so it satisfies the Option interface.
-type optionFunc func(*logger)
+type optionFunc func(*Logger)
 
-func (f optionFunc) apply(log *logger) {
+func (f optionFunc) apply(log *Logger) {
 	f(log)
 }
 
 // Fields sets the initial fields for the logger.
 func Fields(fs ...zapcore.Field) Option {
-	return optionFunc(func(log *logger) {
+	return optionFunc(func(log *Logger) {
 		log.fac = log.fac.With(fs)
 	})
 }
@@ -45,7 +45,7 @@ func Fields(fs ...zapcore.Field) Option {
 // supplied WriteSyncer is automatically wrapped with a mutex, so it need not be
 // safe for concurrent use.
 func ErrorOutput(w zapcore.WriteSyncer) Option {
-	return optionFunc(func(log *logger) {
+	return optionFunc(func(log *Logger) {
 		log.errorOutput = zapcore.Lock(w)
 	})
 }
@@ -53,7 +53,7 @@ func ErrorOutput(w zapcore.WriteSyncer) Option {
 // Development puts the logger in development mode, which alters the behavior
 // of the DPanic method.
 func Development() Option {
-	return optionFunc(func(log *logger) {
+	return optionFunc(func(log *Logger) {
 		log.development = true
 	})
 }
@@ -61,7 +61,7 @@ func Development() Option {
 // AddCaller configures the Logger to annotate each message with the filename
 // and line number of zap's caller.
 func AddCaller() Option {
-	return optionFunc(func(log *logger) {
+	return optionFunc(func(log *Logger) {
 		log.addCaller = true
 	})
 }
@@ -69,7 +69,7 @@ func AddCaller() Option {
 // AddCallerSkip increases the number of callers skipped by caller annotation
 // (as enabled by the AddCaller option).
 func AddCallerSkip(skip int) Option {
-	return optionFunc(func(log *logger) {
+	return optionFunc(func(log *Logger) {
 		log.callerSkip += skip
 	})
 }
@@ -81,7 +81,7 @@ func AddCallerSkip(skip int) Option {
 // TODO: why is this called AddStacks rather than just AddStack or
 // AddStacktrace?
 func AddStacks(lvl zapcore.LevelEnabler) Option {
-	return optionFunc(func(log *logger) {
+	return optionFunc(func(log *Logger) {
 		log.addStack = lvl
 	})
 }

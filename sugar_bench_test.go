@@ -28,10 +28,10 @@ import (
 )
 
 func withBenchedSugar(b *testing.B, f func(*SugaredLogger)) {
-	logger := Sugar(New(zapcore.WriterFacility(zapcore.NewJSONEncoder(defaultEncoderConfig()),
+	logger := New(zapcore.WriterFacility(zapcore.NewJSONEncoder(defaultEncoderConfig()),
 		&testutils.Discarder{},
 		DebugLevel,
-	)))
+	)).Sugar()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
