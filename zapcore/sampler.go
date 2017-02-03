@@ -37,15 +37,17 @@ func newCounters() *counters {
 type counters [_numLevels][_countersPerLevel]uint64
 
 func (c *counters) Inc(lvl Level, key string) uint64 {
-	i := lvl - _minLevel
-	j := fnv32a(key) % _countersPerLevel
-	return atomic.AddUint64(&c[i][j], 1)
+	return atomic.AddUint64(c.get(lvl, key), 1)
 }
 
 func (c *counters) Reset(lvl Level, key string) {
+	atomic.StoreUint64(c.get(lvl, key), 0)
+}
+
+func (c *counters) get(lvl Level, key string) *uint64 {
 	i := lvl - _minLevel
-	j := fnv32a(key) % _countersPerLeve
-	atomic.StoreUint64(&c[i][j], 0)
+	j := fnv32a(key) % _countersPerLevel
+	return &c[i][j]
 }
 
 // fnv32a, adapted from "hash/fnv", but without a []byte(string) alloc
