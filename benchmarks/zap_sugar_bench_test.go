@@ -50,11 +50,11 @@ func fakeSugarFormatArgs() (string, []interface{}) {
 }
 
 func newSugarLogger(lvl zapcore.Level, options ...zap.Option) *zap.SugaredLogger {
-	return zap.Sugar(zap.New(zapcore.WriterFacility(
+	return zap.New(zapcore.WriterFacility(
 		benchEncoder(),
 		&testutils.Discarder{},
 		lvl,
-	), options...))
+	), options...).Sugar()
 }
 
 func BenchmarkZapSugarDisabledLevelsWithoutFields(b *testing.B) {

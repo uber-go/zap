@@ -35,9 +35,8 @@ type WriteSyncer interface {
 }
 
 // AddSync converts an io.Writer to a WriteSyncer. It attempts to be
-// intelligent: if the concrete type of the io.Writer implements WriteSyncer or
-// WriteFlusher, we'll use the existing Sync or Flush methods. If it doesn't,
-// we'll add a no-op Sync method.
+// intelligent: if the concrete type of the io.Writer implements WriteSyncer,
+// we'll use the existing Sync method. If it doesn't, we'll add a no-op Sync.
 func AddSync(w io.Writer) WriteSyncer {
 	switch w := w.(type) {
 	case WriteSyncer:

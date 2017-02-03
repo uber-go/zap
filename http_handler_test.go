@@ -38,7 +38,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newHandler() (AtomicLevel, Logger) {
+func newHandler() (AtomicLevel, *Logger) {
 	lvl := DynamicLevel()
 	// XXX should be a discard facility
 	fac := observer.New(lvl, func(observer.LoggedEntry) error { return nil }, false)

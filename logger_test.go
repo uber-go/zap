@@ -37,7 +37,7 @@ func TestLoggerDynamicLevel(t *testing.T) {
 	// Test that the DynamicLevel applys to all ancestors and descendants.
 	dl := DynamicLevel()
 
-	withLogger(t, dl, nil, func(grandparent Logger, _ *observer.ObservedLogs) {
+	withLogger(t, dl, nil, func(grandparent *Logger, _ *observer.ObservedLogs) {
 		parent := grandparent.With(Int("generation", 1))
 		child := parent.With(Int("generation", 2))
 
@@ -53,7 +53,7 @@ func TestLoggerDynamicLevel(t *testing.T) {
 
 		for _, tt := range tests {
 			dl.SetLevel(tt.setLevel)
-			for _, logger := range []Logger{grandparent, parent, child} {
+			for _, logger := range []*Logger{grandparent, parent, child} {
 				if tt.enabled {
 					assert.NotNil(
 						t,
@@ -74,7 +74,7 @@ func TestLoggerDynamicLevel(t *testing.T) {
 
 func TestLoggerInitialFields(t *testing.T) {
 	fieldOpts := opts(Fields(Int("foo", 42), String("bar", "baz")))
-	withLogger(t, DebugLevel, fieldOpts, func(logger Logger, logs *observer.ObservedLogs) {
+	withLogger(t, DebugLevel, fieldOpts, func(logger *Logger, logs *observer.ObservedLogs) {
 		logger.Info("")
 		assert.Equal(
 			t,
@@ -87,7 +87,7 @@ func TestLoggerInitialFields(t *testing.T) {
 
 func TestLoggerWith(t *testing.T) {
 	fieldOpts := opts(Fields(Int("foo", 42)))
-	withLogger(t, DebugLevel, fieldOpts, func(logger Logger, logs *observer.ObservedLogs) {
+	withLogger(t, DebugLevel, fieldOpts, func(logger *Logger, logs *observer.ObservedLogs) {
 		// Child loggers should have copy-on-write semantics, so two children
 		// shouldn't stomp on each other's fields or affect the parent's fields.
 		logger.With(String("one", "two")).Info("")
@@ -104,14 +104,14 @@ func TestLoggerWith(t *testing.T) {
 
 func TestLoggerLogPanic(t *testing.T) {
 	for _, tt := range []struct {
-		do       func(Logger)
+		do       func(*Logger)
 		should   bool
 		expected string
 	}{
-		{func(logger Logger) { logger.Check(PanicLevel, "bar").Write() }, true, "bar"},
-		{func(logger Logger) { logger.Panic("baz") }, true, "baz"},
+		{func(logger *Logger) { logger.Check(PanicLevel, "bar").Write() }, true, "bar"},
+		{func(logger *Logger) { logger.Panic("baz") }, true, "baz"},
 	} {
-		withLogger(t, DebugLevel, nil, func(logger Logger, logs *observer.ObservedLogs) {
+		withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 			if tt.should {
 				assert.Panics(t, func() { tt.do(logger) }, "Expected panic")
 			} else {
@@ -133,13 +133,13 @@ func TestLoggerLogPanic(t *testing.T) {
 
 func TestLoggerLogFatal(t *testing.T) {
 	for _, tt := range []struct {
-		do       func(Logger)
+		do       func(*Logger)
 		expected string
 	}{
-		{func(logger Logger) { logger.Check(FatalLevel, "bar").Write() }, "bar"},
-		{func(logger Logger) { logger.Fatal("baz") }, "baz"},
+		{func(logger *Logger) { logger.Check(FatalLevel, "bar").Write() }, "bar"},
+		{func(logger *Logger) { logger.Fatal("baz") }, "baz"},
 	} {
-		withLogger(t, DebugLevel, nil, func(logger Logger, logs *observer.ObservedLogs) {
+		withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 			stub := exit.WithStub(func() {
 				tt.do(logger)
 			})
@@ -158,7 +158,7 @@ func TestLoggerLogFatal(t *testing.T) {
 }
 
 func TestLoggerLeveledMethods(t *testing.T) {
-	withLogger(t, DebugLevel, nil, func(logger Logger, logs *observer.ObservedLogs) {
+	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		tests := []struct {
 			method        func(string, ...zapcore.Field)
 			expectedLevel zapcore.Level
@@ -186,7 +186,7 @@ func TestLoggerLeveledMethods(t *testing.T) {
 func TestLoggerAlwaysPanics(t *testing.T) {
 	// Users can disable writing out panic-level logs, but calls to logger.Panic()
 	// should still call panic().
-	withLogger(t, FatalLevel, nil, func(logger Logger, logs *observer.ObservedLogs) {
+	withLogger(t, FatalLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		msg := "Even if output is disabled, logger.Panic should always panic."
 		assert.Panics(t, func() { logger.Panic("foo") }, msg)
 		assert.Panics(t, func() {
@@ -201,7 +201,7 @@ func TestLoggerAlwaysPanics(t *testing.T) {
 func TestLoggerAlwaysFatals(t *testing.T) {
 	// Users can disable writing out fatal-level logs, but calls to logger.Fatal()
 	// should still terminate the process.
-	withLogger(t, FatalLevel+1, nil, func(logger Logger, logs *observer.ObservedLogs) {
+	withLogger(t, FatalLevel+1, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		stub := exit.WithStub(func() { logger.Fatal("") })
 		assert.True(t, stub.Exited, "Expected calls to logger.Fatal to terminate process.")
 
@@ -217,7 +217,7 @@ func TestLoggerAlwaysFatals(t *testing.T) {
 }
 
 func TestLoggerDPanic(t *testing.T) {
-	withLogger(t, DebugLevel, nil, func(logger Logger, logs *observer.ObservedLogs) {
+	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		assert.NotPanics(t, func() { logger.DPanic("") })
 		assert.Equal(
 			t,
@@ -226,7 +226,7 @@ func TestLoggerDPanic(t *testing.T) {
 			"Unexpected log output from DPanic in production mode.",
 		)
 	})
-	withLogger(t, DebugLevel, opts(Development()), func(logger Logger, logs *observer.ObservedLogs) {
+	withLogger(t, DebugLevel, opts(Development()), func(logger *Logger, logs *observer.ObservedLogs) {
 		assert.Panics(t, func() { logger.DPanic("") })
 		assert.Equal(
 			t,
@@ -238,7 +238,7 @@ func TestLoggerDPanic(t *testing.T) {
 }
 
 func TestLoggerNoOpsDisabledLevels(t *testing.T) {
-	withLogger(t, WarnLevel, nil, func(logger Logger, logs *observer.ObservedLogs) {
+	withLogger(t, WarnLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		logger.Info("silence!")
 		assert.Equal(
 			t,
@@ -265,7 +265,7 @@ func TestLoggerNames(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		withLogger(t, DebugLevel, nil, func(log Logger, logs *observer.ObservedLogs) {
+		withLogger(t, DebugLevel, nil, func(log *Logger, logs *observer.ObservedLogs) {
 			for _, n := range tt.names {
 				log = log.Named(n)
 			}
@@ -312,7 +312,7 @@ func TestLoggerAddCaller(t *testing.T) {
 		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(3)), `.+/src/runtime/.*:[\d]+$`},
 	}
 	for _, tt := range tests {
-		withLogger(t, DebugLevel, tt.options, func(logger Logger, logs *observer.ObservedLogs) {
+		withLogger(t, DebugLevel, tt.options, func(logger *Logger, logs *observer.ObservedLogs) {
 			logger.Info("")
 			output := logs.AllUntimed()
 			assert.Equal(t, 1, len(output), "Unexpected number of logs written out.")
@@ -328,11 +328,8 @@ func TestLoggerAddCaller(t *testing.T) {
 
 func TestLoggerAddCallerFail(t *testing.T) {
 	errBuf := &testutils.Buffer{}
-	withLogger(t, DebugLevel, opts(AddCaller(), ErrorOutput(errBuf)), func(log Logger, logs *observer.ObservedLogs) {
-		// TODO: Use AddCallerSkip
-		logImpl := log.(*logger)
-		logImpl.callerSkip = 1e3
-
+	withLogger(t, DebugLevel, opts(AddCaller(), ErrorOutput(errBuf)), func(log *Logger, logs *observer.ObservedLogs) {
+		log.callerSkip = 1e3
 		log.Info("Failure.")
 		assert.Regexp(
 			t,
@@ -353,7 +350,7 @@ func TestLoggerAddStacks(t *testing.T) {
 		assert.Contains(t, obs.Entry.Stack, "zap.TestLoggerAddStacks", "Expected to find test function in stacktrace.")
 	}
 
-	withLogger(t, DebugLevel, opts(AddStacks(InfoLevel)), func(logger Logger, logs *observer.ObservedLogs) {
+	withLogger(t, DebugLevel, opts(AddStacks(InfoLevel)), func(logger *Logger, logs *observer.ObservedLogs) {
 		logger.Debug("")
 		assert.Empty(
 			t,
@@ -370,7 +367,7 @@ func TestLoggerAddStacks(t *testing.T) {
 }
 
 func TestLoggerConcurrent(t *testing.T) {
-	withLogger(t, DebugLevel, nil, func(logger Logger, logs *observer.ObservedLogs) {
+	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		child := logger.With(String("foo", "bar"))
 
 		wg := &sync.WaitGroup{}

@@ -48,7 +48,7 @@ var _jane = &user{
 	CreatedAt: time.Date(1980, 1, 1, 12, 0, 0, 0, time.UTC),
 }
 
-func withBenchedLogger(b *testing.B, f func(Logger)) {
+func withBenchedLogger(b *testing.B, f func(*Logger)) {
 	logger := New(
 		zapcore.WriterFacility(zapcore.NewJSONEncoder(defaultEncoderConfig()),
 			&testutils.Discarder{},
@@ -63,81 +63,81 @@ func withBenchedLogger(b *testing.B, f func(Logger)) {
 }
 
 func BenchmarkNoContext(b *testing.B) {
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("No context.")
 	})
 }
 
 func BenchmarkBoolField(b *testing.B) {
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Boolean.", Bool("foo", true))
 	})
 }
 
 func BenchmarkFloat64Field(b *testing.B) {
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Floating point.", Float64("foo", 3.14))
 	})
 }
 
 func BenchmarkIntField(b *testing.B) {
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Integer.", Int("foo", 42))
 	})
 }
 
 func BenchmarkInt64Field(b *testing.B) {
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("64-bit integer.", Int64("foo", 42))
 	})
 }
 
 func BenchmarkStringField(b *testing.B) {
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Strings.", String("foo", "bar"))
 	})
 }
 
 func BenchmarkStringerField(b *testing.B) {
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Level.", Stringer("foo", InfoLevel))
 	})
 }
 
 func BenchmarkTimeField(b *testing.B) {
 	t := time.Unix(0, 0)
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Time.", Time("foo", t))
 	})
 }
 
 func BenchmarkDurationField(b *testing.B) {
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Duration", Duration("foo", time.Second))
 	})
 }
 
 func BenchmarkErrorField(b *testing.B) {
 	err := errors.New("egad")
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Error.", Error(err))
 	})
 }
 
 func BenchmarkStackField(b *testing.B) {
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Error.", Stack())
 	})
 }
 
 func BenchmarkObjectField(b *testing.B) {
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Arbitrary ObjectMarshaler.", Object("user", _jane))
 	})
 }
 
 func BenchmarkReflectField(b *testing.B) {
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Reflection-based serialization.", Reflect("user", _jane))
 	})
 }
@@ -160,7 +160,7 @@ func BenchmarkAddCallerHook(b *testing.B) {
 }
 
 func Benchmark10Fields(b *testing.B) {
-	withBenchedLogger(b, func(log Logger) {
+	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Ten fields, passed at the log site.",
 			Int("one", 1),
 			Int("two", 2),
