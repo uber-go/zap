@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"go.uber.org/atomic"
+	"go.uber.org/zap/internal/hash"
 )
 
 const (
@@ -47,22 +48,8 @@ func (c *counters) Reset(lvl Level, key string) {
 
 func (c *counters) get(lvl Level, key string) *atomic.Uint64 {
 	i := lvl - _minLevel
-	j := fnv32a(key) % _countersPerLevel
+	j := hash.FNV32a(key) % _countersPerLevel
 	return &c[i][j]
-}
-
-// fnv32a, adapted from "hash/fnv", but without a []byte(string) alloc
-func fnv32a(s string) uint32 {
-	const (
-		offset32 = 2166136261
-		prime32  = 16777619
-	)
-	hash := uint32(offset32)
-	for i := 0; i < len(s); i++ {
-		hash ^= uint32(s[i])
-		hash *= prime32
-	}
-	return hash
 }
 
 // Sample creates a facility that samples incoming entries.
