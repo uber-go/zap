@@ -23,8 +23,6 @@ package zapcore
 import (
 	"sync/atomic"
 	"time"
-
-	"go.uber.org/zap/internal/hash"
 )
 
 const (
@@ -40,18 +38,28 @@ type counters [_numLevels][_countersPerLevel]uint64
 
 func (c *counters) Inc(lvl Level, key string) uint64 {
 	i := lvl - minLevel
-	j := c.hash(key) % _countersPerLevel
+	j := fnv32a(key) % _countersPerLevel
 	return atomic.AddUint64(&c[i][j], 1)
 }
 
 func (c *counters) Reset(lvl Level, key string) {
 	i := lvl - minLevel
-	j := c.hash(key) % _countersPerLevel
+	j := fnv32a(key) % _countersPerLevel
 	atomic.StoreUint64(&c[i][j], 0)
 }
 
-func (c *counters) hash(key string) uint32 {
-	return hash.XSHRR(key)
+// fnv32a, adapted from "hash/fnv", but without a []byte(string) alloc
+func fnv32a(s string) uint32 {
+	const (
+		offset32 = 2166136261
+		prime32  = 16777619
+	)
+	hash := uint32(offset32)
+	for i := 0; i < len(s); i++ {
+		hash ^= uint32(s[i])
+		hash *= prime32
+	}
+	return hash
 }
 
 // Sample creates a facility that samples incoming entries.
