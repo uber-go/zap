@@ -21,7 +21,6 @@
 package zapcore_test
 
 import (
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -31,33 +30,60 @@ import (
 	. "go.uber.org/zap/zapcore"
 )
 
-var epoch = time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
+var (
+	_epoch     = time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
+	_testEntry = Entry{
+		LoggerName: "main",
+		Level:      InfoLevel,
+		Message:    `hello`,
+		Time:       _epoch,
+		Stack:      "fake-stack",
+		Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42},
+	}
+)
+
+func testEncoderConfig() EncoderConfig {
+	return EncoderConfig{
+		MessageKey:     "msg",
+		LevelKey:       "level",
+		NameKey:        "name",
+		TimeKey:        "ts",
+		CallerKey:      "caller",
+		StacktraceKey:  "stacktrace",
+		EncodeTime:     func(t time.Time, enc ArrayEncoder) { enc.AppendInt64(t.UnixNano() / int64(time.Millisecond)) },
+		EncodeLevel:    func(l Level, enc ArrayEncoder) { enc.AppendString(l.String()) },
+		EncodeDuration: func(d time.Duration, enc ArrayEncoder) { enc.AppendInt64(int64(d)) },
+	}
+}
+
+func humanEncoderConfig() EncoderConfig {
+	cfg := testEncoderConfig()
+	cfg.EncodeTime = func(t time.Time, enc ArrayEncoder) { enc.AppendString(t.Format(time.RFC3339)) }
+	cfg.EncodeLevel = func(l Level, enc ArrayEncoder) { enc.AppendString(strings.ToUpper(l.String())) }
+	cfg.EncodeDuration = func(d time.Duration, enc ArrayEncoder) { enc.AppendString(d.String()) }
+	return cfg
+}
 
 func withJSONEncoder(f func(Encoder)) {
 	f(NewJSONEncoder(testEncoderConfig()))
 }
 
-func TestJSONEncoderConfiguration(t *testing.T) {
-	epoch := time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
-	entry := Entry{
-		LoggerName: "main",
-		Level:      InfoLevel,
-		Message:    `hello`,
-		Time:       epoch,
-		Stack:      "fake-stack",
-		Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42},
-	}
+func withConsoleEncoder(f func(Encoder)) {
+	f(NewConsoleEncoder(humanEncoderConfig()))
+}
+
+func TestEncoderConfiguration(t *testing.T) {
 	base := testEncoderConfig()
-	// expected: `{"level":"info","ts":100,"name":"main","caller":"foo.go:42","msg":"hello","stacktrace":"fake-stack"}`,
 
 	tests := []struct {
-		desc     string
-		cfg      EncoderConfig
-		extra    func(Encoder)
-		expected string
+		desc            string
+		cfg             EncoderConfig
+		extra           func(Encoder)
+		expectedJSON    string
+		expectedConsole string
 	}{
 		{
-			desc: "use custom entry keys",
+			desc: "use custom entry keys in JSON output and ignore them in console output",
 			cfg: EncoderConfig{
 				LevelKey:       "L",
 				TimeKey:        "T",
@@ -69,7 +95,8 @@ func TestJSONEncoderConfiguration(t *testing.T) {
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
 			},
-			expected: `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+			expectedConsole: "0\tinfo\tmain@foo.go:42\thello\nfake-stack",
 		},
 		{
 			desc: "skip level if LevelKey is omitted",
@@ -84,7 +111,8 @@ func TestJSONEncoderConfiguration(t *testing.T) {
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
 			},
-			expected: `{"T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+			expectedJSON:    `{"T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+			expectedConsole: "0\tmain@foo.go:42\thello\nfake-stack",
 		},
 		{
 			desc: "skip timestamp if TimeKey is omitted",
@@ -99,7 +127,8 @@ func TestJSONEncoderConfiguration(t *testing.T) {
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
 			},
-			expected: `{"L":"info","N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+			expectedJSON:    `{"L":"info","N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+			expectedConsole: "info\tmain@foo.go:42\thello\nfake-stack",
 		},
 		{
 			desc: "skip message if MessageKey is omitted",
@@ -114,10 +143,11 @@ func TestJSONEncoderConfiguration(t *testing.T) {
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
 			},
-			expected: `{"L":"info","T":0,"N":"main","C":"foo.go:42","S":"fake-stack"}`,
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","S":"fake-stack"}`,
+			expectedConsole: "0\tinfo\tmain@foo.go:42\nfake-stack",
 		},
 		{
-			desc: "skip name is NameKey is omitted",
+			desc: "skip name if NameKey is omitted",
 			cfg: EncoderConfig{
 				LevelKey:       "L",
 				TimeKey:        "T",
@@ -129,7 +159,8 @@ func TestJSONEncoderConfiguration(t *testing.T) {
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
 			},
-			expected: `{"L":"info","T":0,"C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+			expectedJSON:    `{"L":"info","T":0,"C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+			expectedConsole: "0\tinfo\tfoo.go:42\thello\nfake-stack",
 		},
 		{
 			desc: "skip caller if CallerKey is omitted",
@@ -144,7 +175,8 @@ func TestJSONEncoderConfiguration(t *testing.T) {
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
 			},
-			expected: `{"L":"info","T":0,"N":"main","M":"hello","S":"fake-stack"}`,
+			expectedJSON:    `{"L":"info","T":0,"N":"main","M":"hello","S":"fake-stack"}`,
+			expectedConsole: "0\tinfo\tmain\thello\nfake-stack",
 		},
 		{
 			desc: "skip stacktrace if StacktraceKey is omitted",
@@ -159,7 +191,8 @@ func TestJSONEncoderConfiguration(t *testing.T) {
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
 			},
-			expected: `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello"}`,
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello"}`,
+			expectedConsole: "0\tinfo\tmain@foo.go:42\thello",
 		},
 		{
 			desc: "use the supplied EncodeTime, for both the entry and any times added",
@@ -175,13 +208,16 @@ func TestJSONEncoderConfiguration(t *testing.T) {
 				EncodeLevel:    base.EncodeLevel,
 			},
 			extra: func(enc Encoder) {
-				enc.AddTime("extra", epoch)
+				enc.AddTime("extra", _epoch)
 				enc.AddArray("extras", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
-					enc.AppendTime(epoch)
+					enc.AppendTime(_epoch)
 					return nil
 				}))
 			},
-			expected: `{"L":"info","T":"1970-01-01 00:00:00 +0000 UTC","N":"main","C":"foo.go:42","M":"hello","extra":"1970-01-01 00:00:00 +0000 UTC","extras":["1970-01-01 00:00:00 +0000 UTC"],"S":"fake-stack"}`,
+			expectedJSON: `{"L":"info","T":"1970-01-01 00:00:00 +0000 UTC","N":"main","C":"foo.go:42","M":"hello","extra":"1970-01-01 00:00:00 +0000 UTC","extras":["1970-01-01 00:00:00 +0000 UTC"],"S":"fake-stack"}`,
+			expectedConsole: "1970-01-01 00:00:00 +0000 UTC\tinfo\tmain@foo.go:42\thello\t" + // plain-text preamble
+				`{"extra": "1970-01-01 00:00:00 +0000 UTC", "extras": ["1970-01-01 00:00:00 +0000 UTC"]}` + // JSON context
+				"\nfake-stack", // stacktrace after newline
 		},
 		{
 			desc: "use the supplied EncodeDuration for any durations added",
@@ -203,7 +239,10 @@ func TestJSONEncoderConfiguration(t *testing.T) {
 					return nil
 				}))
 			},
-			expected: `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","extra":"1s","extras":["1m0s"],"S":"fake-stack"}`,
+			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","extra":"1s","extras":["1m0s"],"S":"fake-stack"}`,
+			expectedConsole: "0\tinfo\tmain@foo.go:42\thello\t" + // preamble
+				`{"extra": "1s", "extras": ["1m0s"]}` + // context
+				"\nfake-stack", // stacktrace
 		},
 		{
 			desc: "use the supplied EncodeLevel",
@@ -218,97 +257,59 @@ func TestJSONEncoderConfiguration(t *testing.T) {
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    func(l Level, enc ArrayEncoder) { enc.AppendString(strings.ToUpper(l.String())) },
 			},
-			expected: `{"L":"INFO","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+			expectedJSON:    `{"L":"INFO","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+			expectedConsole: "0\tINFO\tmain@foo.go:42\thello\nfake-stack",
+		},
+		{
+			desc: "close all open namespaces",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      "C",
+				StacktraceKey:  "S",
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    base.EncodeLevel,
+			},
+			extra: func(enc Encoder) {
+				enc.OpenNamespace("outer")
+				enc.OpenNamespace("inner")
+				enc.AddString("foo", "bar")
+				enc.OpenNamespace("innermost")
+			},
+			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","outer":{"inner":{"foo":"bar","innermost":{}}},"S":"fake-stack"}`,
+			expectedConsole: "0\tinfo\tmain@foo.go:42\thello\t" +
+				`{"outer": {"inner": {"foo": "bar", "innermost": {}}}}` +
+				"\nfake-stack",
 		},
 	}
 
 	for i, tt := range tests {
-		enc := NewJSONEncoder(tt.cfg)
+		json := NewJSONEncoder(tt.cfg)
+		console := NewConsoleEncoder(tt.cfg)
 		if tt.extra != nil {
-			tt.extra(enc)
+			tt.extra(json)
+			tt.extra(console)
 		}
-		buf, err := enc.EncodeEntry(entry, nil)
-		if assert.NoError(t, err, "Unexpected error encoding entry in case #%d.", i) {
-			assert.Equal(t, tt.expected+"\n", string(buf), "Unexpected output: expected to %v.", tt.desc)
+		jsonOut, jsonErr := json.EncodeEntry(_testEntry, nil)
+		if assert.NoError(t, jsonErr, "Unexpected error JSON-encoding entry in case #%d.", i) {
+			assert.Equal(
+				t,
+				tt.expectedJSON+"\n",
+				string(jsonOut),
+				"Unexpected JSON output: expected to %v.", tt.desc,
+			)
+		}
+		consoleOut, consoleErr := console.EncodeEntry(_testEntry, nil)
+		if assert.NoError(t, consoleErr, "Unexpected error console-encoding entry in case #%d.", i) {
+			assert.Equal(
+				t,
+				tt.expectedConsole+"\n",
+				string(consoleOut),
+				"Unexpected console output: expected to %v.", tt.desc,
+			)
 		}
 	}
-}
-
-func TestJSONEncodeEntry(t *testing.T) {
-	epoch := time.Unix(0, 0)
-	withJSONEncoder(func(enc Encoder) {
-		// Messages should be escaped.
-		enc.AddString("foo", "bar")
-		buf, err := enc.EncodeEntry(Entry{
-			LoggerName: "",
-			Level:      InfoLevel,
-			Message:    `hello\`,
-			Time:       epoch,
-		}, nil)
-		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
-		assert.Equal(
-			t,
-			`{"level":"info","ts":0,"msg":"hello\\","foo":"bar"}`+"\n",
-			string(buf),
-		)
-
-		// We should be able to re-use the encoder, preserving the accumulated
-		// fields.
-		buf, err = enc.EncodeEntry(Entry{
-			LoggerName: "main",
-			Level:      InfoLevel,
-			Message:    `hello`,
-			Time:       time.Unix(0, 100*int64(time.Millisecond)),
-		}, nil)
-		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
-		assert.Equal(
-			t,
-			`{"level":"info","ts":100,"name":"main","msg":"hello","foo":"bar"}`+"\n",
-			string(buf),
-		)
-
-		// Stacktraces are included.
-		buf, err = enc.EncodeEntry(Entry{
-			LoggerName: `main\`,
-			Level:      InfoLevel,
-			Message:    `hello`,
-			Time:       time.Unix(0, 100*int64(time.Millisecond)),
-			Stack:      "trace",
-		}, nil)
-		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
-		assert.Equal(
-			t,
-			`{"level":"info","ts":100,"name":"main\\","msg":"hello","foo":"bar","stacktrace":"trace"}`+"\n",
-			string(buf),
-		)
-
-		// Caller is included.
-		buf, err = enc.EncodeEntry(Entry{
-			LoggerName: "main.lib.foo",
-			Level:      InfoLevel,
-			Message:    `hello`,
-			Time:       time.Unix(0, 100*int64(time.Millisecond)),
-			Caller:     MakeEntryCaller(runtime.Caller(0)),
-		}, nil)
-		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
-		assert.Regexp(
-			t,
-			`{"level":"info","ts":100,"name":"main.lib.foo","caller":"/.*zap/zapcore/json_encoder_test.go:\d+","msg":"hello","foo":"bar"}`+"\n",
-			string(buf),
-		)
-	})
-}
-
-func TestJSONEncodeEntryClosesNamespaces(t *testing.T) {
-	withJSONEncoder(func(enc Encoder) {
-		enc.OpenNamespace("outer")
-		enc.OpenNamespace("inner")
-		buf, err := enc.EncodeEntry(Entry{Message: `hello`, Time: time.Unix(0, 0)}, nil)
-		assert.NoError(t, err, "EncodeEntry returned an unexpected error.")
-		assert.Equal(
-			t,
-			`{"level":"info","ts":0,"msg":"hello","outer":{"inner":{}}}`+"\n",
-			string(buf),
-		)
-	})
 }

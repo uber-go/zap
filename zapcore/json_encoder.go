@@ -40,6 +40,7 @@ const (
 type jsonEncoder struct {
 	*EncoderConfig
 	bytes          []byte
+	spaced         bool // include spaces after colons and commas
 	openNamespaces int
 }
 
@@ -252,12 +253,9 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 		final.bytes = append(final.bytes, enc.bytes...)
 	}
 	addFields(&final, fields)
+	final.closeOpenNamespaces()
 	if ent.Stack != "" && final.StacktraceKey != "" {
 		final.AddString(final.StacktraceKey, ent.Stack)
-	}
-	for final.openNamespaces > 0 {
-		final.bytes = append(final.bytes, '}')
-		final.openNamespaces--
 	}
 	final.bytes = append(final.bytes, '}', '\n')
 	return final.bytes, nil
@@ -267,11 +265,20 @@ func (enc *jsonEncoder) truncate() {
 	enc.bytes = enc.bytes[:0]
 }
 
+func (enc *jsonEncoder) closeOpenNamespaces() {
+	for i := 0; i < enc.openNamespaces; i++ {
+		enc.bytes = append(enc.bytes, '}')
+	}
+}
+
 func (enc *jsonEncoder) addKey(key string) {
 	enc.addElementSeparator()
 	enc.bytes = append(enc.bytes, '"')
 	enc.safeAddString(key)
 	enc.bytes = append(enc.bytes, '"', ':')
+	if enc.spaced {
+		enc.bytes = append(enc.bytes, ' ')
+	}
 }
 
 func (enc *jsonEncoder) addElementSeparator() {
@@ -280,10 +287,13 @@ func (enc *jsonEncoder) addElementSeparator() {
 		return
 	}
 	switch enc.bytes[last] {
-	case '{', '[', ':', ',':
+	case '{', '[', ':', ',', ' ':
 		return
 	default:
 		enc.bytes = append(enc.bytes, ',')
+		if enc.spaced {
+			enc.bytes = append(enc.bytes, ' ')
+		}
 	}
 }
 
