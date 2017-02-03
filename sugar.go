@@ -32,25 +32,21 @@ const (
 	_nonStringKeyErrMsg = "Ignored key-value pairs with non-string keys."
 )
 
-// A SugaredLogger wraps the core Logger functionality in a slower, but less
-// verbose, API.
+// A SugaredLogger wraps the base Logger functionality in a slower, but less
+// verbose, API. Any Logger can be converted to a SugaredLogger with its Sugar
+// method.
 type SugaredLogger struct {
-	core Logger
-}
-
-// Sugar converts a Logger to a SugaredLogger.
-func Sugar(core Logger) *SugaredLogger {
-	// TODO: increment caller skip.
-	return &SugaredLogger{core}
+	core *Logger
 }
 
 // Desugar unwraps a SugaredLogger, exposing the original Logger.
-func Desugar(s *SugaredLogger) Logger {
-	// TODO: decrement caller skip.
-	return s.core
+func (s *SugaredLogger) Desugar() *Logger {
+	base := s.core.clone()
+	base.callerSkip -= 2
+	return base
 }
 
-// Named adds a sub-scope to the logger's name.
+// Named adds a sub-scope to the logger's name. See Logger.Named for details.
 func (s *SugaredLogger) Named(name string) *SugaredLogger {
 	return &SugaredLogger{core: s.core.Named(name)}
 }
