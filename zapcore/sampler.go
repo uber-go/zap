@@ -21,8 +21,9 @@
 package zapcore
 
 import (
-	"sync/atomic"
 	"time"
+
+	"go.uber.org/atomic"
 )
 
 const (
@@ -34,17 +35,17 @@ func newCounters() *counters {
 	return &counters{}
 }
 
-type counters [_numLevels][_countersPerLevel]uint64
+type counters [_numLevels][_countersPerLevel]atomic.Uint64
 
 func (c *counters) Inc(lvl Level, key string) uint64 {
-	return atomic.AddUint64(c.get(lvl, key), 1)
+	return c.get(lvl, key).Inc()
 }
 
 func (c *counters) Reset(lvl Level, key string) {
-	atomic.StoreUint64(c.get(lvl, key), 0)
+	c.get(lvl, key).Store(0)
 }
 
-func (c *counters) get(lvl Level, key string) *uint64 {
+func (c *counters) get(lvl Level, key string) *atomic.Uint64 {
 	i := lvl - _minLevel
 	j := fnv32a(key) % _countersPerLevel
 	return &c[i][j]
