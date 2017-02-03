@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	_numLevels        = maxLevel - minLevel
+	_numLevels        = _maxLevel - _minLevel
 	_countersPerLevel = 4096
 )
 
@@ -37,14 +37,14 @@ func newCounters() *counters {
 type counters [_numLevels][_countersPerLevel]uint64
 
 func (c *counters) Inc(lvl Level, key string) uint64 {
-	i := lvl - minLevel
+	i := lvl - _minLevel
 	j := fnv32a(key) % _countersPerLevel
 	return atomic.AddUint64(&c[i][j], 1)
 }
 
 func (c *counters) Reset(lvl Level, key string) {
-	i := lvl - minLevel
-	j := fnv32a(key) % _countersPerLevel
+	i := lvl - _minLevel
+	j := fnv32a(key) % _countersPerLeve
 	atomic.StoreUint64(&c[i][j], 0)
 }
 
