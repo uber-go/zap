@@ -24,9 +24,25 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"sync"
 
 	"go.uber.org/zap/internal/buffers"
 )
+
+var _sliceEncoderPool = sync.Pool{
+	New: func() interface{} {
+		return &sliceArrayEncoder{elems: make([]interface{}, 0, 2)}
+	},
+}
+
+func getSliceEncoder() *sliceArrayEncoder {
+	return _sliceEncoderPool.Get().(*sliceArrayEncoder)
+}
+
+func putSliceEncoder(e *sliceArrayEncoder) {
+	e.elems = e.elems[:0]
+	_sliceEncoderPool.Put(e)
+}
 
 type consoleEncoder struct {
 	*jsonEncoder
@@ -56,7 +72,10 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 	// We don't want the date and level to be quoted and escaped (if they're
 	// encoded as strings), which means that we can't use the JSON encoder. The
 	// simplest option is to use the memory encoder and fmt.Fprint.
-	arr := &sliceArrayEncoder{elems: make([]interface{}, 0, 2)}
+	//
+	// If this ever becomes a performance bottleneck, we can implement
+	// ArrayEncoder for our plain-text format.
+	arr := getSliceEncoder()
 	if c.TimeKey != "" {
 		c.EncodeTime(ent.Time, arr)
 	}
@@ -69,6 +88,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 		}
 		fmt.Fprint(line, arr.elems[i])
 	}
+	putSliceEncoder(arr)
 
 	// Compose the logger name and caller info into a call site and add it.
 	c.writeCallSite(line, ent.LoggerName, ent.Caller)
