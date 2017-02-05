@@ -59,11 +59,27 @@ func EpochFormatter(key string) TimeFormatter {
 	})
 }
 
+// UnixNanoFormatter encodes the entry time as a single int64 with nanosecond
+// precision under the provided key.
+func UnixNanoFormatter(key string) TimeFormatter {
+	return TimeFormatter(func(t time.Time) Field {
+		return Int64(key, t.UnixNano())
+	})
+}
+
 // RFC3339Formatter encodes the entry time as an RFC3339-formatted string under
 // the provided key.
 func RFC3339Formatter(key string) TimeFormatter {
 	return TimeFormatter(func(t time.Time) Field {
 		return String(key, t.Format(time.RFC3339))
+	})
+}
+
+// RFC3339NanoFormatter encodes the entry time as an RFC3339-formatted string
+// with nanosecond precision under the provided key.
+func RFC3339NanoFormatter(key string) TimeFormatter {
+	return TimeFormatter(func(t time.Time) Field {
+		return String(key, t.Format(time.RFC3339Nano))
 	})
 }
 
