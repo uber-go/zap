@@ -129,6 +129,19 @@ func benchmarkLionWithoutFields(b *testing.B, logger lion.Logger) {
 	})
 }
 
+func BenchmarkLionWithoutFieldsProtoDelimited(b *testing.B) {
+	benchmarkLionWithoutFields(b, newLionProtoDelimited())
+}
+
+func benchmarkLionWithoutFieldsProto(b *testing.B, logger protolion.Logger) {
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Infoln("Go fast.")
+		}
+	})
+}
+
 func newLionJSON() lion.Logger {
 	return lion.NewLogger(lion.NewJSONWritePusher(ioutil.Discard))
 }
