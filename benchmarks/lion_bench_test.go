@@ -21,6 +21,7 @@
 package benchmarks
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -66,6 +67,7 @@ func benchmarkLionAddingFieldsProto(b *testing.B, logger protolion.Logger) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
+			userDefinedTypeField, _ := json.Marshal(_jane)
 			logger.WithContext(
 				&BenchmarkContext{
 					Int32Field:  int32(1),
@@ -77,6 +79,10 @@ func benchmarkLionAddingFieldsProto(b *testing.B, logger protolion.Logger) {
 						Seconds: 0,
 						Nanos:   0,
 					},
+					ErrorField:           errExample.Error(),
+					DurationField:        int64(time.Second),
+					UserDefinedTypeField: userDefinedTypeField,
+					AnotherStringField:   "done!",
 				},
 			).Infoln("Go fast.")
 		}
@@ -112,6 +118,37 @@ func benchmarkLionWithAccumulatedContext(b *testing.B, baseLogger lion.Logger) {
 	})
 }
 
+func BenchmarkLionWithAccumulatedContextProtoDelimited(b *testing.B) {
+	benchmarkLionWithAccumulatedContextProto(b, newLionProtoDelimited())
+}
+
+func benchmarkLionWithAccumulatedContextProto(b *testing.B, baseLogger protolion.Logger) {
+	userDefinedTypeField, _ := json.Marshal(_jane)
+	logger := baseLogger.WithContext(
+		&BenchmarkContext{
+			Int32Field:  int32(1),
+			Int64Field:  int64(1),
+			FloatField:  3.0,
+			StringField: "four!",
+			BoolField:   true,
+			TimestampField: &google_protobuf.Timestamp{
+				Seconds: 0,
+				Nanos:   0,
+			},
+			ErrorField:           errExample.Error(),
+			DurationField:        int64(time.Second),
+			UserDefinedTypeField: userDefinedTypeField,
+			AnotherStringField:   "done!",
+		},
+	)
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Infoln("Go fast.")
+		}
+	})
+}
+
 func BenchmarkLionWithoutFieldsJSON(b *testing.B) {
 	benchmarkLionWithoutFields(b, newLionJSON())
 }
@@ -130,7 +167,7 @@ func benchmarkLionWithoutFields(b *testing.B, logger lion.Logger) {
 }
 
 func BenchmarkLionWithoutFieldsProtoDelimited(b *testing.B) {
-	benchmarkLionWithoutFields(b, newLionProtoDelimited())
+	benchmarkLionWithoutFieldsProto(b, newLionProtoDelimited())
 }
 
 func benchmarkLionWithoutFieldsProto(b *testing.B, logger protolion.Logger) {
