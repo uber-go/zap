@@ -26,6 +26,8 @@ import (
 	"time"
 
 	"go.pedge.io/lion"
+	"go.pedge.io/lion/proto"
+	"go.pedge.io/pb/go/google/protobuf"
 )
 
 func BenchmarkLionAddingFieldsJSON(b *testing.B) {
@@ -52,6 +54,31 @@ func benchmarkLionAddingFields(b *testing.B, logger lion.Logger) {
 				"user-defined type": _jane,
 				"another string":    "done!",
 			}).Infoln("Go fast.")
+		}
+	})
+}
+
+func BenchmarkLionAddingFieldsProtoDelimited(b *testing.B) {
+	benchmarkLionAddingFieldsProto(b, newLionProtoDelimited())
+}
+
+func benchmarkLionAddingFieldsProto(b *testing.B, logger protolion.Logger) {
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.WithContext(
+				&BenchmarkContext{
+					Int32Field:  int32(1),
+					Int64Field:  int64(1),
+					FloatField:  3.0,
+					StringField: "four!",
+					BoolField:   true,
+					TimestampField: &google_protobuf.Timestamp{
+						Seconds: 0,
+						Nanos:   0,
+					},
+				},
+			).Infoln("Go fast.")
 		}
 	})
 }
@@ -108,4 +135,15 @@ func newLionJSON() lion.Logger {
 
 func newLionText() lion.Logger {
 	return lion.NewLogger(lion.NewTextWritePusher(ioutil.Discard))
+}
+
+func newLionProtoDelimited() protolion.Logger {
+	return protolion.NewLogger(
+		lion.NewLogger(
+			lion.NewWritePusher(
+				ioutil.Discard,
+				protolion.DelimitedMarshaller,
+			),
+		),
+	)
 }

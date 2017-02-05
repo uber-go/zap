@@ -28,3 +28,10 @@ testImport:
 - package: github.com/axw/gocov
   subpackages:
   - gocov
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto
+- package: go.pedge.io/lion
+- package: go.pedge.io/pb
+  subpackages:
+  - go/google/protobuf
