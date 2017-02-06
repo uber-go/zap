@@ -1,5 +1,5 @@
-hash: 7aa0ed0007be1988ffaa9f4274a39b152dad46ca80d68c1bca26c7f9649cfcbf
-updated: 2017-02-05T12:51:46.022557613+01:00
+hash: f3bb385134fa6a2698e316d691ce2720be4d40c28aa38ea9c94ef628166ffea4
+updated: 2017-02-06T12:02:02.971516508+01:00
 imports:
 - name: github.com/golang/protobuf
   version: 8df8a93c670173cd1d8737a507a253b94f2d0b5a
@@ -8,10 +8,6 @@ imports:
   - proto
 - name: github.com/uber-common/bark
   version: 8841a0f8e7ca869284ccb29c08a14cf3f4310f46
-- name: go.pedge.io/pb
-  version: b3b233a97f5a9ace4b73ae558fb12fcb8f8b3be5
-  subpackages:
-  - go/google/protobuf
 - name: go.uber.org/atomic
   version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
 testImports:
@@ -68,6 +64,10 @@ testImports:
   version: 2d5a99249f6aff9b59b5eb62be3dc6a5a14b827e
   subpackages:
   - proto
+- name: go.pedge.io/pb
+  version: b3b233a97f5a9ace4b73ae558fb12fcb8f8b3be5
+  subpackages:
+  - go/google/protobuf
 - name: golang.org/x/sys
   version: 478fcf54317e52ab69f40bb4c7a1520288d7f7ea
   subpackages:
