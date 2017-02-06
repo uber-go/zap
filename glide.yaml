@@ -32,6 +32,3 @@ testImport:
   subpackages:
   - proto
 - package: go.pedge.io/lion
-- package: go.pedge.io/pb
-  subpackages:
-  - go/google/protobuf

@@ -1,10 +1,15 @@
 syntax = "proto3";
 
-import "google/protobuf/timestamp.proto";
-
 package uber.zap.benchmarks;
 
 option go_package = "benchmarks";
+
+// just copying from google.protobuf.Timestamp
+// to make compilation easier for now
+message Timestamp {
+  int64 seconds = 1;
+  int32 nanos = 2;
+}
 
 message BenchmarkContext {
   int32 int32_field = 1;
@@ -12,7 +17,7 @@ message BenchmarkContext {
   float float_field = 3;
   string string_field = 4;
   bool bool_field = 5;
-  google.protobuf.Timestamp timestamp_field = 6;
+  Timestamp timestamp_field = 6;
   string error_field = 7;
   int64 duration_field = 8;
   bytes user_defined_type_field = 9;

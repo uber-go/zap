@@ -72,10 +72,6 @@ bench:
 
 .PHONY: proto
 proto:
-	if ! docker ps --format {{.Names}} | grep protoeasy > /dev/null; then \
-		go get -v go.pedge.io/protoeasy/cmd/protoeasy; \
-		docker pull quay.io/pedge/protoeasy; \
-		docker run -d -p 6789:6789 --name protoeasy quay.io/pedge/protoeasy; \
-	fi
-	PROTOEASY_ADDRESS=localhost:6789 protoeasy --go benchmarks
+	go get -v github.com/golang/protobuf/protoc-gen-go
+	protoc --go_out=. benchmarks/benchmarks.proto
 	mv benchmarks/benchmarks.pb.go benchmarks/benchmarks_test.pb.go

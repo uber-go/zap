@@ -28,7 +28,6 @@ import (
 
 	"go.pedge.io/lion"
 	"go.pedge.io/lion/proto"
-	"go.pedge.io/pb/go/google/protobuf"
 )
 
 func BenchmarkLionAddingFieldsJSON(b *testing.B) {
@@ -75,7 +74,7 @@ func benchmarkLionAddingFieldsProto(b *testing.B, logger protolion.Logger) {
 					FloatField:  3.0,
 					StringField: "four!",
 					BoolField:   true,
-					TimestampField: &google_protobuf.Timestamp{
+					TimestampField: &Timestamp{
 						Seconds: 0,
 						Nanos:   0,
 					},
@@ -131,7 +130,7 @@ func benchmarkLionWithAccumulatedContextProto(b *testing.B, baseLogger protolion
 			FloatField:  3.0,
 			StringField: "four!",
 			BoolField:   true,
-			TimestampField: &google_protobuf.Timestamp{
+			TimestampField: &Timestamp{
 				Seconds: 0,
 				Nanos:   0,
 			},
