@@ -21,28 +21,16 @@
 package zapcore_test
 
 import (
-	"encoding/json"
 	"testing"
-	"time"
 
 	"go.uber.org/zap/internal/buffers"
 	. "go.uber.org/zap/zapcore"
 )
 
-func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		enc := NewJSONEncoder(testEncoderConfig())
-		enc.AddObject("nested", ObjectMarshalerFunc(func(enc ObjectEncoder) error {
-			enc.AddInt64("i", int64(i))
-			return nil
-		}))
-	}
-}
-
-func BenchmarkZapJSON(b *testing.B) {
+func BenchmarkZapConsole(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			enc := NewJSONEncoder(testEncoderConfig())
+			enc := NewConsoleEncoder(humanEncoderConfig())
 			enc.AddString("str", "foo")
 			enc.AddInt64("int64-1", 1)
 			enc.AddInt64("int64-2", 2)
@@ -57,36 +45,6 @@ func BenchmarkZapJSON(b *testing.B) {
 				Level:   DebugLevel,
 			}, nil)
 			buffers.Put(buf)
-		}
-	})
-}
-
-func BenchmarkStandardJSON(b *testing.B) {
-	record := struct {
-		Level   string                 `json:"level"`
-		Message string                 `json:"msg"`
-		Time    time.Time              `json:"ts"`
-		Fields  map[string]interface{} `json:"fields"`
-	}{
-		Level:   "debug",
-		Message: "fake",
-		Time:    time.Unix(0, 0),
-		Fields: map[string]interface{}{
-			"str":     "foo",
-			"int64-1": int64(1),
-			"int64-2": int64(1),
-			"float64": float64(1.0),
-			"string1": "\n",
-			"string2": "💩",
-			"string3": "🤔",
-			"string4": "🙊",
-			"bool":    true,
-		},
-	}
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			json.Marshal(record)
 		}
 	})
 }

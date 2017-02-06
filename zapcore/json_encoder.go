@@ -40,6 +40,7 @@ const (
 type jsonEncoder struct {
 	*EncoderConfig
 	bytes          []byte
+	spaced         bool // include spaces after colons and commas
 	openNamespaces int
 }
 
@@ -54,9 +55,14 @@ type jsonEncoder struct {
 // pair) when unmarshaling, but users should attempt to avoid adding duplicate
 // keys.
 func NewJSONEncoder(cfg EncoderConfig) Encoder {
+	return newJSONEncoder(cfg, false)
+}
+
+func newJSONEncoder(cfg EncoderConfig, spaced bool) *jsonEncoder {
 	return &jsonEncoder{
 		EncoderConfig: &cfg,
 		bytes:         buffers.Get(),
+		spaced:        spaced,
 	}
 }
 
@@ -160,6 +166,16 @@ func (enc *jsonEncoder) AppendComplex128(val complex128) {
 	enc.bytes = append(enc.bytes, 'i', '"')
 }
 
+func (enc *jsonEncoder) AppendDuration(val time.Duration) {
+	cur := len(enc.bytes)
+	enc.EncodeDuration(val, enc)
+	if cur == len(enc.bytes) {
+		// User-supplied EncodeDuration is a no-op. Fall back to nanoseconds to keep
+		// JSON valid.
+		enc.AppendInt64(int64(val))
+	}
+}
+
 func (enc *jsonEncoder) AppendInt64(val int64) {
 	enc.addElementSeparator()
 	enc.bytes = strconv.AppendInt(enc.bytes, val, 10)
@@ -182,6 +198,16 @@ func (enc *jsonEncoder) AppendString(val string) {
 	enc.bytes = append(enc.bytes, '"')
 }
 
+func (enc *jsonEncoder) AppendTime(val time.Time) {
+	cur := len(enc.bytes)
+	enc.EncodeTime(val, enc)
+	if cur == len(enc.bytes) {
+		// User-supplied EncodeTime is a no-op. Fall back to nanos since epoch to keep
+		// output JSON valid.
+		enc.AppendInt64(val.UnixNano())
+	}
+}
+
 func (enc *jsonEncoder) AppendUint64(val uint64) {
 	enc.addElementSeparator()
 	enc.bytes = strconv.AppendUint(enc.bytes, val, 10)
@@ -202,7 +228,6 @@ func (enc *jsonEncoder) AddUint8(k string, v uint8)         { enc.AddUint64(k, u
 func (enc *jsonEncoder) AddUintptr(k string, v uintptr)     { enc.AddUint64(k, uint64(v)) }
 func (enc *jsonEncoder) AppendByte(v byte)                  { enc.AppendUint8(uint8(v)) }
 func (enc *jsonEncoder) AppendComplex64(v complex64)        { enc.AppendComplex128(complex128(v)) }
-func (enc *jsonEncoder) AppendDuration(val time.Duration)   { enc.EncodeDuration(val, enc) }
 func (enc *jsonEncoder) AppendFloat64(v float64)            { enc.appendFloat(v, 64) }
 func (enc *jsonEncoder) AppendFloat32(v float32)            { enc.appendFloat(float64(v), 32) }
 func (enc *jsonEncoder) AppendInt(v int)                    { enc.AppendInt64(int64(v)) }
@@ -210,7 +235,6 @@ func (enc *jsonEncoder) AppendInt32(v int32)                { enc.AppendInt64(in
 func (enc *jsonEncoder) AppendInt16(v int16)                { enc.AppendInt64(int64(v)) }
 func (enc *jsonEncoder) AppendInt8(v int8)                  { enc.AppendInt64(int64(v)) }
 func (enc *jsonEncoder) AppendRune(v rune)                  { enc.AppendInt32(int32(v)) }
-func (enc *jsonEncoder) AppendTime(val time.Time)           { enc.EncodeTime(val, enc) }
 func (enc *jsonEncoder) AppendUint(v uint)                  { enc.AppendUint64(uint64(v)) }
 func (enc *jsonEncoder) AppendUint32(v uint32)              { enc.AppendUint64(uint64(v)) }
 func (enc *jsonEncoder) AppendUint16(v uint16)              { enc.AppendUint64(uint64(v)) }
@@ -229,7 +253,13 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 
 	if final.LevelKey != "" {
 		final.addKey(final.LevelKey)
+		cur := len(final.bytes)
 		final.EncodeLevel(ent.Level, &final)
+		if cur == len(final.bytes) {
+			// User-supplied EncodeLevel was a no-op. Fall back to strings to keep
+			// output JSON valid.
+			final.AppendString(ent.Level.String())
+		}
 	}
 	if final.TimeKey != "" {
 		final.AddTime(final.TimeKey, ent.Time)
@@ -252,12 +282,9 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 		final.bytes = append(final.bytes, enc.bytes...)
 	}
 	addFields(&final, fields)
+	final.closeOpenNamespaces()
 	if ent.Stack != "" && final.StacktraceKey != "" {
 		final.AddString(final.StacktraceKey, ent.Stack)
-	}
-	for final.openNamespaces > 0 {
-		final.bytes = append(final.bytes, '}')
-		final.openNamespaces--
 	}
 	final.bytes = append(final.bytes, '}', '\n')
 	return final.bytes, nil
@@ -267,11 +294,20 @@ func (enc *jsonEncoder) truncate() {
 	enc.bytes = enc.bytes[:0]
 }
 
+func (enc *jsonEncoder) closeOpenNamespaces() {
+	for i := 0; i < enc.openNamespaces; i++ {
+		enc.bytes = append(enc.bytes, '}')
+	}
+}
+
 func (enc *jsonEncoder) addKey(key string) {
 	enc.addElementSeparator()
 	enc.bytes = append(enc.bytes, '"')
 	enc.safeAddString(key)
 	enc.bytes = append(enc.bytes, '"', ':')
+	if enc.spaced {
+		enc.bytes = append(enc.bytes, ' ')
+	}
 }
 
 func (enc *jsonEncoder) addElementSeparator() {
@@ -280,10 +316,13 @@ func (enc *jsonEncoder) addElementSeparator() {
 		return
 	}
 	switch enc.bytes[last] {
-	case '{', '[', ':', ',':
+	case '{', '[', ':', ',', ' ':
 		return
 	default:
 		enc.bytes = append(enc.bytes, ',')
+		if enc.spaced {
+			enc.bytes = append(enc.bytes, ' ')
+		}
 	}
 }
 
