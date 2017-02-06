@@ -78,10 +78,21 @@ func TestEncoderConfiguration(t *testing.T) {
 	tests := []struct {
 		desc            string
 		cfg             EncoderConfig
+		amendEntry      func(Entry) Entry
 		extra           func(Encoder)
 		expectedJSON    string
 		expectedConsole string
 	}{
+		{
+			desc: "messages to be escaped",
+			cfg:  base,
+			amendEntry: func(ent Entry) Entry {
+				ent.Message = `hello\`
+				return ent
+			},
+			expectedJSON:    `{"level":"info","ts":0,"name":"main","caller":"foo.go:42","msg":"hello\\","stacktrace":"fake-stack"}`,
+			expectedConsole: "0\tinfo\tmain@foo.go:42\thello\\\nfake-stack",
+		},
 		{
 			desc: "use custom entry keys in JSON output and ignore them in console output",
 			cfg: EncoderConfig{
@@ -284,6 +295,56 @@ func TestEncoderConfiguration(t *testing.T) {
 				`{"outer": {"inner": {"foo": "bar", "innermost": {}}}}` +
 				"\nfake-stack",
 		},
+		{
+			desc: "handle no-op EncodeTime",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      "C",
+				StacktraceKey:  "S",
+				EncodeTime:     func(time.Time, ArrayEncoder) {},
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    base.EncodeLevel,
+			},
+			extra:           func(enc Encoder) { enc.AddTime("sometime", time.Unix(0, 100)) },
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","sometime":100,"S":"fake-stack"}`,
+			expectedConsole: "info\tmain@foo.go:42\thello\t" + `{"sometime": 100}` + "\nfake-stack",
+		},
+		{
+			desc: "handle no-op EncodeDuration",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      "C",
+				StacktraceKey:  "S",
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: func(time.Duration, ArrayEncoder) {},
+				EncodeLevel:    base.EncodeLevel,
+			},
+			extra:           func(enc Encoder) { enc.AddDuration("someduration", time.Microsecond) },
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","someduration":1000,"S":"fake-stack"}`,
+			expectedConsole: "0\tinfo\tmain@foo.go:42\thello\t" + `{"someduration": 1000}` + "\nfake-stack",
+		},
+		{
+			desc: "handle no-op EncodeLevel",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      "C",
+				StacktraceKey:  "S",
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    func(Level, ArrayEncoder) {},
+			},
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+			expectedConsole: "0\tmain@foo.go:42\thello\nfake-stack",
+		},
 	}
 
 	for i, tt := range tests {
@@ -293,7 +354,11 @@ func TestEncoderConfiguration(t *testing.T) {
 			tt.extra(json)
 			tt.extra(console)
 		}
-		jsonOut, jsonErr := json.EncodeEntry(_testEntry, nil)
+		entry := _testEntry
+		if tt.amendEntry != nil {
+			entry = tt.amendEntry(_testEntry)
+		}
+		jsonOut, jsonErr := json.EncodeEntry(entry, nil)
 		if assert.NoError(t, jsonErr, "Unexpected error JSON-encoding entry in case #%d.", i) {
 			assert.Equal(
 				t,
@@ -302,7 +367,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				"Unexpected JSON output: expected to %v.", tt.desc,
 			)
 		}
-		consoleOut, consoleErr := console.EncodeEntry(_testEntry, nil)
+		consoleOut, consoleErr := console.EncodeEntry(entry, nil)
 		if assert.NoError(t, consoleErr, "Unexpected error console-encoding entry in case #%d.", i) {
 			assert.Equal(
 				t,

@@ -57,9 +57,7 @@ type consoleEncoder struct {
 // encoder configuration, it will omit any element whose key is set to the empty
 // string.
 func NewConsoleEncoder(cfg EncoderConfig) Encoder {
-	j := NewJSONEncoder(cfg).(*jsonEncoder)
-	j.spaced = true
-	return consoleEncoder{j}
+	return consoleEncoder{newJSONEncoder(cfg, true)}
 }
 
 func (c consoleEncoder) Clone() Encoder {
@@ -95,9 +93,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 
 	// Add the message itself.
 	if c.MessageKey != "" {
-		if line.Len() > 0 {
-			line.WriteByte('\t')
-		}
+		c.addTabIfNecessary(line)
 		line.WriteString(ent.Message)
 	}
 
@@ -121,9 +117,7 @@ func (c consoleEncoder) writeCallSite(line *bytes.Buffer, name string, caller En
 	if !shouldWriteName && !shouldWriteCaller {
 		return
 	}
-	if line.Len() > 0 {
-		line.WriteByte('\t')
-	}
+	c.addTabIfNecessary(line)
 	if shouldWriteName {
 		line.WriteString(name)
 		if shouldWriteCaller {
@@ -141,18 +135,20 @@ func (c consoleEncoder) writeContext(line *bytes.Buffer, extra []Field) {
 	context := c.jsonEncoder.Clone().(*jsonEncoder)
 	defer buffers.Put(context.bytes)
 
-	for i := range extra {
-		extra[i].AddTo(context)
-	}
+	addFields(context, extra)
 	context.closeOpenNamespaces()
 	if len(context.bytes) == 0 {
 		return
 	}
 
-	if line.Len() > 0 {
-		line.WriteByte('\t')
-	}
+	c.addTabIfNecessary(line)
 	line.WriteByte('{')
 	line.Write(context.bytes)
 	line.WriteByte('}')
+}
+
+func (c consoleEncoder) addTabIfNecessary(line *bytes.Buffer) {
+	if line.Len() > 0 {
+		line.WriteByte('\t')
+	}
 }
