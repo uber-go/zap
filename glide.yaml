@@ -29,6 +29,4 @@ testImport:
   subpackages:
   - gocov
 - package: github.com/golang/protobuf
-  subpackages:
-  - proto
 - package: go.pedge.io/lion
