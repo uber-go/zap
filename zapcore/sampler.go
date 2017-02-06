@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	_numLevels        = _maxLevel - _minLevel
+	_numLevels        = _maxLevel - _minLevel + 1
 	_countersPerLevel = 4096
 )
 

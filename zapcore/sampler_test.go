@@ -21,6 +21,7 @@
 package zapcore_test
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -119,16 +120,23 @@ func TestSamplerTicks(t *testing.T) {
 func TestSamplerCheck(t *testing.T) {
 	sampler, logs := fakeSampler(InfoLevel, time.Millisecond, 1, 10)
 
-	assert.Nil(t, sampler.Check(Entry{Level: DebugLevel}, nil), "Expected a nil CheckedMessage at disabled log levels.")
+	t.Run("always drops ignored levels (Debug)", func(t *testing.T) {
+		assert.Nil(t, sampler.Check(Entry{Level: DebugLevel}, nil), "Expected a nil CheckedMessage at disabled log levels.")
+	})
 
-	for i := 1; i < 12; i++ {
-		if cm := sampler.Check(Entry{Level: InfoLevel}, nil); cm != nil {
-			cm.Write(makeInt64Field("iter", i))
-		}
+	for _, lvl := range []Level{
+		InfoLevel, WarnLevel, ErrorLevel, PanicLevel, FatalLevel,
+	} {
+		t.Run(fmt.Sprintf("samples each level indepndently (%v)", lvl), func(t *testing.T) {
+			for i := 1; i < 12; i++ {
+				if cm := sampler.Check(Entry{Level: lvl}, nil); cm != nil {
+					cm.Write(makeInt64Field("iter", i))
+				}
+			}
+			expected := buildExpectation(lvl, 1, 11)
+			assert.Equal(t, expected, logs.TakeAll(), "Unexpected output when sampling with Check.")
+		})
 	}
-
-	expected := buildExpectation(InfoLevel, 1, 11)
-	assert.Equal(t, expected, logs.All(), "Unexpected output when sampling with Check.")
 }
 
 func TestSamplerRaces(t *testing.T) {
