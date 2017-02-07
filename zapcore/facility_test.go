@@ -36,6 +36,34 @@ func makeInt64Field(key string, val int) Field {
 	return Field{Type: Int64Type, Integer: int64(val), Key: key}
 }
 
+func TestNopFacility(t *testing.T) {
+	entry := Entry{
+		Message:    "test",
+		Level:      InfoLevel,
+		Time:       time.Now(),
+		LoggerName: "main",
+		Stack:      "fake-stack",
+	}
+	ce := &CheckedEntry{}
+
+	allLevels := []Level{
+		DebugLevel,
+		InfoLevel,
+		WarnLevel,
+		ErrorLevel,
+		DPanicLevel,
+		PanicLevel,
+		FatalLevel,
+	}
+	fac := NopFacility()
+	assert.Equal(t, fac, fac.With([]Field{makeInt64Field("k", 42)}), "Expected no-op With.")
+	for _, level := range allLevels {
+		assert.False(t, fac.Enabled(level), "Expected all levels to be disabled in no-op facility.")
+		assert.Equal(t, ce, fac.Check(entry, ce), "Expected no-op Check to return checked entry unchanged.")
+		assert.NoError(t, fac.Write(entry, nil), "Expected no-op Writes to always succeed.")
+	}
+}
+
 func TestObserverWith(t *testing.T) {
 	var logs observer.ObservedLogs
 	sf1 := observer.New(InfoLevel, logs.Add, true)

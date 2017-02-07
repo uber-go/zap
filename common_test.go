@@ -34,7 +34,7 @@ func opts(opts ...Option) []Option {
 
 // Here specifically to introduce an easily-identifiable filename for testing
 // stacktraces and caller skips.
-func withLogger(t testing.TB, e zapcore.LevelEnabler, opts []Option, f func(Logger, *observer.ObservedLogs)) {
+func withLogger(t testing.TB, e zapcore.LevelEnabler, opts []Option, f func(*Logger, *observer.ObservedLogs)) {
 	var logs observer.ObservedLogs
 	fac := observer.New(e, logs.Add, true)
 	log := New(fac, opts...)
@@ -42,7 +42,7 @@ func withLogger(t testing.TB, e zapcore.LevelEnabler, opts []Option, f func(Logg
 }
 
 func withSugar(t testing.TB, e zapcore.LevelEnabler, opts []Option, f func(*SugaredLogger, *observer.ObservedLogs)) {
-	withLogger(t, e, opts, func(logger Logger, logs *observer.ObservedLogs) { f(Sugar(logger), logs) })
+	withLogger(t, e, opts, func(logger *Logger, logs *observer.ObservedLogs) { f(logger.Sugar(), logs) })
 }
 
 func runConcurrently(goroutines, iterations int, wg *sync.WaitGroup, f func()) {

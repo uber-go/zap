@@ -27,6 +27,7 @@ import (
 
 	"go.uber.org/zap/internal/exit"
 	"go.uber.org/zap/internal/observer"
+	"go.uber.org/zap/testutils"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -306,4 +307,47 @@ func TestSugarFatalLogging(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSugarAddCaller(t *testing.T) {
+	tests := []struct {
+		options []Option
+		pat     string
+	}{
+		{opts(AddCaller()), `.+/sugar_test.go:[\d]+$`},
+		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(-1)), `.+/zap/sugar_test.go:[\d]+$`},
+		{opts(AddCaller(), AddCallerSkip(1)), `.+/zap/common_test.go:[\d]+$`},
+		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(5)), `.+/src/runtime/.*:[\d]+$`},
+	}
+	for _, tt := range tests {
+		withSugar(t, DebugLevel, tt.options, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+			logger.Info("")
+			output := logs.AllUntimed()
+			assert.Equal(t, 1, len(output), "Unexpected number of logs written out.")
+			assert.Regexp(
+				t,
+				tt.pat,
+				output[0].Entry.Caller,
+				"Expected to find package name and file name in output.",
+			)
+		})
+	}
+}
+
+func TestSugarAddCallerFail(t *testing.T) {
+	errBuf := &testutils.Buffer{}
+	withSugar(t, DebugLevel, opts(AddCaller(), AddCallerSkip(1e3), ErrorOutput(errBuf)), func(log *SugaredLogger, logs *observer.ObservedLogs) {
+		log.Info("Failure.")
+		assert.Regexp(
+			t,
+			`addCaller error: failed to get caller`,
+			errBuf.String(),
+			"Didn't find expected failure message.",
+		)
+		assert.Equal(
+			t,
+			logs.AllUntimed()[0].Entry.Message,
+			"Failure.",
+			"Expected original message to survive failures in runtime.Caller.")
+	})
 }
