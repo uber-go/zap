@@ -23,13 +23,14 @@ package zapcore
 import "go.uber.org/zap/internal/multierror"
 
 // Tee creates a Facility that duplicates log entries into two or more
-// facilities; if you call it with less than two, you get back the one facility
-// you passed (or nil in the pathological case).
+// Facilities.
+//
+// Calling it with a single Facility returns the input unchanged, and calling
+// it with no input returns a no-op Facility.
 func Tee(facs ...Facility) Facility {
 	switch len(facs) {
 	case 0:
-		// TODO: return NullFacility?
-		return nil
+		return NopFacility()
 	case 1:
 		return facs[0]
 	default:
