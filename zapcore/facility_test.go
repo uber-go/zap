@@ -22,6 +22,7 @@ package zapcore_test
 
 import (
 	"testing"
+	"time"
 
 	"go.uber.org/zap/internal/observer"
 	"go.uber.org/zap/testutils"
