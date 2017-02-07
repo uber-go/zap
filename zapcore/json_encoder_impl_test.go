@@ -123,7 +123,7 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 		{"string", `"k":"v\\"`, func(e Encoder) { e.AddString(`k`, `v\`) }},
 		{"string", `"k":"v"`, func(e Encoder) { e.AddString("k", "v") }},
 		{"string", `"k":""`, func(e Encoder) { e.AddString("k", "") }},
-		{"time", `"k":1000`, func(e Encoder) { e.AddTime("k", time.Unix(1, 0)) }},
+		{"time", `"k":1`, func(e Encoder) { e.AddTime("k", time.Unix(1, 0)) }},
 		{"uint", `"k":42`, func(e Encoder) { e.AddUint("k", 42) }},
 		{"uint64", `"k":42`, func(e Encoder) { e.AddUint64("k", 42) }},
 		{"uint32", `"k":42`, func(e Encoder) { e.AddUint32("k", 42) }},
@@ -235,7 +235,7 @@ func TestJSONEncoderArrays(t *testing.T) {
 		{"rune", `[1,1]`, func(e ArrayEncoder) { e.AppendRune(1) }},
 		{"string", `["k","k"]`, func(e ArrayEncoder) { e.AppendString("k") }},
 		{"string", `["k\\","k\\"]`, func(e ArrayEncoder) { e.AppendString(`k\`) }},
-		{"times", `[1000,1000]`, func(e ArrayEncoder) { e.AppendTime(time.Unix(1, 0)) }},
+		{"times", `[1,1]`, func(e ArrayEncoder) { e.AppendTime(time.Unix(1, 0)) }},
 		{"uint", `[42,42]`, func(e ArrayEncoder) { e.AppendUint(42) }},
 		{"uint64", `[42,42]`, func(e ArrayEncoder) { e.AppendUint64(42) }},
 		{"uint32", `[42,42]`, func(e ArrayEncoder) { e.AppendUint32(42) }},
@@ -321,8 +321,8 @@ func assertJSON(t *testing.T, expected string, enc *jsonEncoder) {
 
 func assertOutput(t testing.TB, desc string, expected string, f func(Encoder)) {
 	enc := &jsonEncoder{EncoderConfig: &EncoderConfig{
-		EncodeTime:     func(t time.Time, enc ArrayEncoder) { enc.AppendInt64(t.UnixNano() / int64(time.Millisecond)) },
-		EncodeDuration: func(d time.Duration, enc ArrayEncoder) { enc.AppendInt64(int64(d)) },
+		EncodeTime:     EpochTimeEncoder,
+		EncodeDuration: NanosDurationEncoder,
 	}}
 	f(enc)
 	assert.Equal(t, expected, string(enc.bytes), "Unexpected encoder output after adding a %s.", desc)

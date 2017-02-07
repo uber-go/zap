@@ -21,11 +21,11 @@
 package zapcore_test
 
 import (
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	. "go.uber.org/zap/zapcore"
 )
@@ -50,17 +50,17 @@ func testEncoderConfig() EncoderConfig {
 		TimeKey:        "ts",
 		CallerKey:      "caller",
 		StacktraceKey:  "stacktrace",
-		EncodeTime:     func(t time.Time, enc ArrayEncoder) { enc.AppendInt64(t.UnixNano() / int64(time.Millisecond)) },
-		EncodeLevel:    func(l Level, enc ArrayEncoder) { enc.AppendString(l.String()) },
-		EncodeDuration: func(d time.Duration, enc ArrayEncoder) { enc.AppendInt64(int64(d)) },
+		EncodeTime:     EpochTimeEncoder,
+		EncodeLevel:    LowercaseLevelEncoder,
+		EncodeDuration: NanosDurationEncoder,
 	}
 }
 
 func humanEncoderConfig() EncoderConfig {
 	cfg := testEncoderConfig()
-	cfg.EncodeTime = func(t time.Time, enc ArrayEncoder) { enc.AppendString(t.Format(time.RFC3339)) }
-	cfg.EncodeLevel = func(l Level, enc ArrayEncoder) { enc.AppendString(strings.ToUpper(l.String())) }
-	cfg.EncodeDuration = func(d time.Duration, enc ArrayEncoder) { enc.AppendString(d.String()) }
+	cfg.EncodeTime = ISO8601TimeEncoder
+	cfg.EncodeLevel = CapitalLevelEncoder
+	cfg.EncodeDuration = StringDurationEncoder
 	return cfg
 }
 
@@ -214,7 +214,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				NameKey:        "N",
 				CallerKey:      "C",
 				StacktraceKey:  "S",
-				EncodeTime:     func(t time.Time, enc ArrayEncoder) { enc.AppendString(t.String()) },
+				EncodeTime:     func(t time.Time, enc PrimitiveArrayEncoder) { enc.AppendString(t.String()) },
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
 			},
@@ -240,7 +240,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				CallerKey:      "C",
 				StacktraceKey:  "S",
 				EncodeTime:     base.EncodeTime,
-				EncodeDuration: func(d time.Duration, enc ArrayEncoder) { enc.AppendString(d.String()) },
+				EncodeDuration: StringDurationEncoder,
 				EncodeLevel:    base.EncodeLevel,
 			},
 			extra: func(enc Encoder) {
@@ -266,7 +266,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				StacktraceKey:  "S",
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
-				EncodeLevel:    func(l Level, enc ArrayEncoder) { enc.AppendString(strings.ToUpper(l.String())) },
+				EncodeLevel:    CapitalLevelEncoder,
 			},
 			expectedJSON:    `{"L":"INFO","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
 			expectedConsole: "0\tINFO\tmain@foo.go:42\thello\nfake-stack",
@@ -304,7 +304,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				NameKey:        "N",
 				CallerKey:      "C",
 				StacktraceKey:  "S",
-				EncodeTime:     func(time.Time, ArrayEncoder) {},
+				EncodeTime:     func(time.Time, PrimitiveArrayEncoder) {},
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
 			},
@@ -322,7 +322,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				CallerKey:      "C",
 				StacktraceKey:  "S",
 				EncodeTime:     base.EncodeTime,
-				EncodeDuration: func(time.Duration, ArrayEncoder) {},
+				EncodeDuration: func(time.Duration, PrimitiveArrayEncoder) {},
 				EncodeLevel:    base.EncodeLevel,
 			},
 			extra:           func(enc Encoder) { enc.AddDuration("someduration", time.Microsecond) },
@@ -340,7 +340,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				StacktraceKey:  "S",
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
-				EncodeLevel:    func(Level, ArrayEncoder) {},
+				EncodeLevel:    func(Level, PrimitiveArrayEncoder) {},
 			},
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
 			expectedConsole: "0\tmain@foo.go:42\thello\nfake-stack",
@@ -377,4 +377,87 @@ func TestEncoderConfiguration(t *testing.T) {
 			)
 		}
 	}
+}
+
+func TestLevelEncoders(t *testing.T) {
+	tests := []struct {
+		name     string
+		expected interface{} // output of encoding InfoLevel
+	}{
+		{"capital", "INFO"},
+		{"lower", "info"},
+		{"", "info"},
+		{"something-random", "info"},
+	}
+
+	for _, tt := range tests {
+		var le LevelEncoder
+		require.NoError(t, le.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+		assertAppended(
+			t,
+			tt.expected,
+			func(arr ArrayEncoder) { le(InfoLevel, arr) },
+			"Unexpected output serializing InfoLevel with %q.", tt.name,
+		)
+	}
+}
+
+func TestTimeEncoders(t *testing.T) {
+	moment := time.Unix(100, 5000500).UTC()
+	tests := []struct {
+		name     string
+		expected interface{} // output of serializing moment
+	}{
+		{"iso8601", "1970-01-01T00:01:40.005Z"},
+		{"ISO8601", "1970-01-01T00:01:40.005Z"},
+		{"millis", 100005.0005},
+		{"nanos", int64(100005000500)},
+		{"", 100.0050005},
+		{"something-random", 100.0050005},
+	}
+
+	for _, tt := range tests {
+		var te TimeEncoder
+		require.NoError(t, te.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+		assertAppended(
+			t,
+			tt.expected,
+			func(arr ArrayEncoder) { te(moment, arr) },
+			"Unexpected output serializing %v with %q.", moment, tt.name,
+		)
+	}
+}
+
+func TestDurationEncoders(t *testing.T) {
+	elapsed := time.Second + 500*time.Nanosecond
+	tests := []struct {
+		name     string
+		expected interface{} // output of serializing elapsed
+	}{
+		{"string", "1.0000005s"},
+		{"", int64(1000000500)},
+		{"something-random", int64(1000000500)},
+	}
+
+	for _, tt := range tests {
+		var de DurationEncoder
+		require.NoError(t, de.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+		assertAppended(
+			t,
+			tt.expected,
+			func(arr ArrayEncoder) { de(elapsed, arr) },
+			"Unexpected output serializing %v with %q.", elapsed, tt.name,
+		)
+	}
+}
+
+func assertAppended(t testing.TB, expected interface{}, f func(ArrayEncoder), msgAndArgs ...interface{}) {
+	mem := NewMapObjectEncoder()
+	mem.AddArray("k", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
+		f(arr)
+		return nil
+	}))
+	arr := mem.Fields["k"].([]interface{})
+	require.Equal(t, 1, len(arr), "Expected to append exactly one element to array.")
+	assert.Equal(t, expected, arr[0], msgAndArgs...)
 }
