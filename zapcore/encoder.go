@@ -20,19 +20,137 @@
 
 package zapcore
 
-import "time"
+import (
+	"strings"
+	"time"
+)
+
+// A LevelEncoder serializes a Level to a primitive type.
+type LevelEncoder func(Level, PrimitiveArrayEncoder)
+
+// LowercaseLevelEncoder serializes a Level to a lowercase string. For example,
+// InfoLevel is serialized to "info".
+func LowercaseLevelEncoder(l Level, enc PrimitiveArrayEncoder) {
+	enc.AppendString(l.String())
+}
+
+// CapitalLevelEncoder serializes a Level to an all-caps string. For example,
+// InfoLevel is serialized to "INFO".
+func CapitalLevelEncoder(l Level, enc PrimitiveArrayEncoder) {
+	enc.AppendString(strings.ToUpper(l.String()))
+}
+
+// UnmarshalText unmarshals text to a LevelEncoder. "capital" is unmarshaled to
+// CapitalLevelEncoder, and anything else is unmarshaled to LowercaseLevelEncoder.
+func (e *LevelEncoder) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "capital":
+		*e = CapitalLevelEncoder
+	default:
+		*e = LowercaseLevelEncoder
+	}
+	return nil
+}
+
+// A TimeEncoder serializes a time.Time to a primitive type.
+type TimeEncoder func(time.Time, PrimitiveArrayEncoder)
+
+// EpochTimeEncoder serializes a time.Time to a floating-point number of seconds
+// since the Unix epoch.
+func EpochTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
+	nanos := t.UnixNano()
+	sec := float64(nanos) / float64(time.Second)
+	enc.AppendFloat64(sec)
+}
+
+// EpochMillisTimeEncoder serializes a time.Time to a floating-point number of
+// milliseconds since the Unix epoch.
+func EpochMillisTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
+	nanos := t.UnixNano()
+	millis := float64(nanos) / float64(time.Millisecond)
+	enc.AppendFloat64(millis)
+}
+
+// EpochNanosTimeEncoder serializes a time.Time to an integer number of
+// nanoseconds since the Unix epoch.
+func EpochNanosTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
+	enc.AppendInt64(t.UnixNano())
+}
+
+// ISO8601TimeEncoder serializes a time.Time to an ISO8601-formatted string
+// with millisecond precision.
+func ISO8601TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
+	enc.AppendString(t.Format("2006-01-02T15:04:05.999Z0700"))
+}
+
+// UnmarshalText unmarshals text to a TimeEncoder. "iso8601" and "ISO8601" are
+// unmarshaled to ISO8601TimeEncoder, "millis" is unmarshaled to
+// EpochMillisTimeEncoder, and anything else is unmarshaled to EpochTimeEncoder.
+func (e *TimeEncoder) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "iso8601", "ISO8601":
+		*e = ISO8601TimeEncoder
+	case "millis":
+		*e = EpochMillisTimeEncoder
+	case "nanos":
+		*e = EpochNanosTimeEncoder
+	default:
+		*e = EpochTimeEncoder
+	}
+	return nil
+}
+
+// A DurationEncoder serializes a time.Duration to a primitive type.
+type DurationEncoder func(time.Duration, PrimitiveArrayEncoder)
+
+// SecondsDurationEncoder serializes a time.Duration to a floating-point number of seconds elapsed.
+func SecondsDurationEncoder(d time.Duration, enc PrimitiveArrayEncoder) {
+	enc.AppendFloat64(float64(d) / float64(time.Second))
+}
+
+// NanosDurationEncoder serializes a time.Duration to an integer number of
+// nanoseconds elapsed.
+func NanosDurationEncoder(d time.Duration, enc PrimitiveArrayEncoder) {
+	enc.AppendInt64(int64(d))
+}
+
+// StringDurationEncoder serializes a time.Duration using its built-in String
+// method.
+func StringDurationEncoder(d time.Duration, enc PrimitiveArrayEncoder) {
+	enc.AppendString(d.String())
+}
+
+// UnmarshalText unmarshals text to a DurationEncoder. "string" is unmarshaled
+// to StringDurationEncoder, and anything else is unmarshaled to
+// NanosDurationEncoder.
+func (e *DurationEncoder) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "string":
+		*e = StringDurationEncoder
+	case "nanos":
+		*e = NanosDurationEncoder
+	default:
+		*e = SecondsDurationEncoder
+	}
+	return nil
+}
 
 // An EncoderConfig allows users to configure the concrete encoders supplied by
 // zapcore.
 type EncoderConfig struct {
 	// Set the keys used for each log entry.
-	MessageKey, LevelKey, TimeKey, NameKey, CallerKey, StacktraceKey string
+	MessageKey    string `json:"message_key",yaml:"message_key"`
+	LevelKey      string `json:"level_key",yaml:"level_key"`
+	TimeKey       string `json:"time_key",yaml:"time_key"`
+	NameKey       string `json:"name_key",yaml:"name_key"`
+	CallerKey     string `json:"caller_key",yaml:"caller_key"`
+	StacktraceKey string `json:"stacktrace_key",yaml:"stacktrace_key"`
 	// Configure the primitive representations of common complex types. For
 	// example, some users may want all time.Times serialized as floating-point
 	// seconds since epoch, while others may prefer ISO8601 strings.
-	EncodeLevel    func(Level, ArrayEncoder)
-	EncodeTime     func(time.Time, ArrayEncoder)
-	EncodeDuration func(time.Duration, ArrayEncoder)
+	EncodeLevel    LevelEncoder    `json:"level_encoder",yaml:"level_encoder"`
+	EncodeTime     TimeEncoder     `json:"time_encoder",yaml:"time_encoder"`
+	EncodeDuration DurationEncoder `json:"duration_encoder",yaml:"duration_encoder"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a
@@ -80,16 +198,31 @@ type ObjectEncoder interface {
 // arrays even though they aren't typical in Go. Like slices, ArrayEncoders
 // aren't safe for concurrent use (though typical use shouldn't require locks).
 type ArrayEncoder interface {
+	// Built-in types.
+	PrimitiveArrayEncoder
+
+	// Time-related types.
+	AppendDuration(time.Duration)
+	AppendTime(time.Time)
+
 	// Logging-specific marshalers.
 	AppendArray(ArrayMarshaler) error
 	AppendObject(ObjectMarshaler) error
 
+	// AppendReflected uses reflection to serialize arbitrary objects, so it's
+	// slow and allocation-heavy.
+	AppendReflected(value interface{}) error
+}
+
+// PrimitiveArrayEncoder is the subset of the ArrayEncoder interface that deals
+// only in Go's built-in types. It's included only so that Duration- and
+// TimeEncoders cannot trigger infinite recursion.
+type PrimitiveArrayEncoder interface {
 	// Built-in types.
 	AppendBool(bool)
 	AppendByte(byte)
 	AppendComplex128(complex128)
 	AppendComplex64(complex64)
-	AppendDuration(time.Duration)
 	AppendFloat64(float64)
 	AppendFloat32(float32)
 	AppendInt(int)
@@ -99,17 +232,12 @@ type ArrayEncoder interface {
 	AppendInt8(int8)
 	AppendRune(rune)
 	AppendString(string)
-	AppendTime(time.Time)
 	AppendUint(uint)
 	AppendUint64(uint64)
 	AppendUint32(uint32)
 	AppendUint16(uint16)
 	AppendUint8(uint8)
 	AppendUintptr(uintptr)
-
-	// AppendReflected uses reflection to serialize arbitrary objects, so it's
-	// slow and allocation-heavy.
-	AppendReflected(value interface{}) error
 }
 
 // Encoder is a format-agnostic interface for all log entry marshalers. Since
