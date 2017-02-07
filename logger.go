@@ -39,7 +39,7 @@ func defaultEncoderConfig() zapcore.EncoderConfig {
 		CallerKey:      "caller",
 		StacktraceKey:  "stacktrace",
 		EncodeTime:     zapcore.EpochTimeEncoder,
-		EncodeDuration: zapcore.NanosDurationEncoder,
+		EncodeDuration: zapcore.SecondsDurationEncoder,
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 	}
 }

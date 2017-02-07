@@ -103,7 +103,12 @@ func (e *TimeEncoder) UnmarshalText(text []byte) error {
 // A DurationEncoder serializes a time.Duration to a primitive type.
 type DurationEncoder func(time.Duration, PrimitiveArrayEncoder)
 
-// NanosDurationEncoder serializes a time.Duration to an int64 number of
+// SecondsDurationEncoder serializes a time.Duration to a floating-point number of seconds elapsed.
+func SecondsDurationEncoder(d time.Duration, enc PrimitiveArrayEncoder) {
+	enc.AppendFloat64(float64(d) / float64(time.Second))
+}
+
+// NanosDurationEncoder serializes a time.Duration to an integer number of
 // nanoseconds elapsed.
 func NanosDurationEncoder(d time.Duration, enc PrimitiveArrayEncoder) {
 	enc.AppendInt64(int64(d))
@@ -122,8 +127,10 @@ func (e *DurationEncoder) UnmarshalText(text []byte) error {
 	switch string(text) {
 	case "string":
 		*e = StringDurationEncoder
-	default:
+	case "nanos":
 		*e = NanosDurationEncoder
+	default:
+		*e = SecondsDurationEncoder
 	}
 	return nil
 }

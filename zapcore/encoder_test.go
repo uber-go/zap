@@ -52,7 +52,7 @@ func testEncoderConfig() EncoderConfig {
 		StacktraceKey:  "stacktrace",
 		EncodeTime:     EpochTimeEncoder,
 		EncodeLevel:    LowercaseLevelEncoder,
-		EncodeDuration: NanosDurationEncoder,
+		EncodeDuration: SecondsDurationEncoder,
 	}
 }
 
@@ -435,8 +435,9 @@ func TestDurationEncoders(t *testing.T) {
 		expected interface{} // output of serializing elapsed
 	}{
 		{"string", "1.0000005s"},
-		{"", int64(1000000500)},
-		{"something-random", int64(1000000500)},
+		{"nanos", int64(1000000500)},
+		{"", 1.0000005},
+		{"something-random", 1.0000005},
 	}
 
 	for _, tt := range tests {

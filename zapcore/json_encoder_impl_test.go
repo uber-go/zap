@@ -103,7 +103,7 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 		{"byte", `"k":1`, func(e Encoder) { e.AddByte("k", 1) }},
 		{"complex128", `"k":"1+2i"`, func(e Encoder) { e.AddComplex128("k", 1+2i) }},
 		{"complex64", `"k":"1+2i"`, func(e Encoder) { e.AddComplex64("k", 1+2i) }},
-		{"duration", `"k":1`, func(e Encoder) { e.AddDuration("k", 1) }},
+		{"duration", `"k":0.000000001`, func(e Encoder) { e.AddDuration("k", 1) }},
 		{"float64", `"k":1`, func(e Encoder) { e.AddFloat64("k", 1.0) }},
 		{"float64", `"k":10000000000`, func(e Encoder) { e.AddFloat64("k", 1e10) }},
 		{"float64", `"k":"NaN"`, func(e Encoder) { e.AddFloat64("k", math.NaN()) }},
@@ -224,7 +224,7 @@ func TestJSONEncoderArrays(t *testing.T) {
 		{"byte", `[1,1]`, func(e ArrayEncoder) { e.AppendByte(1) }},
 		{"complex128", `["1+2i","1+2i"]`, func(e ArrayEncoder) { e.AppendComplex128(1 + 2i) }},
 		{"complex64", `["1+2i","1+2i"]`, func(e ArrayEncoder) { e.AppendComplex64(1 + 2i) }},
-		{"durations", `[2,2]`, func(e ArrayEncoder) { e.AppendDuration(2) }},
+		{"durations", `[0.000000002,0.000000002]`, func(e ArrayEncoder) { e.AppendDuration(2) }},
 		{"float64", `[3.14,3.14]`, func(e ArrayEncoder) { e.AppendFloat64(3.14) }},
 		{"float32", `[3.14,3.14]`, func(e ArrayEncoder) { e.AppendFloat32(3.14) }},
 		{"int", `[42,42]`, func(e ArrayEncoder) { e.AppendInt(42) }},
@@ -322,7 +322,7 @@ func assertJSON(t *testing.T, expected string, enc *jsonEncoder) {
 func assertOutput(t testing.TB, desc string, expected string, f func(Encoder)) {
 	enc := &jsonEncoder{EncoderConfig: &EncoderConfig{
 		EncodeTime:     EpochTimeEncoder,
-		EncodeDuration: NanosDurationEncoder,
+		EncodeDuration: SecondsDurationEncoder,
 	}}
 	f(enc)
 	assert.Equal(t, expected, string(enc.bytes), "Unexpected encoder output after adding a %s.", desc)
