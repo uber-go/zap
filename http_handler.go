@@ -23,6 +23,7 @@ package zap
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -40,32 +41,36 @@ func (lvl AtomicLevel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	enc := json.NewEncoder(w)
-
 	switch r.Method {
 
 	case "GET":
 		current := lvl.Level()
-		enc.Encode(payload{Level: &current})
+		if err := enc.Encode(payload{Level: &current}); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			io.WriteString(w, fmt.Sprintf("AtomicLevel.ServeHTTP internal error: %v", err))
+		}
 
 	case "PUT":
 		var req payload
-
-		if errmess := func() string {
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				return fmt.Sprintf("Request body must be well-formed JSON: %v", err)
-			}
-			if req.Level == nil {
-				return "Must specify a logging level."
-			}
-			return ""
-		}(); errmess != "" {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			enc.Encode(errorResponse{Error: errmess})
+			enc.Encode(errorResponse{
+				Error: fmt.Sprintf("Request body must be well-formed JSON: %v", err),
+			})
 			return
 		}
-
+		if req.Level == nil {
+			w.WriteHeader(http.StatusBadRequest)
+			enc.Encode(errorResponse{
+				Error: "Must specify a logging level.",
+			})
+			return
+		}
 		lvl.SetLevel(*req.Level)
-		enc.Encode(req)
+		if err := enc.Encode(req); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			io.WriteString(w, fmt.Sprintf("AtomicLevel.ServeHTTP internal error: %v", err))
+		}
 
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
