@@ -44,15 +44,11 @@ type Facility interface {
 type nopFacility struct{}
 
 // NopFacility returns a no-op Facility.
-func NopFacility() Facility { return nopFacility{} }
-
-func (nopFacility) Enabled(Level) bool { return false }
-
-func (n nopFacility) With([]Field) Facility { return n }
-
-func (n nopFacility) Check(_ Entry, ce *CheckedEntry) *CheckedEntry { return ce }
-
-func (nopFacility) Write(Entry, []Field) error { return nil }
+func NopFacility() Facility                                       { return nopFacility{} }
+func (nopFacility) Enabled(Level) bool                            { return false }
+func (n nopFacility) With([]Field) Facility                       { return n }
+func (nopFacility) Check(_ Entry, ce *CheckedEntry) *CheckedEntry { return ce }
+func (nopFacility) Write(Entry, []Field) error                    { return nil }
 
 // WriterFacility creates a facility that writes logs to a WriteSyncer. By
 // default, if w is nil, os.Stdout is used.
