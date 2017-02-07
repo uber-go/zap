@@ -18,110 +18,95 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package zapcore_test
 
 import (
-	"bytes"
 	"errors"
 	"testing"
 
-	"io"
-
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+
 	"go.uber.org/zap/testutils"
+	. "go.uber.org/zap/zapcore"
 )
 
-type writeSyncSpy struct {
-	io.Writer
-	testutils.Syncer
-}
+func TestBufferedWriterPropagatesFailures(t *testing.T) {
+	failSyncer := &testutils.Buffer{}
+	failSyncer.SetError(errors.New("no sync"))
 
-func requireWriteWorks(t testing.TB, ws WriteSyncer) {
-	n, err := ws.Write([]byte("foo"))
-	require.NoError(t, err, "Unexpected error writing to WriteSyncer.")
-	require.Equal(t, 3, n, "Wrote an unexpected number of bytes.")
-}
+	failWriteSyncer := &testutils.FailWriter{}
+	failWriteSyncer.SetError(errors.New("no sync"))
 
-func TestAddSyncWriteSyncer(t *testing.T) {
-	buf := &bytes.Buffer{}
-	concrete := &writeSyncSpy{Writer: buf}
-	ws := AddSync(concrete)
-	requireWriteWorks(t, ws)
+	tests := []struct {
+		desc           string
+		initial        string
+		try            string
+		ws             WriteSyncer
+		n              int
+		expectWriteErr string
+		expectSyncErr  string
+	}{
+		{
+			desc: "no write, no buffered content, fail writes",
+			ws:   &testutils.FailWriter{},
+		},
+		{
+			desc:          "no write, some buffered content, fail writes",
+			initial:       "ab",
+			ws:            &testutils.FailWriter{},
+			expectSyncErr: "failed",
+		},
+		{
+			desc:           "write overflows buffer, fail writes",
+			initial:        "ab",
+			try:            "cde",
+			ws:             &testutils.FailWriter{},
+			n:              3,
+			expectWriteErr: "failed",
+			expectSyncErr:  "failed",
+		},
+		{
+			desc:           "write can't be buffered, fail writes",
+			initial:        "ab",
+			try:            "cdefg",
+			ws:             &testutils.FailWriter{},
+			n:              5,
+			expectWriteErr: "failed; failed",
+		},
+		{
+			desc:          "no write, no buffered content, fail syncs",
+			ws:            failSyncer,
+			expectSyncErr: "no sync",
+		},
+		{
+			desc:           "write overflows buffer, fail writes and syncs",
+			initial:        "ab",
+			try:            "cde",
+			ws:             failWriteSyncer,
+			n:              3,
+			expectWriteErr: "failed",
+			expectSyncErr:  "failed; no sync",
+		},
+	}
 
-	require.NoError(t, ws.Sync(), "Unexpected error syncing a WriteSyncer.")
-	require.True(t, concrete.Called(), "Expected to dispatch to concrete type's Sync method.")
+	for _, tt := range tests {
+		buf := Buffer(4, tt.ws)
+		_, err := buf.Write([]byte(tt.initial))
+		assert.NoError(t, err, "Unexpected error writing initial buffer contents (%q).", tt.desc)
 
-	concrete.SetError(errors.New("fail"))
-	assert.Error(t, ws.Sync(), "Expected to propagate errors from concrete type's Sync method.")
-}
+		n, err := buf.Write([]byte(tt.try))
+		assert.Equal(t, tt.n, n, "Unexpected number of bytes written (%q).", tt.desc)
 
-func TestAddSyncWriter(t *testing.T) {
-	// If we pass a plain io.Writer, make sure that we still get a WriteSyncer
-	// with a no-op Sync.
-	buf := &bytes.Buffer{}
-	ws := AddSync(buf)
-	requireWriteWorks(t, ws)
-	assert.NoError(t, ws.Sync(), "Unexpected error calling a no-op Sync method.")
-}
+		if tt.expectWriteErr == "" {
+			assert.NoError(t, err, "Unexpected error calling Write (%q).", tt.desc)
+		} else {
+			assert.Equal(t, tt.expectWriteErr, err.Error(), "Write error didn't match expectations (%q).", tt.desc)
+		}
 
-func TestMultiWriteSyncerWritesBoth(t *testing.T) {
-	first := &bytes.Buffer{}
-	second := &bytes.Buffer{}
-	ws := MultiWriteSyncer(AddSync(first), AddSync(second))
-
-	msg := []byte("dumbledore")
-	n, err := ws.Write(msg)
-	require.NoError(t, err, "Expected successful buffer write")
-	assert.Equal(t, len(msg), n)
-
-	assert.Equal(t, msg, first.Bytes())
-	assert.Equal(t, msg, second.Bytes())
-}
-
-func TestMultiWriteSyncerFailsWrite(t *testing.T) {
-	ws := MultiWriteSyncer(AddSync(&testutils.FailWriter{}))
-	_, err := ws.Write([]byte("test"))
-	assert.Error(t, err, "Write error should propagate")
-}
-
-func TestMultiWriteSyncerFailsShortWrite(t *testing.T) {
-	ws := MultiWriteSyncer(AddSync(&testutils.ShortWriter{}))
-	n, err := ws.Write([]byte("test"))
-	assert.NoError(t, err, "Expected fake-success from short write")
-	assert.Equal(t, 3, n, "Expected byte count to return from underlying writer")
-}
-
-func TestWritestoAllSyncs_EvenIfFirstErrors(t *testing.T) {
-	failer := &testutils.FailWriter{}
-	second := &bytes.Buffer{}
-	ws := MultiWriteSyncer(AddSync(failer), AddSync(second))
-
-	_, err := ws.Write([]byte("fail"))
-	assert.Error(t, err, "Expected error from call to a writer that failed")
-	assert.Equal(t, []byte("fail"), second.Bytes(), "Expected second sink to be written after first error")
-}
-
-func TestMultiWriteSyncerSync_PropagatesErrors(t *testing.T) {
-	badsink := &testutils.Buffer{}
-	badsink.SetError(errors.New("sink is full"))
-	ws := MultiWriteSyncer(&testutils.Discarder{}, badsink)
-
-	assert.Error(t, ws.Sync(), "Expected sync error to propagate")
-}
-
-func TestMultiWriteSyncerSync_NoErrorsOnDiscard(t *testing.T) {
-	ws := MultiWriteSyncer(&testutils.Discarder{})
-	assert.NoError(t, ws.Sync(), "Expected error-free sync to /dev/null")
-}
-
-func TestMultiWriteSyncerSync_AllCalled(t *testing.T) {
-	failed, second := &testutils.Buffer{}, &testutils.Buffer{}
-
-	failed.SetError(errors.New("disposal broken"))
-	ws := MultiWriteSyncer(failed, second)
-
-	assert.Error(t, ws.Sync(), "Expected first sink to fail")
-	assert.True(t, failed.Called(), "Expected first sink to have Sync method called.")
-	assert.True(t, second.Called(), "Expected call to Sync even with first failure.")
+		if tt.expectSyncErr == "" {
+			assert.NoError(t, buf.Sync(), "Unexpected error calling Sync (%q).", tt.desc)
+		} else {
+			assert.Equal(t, tt.expectSyncErr, buf.Sync().Error(), "Sync error didn't match expectations (%q).", tt.desc)
+		}
+	}
 }
