@@ -72,11 +72,8 @@ func (o *ObservedLogs) All() []LoggedEntry {
 // slice.
 func (o *ObservedLogs) TakeAll() []LoggedEntry {
 	o.mu.Lock()
-	ret := make([]LoggedEntry, len(o.logs))
-	for i := range o.logs {
-		ret[i] = o.logs[i]
-	}
-	o.logs = o.logs[:0]
+	ret := o.logs
+	o.logs = nil
 	o.mu.Unlock()
 	return ret
 }
