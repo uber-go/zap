@@ -22,6 +22,7 @@ package zap
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -57,6 +58,23 @@ func TestTimeFormatters(t *testing.T) {
 
 	for _, tt := range tests {
 		assert.Equal(t, tt.expected, tt.formatter(epoch), "Unexpected output from TimeFormatter %s.", tt.name)
+	}
+}
+
+func TestNanoTimeFormatters(t *testing.T) {
+	testtime := time.Date(2017, time.February, 4, 18, 48, 2, 300537459, time.UTC)
+
+	tests := []struct {
+		name      string
+		formatter TimeFormatter
+		expected  Field
+	}{
+		{"UnixNanoFormatter", UnixNanoFormatter("the-time"), Int64("the-time", 1486234082300537459)},
+		{"RFC3339Nano", RFC3339NanoFormatter("ts"), String("ts", "2017-02-04T18:48:02.300537459Z")},
+	}
+
+	for _, tt := range tests {
+		assert.Equal(t, tt.expected, tt.formatter(testtime), "Unexpected output from TimeFormatter %s.", tt.name)
 	}
 }
 
