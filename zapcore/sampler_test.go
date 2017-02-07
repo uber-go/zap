@@ -127,7 +127,7 @@ func TestSamplerCheck(t *testing.T) {
 	for _, lvl := range []Level{
 		InfoLevel, WarnLevel, ErrorLevel, PanicLevel, FatalLevel,
 	} {
-		t.Run(fmt.Sprintf("samples each level indepndently (%v)", lvl), func(t *testing.T) {
+		t.Run(fmt.Sprintf("samples each level independently (%v)", lvl), func(t *testing.T) {
 			for i := 1; i < 12; i++ {
 				if cm := sampler.Check(Entry{Level: lvl}, nil); cm != nil {
 					cm.Write(makeInt64Field("iter", i))
