@@ -23,12 +23,8 @@ package zapcore
 import (
 	"fmt"
 	"io"
-	"sync"
-	"time"
 
 	"go.uber.org/zap/internal/buffers"
-
-	"go.uber.org/atomic"
 )
 
 // Facility is a destination for log entries. It can have pervasive fields
@@ -102,83 +98,6 @@ func (iof *ioFacility) clone() *ioFacility {
 		enc:          iof.enc.Clone(),
 		out:          iof.out,
 	}
-}
-
-type counters struct {
-	sync.RWMutex
-	counts map[string]*atomic.Uint64
-}
-
-func (c *counters) Inc(key string) uint64 {
-	c.RLock()
-	count, ok := c.counts[key]
-	c.RUnlock()
-	if ok {
-		return count.Inc()
-	}
-
-	c.Lock()
-	count, ok = c.counts[key]
-	if ok {
-		c.Unlock()
-		return count.Inc()
-	}
-
-	c.counts[key] = atomic.NewUint64(1)
-	c.Unlock()
-	return 1
-}
-
-func (c *counters) Reset(key string) {
-	c.Lock()
-	count := c.counts[key]
-	c.Unlock()
-	count.Store(0)
-}
-
-// Sample creates a facility that samples incoming entries.
-func Sample(fac Facility, tick time.Duration, first, thereafter int) Facility {
-	return &sampler{
-		Facility:   fac,
-		tick:       tick,
-		counts:     &counters{counts: make(map[string]*atomic.Uint64)},
-		first:      uint64(first),
-		thereafter: uint64(thereafter),
-	}
-}
-
-type sampler struct {
-	Facility
-
-	tick       time.Duration
-	counts     *counters
-	first      uint64
-	thereafter uint64
-}
-
-func (s *sampler) With(fields []Field) Facility {
-	return &sampler{
-		Facility:   s.Facility.With(fields),
-		tick:       s.tick,
-		counts:     s.counts,
-		first:      s.first,
-		thereafter: s.thereafter,
-	}
-}
-
-func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
-	if !s.Enabled(ent.Level) {
-		return ce
-	}
-	if n := s.counts.Inc(ent.Message); n > s.first {
-		if n == s.first+1 {
-			time.AfterFunc(s.tick, func() { s.counts.Reset(ent.Message) })
-		}
-		if (n-s.first)%s.thereafter != 0 {
-			return ce
-		}
-	}
-	return s.Facility.Check(ent, ce)
 }
 
 // checkPartialWrite writes to an io.Writer, and upgrades partial writes to an

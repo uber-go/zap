@@ -68,6 +68,16 @@ func (o *ObservedLogs) All() []LoggedEntry {
 	return ret
 }
 
+// TakeAll returns a copy of all the observed logs, and truncates the observed
+// slice.
+func (o *ObservedLogs) TakeAll() []LoggedEntry {
+	o.mu.Lock()
+	ret := o.logs
+	o.logs = nil
+	o.mu.Unlock()
+	return ret
+}
+
 // AllUntimed returns a copy of all the observed logs, but overwrites the
 // observed timestamps with time.Time's zero value. This is useful when making
 // assertions in tests.
