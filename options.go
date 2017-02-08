@@ -74,13 +74,10 @@ func AddCallerSkip(skip int) Option {
 	})
 }
 
-// AddStacks configures the Logger to record a stack trace for all messages at
+// AddStacktrace configures the Logger to record a stack trace for all messages at
 // or above a given level. Keep in mind that this is (relatively speaking)
 // quite expensive.
-//
-// TODO: why is this called AddStacks rather than just AddStack or
-// AddStacktrace?
-func AddStacks(lvl zapcore.LevelEnabler) Option {
+func AddStacktrace(lvl zapcore.LevelEnabler) Option {
 	return optionFunc(func(log *Logger) {
 		log.addStack = lvl
 	})

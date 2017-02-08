@@ -345,12 +345,12 @@ func TestLoggerAddCallerFail(t *testing.T) {
 	})
 }
 
-func TestLoggerAddStacks(t *testing.T) {
+func TestLoggerAddStacktrace(t *testing.T) {
 	assertHasStack := func(t testing.TB, obs observer.LoggedEntry) {
-		assert.Contains(t, obs.Entry.Stack, "zap.TestLoggerAddStacks", "Expected to find test function in stacktrace.")
+		assert.Contains(t, obs.Entry.Stack, "zap.TestLoggerAddStacktrace", "Expected to find test function in stacktrace.")
 	}
 
-	withLogger(t, DebugLevel, opts(AddStacks(InfoLevel)), func(logger *Logger, logs *observer.ObservedLogs) {
+	withLogger(t, DebugLevel, opts(AddStacktrace(InfoLevel)), func(logger *Logger, logs *observer.ObservedLogs) {
 		logger.Debug("")
 		assert.Empty(
 			t,
