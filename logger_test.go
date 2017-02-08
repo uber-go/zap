@@ -366,6 +366,18 @@ func TestLoggerAddStacktrace(t *testing.T) {
 	})
 }
 
+func TestLoggerReplaceFacility(t *testing.T) {
+	replace := WrapFacility(func(zapcore.Facility) zapcore.Facility {
+		return zapcore.NopFacility()
+	})
+	withLogger(t, DebugLevel, opts(replace), func(logger *Logger, logs *observer.ObservedLogs) {
+		logger.Debug("")
+		logger.Info("")
+		logger.Warn("")
+		assert.Equal(t, 0, logs.Len(), "Expected no-op facility to write no logs.")
+	})
+}
+
 func TestLoggerConcurrent(t *testing.T) {
 	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		child := logger.With(String("foo", "bar"))

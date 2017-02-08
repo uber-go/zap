@@ -34,6 +34,13 @@ func (f optionFunc) apply(log *Logger) {
 	f(log)
 }
 
+// WrapFacility wraps or replaces the logger's underlying facility.
+func WrapFacility(f func(zapcore.Facility) zapcore.Facility) Option {
+	return optionFunc(func(log *Logger) {
+		log.fac = f(log.fac)
+	})
+}
+
 // Fields sets the initial fields for the logger.
 func Fields(fs ...zapcore.Field) Option {
 	return optionFunc(func(log *Logger) {
