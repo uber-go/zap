@@ -31,24 +31,35 @@ const (
 	_countersPerLevel = 4096
 )
 
+type counter struct {
+	tick atomic.Int64
+	n    atomic.Uint64
+}
+
+type counters [_numLevels][_countersPerLevel]counter
+
 func newCounters() *counters {
 	return &counters{}
 }
 
-type counters [_numLevels][_countersPerLevel]atomic.Uint64
-
-func (c *counters) Inc(lvl Level, key string) uint64 {
-	return c.get(lvl, key).Inc()
+// Inc is fast, but may slightly over- or under-sample under load.
+func (cs *counters) Inc(lvl Level, tick int64, key string) uint64 {
+	c := cs.get(lvl, key)
+	prevTick := c.tick.Swap(tick)
+	if tick == prevTick {
+		// tick is unchanged, increment count; this may race with other callers
+		// rolling over to a new tick.
+		return c.n.Inc()
+	}
+	// new tick, reset counts
+	c.n.Store(1)
+	return 1
 }
 
-func (c *counters) Reset(lvl Level, key string) {
-	c.get(lvl, key).Store(0)
-}
-
-func (c *counters) get(lvl Level, key string) *atomic.Uint64 {
+func (cs *counters) get(lvl Level, key string) *counter {
 	i := lvl - _minLevel
 	j := fnv32a(key) % _countersPerLevel
-	return &c[i][j]
+	return &cs[i][j]
 }
 
 // fnv32a, adapted from "hash/fnv", but without a []byte(string) alloc
@@ -100,10 +111,8 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 		return ce
 	}
 
-	if n := s.counts.Inc(ent.Level, ent.Message); n > s.first {
-		if n == s.first+1 {
-			time.AfterFunc(s.tick, func() { s.counts.Reset(ent.Level, ent.Message) })
-		}
+	curTick := ent.Time.UnixNano() / int64(s.tick)
+	if n := s.counts.Inc(ent.Level, curTick, ent.Message); n > s.first {
 		if (n-s.first)%s.thereafter != 0 {
 			return ce
 		}
