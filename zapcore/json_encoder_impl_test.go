@@ -97,6 +97,7 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 		expected string
 		f        func(Encoder)
 	}{
+		{"binary", `"k":"YWIxMg=="`, func(e Encoder) { e.AddBinary("k", []byte("ab12")) }},
 		{"bool", `"k\\":true`, func(e Encoder) { e.AddBool(`k\`, true) }}, // test key escaping once
 		{"bool", `"k":true`, func(e Encoder) { e.AddBool("k", true) }},
 		{"bool", `"k":false`, func(e Encoder) { e.AddBool("k", false) }},

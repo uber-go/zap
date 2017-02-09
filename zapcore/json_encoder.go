@@ -21,6 +21,7 @@
 package zapcore
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"math"
 	"strconv"
@@ -74,6 +75,10 @@ func (enc *jsonEncoder) AddArray(key string, arr ArrayMarshaler) error {
 func (enc *jsonEncoder) AddObject(key string, obj ObjectMarshaler) error {
 	enc.addKey(key)
 	return enc.AppendObject(obj)
+}
+
+func (enc *jsonEncoder) AddBinary(key string, val []byte) {
+	enc.AddString(key, base64.StdEncoding.EncodeToString(val))
 }
 
 func (enc *jsonEncoder) AddBool(key string, val bool) {

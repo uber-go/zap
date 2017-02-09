@@ -56,6 +56,9 @@ func (m *MapObjectEncoder) AddObject(k string, v ObjectMarshaler) error {
 	return v.MarshalLogObject(newMap)
 }
 
+// AddBinary implements ObjectEncoder.
+func (m *MapObjectEncoder) AddBinary(k string, v []byte) { m.cur[k] = v }
+
 // AddBool implements ObjectEncoder.
 func (m *MapObjectEncoder) AddBool(k string, v bool) { m.cur[k] = v }
 

@@ -37,6 +37,8 @@ const (
 	ArrayMarshalerType
 	// ObjectMarshalerType indicates that the field carries an ObjectMarshaler.
 	ObjectMarshalerType
+	// BinaryType indicates that the field carries an opaque binary blob.
+	BinaryType
 	// BoolType indicates that the field carries a bool.
 	BoolType
 	// Complex128Type indicates that the field carries a complex128.
@@ -106,6 +108,8 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		err = enc.AddArray(f.Key, f.Interface.(ArrayMarshaler))
 	case ObjectMarshalerType:
 		err = enc.AddObject(f.Key, f.Interface.(ObjectMarshaler))
+	case BinaryType:
+		enc.AddBinary(f.Key, f.Interface.([]byte))
 	case BoolType:
 		enc.AddBool(f.Key, f.Integer == 1)
 	case Complex128Type:
