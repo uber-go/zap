@@ -34,6 +34,15 @@ import (
 	"go.uber.org/atomic"
 )
 
+func makeCountingHook() (func(zapcore.Entry) error, *atomic.Int64) {
+	count := &atomic.Int64{}
+	h := func(zapcore.Entry) error {
+		count.Inc()
+		return nil
+	}
+	return h, count
+}
+
 func TestLoggerDynamicLevel(t *testing.T) {
 	// Test that the DynamicLevel applys to all ancestors and descendants.
 	dl := DynamicLevel()
@@ -289,7 +298,7 @@ func TestLoggerWriteFailure(t *testing.T) {
 	errSink := &testutils.Buffer{}
 	logger := New(
 		zapcore.WriterFacility(
-			zapcore.NewJSONEncoder(defaultEncoderConfig()),
+			zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
 			zapcore.Lock(zapcore.AddSync(testutils.FailWriter{})),
 			DebugLevel,
 		),
@@ -380,13 +389,8 @@ func TestLoggerReplaceFacility(t *testing.T) {
 }
 
 func TestLoggerHooks(t *testing.T) {
-	var seen atomic.Int64
-	hooks := Hooks(func(zapcore.Entry) error {
-		seen.Inc()
-		return nil
-	})
-
-	withLogger(t, DebugLevel, opts(hooks), func(logger *Logger, logs *observer.ObservedLogs) {
+	hook, seen := makeCountingHook()
+	withLogger(t, DebugLevel, opts(Hooks(hook)), func(logger *Logger, logs *observer.ObservedLogs) {
 		logger.Debug("")
 		logger.Info("")
 	})
