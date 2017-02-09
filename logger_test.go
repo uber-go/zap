@@ -31,6 +31,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 )
 
 func TestLoggerDynamicLevel(t *testing.T) {
@@ -376,6 +377,20 @@ func TestLoggerReplaceFacility(t *testing.T) {
 		logger.Warn("")
 		assert.Equal(t, 0, logs.Len(), "Expected no-op facility to write no logs.")
 	})
+}
+
+func TestLoggerHooks(t *testing.T) {
+	var seen atomic.Int64
+	hooks := Hooks(func(zapcore.Entry) error {
+		seen.Inc()
+		return nil
+	})
+
+	withLogger(t, DebugLevel, opts(hooks), func(logger *Logger, logs *observer.ObservedLogs) {
+		logger.Debug("")
+		logger.Info("")
+	})
+	assert.Equal(t, int64(2), seen.Load(), "Hook saw an unexpected number of logs.")
 }
 
 func TestLoggerConcurrent(t *testing.T) {

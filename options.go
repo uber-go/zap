@@ -41,7 +41,15 @@ func WrapFacility(f func(zapcore.Facility) zapcore.Facility) Option {
 	})
 }
 
-// Fields sets the initial fields for the logger.
+// Hooks registers functions which will be called each time the Logger writes
+// out an Entry. Repeated use of Hooks is additive.
+func Hooks(hooks ...func(zapcore.Entry) error) Option {
+	return optionFunc(func(log *Logger) {
+		log.fac = zapcore.Hooked(log.fac, hooks...)
+	})
+}
+
+// Fields adds fields to the Logger.
 func Fields(fs ...zapcore.Field) Option {
 	return optionFunc(func(log *Logger) {
 		log.fac = log.fac.With(fs)
