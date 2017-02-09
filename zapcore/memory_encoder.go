@@ -59,9 +59,6 @@ func (m *MapObjectEncoder) AddObject(k string, v ObjectMarshaler) error {
 // AddBool implements ObjectEncoder.
 func (m *MapObjectEncoder) AddBool(k string, v bool) { m.cur[k] = v }
 
-// AddByte implements ObjectEncoder.
-func (m *MapObjectEncoder) AddByte(k string, v byte) { m.cur[k] = v }
-
 // AddDuration implements ObjectEncoder.
 func (m MapObjectEncoder) AddDuration(k string, v time.Duration) { m.cur[k] = v }
 
@@ -91,9 +88,6 @@ func (m *MapObjectEncoder) AddInt16(k string, v int16) { m.cur[k] = v }
 
 // AddInt8 implements ObjectEncoder.
 func (m *MapObjectEncoder) AddInt8(k string, v int8) { m.cur[k] = v }
-
-// AddRune implements ObjectEncoder.
-func (m *MapObjectEncoder) AddRune(k string, v rune) { m.cur[k] = v }
 
 // AddString implements ObjectEncoder.
 func (m *MapObjectEncoder) AddString(k string, v string) { m.cur[k] = v }
@@ -158,7 +152,6 @@ func (s *sliceArrayEncoder) AppendReflected(v interface{}) error {
 }
 
 func (s *sliceArrayEncoder) AppendBool(v bool)              { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendByte(v byte)              { s.elems = append(s.elems, v) }
 func (s *sliceArrayEncoder) AppendComplex128(v complex128)  { s.elems = append(s.elems, v) }
 func (s *sliceArrayEncoder) AppendComplex64(v complex64)    { s.elems = append(s.elems, v) }
 func (s *sliceArrayEncoder) AppendDuration(v time.Duration) { s.elems = append(s.elems, v) }
@@ -169,7 +162,6 @@ func (s *sliceArrayEncoder) AppendInt64(v int64)            { s.elems = append(s
 func (s *sliceArrayEncoder) AppendInt32(v int32)            { s.elems = append(s.elems, v) }
 func (s *sliceArrayEncoder) AppendInt16(v int16)            { s.elems = append(s.elems, v) }
 func (s *sliceArrayEncoder) AppendInt8(v int8)              { s.elems = append(s.elems, v) }
-func (s *sliceArrayEncoder) AppendRune(v rune)              { s.elems = append(s.elems, v) }
 func (s *sliceArrayEncoder) AppendString(v string)          { s.elems = append(s.elems, v) }
 func (s *sliceArrayEncoder) AppendTime(v time.Time)         { s.elems = append(s.elems, v) }
 func (s *sliceArrayEncoder) AppendUint(v uint)              { s.elems = append(s.elems, v) }

@@ -56,7 +56,6 @@ func TestArrayWrappers(t *testing.T) {
 		expected []interface{}
 	}{
 		{"empty bools", Bools("", []bool{}), []interface{}(nil)},
-		{"empty bytes", Bytes("", []byte{}), []interface{}(nil)},
 		{"empty complex128s", Complex128s("", []complex128{}), []interface{}(nil)},
 		{"empty complex64s", Complex64s("", []complex64{}), []interface{}(nil)},
 		{"empty durations", Durations("", []time.Duration{}), []interface{}(nil)},
@@ -67,7 +66,6 @@ func TestArrayWrappers(t *testing.T) {
 		{"empty int32s", Int32s("", []int32{}), []interface{}(nil)},
 		{"empty int16s", Int16s("", []int16{}), []interface{}(nil)},
 		{"empty int8s", Int8s("", []int8{}), []interface{}(nil)},
-		{"empty runes", Runes("", []rune{}), []interface{}(nil)},
 		{"empty strings", Strings("", []string{}), []interface{}(nil)},
 		{"empty times", Times("", []time.Time{}), []interface{}(nil)},
 		{"empty uints", Uints("", []uint{}), []interface{}(nil)},
@@ -78,7 +76,6 @@ func TestArrayWrappers(t *testing.T) {
 		{"empty uintptrs", Uintptrs("", []uintptr{}), []interface{}(nil)},
 		{"empty errors", Errors("", []error{}), []interface{}(nil)},
 		{"bools", Bools("", []bool{true, false}), []interface{}{true, false}},
-		{"bytes", Bytes("", []byte{1, 2}), []interface{}{byte(1), byte(2)}},
 		{"complex128s", Complex128s("", []complex128{1 + 2i, 3 + 4i}), []interface{}{1 + 2i, 3 + 4i}},
 		{"complex64s", Complex64s("", []complex64{1 + 2i, 3 + 4i}), []interface{}{complex64(1 + 2i), complex64(3 + 4i)}},
 		{"durations", Durations("", []time.Duration{1, 2}), []interface{}{time.Nanosecond, 2 * time.Nanosecond}},
@@ -89,7 +86,6 @@ func TestArrayWrappers(t *testing.T) {
 		{"int32s", Int32s("", []int32{1, 2}), []interface{}{int32(1), int32(2)}},
 		{"int16s", Int16s("", []int16{1, 2}), []interface{}{int16(1), int16(2)}},
 		{"int8s", Int8s("", []int8{1, 2}), []interface{}{int8(1), int8(2)}},
-		{"runes", Runes("", []rune{1, 2}), []interface{}{rune(1), rune(2)}},
 		{"strings", Strings("", []string{"foo", "bar"}), []interface{}{"foo", "bar"}},
 		{"times", Times("", []time.Time{time.Unix(0, 0), time.Unix(0, 0)}), []interface{}{time.Unix(0, 0), time.Unix(0, 0)}},
 		{"uints", Uints("", []uint{1, 2}), []interface{}{uint(1), uint(2)}},
