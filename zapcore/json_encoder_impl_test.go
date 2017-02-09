@@ -129,7 +129,7 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 		{"uint32", `"k":42`, func(e Encoder) { e.AddUint32("k", 42) }},
 		{"uint16", `"k":42`, func(e Encoder) { e.AddUint16("k", 42) }},
 		{"uint8", `"k":42`, func(e Encoder) { e.AddUint8("k", 42) }},
-		{"uintptr", `"k":42`, func(e Encoder) { e.AddUintptr("k", 42) }},
+		{"uintptr", `"k":"0x2a"`, func(e Encoder) { e.AddUintptr("k", 42) }},
 		{
 			desc:     "object (success)",
 			expected: `"k":{"loggable":"yes"}`,
@@ -241,7 +241,7 @@ func TestJSONEncoderArrays(t *testing.T) {
 		{"uint32", `[42,42]`, func(e ArrayEncoder) { e.AppendUint32(42) }},
 		{"uint16", `[42,42]`, func(e ArrayEncoder) { e.AppendUint16(42) }},
 		{"uint8", `[42,42]`, func(e ArrayEncoder) { e.AppendUint8(42) }},
-		{"uintptr", `[42,42]`, func(e ArrayEncoder) { e.AppendUintptr(42) }},
+		{"uintptr", `["0x2a","0x2a"]`, func(e ArrayEncoder) { e.AppendUintptr(42) }},
 		{
 			desc:     "arrays (success)",
 			expected: `[[true],[true]]`,
