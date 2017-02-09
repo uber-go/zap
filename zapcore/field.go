@@ -39,8 +39,6 @@ const (
 	ObjectMarshalerType
 	// BoolType indicates that the field carries a bool.
 	BoolType
-	// ByteType indicates that the field carries a byte.
-	ByteType
 	// Complex128Type indicates that the field carries a complex128.
 	Complex128Type
 	// Complex64Type indicates that the field carries a complex128.
@@ -59,8 +57,6 @@ const (
 	Int16Type
 	// Int8Type indicates that the field carries an int8.
 	Int8Type
-	// RuneType indicates that the field carries a rune.
-	RuneType
 	// StringType indicates that the field carries a string.
 	StringType
 	// TimeType indicates that the field carries a time.Time.
@@ -112,8 +108,6 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		err = enc.AddObject(f.Key, f.Interface.(ObjectMarshaler))
 	case BoolType:
 		enc.AddBool(f.Key, f.Integer == 1)
-	case ByteType:
-		enc.AddByte(f.Key, uint8(f.Integer))
 	case Complex128Type:
 		enc.AddComplex128(f.Key, f.Interface.(complex128))
 	case Complex64Type:
@@ -132,8 +126,6 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		enc.AddInt16(f.Key, int16(f.Integer))
 	case Int8Type:
 		enc.AddInt8(f.Key, int8(f.Integer))
-	case RuneType:
-		enc.AddRune(f.Key, rune(f.Integer))
 	case StringType:
 		enc.AddString(f.Key, f.String)
 	case TimeType:

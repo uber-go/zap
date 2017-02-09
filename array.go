@@ -38,12 +38,6 @@ func Bools(key string, bs []bool) zapcore.Field {
 	return Array(key, bools(bs))
 }
 
-// Bytes constructs a field that carries a slice of bytes. Note that most
-// encoders represent byte slices as arrays of integers, not strings.
-func Bytes(key string, bs []byte) zapcore.Field {
-	return Array(key, bytes(bs))
-}
-
 // Complex128s constructs a field that carries a slice of complex numbers.
 func Complex128s(key string, nums []complex128) zapcore.Field {
 	return Array(key, complex128s(nums))
@@ -92,13 +86,6 @@ func Int16s(key string, nums []int16) zapcore.Field {
 // Int8s constructs a field that carries a slice of integers.
 func Int8s(key string, nums []int8) zapcore.Field {
 	return Array(key, int8s(nums))
-}
-
-// Runes constructs a field that carries a slice of runes. Note that most
-// encoders will represent a slice of runes as an array of integers, not arrays
-// of characters or Unicode code points.
-func Runes(key string, rs []rune) zapcore.Field {
-	return Array(key, runes(rs))
 }
 
 // Strings constructs a field that carries a slice of strings.
@@ -151,15 +138,6 @@ type bools []bool
 func (bs bools) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	for i := range bs {
 		arr.AppendBool(bs[i])
-	}
-	return nil
-}
-
-type bytes []byte
-
-func (bs bytes) MarshalLogArray(arr zapcore.ArrayEncoder) error {
-	for i := range bs {
-		arr.AppendByte(bs[i])
 	}
 	return nil
 }
@@ -250,15 +228,6 @@ type int8s []int8
 func (nums int8s) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	for i := range nums {
 		arr.AppendInt8(nums[i])
-	}
-	return nil
-}
-
-type runes []rune
-
-func (rs runes) MarshalLogArray(arr zapcore.ArrayEncoder) error {
-	for i := range rs {
-		arr.AppendRune(rs[i])
 	}
 	return nil
 }

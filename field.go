@@ -49,12 +49,6 @@ func Bool(key string, val bool) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.BoolType, Integer: ival}
 }
 
-// Byte constructs a field with the given key and value. Note that most
-// encoders will represent a byte as an integer, not as a character.
-func Byte(key string, val byte) zapcore.Field {
-	return zapcore.Field{Key: key, Type: zapcore.ByteType, Integer: int64(val)}
-}
-
 // Complex128 constructs a field that carries a complex number. Unlike most
 // numeric fields, this costs an allocation (to convert the complex128 to
 // interface{}).
@@ -106,12 +100,6 @@ func Int16(key string, val int16) zapcore.Field {
 // Int8 constructs a field with the given key and value.
 func Int8(key string, val int8) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.Int8Type, Integer: int64(val)}
-}
-
-// Rune constructs a field with the given key and value. Note that most encoders
-// will represent a rune as an integer, not as a character or Unicode code point.
-func Rune(key string, val rune) zapcore.Field {
-	return zapcore.Field{Key: key, Type: zapcore.RuneType, Integer: int64(val)}
 }
 
 // String constructs a field with the given key and value.
@@ -233,44 +221,84 @@ func Any(key string, value interface{}) zapcore.Field {
 		return Array(key, val)
 	case bool:
 		return Bool(key, val)
+	case []bool:
+		return Bools(key, val)
 	case complex128:
 		return Complex128(key, val)
+	case []complex128:
+		return Complex128s(key, val)
 	case complex64:
 		return Complex64(key, val)
+	case []complex64:
+		return Complex64s(key, val)
 	case float64:
 		return Float64(key, val)
+	case []float64:
+		return Float64s(key, val)
 	case float32:
 		return Float32(key, val)
+	case []float32:
+		return Float32s(key, val)
 	case int:
 		return Int(key, val)
+	case []int:
+		return Ints(key, val)
 	case int64:
 		return Int64(key, val)
+	case []int64:
+		return Int64s(key, val)
 	case int32:
 		return Int32(key, val)
+	case []int32:
+		return Int32s(key, val)
 	case int16:
 		return Int16(key, val)
+	case []int16:
+		return Int16s(key, val)
 	case int8:
 		return Int8(key, val)
+	case []int8:
+		return Int8s(key, val)
 	case string:
 		return String(key, val)
+	case []string:
+		return Strings(key, val)
 	case uint:
 		return Uint(key, val)
+	case []uint:
+		return Uints(key, val)
 	case uint64:
 		return Uint64(key, val)
+	case []uint64:
+		return Uint64s(key, val)
 	case uint32:
 		return Uint32(key, val)
+	case []uint32:
+		return Uint32s(key, val)
 	case uint16:
 		return Uint16(key, val)
+	case []uint16:
+		return Uint16s(key, val)
 	case uint8:
 		return Uint8(key, val)
+	case []uint8:
+		return Uint8s(key, val)
 	case uintptr:
 		return Uintptr(key, val)
+	case []uintptr:
+		return Uintptrs(key, val)
 	case time.Time:
 		return Time(key, val)
+	case []time.Time:
+		return Times(key, val)
 	case time.Duration:
 		return Duration(key, val)
+	case []time.Duration:
+		return Durations(key, val)
 	case error:
 		return String(key, val.Error())
+	case []error:
+		return Errors(key, val)
 	case fmt.Stringer:
 		return Stringer(key, val)
 	default:

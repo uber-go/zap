@@ -80,11 +80,6 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 			expected: true,
 		},
 		{
-			desc:     "AddByte",
-			f:        func(e ObjectEncoder) { e.AddByte("k", 1) },
-			expected: byte(1),
-		},
-		{
 			desc:     "AddComplex128",
 			f:        func(e ObjectEncoder) { e.AddComplex128("k", 1+2i) },
 			expected: 1 + 2i,
@@ -133,11 +128,6 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 			desc:     "AddInt8",
 			f:        func(e ObjectEncoder) { e.AddInt8("k", 42) },
 			expected: int8(42),
-		},
-		{
-			desc:     "AddRune",
-			f:        func(e ObjectEncoder) { e.AddRune("k", 1) },
-			expected: rune(1),
 		},
 		{
 			desc:     "AddString",
@@ -223,7 +213,6 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 		// AppendObject and AppendArray are covered by the AddObject (nested) and
 		// AddArray (nested) cases above.
 		{"AppendBool", func(e ArrayEncoder) { e.AppendBool(true) }, true},
-		{"AppendByte", func(e ArrayEncoder) { e.AppendByte(1) }, byte(1)},
 		{"AppendComplex128", func(e ArrayEncoder) { e.AppendComplex128(1 + 2i) }, 1 + 2i},
 		{"AppendComplex64", func(e ArrayEncoder) { e.AppendComplex64(1 + 2i) }, complex64(1 + 2i)},
 		{"AppendDuration", func(e ArrayEncoder) { e.AppendDuration(time.Second) }, time.Second},
@@ -234,7 +223,6 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 		{"AppendInt32", func(e ArrayEncoder) { e.AppendInt32(42) }, int32(42)},
 		{"AppendInt16", func(e ArrayEncoder) { e.AppendInt16(42) }, int16(42)},
 		{"AppendInt8", func(e ArrayEncoder) { e.AppendInt8(42) }, int8(42)},
-		{"AppendRune", func(e ArrayEncoder) { e.AppendRune(42) }, rune(42)},
 		{"AppendString", func(e ArrayEncoder) { e.AppendString("foo") }, "foo"},
 		{"AppendTime", func(e ArrayEncoder) { e.AppendTime(time.Unix(0, 100)) }, time.Unix(0, 100)},
 		{"AppendUint", func(e ArrayEncoder) { e.AppendUint(42) }, uint(42)},
