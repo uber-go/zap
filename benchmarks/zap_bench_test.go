@@ -60,9 +60,9 @@ func benchEncoder() zapcore.Encoder {
 		TimeKey:        "ts",
 		CallerKey:      "caller",
 		StacktraceKey:  "stacktrace",
-		EncodeTime:     func(t time.Time, enc zapcore.ArrayEncoder) { enc.AppendInt64(t.UnixNano() / int64(time.Millisecond)) },
-		EncodeDuration: func(d time.Duration, enc zapcore.ArrayEncoder) { enc.AppendInt64(int64(d)) },
-		EncodeLevel:    func(l zapcore.Level, enc zapcore.ArrayEncoder) { enc.AppendString(l.String()) },
+		EncodeTime:     zapcore.EpochTimeEncoder,
+		EncodeDuration: zapcore.SecondsDurationEncoder,
+		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 	})
 }
 
