@@ -27,15 +27,11 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// SamplingConfig sets a sampling strategy for the logger. Each second, the
-// first N entries with a given message are logged; afterwards, only a fraction
-// of entries are logged. The counts reset each second. This helps to cap the
+// SamplingConfig sets a sampling strategy for the logger. Sampling caps the
 // global CPU and I/O load that logging puts on your process while preserving a
 // representative subset of your logs.
 //
-// Keep in mind that zap's sampling implementation is optimized for performance
-// at the expense of absolute correctness. In particular, there's a small
-// chance of hash collisions over-sampling your logs.
+// See zapcore.Sample for details.
 type SamplingConfig struct {
 	Initial    int `json:"initial",yaml:"initial"`
 	Thereafter int `json:"therafter",yaml:"thereafter"`

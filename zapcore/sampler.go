@@ -65,7 +65,13 @@ func fnv32a(s string) uint32 {
 	return hash
 }
 
-// Sample creates a facility that samples incoming entries.
+// Sample creates a Facility that samples incoming entries, which caps the CPU
+// and I/O load of logging while preserving a representative subset of your
+// logs.
+//
+// Zap samples by logging the first N entries with a given level and message
+// each tick. If more Entries with the same level and message are seen during
+// the same interval, every Mth message is logged and the rest are dropped.
 func Sample(fac Facility, tick time.Duration, first, thereafter int) Facility {
 	return &sampler{
 		Facility:   fac,
