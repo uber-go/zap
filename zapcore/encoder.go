@@ -163,7 +163,6 @@ type ObjectEncoder interface {
 
 	// Built-in types.
 	AddBool(key string, value bool)
-	AddByte(key string, value byte)
 	AddComplex128(key string, value complex128)
 	AddComplex64(key string, value complex64)
 	AddDuration(key string, value time.Duration)
@@ -174,7 +173,6 @@ type ObjectEncoder interface {
 	AddInt32(key string, value int32)
 	AddInt16(key string, value int16)
 	AddInt8(key string, value int8)
-	AddRune(key string, value rune)
 	AddString(key, value string)
 	AddTime(key string, value time.Time)
 	AddUint(key string, value uint)
@@ -220,7 +218,6 @@ type ArrayEncoder interface {
 type PrimitiveArrayEncoder interface {
 	// Built-in types.
 	AppendBool(bool)
-	AppendByte(byte)
 	AppendComplex128(complex128)
 	AppendComplex64(complex64)
 	AppendFloat64(float64)
@@ -230,7 +227,6 @@ type PrimitiveArrayEncoder interface {
 	AppendInt32(int32)
 	AppendInt16(int16)
 	AppendInt8(int8)
-	AppendRune(rune)
 	AppendString(string)
 	AppendUint(uint)
 	AppendUint64(uint64)

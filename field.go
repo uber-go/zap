@@ -49,12 +49,6 @@ func Bool(key string, val bool) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.BoolType, Integer: ival}
 }
 
-// Byte constructs a field with the given key and value. Note that most
-// encoders will represent a byte as an integer, not as a character.
-func Byte(key string, val byte) zapcore.Field {
-	return zapcore.Field{Key: key, Type: zapcore.ByteType, Integer: int64(val)}
-}
-
 // Complex128 constructs a field that carries a complex number. Unlike most
 // numeric fields, this costs an allocation (to convert the complex128 to
 // interface{}).
@@ -106,12 +100,6 @@ func Int16(key string, val int16) zapcore.Field {
 // Int8 constructs a field with the given key and value.
 func Int8(key string, val int8) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.Int8Type, Integer: int64(val)}
-}
-
-// Rune constructs a field with the given key and value. Note that most encoders
-// will represent a rune as an integer, not as a character or Unicode code point.
-func Rune(key string, val rune) zapcore.Field {
-	return zapcore.Field{Key: key, Type: zapcore.RuneType, Integer: int64(val)}
 }
 
 // String constructs a field with the given key and value.
