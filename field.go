@@ -21,7 +21,6 @@
 package zap
 
 import (
-	"encoding/base64"
 	"fmt"
 	"math"
 	"time"
@@ -35,9 +34,12 @@ func Skip() zapcore.Field {
 	return zapcore.Field{Type: zapcore.SkipType}
 }
 
-// Base64 constructs a field that eagerly base64-encodes bytes.
-func Base64(key string, val []byte) zapcore.Field {
-	return String(key, base64.StdEncoding.EncodeToString(val))
+// Binary constructs a field that carries an opaque binary blob.
+//
+// Binary data is serialized in an encoding-appropriate format. For example,
+// zap's JSON encoder base64-encodes binary blobs.
+func Binary(key string, val []byte) zapcore.Field {
+	return zapcore.Field{Key: key, Type: zapcore.BinaryType, Interface: val}
 }
 
 // Bool constructs a field with the given key and value.

@@ -162,6 +162,7 @@ type ObjectEncoder interface {
 	AddObject(key string, marshaler ObjectMarshaler) error
 
 	// Built-in types.
+	AddBinary(key string, value []byte)
 	AddBool(key string, value bool)
 	AddComplex128(key string, value complex128)
 	AddComplex64(key string, value complex64)

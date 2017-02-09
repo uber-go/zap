@@ -75,6 +75,11 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 			expected: []interface{}{wantTurducken, wantTurducken},
 		},
 		{
+			desc:     "AddBinary",
+			f:        func(e ObjectEncoder) { e.AddBinary("k", []byte("foo")) },
+			expected: []byte("foo"),
+		},
+		{
 			desc:     "AddBool",
 			f:        func(e ObjectEncoder) { e.AddBool("k", true) },
 			expected: true,
