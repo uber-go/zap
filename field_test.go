@@ -77,6 +77,7 @@ func TestFieldConstructors(t *testing.T) {
 		expect zapcore.Field
 	}{
 		{"Skip", zapcore.Field{Type: zapcore.SkipType}, Skip()},
+		{"Binary", zapcore.Field{Key: "k", Type: zapcore.BinaryType, Interface: []byte("ab12")}, Binary("k", []byte("ab12"))},
 		{"Bool", zapcore.Field{Key: "k", Type: zapcore.BoolType, Integer: 1}, Bool("k", true)},
 		{"Bool", zapcore.Field{Key: "k", Type: zapcore.BoolType, Integer: 1}, Bool("k", true)},
 		{"Complex128", zapcore.Field{Key: "k", Type: zapcore.Complex128Type, Interface: 1 + 2i}, Complex128("k", 1+2i)},
@@ -100,7 +101,6 @@ func TestFieldConstructors(t *testing.T) {
 		{"Error", Skip(), Error(nil)},
 		{"Error", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: fail}, Error(fail)},
 		{"Stringer", zapcore.Field{Key: "k", Type: zapcore.StringerType, Interface: addr}, Stringer("k", addr)},
-		{"Base64", zapcore.Field{Key: "k", Type: zapcore.StringType, String: "YWIxMg=="}, Base64("k", []byte("ab12"))},
 		{"Object", zapcore.Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: name}, Object("k", name)},
 		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
 		{"Any:ArrayMarshaler", Any("k", bools([]bool{true})), Array("k", bools([]bool{true}))},
