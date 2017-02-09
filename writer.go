@@ -30,35 +30,49 @@ import (
 
 // Open is a high-level wrapper that takes a variadic number of paths, opens or
 // creates each of the specified files, and combines them into a locked
-// WriteSyncer.
+// WriteSyncer. It also returns any error encountered and a function to close
+// any opened files.
 //
 // Passing no paths returns a no-op WriteSyncer. The special paths "stdout" and
 // "stderr" are interpreted as os.Stdout and os.Stderr, respectively.
-func Open(paths ...string) (zapcore.WriteSyncer, error) {
+func Open(paths ...string) (zapcore.WriteSyncer, error, func()) {
 	if len(paths) == 0 {
-		return zapcore.AddSync(ioutil.Discard), nil
+		return zapcore.AddSync(ioutil.Discard), nil, func() {}
 	}
-	writers, err := open(paths)
-	return zapcore.Lock(zapcore.MultiWriteSyncer(writers...)), err
+
+	writers, err, close := open(paths)
+	if len(writers) == 1 {
+		return zapcore.Lock(writers[0]), err, close
+	}
+	return zapcore.Lock(zapcore.MultiWriteSyncer(writers...)), err, close
 }
 
-func open(paths []string) ([]zapcore.WriteSyncer, error) {
+func open(paths []string) ([]zapcore.WriteSyncer, error, func()) {
 	var errs multierror.Error
 	writers := make([]zapcore.WriteSyncer, 0, len(paths))
+	files := make([]*os.File, 0, len(paths))
 	for _, path := range paths {
 		switch path {
 		case "stdout":
 			writers = append(writers, os.Stdout)
+			// Don't close standard out.
 			continue
 		case "stderr":
 			writers = append(writers, os.Stderr)
+			// Don't close standard error.
 			continue
 		}
-		f, err := os.OpenFile(path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		errs = errs.Append(err)
 		if err == nil {
 			writers = append(writers, f)
+			files = append(files, f)
 		}
 	}
-	return writers, errs.AsError()
+	close := func() {
+		for _, f := range files {
+			f.Close()
+		}
+	}
+	return writers, errs.AsError(), close
 }

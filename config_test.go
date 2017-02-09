@@ -40,16 +40,16 @@ func TestConfig(t *testing.T) {
 			desc:    "production",
 			cfg:     NewProductionConfig(),
 			expectN: 2 + 100 + 1, // 2 from initial logs, 100 initial sampled logs, 1 from off-by-one in sampler
-			expectRe: `{"level":"info","caller":".*/go.uber.org/zap/config_test.go:\d+","msg":"info","k":"v"}` + "\n" +
-				`{"level":"warn","caller":".*/go.uber.org/zap/config_test.go:\d+","msg":"warn","k":"v"}` + "\n",
+			expectRe: `{"level":"info","caller":".*/go.uber.org/zap/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
+				`{"level":"warn","caller":".*/go.uber.org/zap/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n",
 		},
 		{
 			desc:    "development",
 			cfg:     NewDevelopmentConfig(),
 			expectN: 3 + 200, // 3 initial logs, all 200 subsequent logs
-			expectRe: "DEBUG\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\tdebug\t" + `{"k": "v"}` + "\n" +
-				"INFO\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\tinfo\t" + `{"k": "v"}` + "\n" +
-				"WARN\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\twarn\t" + `{"k": "v"}` + "\n" +
+			expectRe: "DEBUG\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\tdebug\t" + `{"k": "v", "z": "zz"}` + "\n" +
+				"INFO\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\tinfo\t" + `{"k": "v", "z": "zz"}` + "\n" +
+				"WARN\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\twarn\t" + `{"k": "v", "z": "zz"}` + "\n" +
 				`goroutine \d+ \[running\]:`,
 		},
 	}
@@ -60,9 +60,10 @@ func TestConfig(t *testing.T) {
 			require.NoError(t, err, "Failed to create temp file.")
 			defer os.Remove(temp.Name())
 
+			require.Empty(t, tt.cfg.OutputPaths, "Expected output paths to be unset.")
 			tt.cfg.OutputPaths = []string{temp.Name()}
 			tt.cfg.EncoderConfig.TimeKey = "" // no timestamps in tests
-			tt.cfg.InitialFields = map[string]interface{}{"k": "v"}
+			tt.cfg.InitialFields = map[string]interface{}{"z": "zz", "k": "v"}
 
 			hook, count := makeCountingHook()
 			logger, err := tt.cfg.Build(Hooks(hook))

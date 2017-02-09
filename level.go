@@ -92,13 +92,14 @@ func (lvl AtomicLevel) SetLevel(l zapcore.Level) {
 // representation as zapcore.Level ("debug", "info", "warn", "error", "dpanic",
 // "panic", and "fatal").
 func (lvl *AtomicLevel) UnmarshalText(text []byte) error {
-	if lvl.l == nil {
-		lvl.l = atomic.NewInt32(int32(InfoLevel))
-	}
-
 	var l zapcore.Level
 	if err := l.UnmarshalText(text); err != nil {
 		return err
+	}
+
+	if lvl.l == nil {
+		lvl.l = atomic.NewInt32(int32(l))
+		return nil
 	}
 	lvl.SetLevel(l)
 	return nil

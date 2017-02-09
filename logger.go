@@ -100,7 +100,7 @@ func (log *Logger) Named(s string) *Logger {
 }
 
 // WithOptions clones the current Logger, applies the supplied Options, and
-// returns the result. It's safe to use concurrently.
+// returns the resulting Logger. It's safe to use concurrently.
 func (log *Logger) WithOptions(opts ...Option) *Logger {
 	c := log.clone()
 	for _, opt := range opts {

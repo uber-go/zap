@@ -22,16 +22,17 @@ package zap
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"go.uber.org/zap/zapcore"
 )
 
-// SamplingConfig sets a sampling strategy for the logger. Sampling caps the
-// global CPU and I/O load that logging puts on your process while preserving a
-// representative subset of your logs.
+// SamplingConfig sets a sampling strategy for the logger. Sampling
+// caps the global CPU and I/O load that logging puts on your process while
+// attempting to preserve a representative subset of your logs.
 //
-// See zapcore.Sample for details.
+// Values configured here are per-second. See zapcore.Sample for details.
 type SamplingConfig struct {
 	Initial    int `json:"initial",yaml:"initial"`
 	Thereafter int `json:"therafter",yaml:"thereafter"`
@@ -52,9 +53,11 @@ type Config struct {
 	// behavior of DPanicLevel and takes stacktraces more liberally.
 	Development bool `json:"development",yaml:"development"`
 	// DisableCaller stops annotating logs with the calling function's file
-	// name and line number.
+	// name and line number. By default, all logs are annotated.
 	DisableCaller bool `json:"disable_caller",yaml:"disable_caller"`
-	// DisableStacktrace completely disables automatic stacktrace capturing.
+	// DisableStacktrace completely disables automatic stacktrace capturing. By
+	// default, stacktraces are captured for WarnLevel and above logs in
+	// development and ErrorLevel and above in production.
 	DisableStacktrace bool `json:"disable_stacktrace",yaml:"disable_stacktrace"`
 	// Sampling sets a sampling policy. A nil SamplingConfig disables sampling.
 	Sampling *SamplingConfig `json:"sampling",yaml:"sampling"`
@@ -77,9 +80,8 @@ type Config struct {
 // NewProductionConfig is the recommended production configuration. Logging is
 // enabled at InfoLevel and above.
 //
-// It uses a JSON encoder, writes logs to stdout and internal errors to stderr,
-// and enables sampling. Stacktraces are automatically included on logs of
-// ErrorLevel and above.
+// It uses a JSON encoder, writes to standard error, and enables sampling.
+// Stacktraces are automatically included on logs of ErrorLevel and above.
 func NewProductionConfig() Config {
 	return Config{
 		Level:       DynamicLevel(),
@@ -100,7 +102,7 @@ func NewProductionConfig() Config {
 			EncodeTime:     zapcore.EpochTimeEncoder,
 			EncodeDuration: zapcore.SecondsDurationEncoder,
 		},
-		OutputPaths:      []string{"stdout"},
+		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
 }
@@ -108,9 +110,9 @@ func NewProductionConfig() Config {
 // NewDevelopmentConfig is a reasonable development configuration. Logging is
 // enabled at DebugLevel and above.
 //
-// It (obviously) enables development mode, uses a console encoder, writes logs
-// to stdout and internal errors to stderr, and disables sampling. Stacktraces
-// are automatically included on logs of WarnLevel and above.
+// It enables development mode, uses a console encoder, writes to standard
+// error, and disables sampling. Stacktraces are automatically included on logs
+// of WarnLevel and above.
 func NewDevelopmentConfig() Config {
 	dyn := DynamicLevel()
 	dyn.SetLevel(DebugLevel)
@@ -131,27 +133,31 @@ func NewDevelopmentConfig() Config {
 			EncodeTime:     zapcore.ISO8601TimeEncoder,
 			EncodeDuration: zapcore.StringDurationEncoder,
 		},
-		OutputPaths:      []string{"stdout"},
+		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
 }
 
 // Build constructs a logger from the Config and Options.
 func (cfg Config) Build(opts ...Option) (*Logger, error) {
-	sink, errSink, err := cfg.openSinks()
-	if err != nil {
-		return nil, err
-	}
-
 	enc, err := cfg.buildEncoder()
 	if err != nil {
 		return nil, err
 	}
 
-	return New(
+	sink, errSink, err := cfg.openSinks()
+	if err != nil {
+		return nil, err
+	}
+
+	log := New(
 		zapcore.WriterFacility(enc, sink, cfg.Level),
 		cfg.buildOptions(errSink)...,
-	).WithOptions(opts...), nil
+	)
+	if len(opts) > 0 {
+		log = log.WithOptions(opts...)
+	}
+	return log, nil
 }
 
 func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
@@ -181,8 +187,13 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 
 	if len(cfg.InitialFields) > 0 {
 		fs := make([]zapcore.Field, 0, len(cfg.InitialFields))
-		for k, v := range cfg.InitialFields {
-			fs = append(fs, Any(k, v))
+		keys := make([]string, 0, len(cfg.InitialFields))
+		for k := range cfg.InitialFields {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			fs = append(fs, Any(k, cfg.InitialFields[k]))
 		}
 		opts = append(opts, Fields(fs...))
 	}
@@ -191,12 +202,15 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 }
 
 func (cfg Config) openSinks() (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
-	sink, err := Open(cfg.OutputPaths...)
+	sink, err, closeOut := Open(cfg.OutputPaths...)
 	if err != nil {
+		closeOut()
 		return nil, nil, err
 	}
-	errSink, err := Open(cfg.ErrorOutputPaths...)
+	errSink, err, closeErr := Open(cfg.ErrorOutputPaths...)
 	if err != nil {
+		closeOut()
+		closeErr()
 		return nil, nil, err
 	}
 	return sink, errSink, nil
