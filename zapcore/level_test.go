@@ -53,6 +53,7 @@ func TestLevelText(t *testing.T) {
 	}{
 		{"debug", DebugLevel},
 		{"info", InfoLevel},
+		{"", InfoLevel}, // make the zero value useful
 		{"warn", WarnLevel},
 		{"error", ErrorLevel},
 		{"dpanic", DPanicLevel},
@@ -60,13 +61,15 @@ func TestLevelText(t *testing.T) {
 		{"fatal", FatalLevel},
 	}
 	for _, tt := range tests {
-		lvl := tt.level
-		marshaled, err := lvl.MarshalText()
-		assert.NoError(t, err, "Unexpected error marshaling level %v to text.", &lvl)
-		assert.Equal(t, tt.text, string(marshaled), "Marshaling level %v to text yielded unexpected result.", &lvl)
+		if tt.text != "" {
+			lvl := tt.level
+			marshaled, err := lvl.MarshalText()
+			assert.NoError(t, err, "Unexpected error marshaling level %v to text.", &lvl)
+			assert.Equal(t, tt.text, string(marshaled), "Marshaling level %v to text yielded unexpected result.", &lvl)
+		}
 
 		var unmarshaled Level
-		err = unmarshaled.UnmarshalText([]byte(tt.text))
+		err := unmarshaled.UnmarshalText([]byte(tt.text))
 		assert.NoError(t, err, `Unexpected error unmarshaling text "%v" to level.`, tt.text)
 		assert.Equal(t, tt.level, unmarshaled, `Text "%v" unmarshaled to an unexpected level.`, tt.text)
 	}

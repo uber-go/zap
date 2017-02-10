@@ -34,7 +34,22 @@ func (f optionFunc) apply(log *Logger) {
 	f(log)
 }
 
-// Fields sets the initial fields for the logger.
+// WrapFacility wraps or replaces the logger's underlying facility.
+func WrapFacility(f func(zapcore.Facility) zapcore.Facility) Option {
+	return optionFunc(func(log *Logger) {
+		log.fac = f(log.fac)
+	})
+}
+
+// Hooks registers functions which will be called each time the Logger writes
+// out an Entry. Repeated use of Hooks is additive.
+func Hooks(hooks ...func(zapcore.Entry) error) Option {
+	return optionFunc(func(log *Logger) {
+		log.fac = zapcore.Hooked(log.fac, hooks...)
+	})
+}
+
+// Fields adds fields to the Logger.
 func Fields(fs ...zapcore.Field) Option {
 	return optionFunc(func(log *Logger) {
 		log.fac = log.fac.With(fs)
@@ -74,13 +89,10 @@ func AddCallerSkip(skip int) Option {
 	})
 }
 
-// AddStacks configures the Logger to record a stack trace for all messages at
+// AddStacktrace configures the Logger to record a stack trace for all messages at
 // or above a given level. Keep in mind that this is (relatively speaking)
 // quite expensive.
-//
-// TODO: why is this called AddStacks rather than just AddStack or
-// AddStacktrace?
-func AddStacks(lvl zapcore.LevelEnabler) Option {
+func AddStacktrace(lvl zapcore.LevelEnabler) Option {
 	return optionFunc(func(log *Logger) {
 		log.addStack = lvl
 	})

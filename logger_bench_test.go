@@ -50,7 +50,8 @@ var _jane = &user{
 
 func withBenchedLogger(b *testing.B, f func(*Logger)) {
 	logger := New(
-		zapcore.WriterFacility(zapcore.NewJSONEncoder(defaultEncoderConfig()),
+		zapcore.WriterFacility(
+			zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
 			&testutils.Discarder{},
 			DebugLevel,
 		))
@@ -145,7 +146,7 @@ func BenchmarkReflectField(b *testing.B) {
 func BenchmarkAddCallerHook(b *testing.B) {
 	logger := New(
 		zapcore.WriterFacility(
-			zapcore.NewJSONEncoder(defaultEncoderConfig()),
+			zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
 			&testutils.Discarder{},
 			InfoLevel,
 		),
@@ -179,7 +180,7 @@ func Benchmark10Fields(b *testing.B) {
 func Benchmark100Fields(b *testing.B) {
 	const batchSize = 50
 	logger := New(zapcore.WriterFacility(
-		zapcore.NewJSONEncoder(defaultEncoderConfig()),
+		zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
 		&testutils.Discarder{},
 		DebugLevel,
 	))
