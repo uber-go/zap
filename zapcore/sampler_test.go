@@ -21,12 +21,12 @@
 package zapcore_test
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.uber.org/zap/internal/observer"
 	"go.uber.org/zap/testutils"
@@ -40,31 +40,48 @@ func fakeSampler(lvl LevelEnabler, tick time.Duration, first, thereafter int) (F
 	return fac, &logs
 }
 
-func buildExpectation(level Level, nums ...int) []observer.LoggedEntry {
-	var expected []observer.LoggedEntry
-	for _, n := range nums {
-		expected = append(expected, observer.LoggedEntry{
-			Entry:   Entry{Level: level},
-			Context: []Field{makeInt64Field("iter", n)},
-		})
+func assertSequence(t testing.TB, logs []observer.LoggedEntry, lvl Level, seq ...int64) {
+	seen := make([]int64, len(logs))
+	for i, entry := range logs {
+		require.Equal(t, "", entry.Message, "Message wasn't created by writeSequence.")
+		require.Equal(t, 1, len(entry.Context), "Unexpected number of fields.")
+		require.Equal(t, lvl, entry.Level, "Unexpected level.")
+		f := entry.Context[0]
+		require.Equal(t, "iter", f.Key, "Unexpected field key.")
+		require.Equal(t, Int64Type, f.Type, "Unexpected field type")
+		seen[i] = f.Integer
 	}
-	return expected
+	assert.Equal(t, seq, seen, "Unexpected sequence logged at level %v.", lvl)
 }
 
-func writeIter(fac Facility, n int, lvl Level) {
+func writeSequence(fac Facility, n int, lvl Level) {
+	// All tests using writeSequence verify that counters are shared between
+	// parent and child facilities.
 	fac = fac.With([]Field{makeInt64Field("iter", n)})
-	if ce := fac.Check(Entry{Level: lvl}, nil); ce != nil {
+	if ce := fac.Check(Entry{Level: lvl, Time: time.Now().UTC()}, nil); ce != nil {
 		ce.Write()
 	}
 }
 
 func TestSampler(t *testing.T) {
-	for _, lvl := range []Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+	for _, lvl := range []Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel, PanicLevel, FatalLevel} {
 		sampler, logs := fakeSampler(DebugLevel, time.Minute, 2, 3)
-		for i := 1; i < 10; i++ {
-			writeIter(sampler, i, lvl)
+
+		// Ensure that counts aren't shared between levels.
+		probeLevel := DebugLevel
+		if lvl == DebugLevel {
+			probeLevel = InfoLevel
 		}
-		assert.Equal(t, buildExpectation(lvl, 1, 2, 5, 8), logs.All(), "Unexpected output from sampled logger.")
+		for i := 0; i < 10; i++ {
+			writeSequence(sampler, 1, probeLevel)
+		}
+		// Clear any output.
+		logs.TakeAll()
+
+		for i := 1; i < 10; i++ {
+			writeSequence(sampler, i, lvl)
+		}
+		assertSequence(t, logs.TakeAll(), lvl, 1, 2, 5, 8)
 	}
 }
 
@@ -72,71 +89,48 @@ func TestSamplerDisabledLevels(t *testing.T) {
 	sampler, logs := fakeSampler(InfoLevel, time.Minute, 1, 100)
 
 	// Shouldn't be counted, because debug logging isn't enabled.
-	writeIter(sampler, 1, DebugLevel)
-	writeIter(sampler, 2, InfoLevel)
-	expected := buildExpectation(InfoLevel, 2)
-	assert.Equal(t, expected, logs.All(), "Expected to disregard disabled log levels.")
+	writeSequence(sampler, 1, DebugLevel)
+	writeSequence(sampler, 2, InfoLevel)
+	assertSequence(t, logs.TakeAll(), InfoLevel, 2)
 }
 
-func TestSamplerWithSharesCounters(t *testing.T) {
-	sampler, logs := fakeSampler(DebugLevel, time.Minute, 1, 100)
-
-	first := sampler.With([]Field{makeInt64Field("child", 1)})
-	for i := 1; i < 10; i++ {
-		writeIter(first, i, InfoLevel)
-	}
-	second := sampler.With([]Field{makeInt64Field("child", 2)})
-	// The new child logger should share the same counters, so we don't expect to
-	// write these logs.
-	for i := 10; i < 20; i++ {
-		writeIter(second, i, InfoLevel)
-	}
-
-	expected := []observer.LoggedEntry{{
-		Entry:   Entry{Level: InfoLevel},
-		Context: []Field{makeInt64Field("child", 1), makeInt64Field("iter", 1)},
-	}}
-	assert.Equal(t, expected, logs.All(), "Expected child loggers to share counters.")
-}
-
-func TestSamplerTicks(t *testing.T) {
+func TestSamplerTicking(t *testing.T) {
 	// Ensure that we're resetting the sampler's counter every tick.
-	sampler, logs := fakeSampler(DebugLevel, time.Millisecond, 1, 1000)
+	sampler, logs := fakeSampler(DebugLevel, 10*time.Millisecond, 5, 10)
 
-	// The first statement should be logged, the second should be skipped but
-	// start the reset timer, and then we sleep. After sleeping for more than a
-	// tick, the third statement should be logged.
-	for i := 1; i < 4; i++ {
-		if i == 3 {
-			testutils.Sleep(5 * time.Millisecond)
+	// If we log five or fewer messages every tick, none of them should be
+	// dropped.
+	for tick := 0; tick < 2; tick++ {
+		for i := 1; i <= 5; i++ {
+			writeSequence(sampler, i, InfoLevel)
 		}
-		writeIter(sampler, i, InfoLevel)
+		testutils.Sleep(15 * time.Millisecond)
+	}
+	assertSequence(
+		t,
+		logs.TakeAll(),
+		InfoLevel,
+		1, 2, 3, 4, 5, // first tick
+		1, 2, 3, 4, 5, // second tick
+	)
+
+	// If we log quickly, we should drop some logs. The first five statements
+	// each tick should be logged, then every tenth.
+	for tick := 0; tick < 3; tick++ {
+		for i := 1; i < 18; i++ {
+			writeSequence(sampler, i, InfoLevel)
+		}
+		testutils.Sleep(10 * time.Millisecond)
 	}
 
-	expected := buildExpectation(InfoLevel, 1, 3)
-	assert.Equal(t, expected, logs.All(), "Expected sleeping for a tick to reset sampler.")
-}
-
-func TestSamplerCheck(t *testing.T) {
-	sampler, logs := fakeSampler(InfoLevel, time.Millisecond, 1, 10)
-
-	t.Run("always drops ignored levels (Debug)", func(t *testing.T) {
-		assert.Nil(t, sampler.Check(Entry{Level: DebugLevel}, nil), "Expected a nil CheckedMessage at disabled log levels.")
-	})
-
-	for _, lvl := range []Level{
-		InfoLevel, WarnLevel, ErrorLevel, PanicLevel, FatalLevel,
-	} {
-		t.Run(fmt.Sprintf("samples each level independently (%v)", lvl), func(t *testing.T) {
-			for i := 1; i < 12; i++ {
-				if cm := sampler.Check(Entry{Level: lvl}, nil); cm != nil {
-					cm.Write(makeInt64Field("iter", i))
-				}
-			}
-			expected := buildExpectation(lvl, 1, 11)
-			assert.Equal(t, expected, logs.TakeAll(), "Unexpected output when sampling with Check.")
-		})
-	}
+	assertSequence(
+		t,
+		logs.TakeAll(),
+		InfoLevel,
+		1, 2, 3, 4, 5, 15, // first tick
+		1, 2, 3, 4, 5, 15, // second tick
+		1, 2, 3, 4, 5, 15, // third tick
+	)
 }
 
 func TestSamplerRaces(t *testing.T) {
@@ -150,7 +144,7 @@ func TestSamplerRaces(t *testing.T) {
 		go func() {
 			<-start
 			for j := 0; j < 100; j++ {
-				writeIter(sampler, j, InfoLevel)
+				writeSequence(sampler, j, InfoLevel)
 			}
 			wg.Done()
 		}()
