@@ -87,7 +87,6 @@ func TestDynamicLevelUnmarshalText(t *testing.T) {
 		{"dpanic", DPanicLevel, false},
 		{"panic", PanicLevel, false},
 		{"fatal", FatalLevel, false},
-		{"foo", InfoLevel, true},
 	}
 
 	for _, tt := range tests {

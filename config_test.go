@@ -60,7 +60,6 @@ func TestConfig(t *testing.T) {
 			require.NoError(t, err, "Failed to create temp file.")
 			defer os.Remove(temp.Name())
 
-			require.Empty(t, tt.cfg.OutputPaths, "Expected output paths to be unset.")
 			tt.cfg.OutputPaths = []string{temp.Name()}
 			tt.cfg.EncoderConfig.TimeKey = "" // no timestamps in tests
 			tt.cfg.InitialFields = map[string]interface{}{"z": "zz", "k": "v"}

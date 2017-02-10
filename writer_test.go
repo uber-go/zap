@@ -31,7 +31,7 @@ import (
 )
 
 func TestOpenNoPaths(t *testing.T) {
-	ws, err, cleanup := Open()
+	ws, cleanup, err := Open()
 	defer cleanup()
 
 	assert.NoError(t, err, "Expected opening no paths to succeed.")
@@ -65,7 +65,7 @@ func TestOpen(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		wss, err, cleanup := open(tt.paths)
+		wss, cleanup, err := open(tt.paths)
 		defer cleanup()
 		if tt.error == "" {
 			assert.NoError(t, err, "Unexpected error opening paths %v.", tt.paths)

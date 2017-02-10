@@ -35,19 +35,19 @@ import (
 //
 // Passing no paths returns a no-op WriteSyncer. The special paths "stdout" and
 // "stderr" are interpreted as os.Stdout and os.Stderr, respectively.
-func Open(paths ...string) (zapcore.WriteSyncer, error, func()) {
+func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
 	if len(paths) == 0 {
-		return zapcore.AddSync(ioutil.Discard), nil, func() {}
+		return zapcore.AddSync(ioutil.Discard), func() {}, nil
 	}
 
-	writers, err, close := open(paths)
+	writers, close, err := open(paths)
 	if len(writers) == 1 {
-		return zapcore.Lock(writers[0]), err, close
+		return zapcore.Lock(writers[0]), close, err
 	}
-	return zapcore.Lock(zapcore.MultiWriteSyncer(writers...)), err, close
+	return zapcore.Lock(zapcore.MultiWriteSyncer(writers...)), close, err
 }
 
-func open(paths []string) ([]zapcore.WriteSyncer, error, func()) {
+func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	var errs multierror.Error
 	writers := make([]zapcore.WriteSyncer, 0, len(paths))
 	files := make([]*os.File, 0, len(paths))
@@ -74,5 +74,5 @@ func open(paths []string) ([]zapcore.WriteSyncer, error, func()) {
 			f.Close()
 		}
 	}
-	return writers, errs.AsError(), close
+	return writers, close, errs.AsError()
 }
