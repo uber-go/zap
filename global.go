@@ -20,33 +20,62 @@
 
 package zap
 
-import "log"
-
-var (
-	// L is the global Logger.
-	L = New(nil)
-	// S is the global SugaredLogger.
-	S = Sugar(L)
+import (
+	"bytes"
+	"log"
+	"os"
 )
 
-// SetGlobalLogger sets the global Logger L and the global SugaredLogger S.
-func SetGlobalLogger(logger Logger) {
+var (
+	// L is a global Logger. It defaults to a no-op implementation but can be
+	// replaced using ReplaceGlobals.
+	//
+	// Both L and S are unlocked, so replacing them while they're in
+	// use isn't safe.
+	L = New(nil)
+	// S is a global SugaredLogger, similar to L. It also defaults to a no-op
+	// implementation.
+	S = L.Sugar()
+)
+
+// ReplaceGlobals replaces the global Logger L and the global SugaredLogger S,
+// and returns a function to restore the original values.
+//
+// Note that replacing the global loggers isn't safe while they're being used;
+// in practice, this means that only the owner of the application's main
+// function should use this method.
+func ReplaceGlobals(logger *Logger) func() {
+	prev := *L
 	L = logger
-	S = Sugar(L)
+	S = logger.Sugar()
+	return func() { ReplaceGlobals(&prev) }
 }
 
-// RedirectStdLogger redirects logging from the golang "log" package to L.
-func RedirectStdLogger() {
+// RedirectStdLog redirects output from the standard library's "log" package to
+// the supplied logger at InfoLevel. Since zap already handles caller
+// annotations, timestamps, etc., it automatically disables the standard
+// library's annotations and prefixing.
+//
+// It returns a function to restore the original prefix and flags and reset the
+// standard library's output to os.Stdout.
+func RedirectStdLog(l *Logger) func() {
+	flags := log.Flags()
+	prefix := log.Prefix()
 	log.SetFlags(0)
-	log.SetOutput(&loggerWriter{L})
 	log.SetPrefix("")
+	log.SetOutput(&loggerWriter{l})
+	return func() {
+		log.SetFlags(flags)
+		log.SetPrefix(prefix)
+		log.SetOutput(os.Stderr)
+	}
 }
 
 type loggerWriter struct {
-	logger Logger
+	logger *Logger
 }
 
 func (l *loggerWriter) Write(p []byte) (int, error) {
-	l.logger.Info(string(p))
+	l.logger.Info(string(bytes.TrimSpace(p)))
 	return len(p), nil
 }
