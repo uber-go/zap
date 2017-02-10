@@ -76,6 +76,7 @@ type loggerWriter struct {
 }
 
 func (l *loggerWriter) Write(p []byte) (int, error) {
-	l.logger.Info(string(bytes.TrimSpace(p)))
+	p = bytes.TrimSpace(p)
+	l.logger.Info(string(p))
 	return len(p), nil
 }
