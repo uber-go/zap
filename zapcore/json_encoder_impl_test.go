@@ -97,10 +97,10 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 		expected string
 		f        func(Encoder)
 	}{
+		{"binary", `"k":"YWIxMg=="`, func(e Encoder) { e.AddBinary("k", []byte("ab12")) }},
 		{"bool", `"k\\":true`, func(e Encoder) { e.AddBool(`k\`, true) }}, // test key escaping once
 		{"bool", `"k":true`, func(e Encoder) { e.AddBool("k", true) }},
 		{"bool", `"k":false`, func(e Encoder) { e.AddBool("k", false) }},
-		{"byte", `"k":1`, func(e Encoder) { e.AddByte("k", 1) }},
 		{"complex128", `"k":"1+2i"`, func(e Encoder) { e.AddComplex128("k", 1+2i) }},
 		{"complex64", `"k":"1+2i"`, func(e Encoder) { e.AddComplex64("k", 1+2i) }},
 		{"duration", `"k":0.000000001`, func(e Encoder) { e.AddDuration("k", 1) }},
@@ -119,7 +119,6 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 		{"int32", `"k":42`, func(e Encoder) { e.AddInt32("k", 42) }},
 		{"int16", `"k":42`, func(e Encoder) { e.AddInt16("k", 42) }},
 		{"int8", `"k":42`, func(e Encoder) { e.AddInt8("k", 42) }},
-		{"rune", `"k":42`, func(e Encoder) { e.AddRune("k", rune(42)) }},
 		{"string", `"k":"v\\"`, func(e Encoder) { e.AddString(`k`, `v\`) }},
 		{"string", `"k":"v"`, func(e Encoder) { e.AddString("k", "v") }},
 		{"string", `"k":""`, func(e Encoder) { e.AddString("k", "") }},
@@ -221,7 +220,6 @@ func TestJSONEncoderArrays(t *testing.T) {
 		f        func(ArrayEncoder)
 	}{
 		{"bool", `[true,true]`, func(e ArrayEncoder) { e.AppendBool(true) }},
-		{"byte", `[1,1]`, func(e ArrayEncoder) { e.AppendByte(1) }},
 		{"complex128", `["1+2i","1+2i"]`, func(e ArrayEncoder) { e.AppendComplex128(1 + 2i) }},
 		{"complex64", `["1+2i","1+2i"]`, func(e ArrayEncoder) { e.AppendComplex64(1 + 2i) }},
 		{"durations", `[0.000000002,0.000000002]`, func(e ArrayEncoder) { e.AppendDuration(2) }},
@@ -232,7 +230,6 @@ func TestJSONEncoderArrays(t *testing.T) {
 		{"int32", `[42,42]`, func(e ArrayEncoder) { e.AppendInt32(42) }},
 		{"int16", `[42,42]`, func(e ArrayEncoder) { e.AppendInt16(42) }},
 		{"int8", `[42,42]`, func(e ArrayEncoder) { e.AppendInt8(42) }},
-		{"rune", `[1,1]`, func(e ArrayEncoder) { e.AppendRune(1) }},
 		{"string", `["k","k"]`, func(e ArrayEncoder) { e.AppendString("k") }},
 		{"string", `["k\\","k\\"]`, func(e ArrayEncoder) { e.AppendString(`k\`) }},
 		{"times", `[1,1]`, func(e ArrayEncoder) { e.AppendTime(time.Unix(1, 0)) }},

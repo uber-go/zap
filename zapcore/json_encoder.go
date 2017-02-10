@@ -21,6 +21,7 @@
 package zapcore
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"math"
 	"strconv"
@@ -74,6 +75,10 @@ func (enc *jsonEncoder) AddArray(key string, arr ArrayMarshaler) error {
 func (enc *jsonEncoder) AddObject(key string, obj ObjectMarshaler) error {
 	enc.addKey(key)
 	return enc.AppendObject(obj)
+}
+
+func (enc *jsonEncoder) AddBinary(key string, val []byte) {
+	enc.AddString(key, base64.StdEncoding.EncodeToString(val))
 }
 
 func (enc *jsonEncoder) AddBool(key string, val bool) {
@@ -213,20 +218,17 @@ func (enc *jsonEncoder) AppendUint64(val uint64) {
 	enc.bytes = strconv.AppendUint(enc.bytes, val, 10)
 }
 
-func (enc *jsonEncoder) AddByte(k string, v byte)           { enc.AddUint8(k, uint8(v)) }
 func (enc *jsonEncoder) AddComplex64(k string, v complex64) { enc.AddComplex128(k, complex128(v)) }
 func (enc *jsonEncoder) AddFloat32(k string, v float32)     { enc.AddFloat64(k, float64(v)) }
 func (enc *jsonEncoder) AddInt(k string, v int)             { enc.AddInt64(k, int64(v)) }
 func (enc *jsonEncoder) AddInt32(k string, v int32)         { enc.AddInt64(k, int64(v)) }
 func (enc *jsonEncoder) AddInt16(k string, v int16)         { enc.AddInt64(k, int64(v)) }
 func (enc *jsonEncoder) AddInt8(k string, v int8)           { enc.AddInt64(k, int64(v)) }
-func (enc *jsonEncoder) AddRune(k string, v rune)           { enc.AddInt32(k, int32(v)) }
 func (enc *jsonEncoder) AddUint(k string, v uint)           { enc.AddUint64(k, uint64(v)) }
 func (enc *jsonEncoder) AddUint32(k string, v uint32)       { enc.AddUint64(k, uint64(v)) }
 func (enc *jsonEncoder) AddUint16(k string, v uint16)       { enc.AddUint64(k, uint64(v)) }
 func (enc *jsonEncoder) AddUint8(k string, v uint8)         { enc.AddUint64(k, uint64(v)) }
 func (enc *jsonEncoder) AddUintptr(k string, v uintptr)     { enc.AddUint64(k, uint64(v)) }
-func (enc *jsonEncoder) AppendByte(v byte)                  { enc.AppendUint8(uint8(v)) }
 func (enc *jsonEncoder) AppendComplex64(v complex64)        { enc.AppendComplex128(complex128(v)) }
 func (enc *jsonEncoder) AppendFloat64(v float64)            { enc.appendFloat(v, 64) }
 func (enc *jsonEncoder) AppendFloat32(v float32)            { enc.appendFloat(float64(v), 32) }
@@ -234,7 +236,6 @@ func (enc *jsonEncoder) AppendInt(v int)                    { enc.AppendInt64(in
 func (enc *jsonEncoder) AppendInt32(v int32)                { enc.AppendInt64(int64(v)) }
 func (enc *jsonEncoder) AppendInt16(v int16)                { enc.AppendInt64(int64(v)) }
 func (enc *jsonEncoder) AppendInt8(v int8)                  { enc.AppendInt64(int64(v)) }
-func (enc *jsonEncoder) AppendRune(v rune)                  { enc.AppendInt32(int32(v)) }
 func (enc *jsonEncoder) AppendUint(v uint)                  { enc.AppendUint64(uint64(v)) }
 func (enc *jsonEncoder) AppendUint32(v uint32)              { enc.AppendUint64(uint64(v)) }
 func (enc *jsonEncoder) AppendUint16(v uint16)              { enc.AppendUint64(uint64(v)) }
