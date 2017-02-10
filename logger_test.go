@@ -31,7 +31,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 )
+
+func makeCountingHook() (func(zapcore.Entry) error, *atomic.Int64) {
+	count := &atomic.Int64{}
+	h := func(zapcore.Entry) error {
+		count.Inc()
+		return nil
+	}
+	return h, count
+}
 
 func TestLoggerDynamicLevel(t *testing.T) {
 	// Test that the DynamicLevel applys to all ancestors and descendants.
@@ -288,7 +298,7 @@ func TestLoggerWriteFailure(t *testing.T) {
 	errSink := &testutils.Buffer{}
 	logger := New(
 		zapcore.WriterFacility(
-			zapcore.NewJSONEncoder(defaultEncoderConfig()),
+			zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
 			zapcore.Lock(zapcore.AddSync(testutils.FailWriter{})),
 			DebugLevel,
 		),
@@ -345,12 +355,12 @@ func TestLoggerAddCallerFail(t *testing.T) {
 	})
 }
 
-func TestLoggerAddStacks(t *testing.T) {
+func TestLoggerAddStacktrace(t *testing.T) {
 	assertHasStack := func(t testing.TB, obs observer.LoggedEntry) {
-		assert.Contains(t, obs.Entry.Stack, "zap.TestLoggerAddStacks", "Expected to find test function in stacktrace.")
+		assert.Contains(t, obs.Entry.Stack, "zap.TestLoggerAddStacktrace", "Expected to find test function in stacktrace.")
 	}
 
-	withLogger(t, DebugLevel, opts(AddStacks(InfoLevel)), func(logger *Logger, logs *observer.ObservedLogs) {
+	withLogger(t, DebugLevel, opts(AddStacktrace(InfoLevel)), func(logger *Logger, logs *observer.ObservedLogs) {
 		logger.Debug("")
 		assert.Empty(
 			t,
@@ -364,6 +374,27 @@ func TestLoggerAddStacks(t *testing.T) {
 		logger.Warn("")
 		assertHasStack(t, logs.AllUntimed()[2])
 	})
+}
+
+func TestLoggerReplaceFacility(t *testing.T) {
+	replace := WrapFacility(func(zapcore.Facility) zapcore.Facility {
+		return zapcore.NopFacility()
+	})
+	withLogger(t, DebugLevel, opts(replace), func(logger *Logger, logs *observer.ObservedLogs) {
+		logger.Debug("")
+		logger.Info("")
+		logger.Warn("")
+		assert.Equal(t, 0, logs.Len(), "Expected no-op facility to write no logs.")
+	})
+}
+
+func TestLoggerHooks(t *testing.T) {
+	hook, seen := makeCountingHook()
+	withLogger(t, DebugLevel, opts(Hooks(hook)), func(logger *Logger, logs *observer.ObservedLogs) {
+		logger.Debug("")
+		logger.Info("")
+	})
+	assert.Equal(t, int64(2), seen.Load(), "Hook saw an unexpected number of logs.")
 }
 
 func TestLoggerConcurrent(t *testing.T) {

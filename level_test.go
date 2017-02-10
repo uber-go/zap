@@ -72,3 +72,30 @@ func TestDynamicLevelMutation(t *testing.T) {
 	close(proceed)
 	wg.Wait()
 }
+
+func TestDynamicLevelUnmarshalText(t *testing.T) {
+	tests := []struct {
+		text   string
+		expect zapcore.Level
+		err    bool
+	}{
+		{"debug", DebugLevel, false},
+		{"info", InfoLevel, false},
+		{"", InfoLevel, false},
+		{"warn", WarnLevel, false},
+		{"error", ErrorLevel, false},
+		{"dpanic", DPanicLevel, false},
+		{"panic", PanicLevel, false},
+		{"fatal", FatalLevel, false},
+	}
+
+	for _, tt := range tests {
+		var lvl AtomicLevel
+		if tt.err {
+			assert.Error(t, lvl.UnmarshalText([]byte(tt.text)), "Expected unmarshaling %q to fail.", tt.text)
+		} else {
+			assert.NoError(t, lvl.UnmarshalText([]byte(tt.text)), "Expected unmarshaling %q to succeed.", tt.text)
+		}
+		assert.Equal(t, tt.expect, lvl.Level(), "Unexpected level after unmarshaling.")
+	}
+}

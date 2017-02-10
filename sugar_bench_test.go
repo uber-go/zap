@@ -28,7 +28,8 @@ import (
 )
 
 func withBenchedSugar(b *testing.B, f func(*SugaredLogger)) {
-	logger := New(zapcore.WriterFacility(zapcore.NewJSONEncoder(defaultEncoderConfig()),
+	logger := New(zapcore.WriterFacility(
+		zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
 		&testutils.Discarder{},
 		DebugLevel,
 	)).Sugar()

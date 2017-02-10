@@ -95,7 +95,7 @@ func (l *Level) UnmarshalText(text []byte) error {
 	switch string(text) {
 	case "debug":
 		*l = DebugLevel
-	case "info":
+	case "info", "": // make the zero value useful
 		*l = InfoLevel
 	case "warn":
 		*l = WarnLevel
