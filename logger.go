@@ -56,7 +56,7 @@ func New(fac zapcore.Facility, options ...Option) *Logger {
 	log := &Logger{
 		fac:         fac,
 		errorOutput: zapcore.Lock(os.Stderr),
-		addStack:    LevelEnablerFunc(func(_ zapcore.Level) bool { return false }),
+		addStack:    zapcore.FatalLevel + 1,
 	}
 	return log.WithOptions(options...)
 }
