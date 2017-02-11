@@ -40,6 +40,9 @@ func (m KeyValueMap) AddInt64(k string, v int64) { m[k] = v }
 // AddUint adds the value under the specified key to the map.
 func (m KeyValueMap) AddUint(k string, v uint) { m[k] = v }
 
+// AddUint32 adds the value under the specified key to the map.
+func (m KeyValueMap) AddUint32(k string, v uint32) { m[k] = v }
+
 // AddUint64 adds the value under the specified key to the map.
 func (m KeyValueMap) AddUint64(k string, v uint64) { m[k] = v }
 

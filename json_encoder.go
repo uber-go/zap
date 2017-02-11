@@ -130,6 +130,12 @@ func (enc *jsonEncoder) AddUint(key string, val uint) {
 	enc.AddUint64(key, uint64(val))
 }
 
+// AddUint32 adds a string key and integer value to the encoder's fields. The key
+// is JSON-escaped.
+func (enc *jsonEncoder) AddUint32(key string, val uint32) {
+	enc.AddUint64(key, uint64(val))
+}
+
 // AddUint64 adds a string key and integer value to the encoder's fields. The key
 // is JSON-escaped.
 func (enc *jsonEncoder) AddUint64(key string, val uint64) {

@@ -42,6 +42,7 @@ func (nullEncoder) AddBool(_ string, _ bool)       {}
 func (nullEncoder) AddInt(_ string, _ int)         {}
 func (nullEncoder) AddInt64(_ string, _ int64)     {}
 func (nullEncoder) AddUint(_ string, _ uint)       {}
+func (nullEncoder) AddUint32(_ string, _ uint32)   {}
 func (nullEncoder) AddUint64(_ string, _ uint64)   {}
 func (nullEncoder) AddUintptr(_ string, _ uintptr) {}
 func (nullEncoder) AddFloat64(_ string, _ float64) {}

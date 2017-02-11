@@ -122,6 +122,8 @@ func TestJSONEncoderFields(t *testing.T) {
 		{"int64", fmt.Sprintf(`"k\\":%d`, math.MaxInt64), func(e Encoder) { e.AddInt64(`k\`, math.MaxInt64) }},
 		{"uint", `"k":42`, func(e Encoder) { e.AddUint("k", 42) }},
 		{"uint", `"k\\":42`, func(e Encoder) { e.AddUint(`k\`, 42) }},
+		{"uint32", fmt.Sprintf(`"k":%d`, uint32(math.MaxUint32)), func(e Encoder) { e.AddUint32("k", math.MaxUint32) }},
+		{"uint32", fmt.Sprintf(`"k\\":%d`, uint32(math.MaxUint32)), func(e Encoder) { e.AddUint32(`k\`, math.MaxUint32) }},
 		{"uint64", fmt.Sprintf(`"k":%d`, uint64(math.MaxUint64)), func(e Encoder) { e.AddUint64("k", math.MaxUint64) }},
 		{"uint64", fmt.Sprintf(`"k\\":%d`, uint64(math.MaxUint64)), func(e Encoder) { e.AddUint64(`k\`, math.MaxUint64) }},
 		{"uintptr", fmt.Sprintf(`"k":%d`, uint64(math.MaxUint64)), func(e Encoder) { e.AddUintptr("k", uintptr(math.MaxUint64)) }},

@@ -80,6 +80,10 @@ func (enc *textEncoder) AddUint(key string, val uint) {
 	enc.AddUint64(key, uint64(val))
 }
 
+func (enc *textEncoder) AddUint32(key string, val uint32) {
+	enc.AddUint64(key, uint64(val))
+}
+
 func (enc *textEncoder) AddUint64(key string, val uint64) {
 	enc.addKey(key)
 	enc.bytes = strconv.AppendUint(enc.bytes, val, 10)
