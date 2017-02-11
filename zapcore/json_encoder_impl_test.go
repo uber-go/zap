@@ -30,6 +30,7 @@ import (
 	"testing/quick"
 	"time"
 
+	"go.uber.org/zap/internal/bufferpool"
 	"go.uber.org/zap/internal/multierror"
 
 	"github.com/stretchr/testify/assert"
@@ -37,9 +38,7 @@ import (
 
 func TestJSONClone(t *testing.T) {
 	// The parent encoder is created with plenty of excess capacity.
-	parent := &jsonEncoder{
-		bytes: make([]byte, 0, 128),
-	}
+	parent := &jsonEncoder{buf: bufferpool.Get()}
 	clone := parent.Clone()
 
 	// Adding to the parent shouldn't affect the clone, and vice versa.
@@ -51,7 +50,7 @@ func TestJSONClone(t *testing.T) {
 }
 
 func TestJSONEscaping(t *testing.T) {
-	enc := &jsonEncoder{}
+	enc := &jsonEncoder{buf: bufferpool.Get()}
 	// Test all the edge cases of JSON escaping directly.
 	cases := map[string]string{
 		// ASCII.
@@ -313,16 +312,16 @@ func TestJSONEncoderArrays(t *testing.T) {
 }
 
 func assertJSON(t *testing.T, expected string, enc *jsonEncoder) {
-	assert.Equal(t, expected, string(enc.bytes), "Encoded JSON didn't match expectations.")
+	assert.Equal(t, expected, enc.buf.String(), "Encoded JSON didn't match expectations.")
 }
 
 func assertOutput(t testing.TB, desc string, expected string, f func(Encoder)) {
-	enc := &jsonEncoder{EncoderConfig: &EncoderConfig{
+	enc := &jsonEncoder{buf: bufferpool.Get(), EncoderConfig: &EncoderConfig{
 		EncodeTime:     EpochTimeEncoder,
 		EncodeDuration: SecondsDurationEncoder,
 	}}
 	f(enc)
-	assert.Equal(t, expected, string(enc.bytes), "Unexpected encoder output after adding a %s.", desc)
+	assert.Equal(t, expected, enc.buf.String(), "Unexpected encoder output after adding a %s.", desc)
 
 	enc.truncate()
 	enc.AddString("foo", "bar")
@@ -333,7 +332,7 @@ func assertOutput(t testing.TB, desc string, expected string, f func(Encoder)) {
 		// field.
 		expectedPrefix += ","
 	}
-	assert.Equal(t, expectedPrefix+expected, string(enc.bytes), "Unexpected encoder output after adding a %s as a second field.", desc)
+	assert.Equal(t, expectedPrefix+expected, enc.buf.String(), "Unexpected encoder output after adding a %s as a second field.", desc)
 }
 
 // Nested Array- and ObjectMarshalers.
@@ -387,13 +386,13 @@ func (nj noJSON) MarshalJSON() ([]byte, error) {
 }
 
 func zapEncodeString(s string) []byte {
-	enc := &jsonEncoder{}
+	enc := &jsonEncoder{buf: bufferpool.Get()}
 	// Escape and quote a string using our encoder.
 	var ret []byte
 	enc.safeAddString(s)
-	ret = make([]byte, 0, len(enc.bytes)+2)
+	ret = make([]byte, 0, enc.buf.Len()+2)
 	ret = append(ret, '"')
-	ret = append(ret, enc.bytes...)
+	ret = append(ret, enc.buf.Bytes()...)
 	ret = append(ret, '"')
 	return ret
 }

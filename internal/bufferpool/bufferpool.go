@@ -18,28 +18,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package buffers
+// Package bufferpool provides strongly-typed functions to interact with a shared
+// pool of byte buffers.
+package bufferpool
 
 import (
 	"sync"
-	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/buffer"
 )
 
-func TestBuffers(t *testing.T) {
-	var wg sync.WaitGroup
-	for g := 0; g < 10; g++ {
-		wg.Add(1)
-		go func() {
-			for i := 0; i < 100; i++ {
-				buf := Get()
-				assert.Zero(t, len(buf), "Expected truncated buffer")
-				assert.NotZero(t, cap(buf), "Expected non-zero capacity")
-				Put(buf)
-			}
-			wg.Done()
-		}()
-	}
-	wg.Wait()
+var _pool = sync.Pool{
+	New: func() interface{} {
+		return buffer.New()
+	},
+}
+
+// Get retrieves a buffer from the pool, creating one if necessary.
+func Get() *buffer.Buffer {
+	buf := _pool.Get().(*buffer.Buffer)
+	buf.Reset()
+	return buf
+}
+
+// Put returns a slice to the pool.
+func Put(buf *buffer.Buffer) {
+	_pool.Put(buf)
 }

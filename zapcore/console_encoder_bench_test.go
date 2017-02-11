@@ -23,7 +23,7 @@ package zapcore_test
 import (
 	"testing"
 
-	"go.uber.org/zap/internal/buffers"
+	"go.uber.org/zap/internal/bufferpool"
 	. "go.uber.org/zap/zapcore"
 )
 
@@ -44,7 +44,7 @@ func BenchmarkZapConsole(b *testing.B) {
 				Message: "fake",
 				Level:   DebugLevel,
 			}, nil)
-			buffers.Put(buf)
+			bufferpool.Put(buf)
 		}
 	})
 }

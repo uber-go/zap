@@ -22,22 +22,23 @@
 // a single error.
 package multierror
 
-import "go.uber.org/zap/internal/buffers"
+import "go.uber.org/zap/internal/bufferpool"
 
 // implement the standard lib's error interface on a private type so that we
 // can't forget to call Error.AsError().
 type errSlice []error
 
 func (es errSlice) Error() string {
-	b := buffers.Get()
+	b := bufferpool.Get()
 	for i, err := range es {
 		if i > 0 {
-			b = append(b, ';', ' ')
+			b.AppendByte(';')
+			b.AppendByte(' ')
 		}
-		b = append(b, err.Error()...)
+		b.AppendString(err.Error())
 	}
-	ret := string(b)
-	buffers.Put(b)
+	ret := b.String()
+	bufferpool.Put(b)
 	return ret
 }
 
