@@ -31,24 +31,21 @@ const (
 	_countersPerLevel = 4096
 )
 
+type counter struct {
+	resetAt atomic.Int64
+	counter atomic.Uint64
+}
+
+type counters [_numLevels][_countersPerLevel]counter
+
 func newCounters() *counters {
 	return &counters{}
 }
 
-type counters [_numLevels][_countersPerLevel]atomic.Uint64
-
-func (c *counters) Inc(lvl Level, key string) uint64 {
-	return c.get(lvl, key).Inc()
-}
-
-func (c *counters) Reset(lvl Level, key string) {
-	c.get(lvl, key).Store(0)
-}
-
-func (c *counters) get(lvl Level, key string) *atomic.Uint64 {
+func (cs *counters) get(lvl Level, key string) *counter {
 	i := lvl - _minLevel
 	j := fnv32a(key) % _countersPerLevel
-	return &c[i][j]
+	return &cs[i][j]
 }
 
 // fnv32a, adapted from "hash/fnv", but without a []byte(string) alloc
@@ -63,6 +60,25 @@ func fnv32a(s string) uint32 {
 		hash *= prime32
 	}
 	return hash
+}
+
+func (c *counter) IncCheckReset(t time.Time, tick time.Duration) uint64 {
+	tn := t.UnixNano()
+	resetAfter := c.resetAt.Load()
+	if resetAfter > tn {
+		return c.counter.Inc()
+	}
+
+	c.counter.Store(1)
+
+	newResetAfter := tn + tick.Nanoseconds()
+	if !c.resetAt.CAS(resetAfter, newResetAfter) {
+		// We raced with another goroutine trying to reset, and it also reset
+		// the counter to 1, so we need to reincrement the counter.
+		return c.counter.Inc()
+	}
+
+	return 1
 }
 
 // Sample creates a Facility that samples incoming entries, which caps the CPU
@@ -110,13 +126,11 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 		return ce
 	}
 
-	if n := s.counts.Inc(ent.Level, ent.Message); n > s.first {
-		if n == s.first+1 {
-			time.AfterFunc(s.tick, func() { s.counts.Reset(ent.Level, ent.Message) })
-		}
-		if (n-s.first)%s.thereafter != 0 {
-			return ce
-		}
+	counter := s.counts.get(ent.Level, ent.Message)
+	n := counter.IncCheckReset(ent.Time, s.tick)
+	if n > s.first && (n-s.first)%s.thereafter != 0 {
+		return ce
 	}
+
 	return s.Facility.Check(ent, ce)
 }
