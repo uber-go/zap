@@ -163,15 +163,6 @@ func (f Field) AddTo(enc ObjectEncoder) {
 	}
 }
 
-// Fields wraps a slice of Fields to implement ObjectMarshaler.
-type Fields []Field
-
-// MarshalLogObject implements ObjectMarshaler.
-func (fs Fields) MarshalLogObject(enc ObjectEncoder) error {
-	addFields(enc, []Field(fs))
-	return nil
-}
-
 func addFields(enc ObjectEncoder, fields []Field) {
 	for i := range fields {
 		fields[i].AddTo(enc)

@@ -21,14 +21,16 @@
 package zapcore_test
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
-	"go.uber.org/zap/internal/observer"
 	"go.uber.org/zap/testutils"
 	. "go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func makeInt64Field(key string, val int) Field {
@@ -63,57 +65,41 @@ func TestNopCore(t *testing.T) {
 	}
 }
 
-func TestObserverWith(t *testing.T) {
-	var logs observer.ObservedLogs
-	sf1 := observer.New(InfoLevel, logs.Add, true)
+func TestIOCore(t *testing.T) {
+	temp, err := ioutil.TempFile("", "zapcore-test-iocore")
+	require.NoError(t, err, "Failed to create temp file.")
+	defer os.Remove(temp.Name())
 
-	// need to pad out enough initial fields so that the underlying slice cap()
-	// gets ahead of its len() so that the sf3/4 With append's could choose
-	// not to copy (if the implementation doesn't force them)
-	sf1 = sf1.With([]Field{makeInt64Field("a", 1), makeInt64Field("b", 2)})
+	// Drop timestamps for simpler assertions (timestamp encoding is tested
+	// elsewhere).
+	cfg := testEncoderConfig()
+	cfg.TimeKey = ""
 
-	sf2 := sf1.With([]Field{makeInt64Field("c", 3)})
-	sf3 := sf2.With([]Field{makeInt64Field("d", 4)})
-	sf4 := sf2.With([]Field{makeInt64Field("e", 5)})
-	ent := Entry{Level: InfoLevel, Message: "hello"}
+	core := NewCore(
+		NewJSONEncoder(cfg),
+		temp,
+		InfoLevel,
+	).With([]Field{makeInt64Field("k", 1)})
 
-	for i, core := range []Core{sf2, sf3, sf4} {
-		if ce := core.Check(ent, nil); ce != nil {
-			ce.Write(makeInt64Field("i", i))
-		}
+	if ce := core.Check(Entry{Level: DebugLevel, Message: "debug"}, nil); ce != nil {
+		ce.Write(makeInt64Field("k", 2))
+	}
+	if ce := core.Check(Entry{Level: InfoLevel, Message: "info"}, nil); ce != nil {
+		ce.Write(makeInt64Field("k", 3))
+	}
+	if ce := core.Check(Entry{Level: WarnLevel, Message: "warn"}, nil); ce != nil {
+		ce.Write(makeInt64Field("k", 4))
 	}
 
-	assert.Equal(t, []observer.LoggedEntry{
-		{
-			Entry: ent,
-			Context: []Field{
-				makeInt64Field("a", 1),
-				makeInt64Field("b", 2),
-				makeInt64Field("c", 3),
-				makeInt64Field("i", 0),
-			},
-		},
-		{
-			Entry: ent,
-			Context: []Field{
-				makeInt64Field("a", 1),
-				makeInt64Field("b", 2),
-				makeInt64Field("c", 3),
-				makeInt64Field("d", 4),
-				makeInt64Field("i", 1),
-			},
-		},
-		{
-			Entry: ent,
-			Context: []Field{
-				makeInt64Field("a", 1),
-				makeInt64Field("b", 2),
-				makeInt64Field("c", 3),
-				makeInt64Field("e", 5),
-				makeInt64Field("i", 2),
-			},
-		},
-	}, logs.All(), "expected no field sharing between With siblings")
+	logged, err := ioutil.ReadFile(temp.Name())
+	require.NoError(t, err, "Failed to read from temp file.")
+	require.Equal(
+		t,
+		`{"level":"info","msg":"info","k":1,"k":3}`+"\n"+
+			`{"level":"warn","msg":"warn","k":1,"k":4}`+"\n",
+		string(logged),
+		"Unexpected log output.",
+	)
 }
 
 func TestIOCoreSyncsOutput(t *testing.T) {

@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.uber.org/zap/internal/exit"
 	"go.uber.org/zap/internal/observer"
@@ -136,6 +137,26 @@ func TestSugarWith(t *testing.T) {
 			assert.Equal(t, tt.expected, output[len(tt.errLogs)].Context, "Unexpected message context in scenario %s.", tt.desc)
 		})
 	}
+}
+
+func TestSugarFieldsInvalidPairs(t *testing.T) {
+	withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+		logger.With(42, "foo", []string{"bar"}, "baz").Info("")
+		output := logs.AllUntimed()
+
+		// Double-check that the actual message was logged.
+		require.Equal(t, 2, len(output), "Unexpected number of entries logged.")
+		require.Equal(t, observer.LoggedEntry{Context: []zapcore.Field{}}, output[1], "Unexpected non-error log entry.")
+
+		// Assert that the error message's structured fields serialize properly.
+		require.Equal(t, 1, len(output[0].Context), "Expected one field in error entry context.")
+		enc := zapcore.NewMapObjectEncoder()
+		output[0].Context[0].AddTo(enc)
+		assert.Equal(t, []interface{}{
+			map[string]interface{}{"position": int64(0), "key": int64(42), "value": "foo"},
+			map[string]interface{}{"position": int64(2), "key": []interface{}{"bar"}, "value": "baz"},
+		}, enc.Fields["invalid"], "Unexpected output when logging invalid key-value pairs.")
+	})
 }
 
 type stringerF func() string

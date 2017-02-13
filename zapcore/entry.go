@@ -180,10 +180,10 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 	putCheckedEntry(ce)
 
 	switch should {
-	case WriteThenFatal:
-		exit.Exit()
 	case WriteThenPanic:
 		panic(msg)
+	case WriteThenFatal:
+		exit.Exit()
 	}
 }
 

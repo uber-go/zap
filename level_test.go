@@ -87,15 +87,20 @@ func TestDynamicLevelUnmarshalText(t *testing.T) {
 		{"dpanic", DPanicLevel, false},
 		{"panic", PanicLevel, false},
 		{"fatal", FatalLevel, false},
+		{"foobar", InfoLevel, true},
 	}
 
 	for _, tt := range tests {
 		var lvl AtomicLevel
-		if tt.err {
-			assert.Error(t, lvl.UnmarshalText([]byte(tt.text)), "Expected unmarshaling %q to fail.", tt.text)
-		} else {
-			assert.NoError(t, lvl.UnmarshalText([]byte(tt.text)), "Expected unmarshaling %q to succeed.", tt.text)
+		// Test both initial unmarshaling and overwriting existing value.
+		for i := 0; i < 2; i++ {
+			if tt.err {
+				assert.Error(t, lvl.UnmarshalText([]byte(tt.text)), "Expected unmarshaling %q to fail.", tt.text)
+			} else {
+				assert.NoError(t, lvl.UnmarshalText([]byte(tt.text)), "Expected unmarshaling %q to succeed.", tt.text)
+			}
+			assert.Equal(t, tt.expect, lvl.Level(), "Unexpected level after unmarshaling.")
+			lvl.SetLevel(InfoLevel)
 		}
-		assert.Equal(t, tt.expect, lvl.Level(), "Unexpected level after unmarshaling.")
 	}
 }
