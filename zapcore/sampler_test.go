@@ -21,6 +21,7 @@
 package zapcore_test
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -28,6 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.uber.org/atomic"
 	"go.uber.org/zap/internal/observer"
 	"go.uber.org/zap/testutils"
 	. "go.uber.org/zap/zapcore"
@@ -131,6 +133,72 @@ func TestSamplerTicking(t *testing.T) {
 		1, 2, 3, 4, 5, 15, // second tick
 		1, 2, 3, 4, 5, 15, // third tick
 	)
+}
+
+type countingFacility struct {
+	logs atomic.Uint32
+}
+
+func (c *countingFacility) Enabled(Level) bool {
+	return true
+}
+
+func (c *countingFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
+	return ce.AddFacility(ent, c)
+}
+
+func (c *countingFacility) Write(Entry, []Field) error {
+	c.logs.Inc()
+	return nil
+}
+
+func (c *countingFacility) With([]Field) Facility {
+	return c
+}
+
+func TestSamplerConcurrent(t *testing.T) {
+	const (
+		logsPerTick   = 10
+		numMessages   = 5
+		numTicks      = 100
+		numGoroutines = 10
+	)
+
+	var tick = testutils.Timeout(time.Millisecond)
+	cf := &countingFacility{}
+	sampler := Sample(cf, tick, logsPerTick, 100000)
+
+	var done atomic.Bool
+	var wg sync.WaitGroup
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+
+			for {
+				if done.Load() {
+					return
+				}
+				msg := fmt.Sprintf("msg%v", i%numMessages)
+				ent := Entry{Level: DebugLevel, Message: msg, Time: time.Now()}
+				if ce := sampler.Check(ent, nil); ce != nil {
+					ce.Write()
+				}
+
+				// Give a chance for other goroutines to run.
+				time.Sleep(time.Microsecond)
+			}
+		}(i)
+	}
+
+	time.AfterFunc(numTicks*tick, func() {
+		done.Store(true)
+	})
+	wg.Wait()
+
+	// We expect numMessages*logsPerTick in each tick, and we have 100 ticks.
+	assert.InDelta(t, numMessages*logsPerTick*numTicks, cf.logs.Load(), 500,
+		"Unexpected number of logs")
 }
 
 func TestSamplerRaces(t *testing.T) {
