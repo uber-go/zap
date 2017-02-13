@@ -20,12 +20,7 @@
 
 package zapcore
 
-import (
-	"io"
-
-	"go.uber.org/zap/buffer"
-	"go.uber.org/zap/internal/bufferpool"
-)
+import "go.uber.org/zap/internal/bufferpool"
 
 // Facility is a destination for log entries. It can have pervasive fields
 // added with With().
@@ -80,7 +75,7 @@ func (iof *ioFacility) Write(ent Entry, fields []Field) error {
 	if err != nil {
 		return err
 	}
-	err = checkPartialWrite(iof.out, buf)
+	_, err = iof.out.Write(buf.Bytes())
 	bufferpool.Put(buf)
 	if err != nil {
 		return err
@@ -98,17 +93,4 @@ func (iof *ioFacility) clone() *ioFacility {
 		enc:          iof.enc.Clone(),
 		out:          iof.out,
 	}
-}
-
-// checkPartialWrite writes to an io.Writer, and upgrades partial writes to an
-// error if no other write error occured.
-func checkPartialWrite(w io.Writer, buf *buffer.Buffer) error {
-	n, err := w.Write(buf.Bytes())
-	if err != nil {
-		return err
-	}
-	if n != buf.Len() {
-		return io.ErrShortWrite
-	}
-	return nil
 }
