@@ -245,7 +245,7 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []zapcore.Field {
 		}
 
 		// Consume this value and the next, treating them as a key-value pair. If the
-		// key isn't a string, add it to the slice of invalid pairs.
+		// key isn't a string, add this pair to the slice of invalid pairs.
 		key, val := args[i], args[i+1]
 		if keyStr, ok := key.(string); !ok {
 			// Subsequent errors are likely, so allocate once up front.

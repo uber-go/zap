@@ -117,7 +117,7 @@ func (o *observer) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.C
 }
 
 func (o *observer) With(fields []zapcore.Field) zapcore.Core {
-	return &observer{sink: o.sink}
+	return &observer{LevelEnabler: o.LevelEnabler, sink: o.sink}
 }
 
 func (o *observer) Write(ent zapcore.Entry, fields []zapcore.Field) error {

@@ -265,7 +265,9 @@ func TestLoggerNames(t *testing.T) {
 		expected string
 	}{
 		{nil, ""},
+		{[]string{""}, ""},
 		{[]string{"foo"}, "foo"},
+		{[]string{"foo", ""}, "foo"},
 		{[]string{"foo", "bar"}, "foo.bar"},
 		{[]string{"foo.bar", "baz"}, "foo.bar.baz"},
 		// Garbage in, garbage out.
@@ -323,6 +325,8 @@ func TestLoggerAddCaller(t *testing.T) {
 	}
 	for _, tt := range tests {
 		withLogger(t, DebugLevel, tt.options, func(logger *Logger, logs *observer.ObservedLogs) {
+			// Make sure that sugaring and desugaring resets caller skip properly.
+			logger = logger.Sugar().Desugar()
 			logger.Info("")
 			output := logs.AllUntimed()
 			assert.Equal(t, 1, len(output), "Unexpected number of logs written out.")
