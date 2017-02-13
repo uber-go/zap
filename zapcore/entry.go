@@ -22,11 +22,10 @@ package zapcore
 
 import (
 	"fmt"
-	"strconv"
 	"sync"
 	"time"
 
-	"go.uber.org/zap/internal/buffers"
+	"go.uber.org/zap/internal/bufferpool"
 	"go.uber.org/zap/internal/exit"
 	"go.uber.org/zap/internal/multierror"
 )
@@ -81,12 +80,12 @@ func (ec EntryCaller) String() string {
 	if !ec.Defined {
 		return ""
 	}
-	buf := buffers.Get()
-	buf = append(buf, ec.File...)
-	buf = append(buf, ':')
-	buf = strconv.AppendInt(buf, int64(ec.Line), 10)
-	caller := string(buf)
-	buffers.Put(buf)
+	buf := bufferpool.Get()
+	buf.AppendString(ec.File)
+	buf.AppendByte(':')
+	buf.AppendInt(int64(ec.Line))
+	caller := buf.String()
+	bufferpool.Put(buf)
 	return caller
 }
 

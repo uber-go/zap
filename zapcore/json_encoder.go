@@ -24,11 +24,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"math"
-	"strconv"
 	"time"
 	"unicode/utf8"
 
-	"go.uber.org/zap/internal/buffers"
+	"go.uber.org/zap/buffer"
+	"go.uber.org/zap/internal/bufferpool"
 )
 
 const (
@@ -40,7 +40,7 @@ const (
 
 type jsonEncoder struct {
 	*EncoderConfig
-	bytes          []byte
+	buf            *buffer.Buffer
 	spaced         bool // include spaces after colons and commas
 	openNamespaces int
 }
@@ -62,7 +62,7 @@ func NewJSONEncoder(cfg EncoderConfig) Encoder {
 func newJSONEncoder(cfg EncoderConfig, spaced bool) *jsonEncoder {
 	return &jsonEncoder{
 		EncoderConfig: &cfg,
-		bytes:         buffers.Get(),
+		buf:           bufferpool.Get(),
 		spaced:        spaced,
 	}
 }
@@ -112,13 +112,13 @@ func (enc *jsonEncoder) AddReflected(key string, obj interface{}) error {
 		return err
 	}
 	enc.addKey(key)
-	enc.bytes = append(enc.bytes, marshaled...)
-	return nil
+	_, err = enc.buf.Write(marshaled)
+	return err
 }
 
 func (enc *jsonEncoder) OpenNamespace(key string) {
 	enc.addKey(key)
-	enc.bytes = append(enc.bytes, '{')
+	enc.buf.AppendByte('{')
 	enc.openNamespaces++
 }
 
@@ -139,42 +139,43 @@ func (enc *jsonEncoder) AddUint64(key string, val uint64) {
 
 func (enc *jsonEncoder) AppendArray(arr ArrayMarshaler) error {
 	enc.addElementSeparator()
-	enc.bytes = append(enc.bytes, '[')
+	enc.buf.AppendByte('[')
 	err := arr.MarshalLogArray(enc)
-	enc.bytes = append(enc.bytes, ']')
+	enc.buf.AppendByte(']')
 	return err
 }
 
 func (enc *jsonEncoder) AppendObject(obj ObjectMarshaler) error {
 	enc.addElementSeparator()
-	enc.bytes = append(enc.bytes, '{')
+	enc.buf.AppendByte('{')
 	err := obj.MarshalLogObject(enc)
-	enc.bytes = append(enc.bytes, '}')
+	enc.buf.AppendByte('}')
 	return err
 }
 
 func (enc *jsonEncoder) AppendBool(val bool) {
 	enc.addElementSeparator()
-	enc.bytes = strconv.AppendBool(enc.bytes, val)
+	enc.buf.AppendBool(val)
 }
 
 func (enc *jsonEncoder) AppendComplex128(val complex128) {
 	enc.addElementSeparator()
 	// Cast to a platform-independent, fixed-size type.
 	r, i := float64(real(val)), float64(imag(val))
-	enc.bytes = append(enc.bytes, '"')
+	enc.buf.AppendByte('"')
 	// Because we're always in a quoted string, we can use strconv without
 	// special-casing NaN and +/-Inf.
-	enc.bytes = strconv.AppendFloat(enc.bytes, r, 'f', -1, 64)
-	enc.bytes = append(enc.bytes, '+')
-	enc.bytes = strconv.AppendFloat(enc.bytes, i, 'f', -1, 64)
-	enc.bytes = append(enc.bytes, 'i', '"')
+	enc.buf.AppendFloat(r, 64)
+	enc.buf.AppendByte('+')
+	enc.buf.AppendFloat(i, 64)
+	enc.buf.AppendByte('i')
+	enc.buf.AppendByte('"')
 }
 
 func (enc *jsonEncoder) AppendDuration(val time.Duration) {
-	cur := len(enc.bytes)
+	cur := enc.buf.Len()
 	enc.EncodeDuration(val, enc)
-	if cur == len(enc.bytes) {
+	if cur == enc.buf.Len() {
 		// User-supplied EncodeDuration is a no-op. Fall back to nanoseconds to keep
 		// JSON valid.
 		enc.AppendInt64(int64(val))
@@ -183,7 +184,7 @@ func (enc *jsonEncoder) AppendDuration(val time.Duration) {
 
 func (enc *jsonEncoder) AppendInt64(val int64) {
 	enc.addElementSeparator()
-	enc.bytes = strconv.AppendInt(enc.bytes, val, 10)
+	enc.buf.AppendInt(val)
 }
 
 func (enc *jsonEncoder) AppendReflected(val interface{}) error {
@@ -192,21 +193,21 @@ func (enc *jsonEncoder) AppendReflected(val interface{}) error {
 		return err
 	}
 	enc.addElementSeparator()
-	enc.bytes = append(enc.bytes, marshaled...)
-	return nil
+	_, err = enc.buf.Write(marshaled)
+	return err
 }
 
 func (enc *jsonEncoder) AppendString(val string) {
 	enc.addElementSeparator()
-	enc.bytes = append(enc.bytes, '"')
+	enc.buf.AppendByte('"')
 	enc.safeAddString(val)
-	enc.bytes = append(enc.bytes, '"')
+	enc.buf.AppendByte('"')
 }
 
 func (enc *jsonEncoder) AppendTime(val time.Time) {
-	cur := len(enc.bytes)
+	cur := enc.buf.Len()
 	enc.EncodeTime(val, enc)
-	if cur == len(enc.bytes) {
+	if cur == enc.buf.Len() {
 		// User-supplied EncodeTime is a no-op. Fall back to nanos since epoch to keep
 		// output JSON valid.
 		enc.AppendInt64(val.UnixNano())
@@ -215,7 +216,7 @@ func (enc *jsonEncoder) AppendTime(val time.Time) {
 
 func (enc *jsonEncoder) AppendUint64(val uint64) {
 	enc.addElementSeparator()
-	enc.bytes = strconv.AppendUint(enc.bytes, val, 10)
+	enc.buf.AppendUint(val)
 }
 
 func (enc *jsonEncoder) AddComplex64(k string, v complex64) { enc.AddComplex128(k, complex128(v)) }
@@ -244,19 +245,21 @@ func (enc *jsonEncoder) AppendUintptr(v uintptr)            { enc.AppendUint64(u
 
 func (enc *jsonEncoder) Clone() Encoder {
 	clone := *enc
-	clone.bytes = append(buffers.Get(), enc.bytes...)
+	clone.buf = bufferpool.Get()
+	clone.buf.Write(enc.buf.Bytes())
 	return &clone
 }
 
-func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
+func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, error) {
 	final := *enc
-	final.bytes = append(buffers.Get(), '{')
+	final.buf = bufferpool.Get()
+	final.buf.AppendByte('{')
 
 	if final.LevelKey != "" {
 		final.addKey(final.LevelKey)
-		cur := len(final.bytes)
+		cur := final.buf.Len()
 		final.EncodeLevel(ent.Level, &final)
-		if cur == len(final.bytes) {
+		if cur == final.buf.Len() {
 			// User-supplied EncodeLevel was a no-op. Fall back to strings to keep
 			// output JSON valid.
 			final.AppendString(ent.Level.String())
@@ -278,51 +281,53 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 		final.addKey(enc.MessageKey)
 		final.AppendString(ent.Message)
 	}
-	if len(enc.bytes) > 0 {
+	if enc.buf.Len() > 0 {
 		final.addElementSeparator()
-		final.bytes = append(final.bytes, enc.bytes...)
+		final.buf.Write(enc.buf.Bytes())
 	}
 	addFields(&final, fields)
 	final.closeOpenNamespaces()
 	if ent.Stack != "" && final.StacktraceKey != "" {
 		final.AddString(final.StacktraceKey, ent.Stack)
 	}
-	final.bytes = append(final.bytes, '}', '\n')
-	return final.bytes, nil
+	final.buf.AppendByte('}')
+	final.buf.AppendByte('\n')
+	return final.buf, nil
 }
 
 func (enc *jsonEncoder) truncate() {
-	enc.bytes = enc.bytes[:0]
+	enc.buf.Reset()
 }
 
 func (enc *jsonEncoder) closeOpenNamespaces() {
 	for i := 0; i < enc.openNamespaces; i++ {
-		enc.bytes = append(enc.bytes, '}')
+		enc.buf.AppendByte('}')
 	}
 }
 
 func (enc *jsonEncoder) addKey(key string) {
 	enc.addElementSeparator()
-	enc.bytes = append(enc.bytes, '"')
+	enc.buf.AppendByte('"')
 	enc.safeAddString(key)
-	enc.bytes = append(enc.bytes, '"', ':')
+	enc.buf.AppendByte('"')
+	enc.buf.AppendByte(':')
 	if enc.spaced {
-		enc.bytes = append(enc.bytes, ' ')
+		enc.buf.AppendByte(' ')
 	}
 }
 
 func (enc *jsonEncoder) addElementSeparator() {
-	last := len(enc.bytes) - 1
+	last := enc.buf.Len() - 1
 	if last < 0 {
 		return
 	}
-	switch enc.bytes[last] {
+	switch enc.buf.Bytes()[last] {
 	case '{', '[', ':', ',', ' ':
 		return
 	default:
-		enc.bytes = append(enc.bytes, ',')
+		enc.buf.AppendByte(',')
 		if enc.spaced {
-			enc.bytes = append(enc.bytes, ' ')
+			enc.buf.AppendByte(' ')
 		}
 	}
 }
@@ -331,13 +336,13 @@ func (enc *jsonEncoder) appendFloat(val float64, bitSize int) {
 	enc.addElementSeparator()
 	switch {
 	case math.IsNaN(val):
-		enc.bytes = append(enc.bytes, `"NaN"`...)
+		enc.buf.AppendString(`"NaN"`)
 	case math.IsInf(val, 1):
-		enc.bytes = append(enc.bytes, `"+Inf"`...)
+		enc.buf.AppendString(`"+Inf"`)
 	case math.IsInf(val, -1):
-		enc.bytes = append(enc.bytes, `"-Inf"`...)
+		enc.buf.AppendString(`"-Inf"`)
 	default:
-		enc.bytes = strconv.AppendFloat(enc.bytes, val, 'f', -1, bitSize)
+		enc.buf.AppendFloat(val, bitSize)
 	}
 }
 
@@ -349,32 +354,37 @@ func (enc *jsonEncoder) safeAddString(s string) {
 		if b := s[i]; b < utf8.RuneSelf {
 			i++
 			if 0x20 <= b && b != '\\' && b != '"' {
-				enc.bytes = append(enc.bytes, b)
+				enc.buf.AppendByte(b)
 				continue
 			}
 			switch b {
 			case '\\', '"':
-				enc.bytes = append(enc.bytes, '\\', b)
+				enc.buf.AppendByte('\\')
+				enc.buf.AppendByte(b)
 			case '\n':
-				enc.bytes = append(enc.bytes, '\\', 'n')
+				enc.buf.AppendByte('\\')
+				enc.buf.AppendByte('n')
 			case '\r':
-				enc.bytes = append(enc.bytes, '\\', 'r')
+				enc.buf.AppendByte('\\')
+				enc.buf.AppendByte('r')
 			case '\t':
-				enc.bytes = append(enc.bytes, '\\', 't')
+				enc.buf.AppendByte('\\')
+				enc.buf.AppendByte('t')
 			default:
 				// Encode bytes < 0x20, except for the escape sequences above.
-				enc.bytes = append(enc.bytes, `\u00`...)
-				enc.bytes = append(enc.bytes, _hex[b>>4], _hex[b&0xF])
+				enc.buf.AppendString(`\u00`)
+				enc.buf.AppendByte(_hex[b>>4])
+				enc.buf.AppendByte(_hex[b&0xF])
 			}
 			continue
 		}
 		c, size := utf8.DecodeRuneInString(s[i:])
 		if c == utf8.RuneError && size == 1 {
-			enc.bytes = append(enc.bytes, `\ufffd`...)
+			enc.buf.AppendString(`\ufffd`)
 			i++
 			continue
 		}
-		enc.bytes = append(enc.bytes, s[i:i+size]...)
+		enc.buf.AppendString(s[i : i+size])
 		i += size
 	}
 }

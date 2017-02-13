@@ -153,14 +153,3 @@ func TestWriterFacilityWriteFailure(t *testing.T) {
 	// Should log the error.
 	assert.Error(t, err, "Expected writing Entry to fail.")
 }
-
-func TestWriterFacilityShortWrite(t *testing.T) {
-	fac := WriterFacility(
-		NewJSONEncoder(testEncoderConfig()),
-		Lock(&testutils.ShortWriter{}),
-		DebugLevel,
-	)
-	err := fac.Write(Entry{}, nil)
-	// Should log the error.
-	assert.Error(t, err, "Expected writing Entry to fail.")
-}
