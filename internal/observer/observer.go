@@ -94,11 +94,10 @@ type observer struct {
 	sink func(LoggedEntry) error
 }
 
-// New creates a new facility that buffers logs in memory (without any
-// encoding). It's particularly useful in tests, though it can serve a variety
-// of other purposes as well. This constructor returns the facility itself and
-// a function to retrieve the observed logs.
-func New(enab zapcore.LevelEnabler, sink func(LoggedEntry) error, withContext bool) zapcore.Facility {
+// New creates a new Core that buffers logs in memory (without any encoding).
+// It's particularly useful in tests, though it can serve a variety of other
+// purposes as well.
+func New(enab zapcore.LevelEnabler, sink func(LoggedEntry) error, withContext bool) zapcore.Core {
 	if withContext {
 		return &contextObserver{
 			LevelEnabler: enab,
@@ -113,12 +112,12 @@ func New(enab zapcore.LevelEnabler, sink func(LoggedEntry) error, withContext bo
 
 func (o *observer) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
 	if o.Enabled(ent.Level) {
-		return ce.AddFacility(ent, o)
+		return ce.AddCore(ent, o)
 	}
 	return ce
 }
 
-func (o *observer) With(fields []zapcore.Field) zapcore.Facility {
+func (o *observer) With(fields []zapcore.Field) zapcore.Core {
 	return &observer{sink: o.sink}
 }
 
@@ -134,12 +133,12 @@ type contextObserver struct {
 
 func (co *contextObserver) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
 	if co.Enabled(ent.Level) {
-		return ce.AddFacility(ent, co)
+		return ce.AddCore(ent, co)
 	}
 	return ce
 }
 
-func (co *contextObserver) With(fields []zapcore.Field) zapcore.Facility {
+func (co *contextObserver) With(fields []zapcore.Field) zapcore.Core {
 	return &contextObserver{
 		LevelEnabler: co.LevelEnabler,
 		sink:         co.sink,

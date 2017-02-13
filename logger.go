@@ -35,7 +35,7 @@ import (
 //
 // If you'd prefer a slower but less verbose logger, see the SugaredLogger.
 type Logger struct {
-	fac zapcore.Facility
+	core zapcore.Core
 
 	development bool
 	name        string
@@ -47,14 +47,18 @@ type Logger struct {
 	callerSkip int
 }
 
-// New constructs a new Logger from the provided Facility and options. Passing
-// a nil Facility results in a no-op Logger.
-func New(fac zapcore.Facility, options ...Option) *Logger {
-	if fac == nil {
-		fac = zapcore.NopFacility()
+// New constructs a new Logger from the provided zapcore.Core and Options. Passing
+// a nil zapcore.Core returns a no-op Logger.
+//
+// This is the most flexible way to construct a Logger, but also the most
+// verbose. For typical use cases, NewProduction and NewDevelopment are more
+// convenient.
+func New(core zapcore.Core, options ...Option) *Logger {
+	if core == nil {
+		core = zapcore.NewNopCore()
 	}
 	log := &Logger{
-		fac:         fac,
+		core:        core,
 		errorOutput: zapcore.Lock(os.Stderr),
 		addStack:    zapcore.FatalLevel + 1,
 	}
@@ -62,7 +66,7 @@ func New(fac zapcore.Facility, options ...Option) *Logger {
 }
 
 // NewProduction builds a sensible production Logger that writes InfoLevel and
-// above logs to standard out as JSON.
+// above logs to standard error as JSON.
 //
 // It's a shortcut for NewProductionConfig().Build(...Option).
 func NewProduction(options ...Option) (*Logger, error) {
@@ -70,7 +74,7 @@ func NewProduction(options ...Option) (*Logger, error) {
 }
 
 // NewDevelopment builds a development Logger that writes DebugLevel and above
-// logs to standard out in a human-friendly format.
+// logs to standard error in a human-friendly format.
 //
 // It's a shortcut for NewDevelopmentConfig().Build(...Option).
 func NewDevelopment(options ...Option) (*Logger, error) {
@@ -116,7 +120,7 @@ func (log *Logger) With(fields ...zapcore.Field) *Logger {
 		return log
 	}
 	l := log.clone()
-	l.fac = l.fac.With(fields)
+	l.core = l.core.With(fields)
 	return l
 }
 
@@ -191,9 +195,9 @@ func (log *Logger) Fatal(msg string, fields ...zapcore.Field) {
 	}
 }
 
-// Facility returns the destination that logs entries are written to.
-func (log *Logger) Facility() zapcore.Facility {
-	return log.fac
+// Core returns the underlying zapcore.Core.
+func (log *Logger) Core() zapcore.Core {
+	return log.core
 }
 
 func (log *Logger) clone() *Logger {
@@ -206,20 +210,18 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	// (e.g., Check, Info, Fatal).
 	const callerSkipOffset = 2
 
-	// Create basic checked entry thru the facility; this will be non-nil if
-	// the log message will actually be written somewhere.
+	// Create basic checked entry thru the core; this will be non-nil if the
+	// log message will actually be written somewhere.
 	ent := zapcore.Entry{
 		LoggerName: log.name,
 		Time:       time.Now().UTC(),
 		Level:      lvl,
 		Message:    msg,
 	}
-	ce := log.fac.Check(ent, nil)
-
+	ce := log.core.Check(ent, nil)
 	willWrite := ce != nil
 
-	// If terminal behavior is required, setup so that it happens after the
-	// checked entry is written and create a checked entry if it's still nil.
+	// Set up any required terminal behavior.
 	switch ent.Level {
 	case zapcore.PanicLevel:
 		ce = ce.Should(ent, zapcore.WriteThenPanic)
@@ -232,21 +234,21 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	}
 
 	// Only do further annotation if we're going to write this message; checked
-	// entries that exist only for terminal behavior do not benefit from
+	// entries that exist only for terminal behavior don't benefit from
 	// annotation.
 	if !willWrite {
 		return ce
 	}
 
+	// Thread the error output through to the CheckedEntry.
 	ce.ErrorOutput = log.errorOutput
 	if log.addCaller {
 		ce.Entry.Caller = zapcore.MakeEntryCaller(runtime.Caller(log.callerSkip + callerSkipOffset))
 		if !ce.Entry.Caller.Defined {
-			fmt.Fprintf(log.errorOutput, "%v addCaller error: failed to get caller\n", time.Now().UTC())
+			fmt.Fprintf(log.errorOutput, "%v Logger.check error: failed to get caller\n", time.Now().UTC())
 			log.errorOutput.Sync()
 		}
 	}
-
 	if log.addStack.Enabled(ce.Entry.Level) {
 		ce.Entry.Stack = Stack().String
 		// TODO: maybe just inline Stack around takeStacktrace

@@ -203,7 +203,7 @@ func (s *SugaredLogger) Fatalw(msg string, keysAndValues ...interface{}) {
 func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interface{}, context []interface{}) {
 	// If logging at this level is completely disabled, skip the overhead of
 	// string formatting.
-	if lvl < DPanicLevel && !s.core.Facility().Enabled(lvl) {
+	if lvl < DPanicLevel && !s.core.Core().Enabled(lvl) {
 		return
 	}
 

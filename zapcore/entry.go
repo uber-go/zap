@@ -32,9 +32,9 @@ import (
 
 var (
 	_cePool = sync.Pool{New: func() interface{} {
-		// Pre-allocate some space for facilities.
+		// Pre-allocate some space for cores.
 		return &CheckedEntry{
-			facs: make([]Facility, 4),
+			cores: make([]Core, 4),
 		}
 	}}
 )
@@ -53,7 +53,7 @@ func putCheckedEntry(ce *CheckedEntry) {
 }
 
 // MakeEntryCaller makes an EntryCaller from the return signature of
-// runtime.Caller().
+// runtime.Caller.
 func MakeEntryCaller(pc uintptr, file string, line int, ok bool) EntryCaller {
 	if !ok {
 		return EntryCaller{}
@@ -66,7 +66,7 @@ func MakeEntryCaller(pc uintptr, file string, line int, ok bool) EntryCaller {
 	}
 }
 
-// EntryCaller represents a notable caller of a log entry.
+// EntryCaller represents the caller of a logging function.
 type EntryCaller struct {
 	Defined bool
 	PC      uintptr
@@ -90,10 +90,10 @@ func (ec EntryCaller) String() string {
 }
 
 // An Entry represents a complete log message. The entry's structured context
-// is already serialized, but the log level, time, and message are available
-// for inspection and modification.
+// is already serialized, but the log level, time, message, and call site
+// information are available for inspection and modification.
 //
-// Entries are pooled, so any functions that accept them must be careful not to
+// Entries are pooled, so any functions that accept them MUST be careful not to
 // retain references to them.
 type Entry struct {
 	Level      Level
@@ -104,33 +104,32 @@ type Entry struct {
 	Stack      string
 }
 
-// CheckWriteAction indicates what action to take after (*CheckedEntry).Write
-// is done. Actions are ordered in increasing severity.
+// CheckWriteAction indicates what action to take after Write is done. Actions
+// are ordered in increasing severity.
 type CheckWriteAction uint8
 
 const (
-	// WriteThenNoop is the default behavior to do nothing speccial after write.
+	// WriteThenNoop indicates that nothing special needs to be done. It's the
+	// default behavior.
 	WriteThenNoop = CheckWriteAction(iota)
-	// WriteThenFatal causes a fatal os.Exit() after Write.
-	WriteThenFatal
-	// WriteThenPanic causes a panic() after Write.
+	// WriteThenPanic causes a panic after Write.
 	WriteThenPanic
+	// WriteThenFatal causes a fatal os.Exit after Write.
+	WriteThenFatal
 )
 
-// CheckedEntry is an Entry together with an opaque Facility that has already
-// agreed to log it (Facility.Enabled(Entry) == true). It is returned by
-// Logger.Check to enable performance sensitive log sites to not allocate
-// fields when disabled.
+// CheckedEntry is an Entry together with a collection of Cores that have
+// already agreed to log it.
 //
-// CheckedEntry references should be created by calling AddFacility() or
-// Should() on a nil *CheckedEntry. References are returned to a pool after
-// Write, and MUST NOT be retained after calling their Write() method.
+// CheckedEntry references should be created by calling AddCore or Should on a
+// nil *CheckedEntry. References are returned to a pool after Write, and MUST
+// NOT be retained after calling their Write method.
 type CheckedEntry struct {
 	Entry
 	ErrorOutput WriteSyncer
 	dirty       bool // best-effort detection of pool misuse
 	should      CheckWriteAction
-	facs        []Facility
+	cores       []Core
 }
 
 func (ce *CheckedEntry) reset() {
@@ -138,12 +137,16 @@ func (ce *CheckedEntry) reset() {
 	ce.ErrorOutput = nil
 	ce.dirty = false
 	ce.should = WriteThenNoop
-	ce.facs = ce.facs[:0]
+	for i := range ce.cores {
+		// don't keep references to cores
+		ce.cores[i] = nil
+	}
+	ce.cores = ce.cores[:0]
 }
 
-// Write writes the entry to any Facility references stored, returning any
-// errors, and returns the CheckedEntry reference to a pool for immediate
-// re-use. Write finally does any panic or fatal exiting that should happen.
+// Write writes the entry to the stored Cores, returns any errors, and returns
+// the CheckedEntry reference to a pool for immediate re-use. Finally, it
+// executes any required CheckWriteAction.
 func (ce *CheckedEntry) Write(fields ...Field) {
 	if ce == nil {
 		return
@@ -151,11 +154,11 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 
 	if ce.dirty {
 		if ce.ErrorOutput != nil {
-			// this races with (*CheckedEntry).AddFacility; recover a log entry for
-			// debugging, which may be an amalgamation of both the prior one
-			// returned to pool, and any new one being set
-			ent := ce.Entry
-			fmt.Fprintf(ce.ErrorOutput, "%v race-prone write dropped circa log entry %+v\n", time.Now().UTC(), ent)
+			// Make a best effort to detect unsafe re-use of this CheckedEntry.
+			// If the entry is dirty, log an internal error; because the
+			// CheckedEntry is being used after it was returned to the pool,
+			// the message may be an amalgamation from multiple call sites.
+			fmt.Fprintf(ce.ErrorOutput, "%v Unsafe CheckedEntry re-use near Entry %+v.\n", time.Now().UTC(), ce.Entry)
 			ce.ErrorOutput.Sync()
 		}
 		return
@@ -163,8 +166,8 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 	ce.dirty = true
 
 	var errs multierror.Error
-	for i := range ce.facs {
-		errs = errs.Append(ce.facs[i].Write(ce.Entry, fields))
+	for i := range ce.cores {
+		errs = errs.Append(ce.cores[i].Write(ce.Entry, fields))
 	}
 	if ce.ErrorOutput != nil {
 		if err := errs.AsError(); err != nil {
@@ -184,31 +187,26 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 	}
 }
 
-// AddFacility adds a facility that has agreed to log this entry. It's intended
-// to be used by Facility.Check implementations. If ce is nil then a new
-// CheckedEntry is created. Returns a non-nil CheckedEntry, maybe just created.
-func (ce *CheckedEntry) AddFacility(ent Entry, fac Facility) *CheckedEntry {
-	if ce != nil {
-		ce.facs = append(ce.facs, fac)
-		return ce
+// AddCore adds a Core that has agreed to log this CheckedEntry. It's intended to be
+// used by Core.Check implementations, and is safe to call on nil CheckedEntry
+// references.
+func (ce *CheckedEntry) AddCore(ent Entry, core Core) *CheckedEntry {
+	if ce == nil {
+		ce = getCheckedEntry()
+		ce.Entry = ent
 	}
-	ce = getCheckedEntry()
-	ce.Entry = ent
-	ce.facs = append(ce.facs, fac)
+	ce.cores = append(ce.cores, core)
 	return ce
 }
 
-// Should sets state so that a panic or fatal exit will happen after Write is
-// called. Similarly to AddFacility, if ce is nil then a new CheckedEntry is
-// built to record the intent to panic or fatal (this is why the caller must
-// provide an Entry value, since ce may be nil).
+// Should sets this CheckedEntry's CheckWriteAction, which controls whether a
+// Core will panic or fatal after writing this log entry. Like AddCore, it's
+// safe to call on nil CheckedEntry references.
 func (ce *CheckedEntry) Should(ent Entry, should CheckWriteAction) *CheckedEntry {
-	if ce != nil {
-		ce.should = should
-		return ce
+	if ce == nil {
+		ce = getCheckedEntry()
+		ce.Entry = ent
 	}
-	ce = getCheckedEntry()
-	ce.Entry = ent
 	ce.should = should
 	return ce
 }
