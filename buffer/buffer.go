@@ -49,7 +49,7 @@ func (b *Buffer) AppendString(s string) {
 
 // AppendInt appends an integer to the underlying buffer (assuming base 10).
 func (b *Buffer) AppendInt(i int64) {
-	b.bs = strconv.AppendInt(b.bs, int64(i), 10)
+	b.bs = strconv.AppendInt(b.bs, i, 10)
 }
 
 // AppendUint appends an unsigned integer to the underlying buffer (assuming
