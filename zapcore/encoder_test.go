@@ -363,7 +363,7 @@ func TestEncoderConfiguration(t *testing.T) {
 			assert.Equal(
 				t,
 				tt.expectedJSON+"\n",
-				string(jsonOut),
+				jsonOut.String(),
 				"Unexpected JSON output: expected to %v.", tt.desc,
 			)
 		}
@@ -372,7 +372,7 @@ func TestEncoderConfiguration(t *testing.T) {
 			assert.Equal(
 				t,
 				tt.expectedConsole+"\n",
-				string(consoleOut),
+				consoleOut.String(),
 				"Unexpected console output: expected to %v.", tt.desc,
 			)
 		}

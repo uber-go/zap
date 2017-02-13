@@ -21,12 +21,11 @@
 package zapcore
 
 import (
-	"bytes"
 	"fmt"
-	"strconv"
 	"sync"
 
-	"go.uber.org/zap/internal/buffers"
+	"go.uber.org/zap/buffer"
+	"go.uber.org/zap/internal/bufferpool"
 )
 
 var _sliceEncoderPool = sync.Pool{
@@ -64,8 +63,8 @@ func (c consoleEncoder) Clone() Encoder {
 	return consoleEncoder{c.jsonEncoder.Clone().(*jsonEncoder)}
 }
 
-func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
-	line := bytes.NewBuffer(buffers.Get())
+func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, error) {
+	line := bufferpool.Get()
 
 	// We don't want the date and level to be quoted and escaped (if they're
 	// encoded as strings), which means that we can't use the JSON encoder. The
@@ -82,7 +81,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 	}
 	for i := range arr.elems {
 		if i > 0 {
-			line.WriteByte('\t')
+			line.AppendByte('\t')
 		}
 		fmt.Fprint(line, arr.elems[i])
 	}
@@ -94,7 +93,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 	// Add the message itself.
 	if c.MessageKey != "" {
 		c.addTabIfNecessary(line)
-		line.WriteString(ent.Message)
+		line.AppendString(ent.Message)
 	}
 
 	// Add any structured context.
@@ -103,15 +102,15 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) ([]byte, error) {
 	// If there's no stacktrace key, honor that; this allows users to force
 	// single-line output.
 	if ent.Stack != "" && c.StacktraceKey != "" {
-		line.WriteByte('\n')
-		line.WriteString(ent.Stack)
+		line.AppendByte('\n')
+		line.AppendString(ent.Stack)
 	}
 
-	line.WriteByte('\n')
-	return line.Bytes(), nil
+	line.AppendByte('\n')
+	return line, nil
 }
 
-func (c consoleEncoder) writeCallSite(line *bytes.Buffer, name string, caller EntryCaller) {
+func (c consoleEncoder) writeCallSite(line *buffer.Buffer, name string, caller EntryCaller) {
 	shouldWriteName := name != "" && c.NameKey != ""
 	shouldWriteCaller := caller.Defined && c.CallerKey != ""
 	if !shouldWriteName && !shouldWriteCaller {
@@ -119,36 +118,36 @@ func (c consoleEncoder) writeCallSite(line *bytes.Buffer, name string, caller En
 	}
 	c.addTabIfNecessary(line)
 	if shouldWriteName {
-		line.WriteString(name)
+		line.AppendString(name)
 		if shouldWriteCaller {
-			line.WriteByte('@')
+			line.AppendByte('@')
 		}
 	}
 	if shouldWriteCaller {
-		line.WriteString(caller.File)
-		line.WriteByte(':')
-		line.WriteString(strconv.FormatInt(int64(caller.Line), 10))
+		line.AppendString(caller.File)
+		line.AppendByte(':')
+		line.AppendInt(int64(caller.Line))
 	}
 }
 
-func (c consoleEncoder) writeContext(line *bytes.Buffer, extra []Field) {
+func (c consoleEncoder) writeContext(line *buffer.Buffer, extra []Field) {
 	context := c.jsonEncoder.Clone().(*jsonEncoder)
-	defer buffers.Put(context.bytes)
+	defer bufferpool.Put(context.buf)
 
 	addFields(context, extra)
 	context.closeOpenNamespaces()
-	if len(context.bytes) == 0 {
+	if context.buf.Len() == 0 {
 		return
 	}
 
 	c.addTabIfNecessary(line)
-	line.WriteByte('{')
-	line.Write(context.bytes)
-	line.WriteByte('}')
+	line.AppendByte('{')
+	line.Write(context.buf.Bytes())
+	line.AppendByte('}')
 }
 
-func (c consoleEncoder) addTabIfNecessary(line *bytes.Buffer) {
+func (c consoleEncoder) addTabIfNecessary(line *buffer.Buffer) {
 	if line.Len() > 0 {
-		line.WriteByte('\t')
+		line.AppendByte('\t')
 	}
 }

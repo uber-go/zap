@@ -25,7 +25,7 @@ import (
 	"math"
 	"time"
 
-	"go.uber.org/zap/internal/buffers"
+	"go.uber.org/zap/internal/bufferpool"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -188,13 +188,14 @@ func Error(err error) zapcore.Field {
 // allocation and takes ~10 microseconds.
 func Stack() zapcore.Field {
 	// Try to avoid allocating a buffer.
-	buf := buffers.Get()
+	buf := bufferpool.Get()
+	bs := buf.Bytes()
 	// Returning the stacktrace as a string costs an allocation, but saves us
 	// from expanding the zapcore.Field union struct to include a byte slice. Since
 	// taking a stacktrace is already so expensive (~10us), the extra allocation
 	// is okay.
-	field := String("stacktrace", takeStacktrace(buf[:cap(buf)], false))
-	buffers.Put(buf)
+	field := String("stacktrace", takeStacktrace(bs[:cap(bs)], false))
+	bufferpool.Put(buf)
 	return field
 }
 

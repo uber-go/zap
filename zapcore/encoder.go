@@ -23,6 +23,8 @@ package zapcore
 import (
 	"strings"
 	"time"
+
+	"go.uber.org/zap/buffer"
 )
 
 // A LevelEncoder serializes a Level to a primitive type.
@@ -254,5 +256,5 @@ type Encoder interface {
 
 	// EncodeEntry encodes an entry and fields, along with any accumulated
 	// context, into a byte buffer and returns it.
-	EncodeEntry(Entry, []Field) ([]byte, error)
+	EncodeEntry(Entry, []Field) (*buffer.Buffer, error)
 }
