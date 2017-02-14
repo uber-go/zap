@@ -34,25 +34,27 @@ func (f optionFunc) apply(log *Logger) {
 	f(log)
 }
 
-// WrapFacility wraps or replaces the logger's underlying facility.
-func WrapFacility(f func(zapcore.Facility) zapcore.Facility) Option {
+// WrapCore wraps or replaces the Logger's underlying zapcore.Core.
+func WrapCore(f func(zapcore.Core) zapcore.Core) Option {
 	return optionFunc(func(log *Logger) {
-		log.fac = f(log.fac)
+		log.core = f(log.core)
 	})
 }
 
 // Hooks registers functions which will be called each time the Logger writes
 // out an Entry. Repeated use of Hooks is additive.
+//
+// See zapcore.RegisterHooks for details.
 func Hooks(hooks ...func(zapcore.Entry) error) Option {
 	return optionFunc(func(log *Logger) {
-		log.fac = zapcore.Hooked(log.fac, hooks...)
+		log.core = zapcore.RegisterHooks(log.core, hooks...)
 	})
 }
 
 // Fields adds fields to the Logger.
 func Fields(fs ...zapcore.Field) Option {
 	return optionFunc(func(log *Logger) {
-		log.fac = log.fac.With(fs)
+		log.core = log.core.With(fs)
 	})
 }
 
@@ -90,8 +92,8 @@ func AddCallerSkip(skip int) Option {
 }
 
 // AddStacktrace configures the Logger to record a stack trace for all messages at
-// or above a given level. Keep in mind that this is (relatively speaking)
-// quite expensive.
+// or above a given level. Keep in mind that taking a stacktrace takes several
+// microseconds; relative to the cost of logging, this is quite slow.
 func AddStacktrace(lvl zapcore.LevelEnabler) Option {
 	return optionFunc(func(log *Logger) {
 		log.addStack = lvl

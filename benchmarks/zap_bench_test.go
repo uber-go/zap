@@ -90,7 +90,7 @@ func fakeMessages(n int) []string {
 }
 
 func BenchmarkZapDisabledLevelsWithoutFields(b *testing.B) {
-	logger := zap.New(zapcore.WriterFacility(
+	logger := zap.New(zapcore.NewCore(
 		benchEncoder(),
 		&testutils.Discarder{},
 		zap.ErrorLevel,
@@ -106,7 +106,7 @@ func BenchmarkZapDisabledLevelsWithoutFields(b *testing.B) {
 func BenchmarkZapDisabledLevelsAccumulatedContext(b *testing.B) {
 	context := fakeFields()
 	logger := zap.New(
-		zapcore.WriterFacility(
+		zapcore.NewCore(
 			benchEncoder(),
 			&testutils.Discarder{},
 			zap.ErrorLevel,
@@ -122,7 +122,7 @@ func BenchmarkZapDisabledLevelsAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapDisabledLevelsAddingFields(b *testing.B) {
-	logger := zap.New(zapcore.WriterFacility(
+	logger := zap.New(zapcore.NewCore(
 		benchEncoder(),
 		&testutils.Discarder{},
 		zap.ErrorLevel,
@@ -136,7 +136,7 @@ func BenchmarkZapDisabledLevelsAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapDisabledLevelsCheckAddingFields(b *testing.B) {
-	logger := zap.New(zapcore.WriterFacility(
+	logger := zap.New(zapcore.NewCore(
 		benchEncoder(),
 		&testutils.Discarder{},
 		zap.ErrorLevel,
@@ -152,7 +152,7 @@ func BenchmarkZapDisabledLevelsCheckAddingFields(b *testing.B) {
 }
 
 func BenchmarkZapAddingFields(b *testing.B) {
-	logger := zap.New(zapcore.WriterFacility(
+	logger := zap.New(zapcore.NewCore(
 		benchEncoder(),
 		&testutils.Discarder{},
 		zap.DebugLevel,
@@ -168,7 +168,7 @@ func BenchmarkZapAddingFields(b *testing.B) {
 func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 	context := fakeFields()
 	logger := zap.New(
-		zapcore.WriterFacility(
+		zapcore.NewCore(
 			benchEncoder(),
 			&testutils.Discarder{},
 			zap.DebugLevel,
@@ -184,7 +184,7 @@ func BenchmarkZapWithAccumulatedContext(b *testing.B) {
 }
 
 func BenchmarkZapWithoutFields(b *testing.B) {
-	logger := zap.New(zapcore.WriterFacility(
+	logger := zap.New(zapcore.NewCore(
 		benchEncoder(),
 		&testutils.Discarder{},
 		zap.DebugLevel,
@@ -199,7 +199,7 @@ func BenchmarkZapWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleWithoutFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zap.New(zapcore.Sample(zapcore.WriterFacility(
+	logger := zap.New(zapcore.NewSampler(zapcore.NewCore(
 		benchEncoder(),
 		&testutils.Discarder{},
 		zap.DebugLevel,
@@ -216,7 +216,7 @@ func BenchmarkZapSampleWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleAddingFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zap.New(zapcore.Sample(zapcore.WriterFacility(
+	logger := zap.New(zapcore.NewSampler(zapcore.NewCore(
 		benchEncoder(),
 		&testutils.Discarder{},
 		zap.DebugLevel,
@@ -233,7 +233,7 @@ func BenchmarkZapSampleAddingFields(b *testing.B) {
 
 func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zap.New(zapcore.Sample(zapcore.WriterFacility(
+	logger := zap.New(zapcore.NewSampler(zapcore.NewCore(
 		benchEncoder(),
 		&testutils.Discarder{},
 		zap.DebugLevel,
@@ -252,7 +252,7 @@ func BenchmarkZapSampleCheckWithoutFields(b *testing.B) {
 
 func BenchmarkZapSampleCheckAddingFields(b *testing.B) {
 	messages := fakeMessages(1000)
-	logger := zap.New(zapcore.Sample(zapcore.WriterFacility(
+	logger := zap.New(zapcore.NewSampler(zapcore.NewCore(
 		benchEncoder(),
 		&testutils.Discarder{},
 		zap.DebugLevel,

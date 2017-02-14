@@ -27,10 +27,10 @@ import (
 	. "go.uber.org/zap/zapcore"
 )
 
-func withBenchedTee(b *testing.B, f func(Facility)) {
-	fac := Tee(
-		WriterFacility(NewJSONEncoder(testEncoderConfig()), &testutils.Discarder{}, DebugLevel),
-		WriterFacility(NewJSONEncoder(testEncoderConfig()), &testutils.Discarder{}, InfoLevel),
+func withBenchedTee(b *testing.B, f func(Core)) {
+	fac := NewTee(
+		NewCore(NewJSONEncoder(testEncoderConfig()), &testutils.Discarder{}, DebugLevel),
+		NewCore(NewJSONEncoder(testEncoderConfig()), &testutils.Discarder{}, InfoLevel),
 	)
 	b.ResetTimer()
 	f(fac)
@@ -46,13 +46,13 @@ func BenchmarkTeeCheck(b *testing.B) {
 		{WarnLevel, "baz"},
 		{ErrorLevel, "babble"},
 	}
-	withBenchedTee(b, func(fac Facility) {
+	withBenchedTee(b, func(core Core) {
 		b.RunParallel(func(pb *testing.PB) {
 			i := 0
 			for pb.Next() {
 				tt := cases[i]
 				entry := Entry{Level: tt.lvl, Message: tt.msg}
-				if cm := fac.Check(entry, nil); cm != nil {
+				if cm := core.Check(entry, nil); cm != nil {
 					cm.Write(Field{Key: "i", Integer: int64(i), Type: Int64Type})
 				}
 				i = (i + 1) % len(cases)

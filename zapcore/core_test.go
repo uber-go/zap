@@ -35,7 +35,7 @@ func makeInt64Field(key string, val int) Field {
 	return Field{Type: Int64Type, Integer: int64(val), Key: key}
 }
 
-func TestNopFacility(t *testing.T) {
+func TestNopCore(t *testing.T) {
 	entry := Entry{
 		Message:    "test",
 		Level:      InfoLevel,
@@ -54,12 +54,12 @@ func TestNopFacility(t *testing.T) {
 		PanicLevel,
 		FatalLevel,
 	}
-	fac := NopFacility()
-	assert.Equal(t, fac, fac.With([]Field{makeInt64Field("k", 42)}), "Expected no-op With.")
+	core := NewNopCore()
+	assert.Equal(t, core, core.With([]Field{makeInt64Field("k", 42)}), "Expected no-op With.")
 	for _, level := range allLevels {
-		assert.False(t, fac.Enabled(level), "Expected all levels to be disabled in no-op facility.")
-		assert.Equal(t, ce, fac.Check(entry, ce), "Expected no-op Check to return checked entry unchanged.")
-		assert.NoError(t, fac.Write(entry, nil), "Expected no-op Writes to always succeed.")
+		assert.False(t, core.Enabled(level), "Expected all levels to be disabled in no-op core.")
+		assert.Equal(t, ce, core.Check(entry, ce), "Expected no-op Check to return checked entry unchanged.")
+		assert.NoError(t, core.Write(entry, nil), "Expected no-op Writes to always succeed.")
 	}
 }
 
@@ -77,8 +77,8 @@ func TestObserverWith(t *testing.T) {
 	sf4 := sf2.With([]Field{makeInt64Field("e", 5)})
 	ent := Entry{Level: InfoLevel, Message: "hello"}
 
-	for i, f := range []Facility{sf2, sf3, sf4} {
-		if ce := f.Check(ent, nil); ce != nil {
+	for i, core := range []Core{sf2, sf3, sf4} {
+		if ce := core.Check(ent, nil); ce != nil {
 			ce.Write(makeInt64Field("i", i))
 		}
 	}
@@ -116,7 +116,7 @@ func TestObserverWith(t *testing.T) {
 	}, logs.All(), "expected no field sharing between With siblings")
 }
 
-func TestWriterFacilitySyncsOutput(t *testing.T) {
+func TestIOCoreSyncsOutput(t *testing.T) {
 	tests := []struct {
 		entry      Entry
 		shouldSync bool
@@ -132,24 +132,24 @@ func TestWriterFacilitySyncsOutput(t *testing.T) {
 
 	for _, tt := range tests {
 		sink := &testutils.Discarder{}
-		fac := WriterFacility(
+		core := NewCore(
 			NewJSONEncoder(testEncoderConfig()),
 			sink,
 			DebugLevel,
 		)
 
-		fac.Write(tt.entry, nil)
+		core.Write(tt.entry, nil)
 		assert.Equal(t, tt.shouldSync, sink.Called(), "Incorrect Sync behavior.")
 	}
 }
 
-func TestWriterFacilityWriteFailure(t *testing.T) {
-	fac := WriterFacility(
+func TestIOCoreWriteFailure(t *testing.T) {
+	core := NewCore(
 		NewJSONEncoder(testEncoderConfig()),
 		Lock(&testutils.FailWriter{}),
 		DebugLevel,
 	)
-	err := fac.Write(Entry{}, nil)
+	err := core.Write(Entry{}, nil)
 	// Should log the error.
 	assert.Error(t, err, "Expected writing Entry to fail.")
 }

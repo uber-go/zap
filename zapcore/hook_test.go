@@ -31,9 +31,9 @@ import (
 
 func TestHooks(t *testing.T) {
 	tests := []struct {
-		entryLevel    Level
-		facilityLevel Level
-		expectCall    bool
+		entryLevel Level
+		coreLevel  Level
+		expectCall bool
 	}{
 		{DebugLevel, InfoLevel, false},
 		{InfoLevel, InfoLevel, true},
@@ -42,7 +42,7 @@ func TestHooks(t *testing.T) {
 
 	for _, tt := range tests {
 		var logs observer.ObservedLogs
-		fac := observer.New(tt.facilityLevel, logs.Add, true)
+		fac := observer.New(tt.coreLevel, logs.Add, true)
 		intField := makeInt64Field("foo", 42)
 		ent := Entry{Message: "bar", Level: tt.entryLevel}
 
@@ -53,7 +53,7 @@ func TestHooks(t *testing.T) {
 			return nil
 		}
 
-		h := Hooked(fac, f)
+		h := RegisterHooks(fac, f)
 		if ce := h.With([]Field{intField}).Check(ent, nil); ce != nil {
 			ce.Write()
 		}

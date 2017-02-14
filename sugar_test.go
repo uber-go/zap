@@ -340,7 +340,7 @@ func TestSugarAddCallerFail(t *testing.T) {
 		log.Info("Failure.")
 		assert.Regexp(
 			t,
-			`addCaller error: failed to get caller`,
+			`Logger.check error: failed to get caller`,
 			errBuf.String(),
 			"Didn't find expected failure message.",
 		)

@@ -297,7 +297,7 @@ func TestLoggerNames(t *testing.T) {
 func TestLoggerWriteFailure(t *testing.T) {
 	errSink := &testutils.Buffer{}
 	logger := New(
-		zapcore.WriterFacility(
+		zapcore.NewCore(
 			zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
 			zapcore.Lock(zapcore.AddSync(testutils.FailWriter{})),
 			DebugLevel,
@@ -343,7 +343,7 @@ func TestLoggerAddCallerFail(t *testing.T) {
 		log.Info("Failure.")
 		assert.Regexp(
 			t,
-			`addCaller error: failed to get caller`,
+			`Logger.check error: failed to get caller`,
 			errBuf.String(),
 			"Didn't find expected failure message.",
 		)
@@ -376,15 +376,15 @@ func TestLoggerAddStacktrace(t *testing.T) {
 	})
 }
 
-func TestLoggerReplaceFacility(t *testing.T) {
-	replace := WrapFacility(func(zapcore.Facility) zapcore.Facility {
-		return zapcore.NopFacility()
+func TestLoggerReplaceCore(t *testing.T) {
+	replace := WrapCore(func(zapcore.Core) zapcore.Core {
+		return zapcore.NewNopCore()
 	})
 	withLogger(t, DebugLevel, opts(replace), func(logger *Logger, logs *observer.ObservedLogs) {
 		logger.Debug("")
 		logger.Info("")
 		logger.Warn("")
-		assert.Equal(t, 0, logs.Len(), "Expected no-op facility to write no logs.")
+		assert.Equal(t, 0, logs.Len(), "Expected no-op core to write no logs.")
 	})
 }
 

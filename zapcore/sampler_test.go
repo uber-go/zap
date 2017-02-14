@@ -35,11 +35,11 @@ import (
 	. "go.uber.org/zap/zapcore"
 )
 
-func fakeSampler(lvl LevelEnabler, tick time.Duration, first, thereafter int) (Facility, *observer.ObservedLogs) {
+func fakeSampler(lvl LevelEnabler, tick time.Duration, first, thereafter int) (Core, *observer.ObservedLogs) {
 	var logs observer.ObservedLogs
-	fac := observer.New(lvl, logs.Add, true)
-	fac = Sample(fac, tick, first, thereafter)
-	return fac, &logs
+	core := observer.New(lvl, logs.Add, true)
+	core = NewSampler(core, tick, first, thereafter)
+	return core, &logs
 }
 
 func assertSequence(t testing.TB, logs []observer.LoggedEntry, lvl Level, seq ...int64) {
@@ -56,11 +56,11 @@ func assertSequence(t testing.TB, logs []observer.LoggedEntry, lvl Level, seq ..
 	assert.Equal(t, seq, seen, "Unexpected sequence logged at level %v.", lvl)
 }
 
-func writeSequence(fac Facility, n int, lvl Level) {
+func writeSequence(core Core, n int, lvl Level) {
 	// All tests using writeSequence verify that counters are shared between
-	// parent and child facilities.
-	fac = fac.With([]Field{makeInt64Field("iter", n)})
-	if ce := fac.Check(Entry{Level: lvl, Time: time.Now().UTC()}, nil); ce != nil {
+	// parent and child cores.
+	core = core.With([]Field{makeInt64Field("iter", n)})
+	if ce := core.Check(Entry{Level: lvl, Time: time.Now().UTC()}, nil); ce != nil {
 		ce.Write()
 	}
 }
@@ -135,24 +135,24 @@ func TestSamplerTicking(t *testing.T) {
 	)
 }
 
-type countingFacility struct {
+type countingCore struct {
 	logs atomic.Uint32
 }
 
-func (c *countingFacility) Enabled(Level) bool {
+func (c *countingCore) Enabled(Level) bool {
 	return true
 }
 
-func (c *countingFacility) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
-	return ce.AddFacility(ent, c)
+func (c *countingCore) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
+	return ce.AddCore(ent, c)
 }
 
-func (c *countingFacility) Write(Entry, []Field) error {
+func (c *countingCore) Write(Entry, []Field) error {
 	c.logs.Inc()
 	return nil
 }
 
-func (c *countingFacility) With([]Field) Facility {
+func (c *countingCore) With([]Field) Core {
 	return c
 }
 
@@ -165,8 +165,8 @@ func TestSamplerConcurrent(t *testing.T) {
 	)
 
 	var tick = testutils.Timeout(time.Millisecond)
-	cf := &countingFacility{}
-	sampler := Sample(cf, tick, logsPerTick, 100000)
+	cc := &countingCore{}
+	sampler := NewSampler(cc, tick, logsPerTick, 100000)
 
 	var done atomic.Bool
 	var wg sync.WaitGroup
@@ -197,8 +197,13 @@ func TestSamplerConcurrent(t *testing.T) {
 	wg.Wait()
 
 	// We expect numMessages*logsPerTick in each tick, and we have 100 ticks.
-	assert.InDelta(t, numMessages*logsPerTick*numTicks, cf.logs.Load(), 500,
-		"Unexpected number of logs")
+	assert.InDelta(
+		t,
+		numMessages*logsPerTick*numTicks,
+		cc.logs.Load(),
+		500,
+		"Unexpected number of logs",
+	)
 }
 
 func TestSamplerRaces(t *testing.T) {
