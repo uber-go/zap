@@ -60,7 +60,7 @@ func writeSequence(core Core, n int, lvl Level) {
 	// All tests using writeSequence verify that counters are shared between
 	// parent and child cores.
 	core = core.With([]Field{makeInt64Field("iter", n)})
-	if ce := core.Check(Entry{Level: lvl, Time: time.Now().UTC()}, nil); ce != nil {
+	if ce := core.Check(Entry{Level: lvl, Time: time.Now()}, nil); ce != nil {
 		ce.Write()
 	}
 }
