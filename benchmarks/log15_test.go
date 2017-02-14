@@ -22,8 +22,6 @@ package benchmarks
 
 import (
 	"io/ioutil"
-	"testing"
-	"time"
 
 	"gopkg.in/inconshreveable/log15.v2"
 )
@@ -32,56 +30,4 @@ func newLog15() log15.Logger {
 	logger := log15.New()
 	logger.SetHandler(log15.StreamHandler(ioutil.Discard, log15.JsonFormat()))
 	return logger
-}
-
-func BenchmarkLog15AddingFields(b *testing.B) {
-	logger := newLog15()
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Info("Go fast.",
-				"int", 1,
-				"int64", int64(1),
-				"float", 3.0,
-				"string", "four!",
-				"bool", true,
-				"time", time.Unix(0, 0),
-				"error", errExample.Error(),
-				"duration", time.Second,
-				"user-defined type", _jane,
-				"another string", "done!",
-			)
-		}
-	})
-}
-
-func BenchmarkLog15WithAccumulatedContext(b *testing.B) {
-	logger := newLog15().New(
-		"int", 1,
-		"int64", int64(1),
-		"float", 3.0,
-		"string", "four!",
-		"bool", true,
-		"time", time.Unix(0, 0),
-		"error", errExample.Error(),
-		"duration", time.Second,
-		"user-defined type", _jane,
-		"another string", "done!",
-	)
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Info("Go really fast.")
-		}
-	})
-}
-
-func BenchmarkLog15WithoutFields(b *testing.B) {
-	logger := newLog15()
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Info("Go fast.")
-		}
-	})
 }

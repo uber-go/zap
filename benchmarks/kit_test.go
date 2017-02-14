@@ -18,42 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+package benchmarks
 
 import (
-	"testing"
+	"io/ioutil"
 
-	"go.uber.org/zap/testutils"
-	"go.uber.org/zap/zapcore"
+	"github.com/go-kit/kit/log"
 )
 
-func withBenchedSugar(b *testing.B, f func(*SugaredLogger)) {
-	logger := New(zapcore.NewCore(
-		zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
-		&testutils.Discarder{},
-		DebugLevel,
-	)).Sugar()
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			f(logger)
-		}
-	})
-}
-
-func Benchmark10FieldsSugar(b *testing.B) {
-	withBenchedSugar(b, func(logger *SugaredLogger) {
-		logger.Infow("Ten fields, passed at the log site.",
-			"one", 1,
-			"two", 2,
-			"three", 3,
-			"four", 4,
-			"five", 5,
-			"six", 6,
-			"seven", 7,
-			"eight", 8,
-			"nine", 9,
-			"ten", 10,
-		)
-	})
+func newKitLog() *log.Context {
+	return log.NewContext(log.NewJSONLogger(ioutil.Discard))
 }
