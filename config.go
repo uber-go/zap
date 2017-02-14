@@ -41,7 +41,7 @@ type SamplingConfig struct {
 // Config offers a declarative way to construct a logger.
 //
 // It doesn't do anything that can't be done with New, Options, and the various
-// zapcore.WriteSyncer and zapcore.Facility wrappers, but it's a simpler way to
+// zapcore.WriteSyncer and zapcore.Core wrappers, but it's a simpler way to
 // toggle common options.
 type Config struct {
 	// Level is the minimum enabled logging level. Note that this is a dynamic
@@ -151,7 +151,7 @@ func (cfg Config) Build(opts ...Option) (*Logger, error) {
 	}
 
 	log := New(
-		zapcore.WriterFacility(enc, sink, cfg.Level),
+		zapcore.NewCore(enc, sink, cfg.Level),
 		cfg.buildOptions(errSink)...,
 	)
 	if len(opts) > 0 {
@@ -180,8 +180,8 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 	}
 
 	if cfg.Sampling != nil {
-		opts = append(opts, WrapFacility(func(fac zapcore.Facility) zapcore.Facility {
-			return zapcore.Sample(fac, time.Second, int(cfg.Sampling.Initial), int(cfg.Sampling.Thereafter))
+		opts = append(opts, WrapCore(func(core zapcore.Core) zapcore.Core {
+			return zapcore.NewSampler(core, time.Second, int(cfg.Sampling.Initial), int(cfg.Sampling.Thereafter))
 		}))
 	}
 

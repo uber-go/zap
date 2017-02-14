@@ -36,19 +36,19 @@ const (
 // verbose, API. Any Logger can be converted to a SugaredLogger with its Sugar
 // method.
 type SugaredLogger struct {
-	core *Logger
+	base *Logger
 }
 
 // Desugar unwraps a SugaredLogger, exposing the original Logger.
 func (s *SugaredLogger) Desugar() *Logger {
-	base := s.core.clone()
+	base := s.base.clone()
 	base.callerSkip -= 2
 	return base
 }
 
 // Named adds a sub-scope to the logger's name. See Logger.Named for details.
 func (s *SugaredLogger) Named(name string) *SugaredLogger {
-	return &SugaredLogger{core: s.core.Named(name)}
+	return &SugaredLogger{base: s.base.Named(name)}
 }
 
 // With adds a variadic number of fields to the logging context. It accepts a
@@ -79,7 +79,7 @@ func (s *SugaredLogger) Named(name string) *SugaredLogger {
 // execution continues. Passing an orphaned key triggers similar behavior:
 // panics in development and errors in production.
 func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
-	return &SugaredLogger{core: s.core.With(s.sweetenFields(args)...)}
+	return &SugaredLogger{base: s.base.With(s.sweetenFields(args)...)}
 }
 
 // Debug uses fmt.Sprint to construct and log a message.
@@ -203,7 +203,7 @@ func (s *SugaredLogger) Fatalw(msg string, keysAndValues ...interface{}) {
 func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interface{}, context []interface{}) {
 	// If logging at this level is completely disabled, skip the overhead of
 	// string formatting.
-	if lvl < DPanicLevel && !s.core.Facility().Enabled(lvl) {
+	if lvl < DPanicLevel && !s.base.Core().Enabled(lvl) {
 		return
 	}
 
@@ -215,7 +215,7 @@ func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interf
 		msg = fmt.Sprintf(template, fmtArgs...)
 	}
 
-	if ce := s.core.Check(lvl, msg); ce != nil {
+	if ce := s.base.Check(lvl, msg); ce != nil {
 		ce.Write(s.sweetenFields(context)...)
 	}
 }
@@ -240,7 +240,7 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []zapcore.Field {
 
 		// Make sure this element isn't a dangling key.
 		if i == len(args)-1 {
-			s.core.DPanic(_oddNumberErrMsg, Any("ignored", args[i]))
+			s.base.DPanic(_oddNumberErrMsg, Any("ignored", args[i]))
 			break
 		}
 
@@ -261,7 +261,7 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []zapcore.Field {
 
 	// If we encountered any invalid key-value pairs, log an error.
 	if len(invalid) > 0 {
-		s.core.DPanic(_nonStringKeyErrMsg, Array("invalid", invalid))
+		s.base.DPanic(_nonStringKeyErrMsg, Array("invalid", invalid))
 	}
 	return fields
 }

@@ -29,9 +29,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func withTee(f func(fac Facility, debugLogs, warnLogs *observer.ObservedLogs)) {
+func withTee(f func(core Core, debugLogs, warnLogs *observer.ObservedLogs)) {
 	var debugLogs, warnLogs observer.ObservedLogs
-	tee := Tee(
+	tee := NewTee(
 		observer.New(DebugLevel, debugLogs.Add, true),
 		observer.New(WarnLevel, warnLogs.Add, true),
 	)
@@ -42,15 +42,15 @@ func TestTeeUnusualInput(t *testing.T) {
 	// Verify that Tee handles receiving one and no inputs correctly.
 	t.Run("one input", func(t *testing.T) {
 		obs := observer.New(DebugLevel, nil, true)
-		assert.Equal(t, obs, Tee(obs), "Expected to return single inputs unchanged.")
+		assert.Equal(t, obs, NewTee(obs), "Expected to return single inputs unchanged.")
 	})
 	t.Run("no input", func(t *testing.T) {
-		assert.Equal(t, NopFacility(), Tee(), "Expected to return NopFacility.")
+		assert.Equal(t, NewNopCore(), NewTee(), "Expected to return NopCore.")
 	})
 }
 
 func TestTeeCheck(t *testing.T) {
-	withTee(func(tee Facility, debugLogs, warnLogs *observer.ObservedLogs) {
+	withTee(func(tee Core, debugLogs, warnLogs *observer.ObservedLogs) {
 		debugEntry := Entry{Level: DebugLevel, Message: "log-at-debug"}
 		infoEntry := Entry{Level: InfoLevel, Message: "log-at-info"}
 		warnEntry := Entry{Level: WarnLevel, Message: "log-at-warn"}
@@ -78,7 +78,7 @@ func TestTeeCheck(t *testing.T) {
 func TestTeeWrite(t *testing.T) {
 	// Calling the tee's Write method directly should always log, regardless of
 	// the configured level.
-	withTee(func(tee Facility, debugLogs, warnLogs *observer.ObservedLogs) {
+	withTee(func(tee Core, debugLogs, warnLogs *observer.ObservedLogs) {
 		debugEntry := Entry{Level: DebugLevel, Message: "log-at-debug"}
 		warnEntry := Entry{Level: WarnLevel, Message: "log-at-warn"}
 		for _, ent := range []Entry{debugEntry, warnEntry} {
@@ -95,7 +95,7 @@ func TestTeeWrite(t *testing.T) {
 }
 
 func TestTeeWith(t *testing.T) {
-	withTee(func(tee Facility, debugLogs, warnLogs *observer.ObservedLogs) {
+	withTee(func(tee Core, debugLogs, warnLogs *observer.ObservedLogs) {
 		f := makeInt64Field("k", 42)
 		tee = tee.With([]Field{f})
 		ent := Entry{Level: WarnLevel, Message: "log-at-warn"}
@@ -112,7 +112,7 @@ func TestTeeWith(t *testing.T) {
 }
 
 func TestTeeEnabled(t *testing.T) {
-	tee := Tee(
+	tee := NewTee(
 		observer.New(InfoLevel, nil, false),
 		observer.New(WarnLevel, nil, false),
 	)

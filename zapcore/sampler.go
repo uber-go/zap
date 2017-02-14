@@ -81,7 +81,15 @@ func (c *counter) IncCheckReset(t time.Time, tick time.Duration) uint64 {
 	return 1
 }
 
-// Sample creates a Facility that samples incoming entries, which caps the CPU
+type sampler struct {
+	Core
+
+	counts            *counters
+	tick              time.Duration
+	first, thereafter uint64
+}
+
+// NewSampler creates a Core that samples incoming entries, which caps the CPU
 // and I/O load of logging while attempting to preserve a representative subset
 // of your logs.
 //
@@ -92,9 +100,9 @@ func (c *counter) IncCheckReset(t time.Time, tick time.Duration) uint64 {
 // Keep in mind that zap's sampling implementation is optimized for speed over
 // absolute precision; under load, each tick may be slightly over- or
 // under-sampled.
-func Sample(fac Facility, tick time.Duration, first, thereafter int) Facility {
+func NewSampler(core Core, tick time.Duration, first, thereafter int) Core {
 	return &sampler{
-		Facility:   fac,
+		Core:       core,
 		tick:       tick,
 		counts:     newCounters(),
 		first:      uint64(first),
@@ -102,18 +110,9 @@ func Sample(fac Facility, tick time.Duration, first, thereafter int) Facility {
 	}
 }
 
-type sampler struct {
-	Facility
-
-	tick       time.Duration
-	counts     *counters
-	first      uint64
-	thereafter uint64
-}
-
-func (s *sampler) With(fields []Field) Facility {
+func (s *sampler) With(fields []Field) Core {
 	return &sampler{
-		Facility:   s.Facility.With(fields),
+		Core:       s.Core.With(fields),
 		tick:       s.tick,
 		counts:     s.counts,
 		first:      s.first,
@@ -131,6 +130,5 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	if n > s.first && (n-s.first)%s.thereafter != 0 {
 		return ce
 	}
-
-	return s.Facility.Check(ent, ce)
+	return s.Core.Check(ent, ce)
 }
