@@ -68,7 +68,7 @@ func TestAddSyncWriter(t *testing.T) {
 func TestMultiWriteSyncerWritesBoth(t *testing.T) {
 	first := &bytes.Buffer{}
 	second := &bytes.Buffer{}
-	ws := MultiWriteSyncer(AddSync(first), AddSync(second))
+	ws := NewMultiWriteSyncer(AddSync(first), AddSync(second))
 
 	msg := []byte("dumbledore")
 	n, err := ws.Write(msg)
@@ -80,13 +80,13 @@ func TestMultiWriteSyncerWritesBoth(t *testing.T) {
 }
 
 func TestMultiWriteSyncerFailsWrite(t *testing.T) {
-	ws := MultiWriteSyncer(AddSync(&testutils.FailWriter{}))
+	ws := NewMultiWriteSyncer(AddSync(&testutils.FailWriter{}))
 	_, err := ws.Write([]byte("test"))
 	assert.Error(t, err, "Write error should propagate")
 }
 
 func TestMultiWriteSyncerFailsShortWrite(t *testing.T) {
-	ws := MultiWriteSyncer(AddSync(&testutils.ShortWriter{}))
+	ws := NewMultiWriteSyncer(AddSync(&testutils.ShortWriter{}))
 	n, err := ws.Write([]byte("test"))
 	assert.NoError(t, err, "Expected fake-success from short write")
 	assert.Equal(t, 3, n, "Expected byte count to return from underlying writer")
@@ -95,7 +95,7 @@ func TestMultiWriteSyncerFailsShortWrite(t *testing.T) {
 func TestWritestoAllSyncs_EvenIfFirstErrors(t *testing.T) {
 	failer := &testutils.FailWriter{}
 	second := &bytes.Buffer{}
-	ws := MultiWriteSyncer(AddSync(failer), AddSync(second))
+	ws := NewMultiWriteSyncer(AddSync(failer), AddSync(second))
 
 	_, err := ws.Write([]byte("fail"))
 	assert.Error(t, err, "Expected error from call to a writer that failed")
@@ -105,13 +105,13 @@ func TestWritestoAllSyncs_EvenIfFirstErrors(t *testing.T) {
 func TestMultiWriteSyncerSync_PropagatesErrors(t *testing.T) {
 	badsink := &testutils.Buffer{}
 	badsink.SetError(errors.New("sink is full"))
-	ws := MultiWriteSyncer(&testutils.Discarder{}, badsink)
+	ws := NewMultiWriteSyncer(&testutils.Discarder{}, badsink)
 
 	assert.Error(t, ws.Sync(), "Expected sync error to propagate")
 }
 
 func TestMultiWriteSyncerSync_NoErrorsOnDiscard(t *testing.T) {
-	ws := MultiWriteSyncer(&testutils.Discarder{})
+	ws := NewMultiWriteSyncer(&testutils.Discarder{})
 	assert.NoError(t, ws.Sync(), "Expected error-free sync to /dev/null")
 }
 
@@ -119,7 +119,7 @@ func TestMultiWriteSyncerSync_AllCalled(t *testing.T) {
 	failed, second := &testutils.Buffer{}, &testutils.Buffer{}
 
 	failed.SetError(errors.New("disposal broken"))
-	ws := MultiWriteSyncer(failed, second)
+	ws := NewMultiWriteSyncer(failed, second)
 
 	assert.Error(t, ws.Sync(), "Expected first sink to fail")
 	assert.True(t, failed.Called(), "Expected first sink to have Sync method called.")

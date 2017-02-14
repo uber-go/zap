@@ -43,9 +43,9 @@ func makeCountingHook() (func(zapcore.Entry) error, *atomic.Int64) {
 	return h, count
 }
 
-func TestLoggerDynamicLevel(t *testing.T) {
-	// Test that the DynamicLevel applys to all ancestors and descendants.
-	dl := DynamicLevel()
+func TestLoggerAtomicLevel(t *testing.T) {
+	// Test that the dynamic level applies to all ancestors and descendants.
+	dl := NewAtomicLevel()
 
 	withLogger(t, dl, nil, func(grandparent *Logger, _ *observer.ObservedLogs) {
 		parent := grandparent.With(Int("generation", 1))

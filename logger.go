@@ -48,7 +48,8 @@ type Logger struct {
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
-// the passed zapcore.Core is nil, we fall back to using zapcore.NewNopCore.
+// the passed zapcore.Core is nil, we fall back to using a no-op
+// implementation.
 //
 // This is the most flexible way to construct a Logger, but also the most
 // verbose. For typical use cases, NewProduction and NewDevelopment are more
@@ -243,15 +244,14 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	// Thread the error output through to the CheckedEntry.
 	ce.ErrorOutput = log.errorOutput
 	if log.addCaller {
-		ce.Entry.Caller = zapcore.MakeEntryCaller(runtime.Caller(log.callerSkip + callerSkipOffset))
+		ce.Entry.Caller = zapcore.NewEntryCaller(runtime.Caller(log.callerSkip + callerSkipOffset))
 		if !ce.Entry.Caller.Defined {
 			fmt.Fprintf(log.errorOutput, "%v Logger.check error: failed to get caller\n", time.Now().UTC())
 			log.errorOutput.Sync()
 		}
 	}
 	if log.addStack.Enabled(ce.Entry.Level) {
-		ce.Entry.Stack = Stack().String
-		// TODO: maybe just inline Stack around takeStacktrace
+		ce.Entry.Stack = Stack("").String
 	}
 
 	return ce

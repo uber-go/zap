@@ -48,15 +48,15 @@ func TestLevelEnablerFunc(t *testing.T) {
 	}
 }
 
-func TestDynamicLevel(t *testing.T) {
-	lvl := DynamicLevel()
+func TestNewAtomicLevel(t *testing.T) {
+	lvl := NewAtomicLevel()
 	assert.Equal(t, InfoLevel, lvl.Level(), "Unexpected initial level.")
 	lvl.SetLevel(ErrorLevel)
 	assert.Equal(t, ErrorLevel, lvl.Level(), "Unexpected level after SetLevel.")
 }
 
-func TestDynamicLevelMutation(t *testing.T) {
-	lvl := DynamicLevel()
+func TestAtomicLevelMutation(t *testing.T) {
+	lvl := NewAtomicLevel()
 	lvl.SetLevel(WarnLevel)
 	// Trigger races for non-atomic level mutations.
 	proceed := make(chan struct{})
@@ -73,7 +73,7 @@ func TestDynamicLevelMutation(t *testing.T) {
 	wg.Wait()
 }
 
-func TestDynamicLevelUnmarshalText(t *testing.T) {
+func TestAtomicLevelUnmarshalText(t *testing.T) {
 	tests := []struct {
 		text   string
 		expect zapcore.Level

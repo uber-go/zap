@@ -52,9 +52,9 @@ func putCheckedEntry(ce *CheckedEntry) {
 	_cePool.Put(ce)
 }
 
-// MakeEntryCaller makes an EntryCaller from the return signature of
+// NewEntryCaller makes an EntryCaller from the return signature of
 // runtime.Caller.
-func MakeEntryCaller(pc uintptr, file string, line int, ok bool) EntryCaller {
+func NewEntryCaller(pc uintptr, file string, line int, ok bool) EntryCaller {
 	if !ok {
 		return EntryCaller{}
 	}
@@ -104,8 +104,8 @@ type Entry struct {
 	Stack      string
 }
 
-// CheckWriteAction indicates what action to take after Write is done. Actions
-// are ordered in increasing severity.
+// CheckWriteAction indicates what action to take after a log entry is
+// processed. Actions are ordered in increasing severity.
 type CheckWriteAction uint8
 
 const (

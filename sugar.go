@@ -62,7 +62,7 @@ func (s *SugaredLogger) Named(name string) *SugaredLogger {
 //     "failure", errors.New("oh no"),
 //     Stack(),
 //     "count", 42,
-//     "user", User{name: "alice"},
+//     "user", User{Name: "alice"},
 //  )
 // is the equivalent of
 //   baseLogger.With(
@@ -70,7 +70,7 @@ func (s *SugaredLogger) Named(name string) *SugaredLogger {
 //     String("failure", "oh no"),
 //     Stack(),
 //     Int("count", 42),
-//     Object("user", User{name: "alice"}),
+//     Object("user", User{Name: "alice"}),
 //   )
 //
 // Note that the keys in key-value pairs should be strings. In development,
