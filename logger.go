@@ -214,7 +214,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	// log message will actually be written somewhere.
 	ent := zapcore.Entry{
 		LoggerName: log.name,
-		Time:       time.Now().UTC(),
+		Time:       time.Now(),
 		Level:      lvl,
 		Message:    msg,
 	}
