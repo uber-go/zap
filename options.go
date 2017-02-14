@@ -34,7 +34,7 @@ func (f optionFunc) apply(log *Logger) {
 	f(log)
 }
 
-// WrapCore wraps or replaces the Logger's underlying Core.
+// WrapCore wraps or replaces the Logger's underlying zapcore.Core.
 func WrapCore(f func(zapcore.Core) zapcore.Core) Option {
 	return optionFunc(func(log *Logger) {
 		log.core = f(log.core)

@@ -47,8 +47,8 @@ type Logger struct {
 	callerSkip int
 }
 
-// New constructs a new Logger from the provided zapcore.Core and Options. Passing
-// a nil zapcore.Core returns a no-op Logger.
+// New constructs a new Logger from the provided zapcore.Core and Options. If
+// the passed zapcore.Core is nil, we fall back to using zapcore.NewNopCore.
 //
 // This is the most flexible way to construct a Logger, but also the most
 // verbose. For typical use cases, NewProduction and NewDevelopment are more

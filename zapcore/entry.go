@@ -111,7 +111,7 @@ type CheckWriteAction uint8
 const (
 	// WriteThenNoop indicates that nothing special needs to be done. It's the
 	// default behavior.
-	WriteThenNoop = CheckWriteAction(iota)
+	WriteThenNoop CheckWriteAction = iota
 	// WriteThenPanic causes a panic after Write.
 	WriteThenPanic
 	// WriteThenFatal causes a fatal os.Exit after Write.

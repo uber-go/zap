@@ -58,7 +58,8 @@ func (h *hooked) With(fields []Field) Core {
 }
 
 func (h *hooked) Write(ent Entry, _ []Field) error {
-	// Since we've already called
+	// Since our downstream had a chance to register itself directly with the
+	// CheckedMessage, we don't need to call it here.
 	var errs multierror.Error
 	for i := range h.funcs {
 		errs = errs.Append(h.funcs[i](ent))

@@ -95,8 +95,7 @@ type observer struct {
 }
 
 // New creates a new Core that buffers logs in memory (without any encoding).
-// It's particularly useful in tests, though it can serve a variety of other
-// purposes as well.
+// It's particularly useful in tests.
 func New(enab zapcore.LevelEnabler, sink func(LoggedEntry) error, withContext bool) zapcore.Core {
 	if withContext {
 		return &contextObserver{
