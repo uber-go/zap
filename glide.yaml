@@ -1,10 +1,9 @@
 package: go.uber.org/zap
 license: MIT
 import:
-- package: github.com/uber-common/bark
 - package: go.uber.org/atomic
 testImport:
-- package: github.com/Sirupsen/logrus
+- package: github.com/sirupsen/logrus
 - package: github.com/apex/log
   subpackages:
   - handlers/json

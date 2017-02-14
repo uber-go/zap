@@ -1,20 +1,8 @@
-hash: 4cc8fc30ee17b2d6c783a0daf74a1140c9cabc209be57a701505660674f212cc
-updated: 2016-12-08T18:23:01.675037107+01:00
+hash: 180152df7e982d1d547ce1519ae8719387c21beabcf9d0d31cbb4c32fb46e5e8
+updated: 2017-02-14T14:40:09.454472688-08:00
 imports:
-- name: github.com/cactus/go-statsd-client
-  version: d8eabe07bc70ff9ba6a56836cde99d1ea3d005f7
-  subpackages:
-  - statsd
-- name: github.com/Sirupsen/logrus
-  version: 881bee4e20a5d11a6a88a5667c6f292072ac1963
-- name: github.com/uber-common/bark
-  version: 8841a0f8e7ca869284ccb29c08a14cf3f4310f46
 - name: go.uber.org/atomic
   version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
-- name: golang.org/x/sys
-  version: 478fcf54317e52ab69f40bb4c7a1520288d7f7ea
-  subpackages:
-  - unix
 testImports:
 - name: github.com/apex/log
   version: 4ea85e918cc8389903d5f12d7ccac5c23ab7d89b
@@ -54,11 +42,17 @@ testImports:
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
+- name: github.com/sirupsen/logrus
+  version: 9b48ece7fc373043054858f8c0d362665e866004
 - name: github.com/stretchr/testify
-  version: 18a02ba4a312f95da08ff4cfc0055750ce50ae9e
+  version: 2402e8e7a02fc811447d11f881aa9746cdc57983
   subpackages:
   - assert
   - require
+- name: golang.org/x/sys
+  version: d4feaf1a7e61e1d9e79e6c4e76c6349e9cab0a03
+  subpackages:
+  - unix
 - name: golang.org/x/tools
   version: 3d92dd60033c312e3ae7cac319c792271cf67e37
   subpackages:
