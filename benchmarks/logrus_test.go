@@ -22,39 +22,37 @@ package benchmarks
 
 import (
 	"io/ioutil"
-	"log"
-	"testing"
 	"time"
+
+	"github.com/Sirupsen/logrus"
 )
 
-func BenchmarkStandardLibraryWithoutFields(b *testing.B) {
-	logger := log.New(ioutil.Discard, "", log.LstdFlags)
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Println("Go fast.")
-		}
-	})
+func newDisabledLogrus() *logrus.Logger {
+	logger := newLogrus()
+	logger.Level = logrus.ErrorLevel
+	return logger
 }
 
-func BenchmarkStandardLibraryWithFormatting(b *testing.B) {
-	logger := log.New(ioutil.Discard, "", log.LstdFlags)
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Printf(
-				"Go fast. %v %v %v %s %v %v %v %v %v %s\n",
-				1,
-				int64(1),
-				3.0,
-				"four!",
-				true,
-				time.Unix(0, 0),
-				errExample,
-				time.Second,
-				_jane,
-				"done!",
-			)
-		}
-	})
+func newLogrus() *logrus.Logger {
+	return &logrus.Logger{
+		Out:       ioutil.Discard,
+		Formatter: new(logrus.JSONFormatter),
+		Hooks:     make(logrus.LevelHooks),
+		Level:     logrus.DebugLevel,
+	}
+}
+
+func fakeLogrusFields() logrus.Fields {
+	return logrus.Fields{
+		"int":               1,
+		"int64":             int64(1),
+		"float":             3.0,
+		"string":            "four!",
+		"bool":              true,
+		"time":              time.Unix(0, 0),
+		"error":             errExample.Error(),
+		"duration":          time.Second,
+		"user-defined type": _jane,
+		"another string":    "done!",
+	}
 }

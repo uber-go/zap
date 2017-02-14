@@ -22,45 +22,28 @@ package benchmarks
 
 import (
 	"io/ioutil"
-	"testing"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/apex/log"
+	"github.com/apex/log/handlers/json"
 )
 
-func newLogrus() *logrus.Logger {
-	return &logrus.Logger{
-		Out:       ioutil.Discard,
-		Formatter: new(logrus.JSONFormatter),
-		Hooks:     make(logrus.LevelHooks),
-		Level:     logrus.DebugLevel,
+func newDisabledApexLog() *log.Logger {
+	return &log.Logger{
+		Handler: json.New(ioutil.Discard),
+		Level:   log.ErrorLevel,
 	}
 }
 
-func BenchmarkLogrusAddingFields(b *testing.B) {
-	logger := newLogrus()
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.WithFields(logrus.Fields{
-				"int":               1,
-				"int64":             int64(1),
-				"float":             3.0,
-				"string":            "four!",
-				"bool":              true,
-				"time":              time.Unix(0, 0),
-				"error":             errExample.Error(),
-				"duration":          time.Second,
-				"user-defined type": _jane,
-				"another string":    "done!",
-			}).Info("Go fast.")
-		}
-	})
+func newApexLog() *log.Logger {
+	return &log.Logger{
+		Handler: json.New(ioutil.Discard),
+		Level:   log.DebugLevel,
+	}
 }
 
-func BenchmarkLogrusWithAccumulatedContext(b *testing.B) {
-	baseLogger := newLogrus()
-	logger := baseLogger.WithFields(logrus.Fields{
+func fakeApexFields() log.Fields {
+	return log.Fields{
 		"int":               1,
 		"int64":             int64(1),
 		"float":             3.0,
@@ -71,21 +54,5 @@ func BenchmarkLogrusWithAccumulatedContext(b *testing.B) {
 		"duration":          time.Second,
 		"user-defined type": _jane,
 		"another string":    "done!",
-	})
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Info("Go really fast.")
-		}
-	})
-}
-
-func BenchmarkLogrusWithoutFields(b *testing.B) {
-	logger := newLogrus()
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			logger.Info("Go fast.")
-		}
-	})
+	}
 }
