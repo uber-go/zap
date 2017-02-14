@@ -42,7 +42,7 @@ func Binary(key string, val []byte) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.BinaryType, Interface: val}
 }
 
-// Bool constructs a field with the given key and value.
+// Bool constructs a field that carries a bool.
 func Bool(key string, val bool) zapcore.Field {
 	var ival int64
 	if val {
@@ -65,14 +65,14 @@ func Complex64(key string, val complex64) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.Complex64Type, Interface: val}
 }
 
-// Float64 constructs a field with the given key and value. The way the
+// Float64 constructs a field that carries a float64. The way the
 // floating-point value is represented is encoder-dependent, so marshaling is
 // necessarily lazy.
 func Float64(key string, val float64) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.Float64Type, Integer: int64(math.Float64bits(val))}
 }
 
-// Float32 constructs a field with the given key and value. The way the
+// Float32 constructs a field that carries a float32. The way the
 // floating-point value is represented is encoder-dependent, so marshaling is
 // necessarily lazy.
 func Float32(key string, val float32) zapcore.Field {
@@ -153,8 +153,8 @@ func Reflect(key string, val interface{}) zapcore.Field {
 // Namespace creates a named, isolated scope within the logger's context. All
 // subsequent fields will be added to the new namespace.
 //
-// This can help to prevent key collisions when injecting loggers into
-// sub-components or third-party libraries.
+// This helps prevent key collisions when injecting loggers into sub-components
+// or third-party libraries.
 func Namespace(key string) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.NamespaceType}
 }
@@ -183,10 +183,10 @@ func Error(err error) zapcore.Field {
 }
 
 // Stack constructs a field that stores a stacktrace of the current goroutine
-// under the key "stacktrace". Keep in mind that taking a stacktrace is eager
-// and extremely expensive (relatively speaking); this function both makes an
+// under provided key. Keep in mind that taking a stacktrace is eager and
+// extremely expensive (relatively speaking); this function both makes an
 // allocation and takes ~10 microseconds.
-func Stack() zapcore.Field {
+func Stack(key string) zapcore.Field {
 	// Try to avoid allocating a buffer.
 	buf := bufferpool.Get()
 	bs := buf.Bytes()
@@ -194,7 +194,7 @@ func Stack() zapcore.Field {
 	// from expanding the zapcore.Field union struct to include a byte slice. Since
 	// taking a stacktrace is already so expensive (~10us), the extra allocation
 	// is okay.
-	field := String("stacktrace", takeStacktrace(bs[:cap(bs)], false))
+	field := String(key, takeStacktrace(bs[:cap(bs)], false))
 	bufferpool.Put(buf)
 	return field
 }

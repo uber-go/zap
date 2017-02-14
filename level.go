@@ -26,8 +26,6 @@ import (
 )
 
 const (
-	// Re-export the named levels for user convenience.
-
 	// DebugLevel logs are typically voluminous, and are usually disabled in
 	// production.
 	DebugLevel = zapcore.DebugLevel
@@ -48,32 +46,36 @@ const (
 	FatalLevel = zapcore.FatalLevel
 )
 
-// LevelEnablerFunc is a convenient way to implement LevelEnabler around an
-// anonymous function. It is also a valid Option to pass to a logger.
+// LevelEnablerFunc is a convenient way to implement zapcore.LevelEnabler with
+// an anonymous function.
 type LevelEnablerFunc func(zapcore.Level) bool
 
 // Enabled calls the wrapped function.
 func (f LevelEnablerFunc) Enabled(lvl zapcore.Level) bool { return f(lvl) }
 
-// DynamicLevel creates an atomically changeable, dynamic logging level. The
-// returned level can be passed as a logger option just like a concrete level.
+// An AtomicLevel is an atomically changeable, dynamic logging level. It lets
+// you safely change the log level of a tree of loggers (the root logger and
+// any children created by adding context) at runtime.
 //
-// The value's SetLevel() method may be called later to change the enabled
-// logging level of all loggers that were passed the value (either explicitly,
-// or by creating sub-loggers with Logger.With).
-func DynamicLevel() AtomicLevel {
+// The AtomicLevel itself is an http.Handler that serves a JSON endpoint to
+// alter its level.
+//
+// AtomicLevels must be created with the NewAtomicLevel constructor to allocate
+// their internal atomic pointer.
+type AtomicLevel struct {
+	l *atomic.Int32
+}
+
+// NewAtomicLevel creates an AtomicLevel with InfoLevel and above logging
+// enabled.
+func NewAtomicLevel() AtomicLevel {
 	return AtomicLevel{
 		l: atomic.NewInt32(int32(InfoLevel)),
 	}
 }
 
-// AtomicLevel wraps an atomically change-able Level value. It must be created
-// by the DynamicLevel() function to allocate the internal atomic pointer.
-type AtomicLevel struct {
-	l *atomic.Int32
-}
-
-// Enabled loads the level value, and calls its Enabled method.
+// Enabled implements the zapcore.LevelEnabler interface, which allows the
+// AtomicLevel to be used in place of traditional static levels.
 func (lvl AtomicLevel) Enabled(l zapcore.Level) bool {
 	return lvl.Level().Enabled(l)
 }
@@ -88,9 +90,9 @@ func (lvl AtomicLevel) SetLevel(l zapcore.Level) {
 	lvl.l.Store(int32(l))
 }
 
-// UnmarshalText unmarshals the text to a DynamicLevel. It uses the same text
-// representation as zapcore.Level ("debug", "info", "warn", "error", "dpanic",
-// "panic", and "fatal").
+// UnmarshalText unmarshals the text to an AtomicLevel. It uses the same text
+// representations as the static zapcore.Levels ("debug", "info", "warn",
+// "error", "dpanic", "panic", and "fatal").
 func (lvl *AtomicLevel) UnmarshalText(text []byte) error {
 	if lvl.l == nil {
 		lvl.l = &atomic.Int32{}

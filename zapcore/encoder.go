@@ -141,18 +141,18 @@ func (e *DurationEncoder) UnmarshalText(text []byte) error {
 // zapcore.
 type EncoderConfig struct {
 	// Set the keys used for each log entry.
-	MessageKey    string `json:"message_key",yaml:"message_key"`
-	LevelKey      string `json:"level_key",yaml:"level_key"`
-	TimeKey       string `json:"time_key",yaml:"time_key"`
-	NameKey       string `json:"name_key",yaml:"name_key"`
-	CallerKey     string `json:"caller_key",yaml:"caller_key"`
-	StacktraceKey string `json:"stacktrace_key",yaml:"stacktrace_key"`
+	MessageKey    string `json:"messageKey",yaml:"messageKey"`
+	LevelKey      string `json:"levelKey",yaml:"levelKey"`
+	TimeKey       string `json:"timeKey",yaml:"timeKey"`
+	NameKey       string `json:"nameKey",yaml:"nameKey"`
+	CallerKey     string `json:"callerKey",yaml:"callerKey"`
+	StacktraceKey string `json:"stacktraceKey",yaml:"stacktraceKey"`
 	// Configure the primitive representations of common complex types. For
 	// example, some users may want all time.Times serialized as floating-point
 	// seconds since epoch, while others may prefer ISO8601 strings.
-	EncodeLevel    LevelEncoder    `json:"level_encoder",yaml:"level_encoder"`
-	EncodeTime     TimeEncoder     `json:"time_encoder",yaml:"time_encoder"`
-	EncodeDuration DurationEncoder `json:"duration_encoder",yaml:"duration_encoder"`
+	EncodeLevel    LevelEncoder    `json:"levelEncoder",yaml:"levelEncoder"`
+	EncodeTime     TimeEncoder     `json:"timeEncoder",yaml:"timeEncoder"`
+	EncodeDuration DurationEncoder `json:"durationEncoder",yaml:"durationEncoder"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a

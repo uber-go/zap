@@ -26,30 +26,31 @@ import (
 	"go.uber.org/zap/testutils"
 )
 
-func BenchmarkMultiWriteSyncer2(b *testing.B) {
-	w := MultiWriteSyncer(
-		&testutils.Discarder{},
-		&testutils.Discarder{},
-	)
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			w.Write([]byte("foobarbazbabble"))
-		}
+func BenchmarkMultiWriteSyncer(b *testing.B) {
+	b.Run("2", func(b *testing.B) {
+		w := NewMultiWriteSyncer(
+			&testutils.Discarder{},
+			&testutils.Discarder{},
+		)
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				w.Write([]byte("foobarbazbabble"))
+			}
+		})
 	})
-}
-
-func BenchmarkMultiWriteSyncer4(b *testing.B) {
-	w := MultiWriteSyncer(
-		&testutils.Discarder{},
-		&testutils.Discarder{},
-		&testutils.Discarder{},
-		&testutils.Discarder{},
-	)
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			w.Write([]byte("foobarbazbabble"))
-		}
+	b.Run("4", func(b *testing.B) {
+		w := NewMultiWriteSyncer(
+			&testutils.Discarder{},
+			&testutils.Discarder{},
+			&testutils.Discarder{},
+			&testutils.Discarder{},
+		)
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				w.Write([]byte("foobarbazbabble"))
+			}
+		})
 	})
 }

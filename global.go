@@ -30,7 +30,7 @@ var (
 	// L is a global Logger. It defaults to a no-op implementation but can be
 	// replaced using ReplaceGlobals.
 	//
-	// Both L and S are unlocked, so replacing them while they're in
+	// Both L and S are unsynchronized, so replacing them while they're in
 	// use isn't safe.
 	L = New(nil)
 	// S is a global SugaredLogger, similar to L. It also defaults to a no-op

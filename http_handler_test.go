@@ -38,7 +38,7 @@ import (
 )
 
 func newHandler() (AtomicLevel, *Logger) {
-	lvl := DynamicLevel()
+	lvl := NewAtomicLevel()
 	logger := New(zapcore.NewNopCore())
 	return lvl, logger
 }

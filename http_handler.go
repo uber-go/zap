@@ -28,11 +28,14 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// ServeHTTP supports changing logging level with an HTTP request.
+// ServeHTTP is a simple JSON endpoint that can report on or change the current
+// logging level.
 //
 // GET requests return a JSON description of the current logging level. PUT
 // requests change the logging level and expect a payload like:
 //   {"level":"info"}
+//
+// It's perfectly safe to change the logging level while a program is running.
 func (lvl AtomicLevel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	type errorResponse struct {
 		Error string `json:"error"`

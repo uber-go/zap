@@ -85,9 +85,9 @@ func (w writerWrapper) Sync() error {
 
 type multiWriteSyncer []WriteSyncer
 
-// MultiWriteSyncer creates a WriteSyncer that duplicates its writes
+// NewMultiWriteSyncer creates a WriteSyncer that duplicates its writes
 // and sync calls, much like io.MultiWriter.
-func MultiWriteSyncer(ws ...WriteSyncer) WriteSyncer {
+func NewMultiWriteSyncer(ws ...WriteSyncer) WriteSyncer {
 	// Copy to protect against https://github.com/golang/go/issues/7809
 	return multiWriteSyncer(append([]WriteSyncer(nil), ws...))
 }

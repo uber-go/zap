@@ -68,8 +68,8 @@ func TestEntryCaller(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		caller := MakeEntryCaller(100, "foo.go", 42, tt.ok)
-		assert.Equal(t, tt.want, caller, "Unexpected output from MakeEntryCaller.")
+		caller := NewEntryCaller(100, "foo.go", 42, tt.ok)
+		assert.Equal(t, tt.want, caller, "Unexpected output from NewEntryCaller.")
 		assert.Equal(t, tt.str, caller.String(), "Unexpected string output from EntryCaller")
 	}
 }

@@ -32,7 +32,7 @@ import (
 // caps the global CPU and I/O load that logging puts on your process while
 // attempting to preserve a representative subset of your logs.
 //
-// Values configured here are per-second. See zapcore.Sample for details.
+// Values configured here are per-second. See zapcore.NewSampler for details.
 type SamplingConfig struct {
 	Initial    int `json:"initial",yaml:"initial"`
 	Thereafter int `json:"therafter",yaml:"thereafter"`
@@ -84,7 +84,7 @@ type Config struct {
 // Stacktraces are automatically included on logs of ErrorLevel and above.
 func NewProductionConfig() Config {
 	return Config{
-		Level:       DynamicLevel(),
+		Level:       NewAtomicLevel(),
 		Development: false,
 		Sampling: &SamplingConfig{
 			Initial:    100,
@@ -110,11 +110,11 @@ func NewProductionConfig() Config {
 // NewDevelopmentConfig is a reasonable development configuration. Logging is
 // enabled at DebugLevel and above.
 //
-// It enables development mode, uses a console encoder, writes to standard
-// error, and disables sampling. Stacktraces are automatically included on logs
-// of WarnLevel and above.
+// It enables development mode (which makes DPanicLevel logs panic), uses a
+// console encoder, writes to standard error, and disables sampling.
+// Stacktraces are automatically included on logs of WarnLevel and above.
 func NewDevelopmentConfig() Config {
-	dyn := DynamicLevel()
+	dyn := NewAtomicLevel()
 	dyn.SetLevel(DebugLevel)
 
 	return Config{

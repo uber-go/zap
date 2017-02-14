@@ -44,7 +44,7 @@ func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
 	if len(writers) == 1 {
 		return zapcore.Lock(writers[0]), close, err
 	}
-	return zapcore.Lock(zapcore.MultiWriteSyncer(writers...)), close, err
+	return zapcore.Lock(zapcore.NewMultiWriteSyncer(writers...)), close, err
 }
 
 func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
