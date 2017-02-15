@@ -63,7 +63,7 @@ test:
 
 .PHONY: coveralls
 coveralls:
-	goveralls -service=travis-ci .
+	goveralls -service=travis-ci
 
 .PHONY: bench
 BENCH ?= .
