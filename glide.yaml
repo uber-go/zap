@@ -3,6 +3,7 @@ license: MIT
 import:
 - package: go.uber.org/atomic
 testImport:
+- package: github.com/satori/go.uuid
 - package: github.com/sirupsen/logrus
 - package: github.com/apex/log
   subpackages:
@@ -17,10 +18,10 @@ testImport:
 - package: gopkg.in/inconshreveable/log15.v2
 - package: github.com/mattn/goveralls
 - package: github.com/pborman/uuid
+- package: go.pedge.io/lion
 - package: golang.org/x/tools
   subpackages:
   - cover
-- package: golang.org/x/tools/cover
 - package: github.com/golang/lint
   subpackages:
   - golint
