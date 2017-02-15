@@ -4,6 +4,8 @@
 This is the first release candidate for zap's stable release. There are multiple
 breaking changes and improvements from the pre-release version. Most notably:
 
+* **Zap's import path is now "go.uber.org/zap"** &mdash; all users will
+  need to update their code.
 * User-facing types and functions remain in the `zap` package. Code relevant
   largely to extension authors is now in the `zapcore` package.
 * The `zapcore.Core` type makes it easy for third-party packages to use zap's
