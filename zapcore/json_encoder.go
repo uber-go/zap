@@ -24,6 +24,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"math"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -37,6 +38,22 @@ const (
 	// Initial buffer size for encoders.
 	_initialBufSize = 1024
 )
+
+var _jsonPool = sync.Pool{New: func() interface{} {
+	return &jsonEncoder{}
+}}
+
+func getJSONEncoder() *jsonEncoder {
+	return _jsonPool.Get().(*jsonEncoder)
+}
+
+func putJSONEncoder(enc *jsonEncoder) {
+	enc.EncoderConfig = nil
+	enc.buf = nil
+	enc.spaced = false
+	enc.openNamespaces = 0
+	_jsonPool.Put(enc)
+}
 
 type jsonEncoder struct {
 	*EncoderConfig
@@ -244,21 +261,28 @@ func (enc *jsonEncoder) AppendUint8(v uint8)                { enc.AppendUint64(u
 func (enc *jsonEncoder) AppendUintptr(v uintptr)            { enc.AppendUint64(uint64(v)) }
 
 func (enc *jsonEncoder) Clone() Encoder {
-	clone := *enc
-	clone.buf = bufferpool.Get()
+	clone := enc.clone()
 	clone.buf.Write(enc.buf.Bytes())
-	return &clone
+	return clone
+}
+
+func (enc *jsonEncoder) clone() *jsonEncoder {
+	clone := getJSONEncoder()
+	clone.EncoderConfig = enc.EncoderConfig
+	clone.spaced = enc.spaced
+	clone.openNamespaces = enc.openNamespaces
+	clone.buf = bufferpool.Get()
+	return clone
 }
 
 func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, error) {
-	final := *enc
-	final.buf = bufferpool.Get()
+	final := enc.clone()
 	final.buf.AppendByte('{')
 
 	if final.LevelKey != "" {
 		final.addKey(final.LevelKey)
 		cur := final.buf.Len()
-		final.EncodeLevel(ent.Level, &final)
+		final.EncodeLevel(ent.Level, final)
 		if cur == final.buf.Len() {
 			// User-supplied EncodeLevel was a no-op. Fall back to strings to keep
 			// output JSON valid.
@@ -285,14 +309,17 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 		final.addElementSeparator()
 		final.buf.Write(enc.buf.Bytes())
 	}
-	addFields(&final, fields)
+	addFields(final, fields)
 	final.closeOpenNamespaces()
 	if ent.Stack != "" && final.StacktraceKey != "" {
 		final.AddString(final.StacktraceKey, ent.Stack)
 	}
 	final.buf.AppendByte('}')
 	final.buf.AppendByte('\n')
-	return final.buf, nil
+
+	ret := final.buf
+	putJSONEncoder(final)
+	return ret, nil
 }
 
 func (enc *jsonEncoder) truncate() {
