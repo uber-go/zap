@@ -22,9 +22,8 @@ logger.Infow("Failed to fetch URL.",
 logger.Infof("Failed to fetch URL: %s", url)
 ```
 
-When performance and type safety are critical, use the `Logger`. It's several
-times faster than the `SugaredLogger` and allocates far less, but it only
-supports structured logging.
+When performance and type safety are critical, use the `Logger`. It's even faster than
+the `SugaredLogger` and allocates far less, but it only supports structured logging.
 
 ```go
 logger := NewProduction()
