@@ -32,7 +32,7 @@ logger.Info("Failed to fetch URL.",
   // Structured context as strongly-typed Field values.
   zap.String("url", url),
   zap.Int("attempt", tryNum),
-  zap.Duration("backoff", sleepFor),
+  zap.Duration("backoff", time.Second),
 )
 ```
 
@@ -81,7 +81,7 @@ Log a static string, without any context or `printf`-style templating:
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
 | :zap: zap | 398 ns/op | 0 B/op | 0 allocs/op |
-| :zap: zap (sugared) | 400 ns/op | 705 B/op | 2 allocs/op |
+| :zap: zap (sugared) | 400 ns/op | 80 B/op | 2 allocs/op |
 | standard library | 678 ns/op | 80 B/op | 2 allocs/op |
 | logrus | 2778 ns/op | 1409 B/op | 25 allocs/op |
 | go-kit | 1318 ns/op | 656 B/op | 13 allocs/op |
