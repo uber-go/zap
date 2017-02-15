@@ -24,6 +24,7 @@ import (
 	"io"
 	"sync"
 
+	"go.uber.org/zap/internal/buffers"
 	"go.uber.org/zap/internal/multierror"
 )
 
@@ -81,6 +82,62 @@ type writerWrapper struct {
 
 func (w writerWrapper) Sync() error {
 	return nil
+}
+
+type bufferedWriter struct {
+	size int // in bytes
+	buf  []byte
+	ws   WriteSyncer
+}
+
+// Buffer creates a WriteSyncer that buffers the specified number of bytes in
+// memory. Buffered WriteSyncers aren't safe for concurrent use, and should be
+// wrapped by Lock in production.
+func Buffer(size int, ws WriteSyncer) WriteSyncer {
+	return &bufferedWriter{
+		size: size,
+		buf:  buffers.Get(),
+		ws:   ws,
+	}
+}
+
+func (b *bufferedWriter) Write(bs []byte) (int, error) {
+	// Attempt to buffer.
+	if len(b.buf)+len(bs) <= b.size {
+		b.buf = append(b.buf, bs...)
+		return len(bs), nil
+	}
+
+	// Flush current buffer contents.
+	var errs multierror.Error
+	errs = errs.Append(b.writeBufferContents())
+
+	if len(bs) > b.size {
+		// Write is too big to buffer.
+		n, err := b.ws.Write(bs)
+		errs = errs.Append(err)
+		return n, errs.AsError()
+	}
+
+	// We can buffer this write.
+	b.buf = append(b.buf, bs...)
+	return len(bs), errs.AsError()
+}
+
+func (b *bufferedWriter) Sync() error {
+	var errs multierror.Error
+	errs = errs.Append(b.writeBufferContents())
+	errs = errs.Append(b.ws.Sync())
+	return errs.AsError()
+}
+
+func (b *bufferedWriter) writeBufferContents() error {
+	if len(b.buf) == 0 {
+		return nil
+	}
+	_, err := b.ws.Write(b.buf)
+	b.buf = b.buf[:0]
+	return err
 }
 
 type multiWriteSyncer []WriteSyncer
