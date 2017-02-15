@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0.0-rc.1 (Unreleased)
+## v1.0.0-rc.1 (14 Feb 2017)
 This is the first release candidate for zap's stable release. There are multiple
 breaking changes and improvements from the pre-release version. Most notably:
 
