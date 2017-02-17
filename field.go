@@ -195,14 +195,18 @@ func NamedError(key string, err error) zapcore.Field {
 // extremely expensive (relatively speaking); this function both makes an
 // allocation and takes ~10 microseconds.
 func Stack(key string) zapcore.Field {
+	return stack(key, 4)
+}
+
+// needed for testing
+func stack(key string, skip int) zapcore.Field {
 	// Try to avoid allocating a buffer.
 	buf := bufferpool.Get()
-	bs := buf.Bytes()
 	// Returning the stacktrace as a string costs an allocation, but saves us
 	// from expanding the zapcore.Field union struct to include a byte slice. Since
 	// taking a stacktrace is already so expensive (~10us), the extra allocation
 	// is okay.
-	field := String(key, takeStacktrace(bs[:cap(bs)], false))
+	field := String(key, takeStacktrace(buf, skip))
 	bufferpool.Put(buf)
 	return field
 }

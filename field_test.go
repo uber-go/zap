@@ -164,7 +164,7 @@ func TestFieldConstructors(t *testing.T) {
 }
 
 func TestStackField(t *testing.T) {
-	f := Stack("stacktrace")
+	f := stack("stacktrace", 0)
 	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
 	assert.Contains(t, f.String, "zap.TestStackField", "Expected stacktrace to contain caller.")

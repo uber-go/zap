@@ -22,19 +22,26 @@ package zap
 
 import (
 	"testing"
+	"unicode/utf8"
+
+	"go.uber.org/zap/internal/bufferpool"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTakeStacktrace(t *testing.T) {
-	// Even if we pass a tiny buffer, takeStacktrace should allocate until it
-	// can capture the whole stacktrace.
-	traceNil := takeStacktrace(nil, false)
-	traceTiny := takeStacktrace(make([]byte, 1), false)
-	for _, trace := range []string{traceNil, traceTiny} {
-		// The top frame should be takeStacktrace.
-		assert.Contains(t, trace, "zap.takeStacktrace", "Stacktrace should contain the takeStacktrace function.")
-		// The stacktrace should also capture its immediate caller.
+	traceZero := takeStacktrace(bufferpool.Get(), 0)
+	for _, trace := range []string{traceZero} {
+		// The stacktrace should also its immediate caller.
 		assert.Contains(t, trace, "TestTakeStacktrace", "Stacktrace should contain the test function.")
 	}
+}
+
+func TestRunes(t *testing.T) {
+	// https://golang.org/src/bytes/buffer.go?s=8208:8261#L237
+	// I think this test might not be needed, because this might be checked
+	// implicitly by the fact that we can pass these as bytes to AppendByte
+	assert.True(t, '\n' < utf8.RuneSelf, `You can't cast '\n' to a byte, stop being silly`)
+	assert.True(t, '\t' < utf8.RuneSelf, `You can't cast '\t' to a byte, stop being silly`)
+	assert.True(t, ':' < utf8.RuneSelf, `You can't cast ':' to a byte, stop being silly`)
 }

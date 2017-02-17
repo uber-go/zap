@@ -50,7 +50,7 @@ func TestConfig(t *testing.T) {
 			expectRe: "DEBUG\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\tdebug\t" + `{"k": "v", "z": "zz"}` + "\n" +
 				"INFO\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\tinfo\t" + `{"k": "v", "z": "zz"}` + "\n" +
 				"WARN\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\twarn\t" + `{"k": "v", "z": "zz"}` + "\n" +
-				`goroutine \d+ \[running\]:`,
+				`go.uber.org/zap.TestConfig.func1`,
 		},
 	}
 

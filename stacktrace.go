@@ -20,23 +20,45 @@
 
 package zap
 
-import "runtime"
+import (
+	"runtime"
+
+	"go.uber.org/zap/buffer"
+)
 
 // takeStacktrace attempts to use the provided byte slice to take a stacktrace.
 // If the provided slice isn't large enough, takeStacktrace will allocate
 // successively larger slices until it can capture the whole stack.
-func takeStacktrace(buf []byte, includeAllGoroutines bool) string {
-	if len(buf) == 0 {
-		// We may have been passed a nil byte slice.
-		buf = make([]byte, 1024)
+func takeStacktrace(buffer *buffer.Buffer, skip int) string {
+	size := 16
+	programCounters := make([]uintptr, size)
+	n := runtime.Callers(skip+2, programCounters)
+	for n >= size {
+		size *= 2
+		programCounters = make([]uintptr, size)
+		n = runtime.Callers(skip+2, programCounters)
 	}
-	n := runtime.Stack(buf, includeAllGoroutines)
-	for n >= len(buf) {
-		// Buffer wasn't large enough, allocate a larger one. No need to copy
-		// previous buffer's contents.
-		size := 2 * n
-		buf = make([]byte, size)
-		n = runtime.Stack(buf, includeAllGoroutines)
+	programCounters = programCounters[:n]
+
+	for i, programCounter := range programCounters {
+		f := runtime.FuncForPC(programCounter)
+		name := f.Name()
+		// this strips everything below runtime.main
+		// TODO(pedge): we might want to do a better check than this
+		if name == "runtime.main" {
+			break
+		}
+		// heh
+		if i != 0 {
+			buffer.AppendByte('\n')
+		}
+		file, line := f.FileLine(programCounter - 1)
+		buffer.AppendString(f.Name())
+		buffer.AppendByte('\n')
+		buffer.AppendByte('\t')
+		buffer.AppendString(file)
+		buffer.AppendByte(':')
+		buffer.AppendInt(int64(line))
 	}
-	return string(buf[:n])
+	return buffer.String()
 }
