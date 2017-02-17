@@ -34,8 +34,8 @@ import (
 //
 // Values configured here are per-second. See zapcore.NewSampler for details.
 type SamplingConfig struct {
-	Initial    int `json:"initial",yaml:"initial"`
-	Thereafter int `json:"therafter",yaml:"thereafter"`
+	Initial    int `json:"initial" yaml:"initial"`
+	Thereafter int `json:"therafter" yaml:"thereafter"`
 }
 
 // Config offers a declarative way to construct a logger.
@@ -48,33 +48,33 @@ type Config struct {
 	// level, so calling Config.Level.SetLevel will atomically change the log
 	// level of all loggers descended from this config. The zero value is
 	// InfoLevel.
-	Level AtomicLevel `json:"level",yaml:"level"`
+	Level AtomicLevel `json:"level" yaml:"level"`
 	// Development puts the logger in development mode, which changes the
 	// behavior of DPanicLevel and takes stacktraces more liberally.
-	Development bool `json:"development",yaml:"development"`
+	Development bool `json:"development" yaml:"development"`
 	// DisableCaller stops annotating logs with the calling function's file
 	// name and line number. By default, all logs are annotated.
-	DisableCaller bool `json:"disableCaller",yaml:"disableCaller"`
+	DisableCaller bool `json:"disableCaller" yaml:"disableCaller"`
 	// DisableStacktrace completely disables automatic stacktrace capturing. By
 	// default, stacktraces are captured for WarnLevel and above logs in
 	// development and ErrorLevel and above in production.
-	DisableStacktrace bool `json:"disableStacktrace",yaml:"disableStacktrace"`
+	DisableStacktrace bool `json:"disableStacktrace" yaml:"disableStacktrace"`
 	// Sampling sets a sampling policy. A nil SamplingConfig disables sampling.
-	Sampling *SamplingConfig `json:"sampling",yaml:"sampling"`
+	Sampling *SamplingConfig `json:"sampling" yaml:"sampling"`
 	// Encoding sets the logger's encoding. Valid values are "json" and
 	// "console".
-	Encoding string `json:"encoding",yaml:"encoding"`
+	Encoding string `json:"encoding" yaml:"encoding"`
 	// EncoderConfig sets options for the chosen encoder. See
 	// zapcore.EncoderConfig for details.
-	EncoderConfig zapcore.EncoderConfig `json:"encoderConfig",yaml:"encoderConfig"`
+	EncoderConfig zapcore.EncoderConfig `json:"encoderConfig" yaml:"encoderConfig"`
 	// OutputPaths is a list of paths to write logging output to. See Open for
 	// details.
-	OutputPaths []string `json:"outputPaths",yaml:"outputPaths"`
+	OutputPaths []string `json:"outputPaths" yaml:"outputPaths"`
 	// ErrorOutputPaths is a list of paths to write internal logger errors to.
 	// The default is standard error.
-	ErrorOutputPaths []string `json:"errorOutputPaths",yaml:"errorOutputPaths"`
+	ErrorOutputPaths []string `json:"errorOutputPaths" yaml:"errorOutputPaths"`
 	// InitialFields is a collection of fields to add to the root logger.
-	InitialFields map[string]interface{} `json:"initialFields",yaml:"initialFields"`
+	InitialFields map[string]interface{} `json:"initialFields" yaml:"initialFields"`
 }
 
 // NewProductionConfig is the recommended production configuration. Logging is
