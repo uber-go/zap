@@ -83,6 +83,7 @@ type TestBuffer struct {
 	TestSyncer
 }
 
+// Push implements Pusher.
 func (b *TestBuffer) Push(_ Level, p []byte) (int, error) {
 	return b.Write(p)
 }
