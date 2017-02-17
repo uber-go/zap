@@ -30,21 +30,25 @@ import (
 
 // Open is a high-level wrapper that takes a variadic number of paths, opens or
 // creates each of the specified files, and combines them into a locked
-// WriteSyncer. It also returns any error encountered and a function to close
+// Pusher. It also returns any error encountered and a function to close
 // any opened files.
 //
-// Passing no paths returns a no-op WriteSyncer. The special paths "stdout" and
+// Passing no paths returns a no-op Pusher. The special paths "stdout" and
 // "stderr" are interpreted as os.Stdout and os.Stderr, respectively.
-func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
+func Open(paths ...string) (zapcore.Pusher, func(), error) {
 	if len(paths) == 0 {
-		return zapcore.AddSync(ioutil.Discard), func() {}, nil
+		return zapcore.IgnoreLevel(zapcore.AddSync(ioutil.Discard)), func() {}, nil
 	}
 
 	writers, close, err := open(paths)
 	if len(writers) == 1 {
-		return zapcore.Lock(writers[0]), close, err
+		return zapcore.Lock(zapcore.IgnoreLevel(writers[0])), close, err
 	}
-	return zapcore.Lock(zapcore.NewMultiWriteSyncer(writers...)), close, err
+	pushers := make([]zapcore.Pusher, len(writers))
+	for i, writer := range writers {
+		pushers[i] = zapcore.IgnoreLevel(writer)
+	}
+	return zapcore.Lock(zapcore.NewMultiPusher(pushers...)), close, err
 }
 
 func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {

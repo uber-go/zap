@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/testutils"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -73,7 +72,7 @@ func newZapLogger(lvl zapcore.Level) *zap.Logger {
 	enc := zapcore.NewJSONEncoder(cfg.EncoderConfig)
 	return zap.New(zapcore.NewCore(
 		enc,
-		&testutils.Discarder{},
+		&zapcore.TestDiscarder{},
 		lvl,
 	))
 }

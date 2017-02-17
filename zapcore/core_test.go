@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/zap/testutils"
 	. "go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/assert"
@@ -77,7 +76,7 @@ func TestIOCore(t *testing.T) {
 
 	core := NewCore(
 		NewJSONEncoder(cfg),
-		temp,
+		IgnoreLevel(temp),
 		InfoLevel,
 	).With([]Field{makeInt64Field("k", 1)})
 
@@ -117,7 +116,7 @@ func TestIOCoreSyncsOutput(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		sink := &testutils.Discarder{}
+		sink := &TestDiscarder{}
 		core := NewCore(
 			NewJSONEncoder(testEncoderConfig()),
 			sink,
@@ -132,7 +131,7 @@ func TestIOCoreSyncsOutput(t *testing.T) {
 func TestIOCoreWriteFailure(t *testing.T) {
 	core := NewCore(
 		NewJSONEncoder(testEncoderConfig()),
-		Lock(&testutils.FailWriter{}),
+		Lock(&TestFailPusher{}),
 		DebugLevel,
 	)
 	err := core.Write(Entry{}, nil)

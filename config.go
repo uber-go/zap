@@ -160,7 +160,7 @@ func (cfg Config) Build(opts ...Option) (*Logger, error) {
 	return log, nil
 }
 
-func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
+func (cfg Config) buildOptions(errSink zapcore.Pusher) []Option {
 	opts := []Option{ErrorOutput(errSink)}
 
 	if cfg.Development {
@@ -201,7 +201,7 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 	return opts
 }
 
-func (cfg Config) openSinks() (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
+func (cfg Config) openSinks() (zapcore.Pusher, zapcore.Pusher, error) {
 	sink, closeOut, err := Open(cfg.OutputPaths...)
 	if err != nil {
 		closeOut()

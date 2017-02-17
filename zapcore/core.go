@@ -53,19 +53,19 @@ func (n nopCore) With([]Field) Core                           { return n }
 func (nopCore) Check(_ Entry, ce *CheckedEntry) *CheckedEntry { return ce }
 func (nopCore) Write(Entry, []Field) error                    { return nil }
 
-// NewCore creates a Core that writes logs to a WriteSyncer.
-func NewCore(enc Encoder, ws WriteSyncer, enab LevelEnabler) Core {
+// NewCore creates a Core that writes logs to a Pusher.
+func NewCore(enc Encoder, p Pusher, enab LevelEnabler) Core {
 	return &ioCore{
 		LevelEnabler: enab,
 		enc:          enc,
-		out:          Lock(ws),
+		out:          Lock(p),
 	}
 }
 
 type ioCore struct {
 	LevelEnabler
 	enc Encoder
-	out WriteSyncer
+	out Pusher
 }
 
 func (c *ioCore) With(fields []Field) Core {
@@ -86,7 +86,7 @@ func (c *ioCore) Write(ent Entry, fields []Field) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.out.Write(buf.Bytes())
+	_, err = c.out.Push(ent.Level, buf.Bytes())
 	bufferpool.Put(buf)
 	if err != nil {
 		return err

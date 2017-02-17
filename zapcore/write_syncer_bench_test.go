@@ -20,36 +20,32 @@
 
 package zapcore
 
-import (
-	"testing"
+import "testing"
 
-	"go.uber.org/zap/testutils"
-)
-
-func BenchmarkMultiWriteSyncer(b *testing.B) {
+func BenchmarkMultiPusher(b *testing.B) {
 	b.Run("2", func(b *testing.B) {
-		w := NewMultiWriteSyncer(
-			&testutils.Discarder{},
-			&testutils.Discarder{},
+		p := NewMultiPusher(
+			&TestDiscarder{},
+			&TestDiscarder{},
 		)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				w.Write([]byte("foobarbazbabble"))
+				p.Push(DebugLevel, []byte("foobarbazbabble"))
 			}
 		})
 	})
 	b.Run("4", func(b *testing.B) {
-		w := NewMultiWriteSyncer(
-			&testutils.Discarder{},
-			&testutils.Discarder{},
-			&testutils.Discarder{},
-			&testutils.Discarder{},
+		p := NewMultiPusher(
+			&TestDiscarder{},
+			&TestDiscarder{},
+			&TestDiscarder{},
+			&TestDiscarder{},
 		)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				w.Write([]byte("foobarbazbabble"))
+				p.Push(DebugLevel, []byte("foobarbazbabble"))
 			}
 		})
 	})

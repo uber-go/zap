@@ -25,7 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/zap/testutils"
 	. "go.uber.org/zap/zapcore"
 )
 
@@ -206,7 +205,7 @@ func BenchmarkSampler_Check(b *testing.B) {
 			fac := NewSampler(
 				NewCore(
 					NewJSONEncoder(testEncoderConfig()),
-					&testutils.Discarder{},
+					&TestDiscarder{},
 					DebugLevel,
 				),
 				time.Millisecond, 1, 1000)

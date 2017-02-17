@@ -37,7 +37,7 @@ func TestOpenNoPaths(t *testing.T) {
 	assert.NoError(t, err, "Expected opening no paths to succeed.")
 	assert.Equal(
 		t,
-		zapcore.AddSync(ioutil.Discard),
+		zapcore.IgnoreLevel(zapcore.AddSync(ioutil.Discard)),
 		ws,
 		"Expected opening no paths to return a no-op WriteSyncer.",
 	)
