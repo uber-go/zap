@@ -1,8 +1,8 @@
-hash: a388f2aa2d844ff734fe0e8d309d1b67166f8434c1d331242c162bf92923ce5f
-updated: 2017-02-15T11:47:26.561157555-08:00
+hash: 914c2496c3082b58188a9d2417ff56745ab9699c391e74bf0dcb18bac732fcd2
+updated: 2017-02-19T10:17:25.136935868-08:00
 imports:
 - name: go.uber.org/atomic
-  version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
+  version: 0c9e689d64f004564b79d9a663634756df322902
 testImports:
 - name: github.com/apex/log
   version: 4ea85e918cc8389903d5f12d7ccac5c23ab7d89b
@@ -27,7 +27,7 @@ testImports:
 - name: github.com/go-stack/stack
   version: 100eb0c0a9c5b306ca2fb4f165df21d80ada4b82
 - name: github.com/golang/lint
-  version: 206c0f020eba0f7fbcfbc467a5eb808037df2ed6
+  version: b8599f7d71e7fead76b25aeb919c0e2558672f4a
   subpackages:
   - golint
 - name: github.com/kr/logfmt
@@ -37,9 +37,11 @@ testImports:
 - name: github.com/mattn/go-isatty
   version: 30a891c33c7cde7b02a981314b4228ec99380cca
 - name: github.com/mattn/goveralls
-  version: a63d65fe590e2c830e60ad260cde6755ce3482a5
+  version: 8482d0ebd2a64f95ce02d2b9b7065b0d6fe9151b
 - name: github.com/pborman/uuid
-  version: 5007efa264d92316c43112bc573e754bc889b7b1
+  version: 1b00554d822231195d1babd97ff4a781231955c9
+- name: github.com/pkg/errors
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
@@ -49,7 +51,7 @@ testImports:
 - name: github.com/sirupsen/logrus
   version: 9b48ece7fc373043054858f8c0d362665e866004
 - name: github.com/stretchr/testify
-  version: 2402e8e7a02fc811447d11f881aa9746cdc57983
+  version: 4d4bfba8f1d1027c4fdbe371823030df51419987
   subpackages:
   - assert
   - require
@@ -60,7 +62,7 @@ testImports:
   subpackages:
   - unix
 - name: golang.org/x/tools
-  version: 3d92dd60033c312e3ae7cac319c792271cf67e37
+  version: 6e7ee5a9ec598d425ca86d6aab6e76e21baf328c
   subpackages:
   - cover
 - name: gopkg.in/inconshreveable/log15.v2
