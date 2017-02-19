@@ -32,7 +32,7 @@ var (
 	//
 	// Both L and S are unsynchronized, so replacing them while they're in
 	// use isn't safe.
-	L = New(nil)
+	L = NewNop()
 	// S is a global SugaredLogger, similar to L. It also defaults to a no-op
 	// implementation.
 	S = L.Sugar()
