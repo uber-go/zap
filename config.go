@@ -35,7 +35,7 @@ import (
 // Values configured here are per-second. See zapcore.NewSampler for details.
 type SamplingConfig struct {
 	Initial    int `json:"initial" yaml:"initial"`
-	Thereafter int `json:"therafter" yaml:"thereafter"`
+	Thereafter int `json:"thereafter" yaml:"thereafter"`
 }
 
 // Config offers a declarative way to construct a logger.
