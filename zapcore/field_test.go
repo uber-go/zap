@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	richErrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
 	. "go.uber.org/zap/zapcore"
@@ -126,4 +127,20 @@ func TestFields(t *testing.T) {
 		f.AddTo(enc)
 		assert.Equal(t, tt.want, enc.Fields["k"], "Unexpected output from field %+v.", f)
 	}
+}
+
+func TestRichErrorSupport(t *testing.T) {
+	f := Field{
+		Type:      ErrorType,
+		Interface: richErrors.WithMessage(richErrors.New("egad"), "failed"),
+		Key:       "k",
+	}
+	enc := NewMapObjectEncoder()
+	f.AddTo(enc)
+	serialized := enc.Fields["k"]
+	// Don't assert the exact format used by a third-party package, but ensure
+	// that some critical elements are present.
+	assert.Regexp(t, `egad`, serialized, "Expected original error message to be present.")
+	assert.Regexp(t, `failed`, serialized, "Expected error annotation to be present.")
+	assert.Regexp(t, `TestRichErrorSupport`, serialized, "Expected calling function to be present in stacktrace.")
 }

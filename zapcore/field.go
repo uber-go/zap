@@ -151,7 +151,14 @@ func (f Field) AddTo(enc ObjectEncoder) {
 	case StringerType:
 		enc.AddString(f.Key, f.Interface.(fmt.Stringer).String())
 	case ErrorType:
-		enc.AddString(f.Key, f.Interface.(error).Error())
+		val := f.Interface.(error)
+		if fancy, ok := val.(fmt.Formatter); ok {
+			// This is a rich error type, like those produced by
+			// github.com/pkg/errors.
+			enc.AddString(f.Key, fmt.Sprintf("%+v", fancy))
+		} else {
+			enc.AddString(f.Key, val.Error())
+		}
 	case SkipType:
 		break
 	default:
