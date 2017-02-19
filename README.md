@@ -3,6 +3,7 @@
 Blazing fast, structured, leveled logging in Go.
 
 ## Installation
+
 `go get -u go.uber.org/zap`
 
 ## Quick Start
@@ -12,21 +13,22 @@ In contexts where performance is nice, but not critical, use the
 and includes both structured and `printf`-style APIs.
 
 ```go
-logger := NewProduction().Sugar()
-logger.Infow("Failed to fetch URL.",
+logger, _ := NewProduction()
+sugar := logger.Sugar()
+sugar.Infow("Failed to fetch URL.",
   // Structured context as loosely-typed key-value pairs.
   "url", url,
   "attempt", retryNum,
   "backoff", time.Second,
 )
-logger.Infof("Failed to fetch URL: %s", url)
+sugar.Infof("Failed to fetch URL: %s", url)
 ```
 
 When performance and type safety are critical, use the `Logger`. It's even faster than
 the `SugaredLogger` and allocates far less, but it only supports structured logging.
 
 ```go
-logger := NewProduction()
+logger, _ := NewProduction()
 logger.Info("Failed to fetch URL.",
   // Structured context as strongly-typed Field values.
   zap.String("url", url),
