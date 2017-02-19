@@ -59,16 +59,17 @@ func ReplaceGlobals(logger *Logger) func() {
 // It returns a function to restore the original prefix and flags and reset the
 // standard library's output to os.Stdout.
 func RedirectStdLog(l *Logger) func() {
+	const (
+		stdLogDefaultDepth = 4
+		loggerWriterDepth  = 1
+	)
 	flags := log.Flags()
 	prefix := log.Prefix()
 	log.SetFlags(0)
 	log.SetPrefix("")
-	if l.addCaller {
-		const stdLogDefaultDepth = 4
-		const loggerWriterDepth = 1
-		l = l.WithOptions(AddCallerSkip(stdLogDefaultDepth + loggerWriterDepth))
-	}
-	log.SetOutput(&loggerWriter{l})
+	log.SetOutput(&loggerWriter{l.WithOptions(
+		AddCallerSkip(stdLogDefaultDepth + loggerWriterDepth),
+	)})
 	return func() {
 		log.SetFlags(flags)
 		log.SetPrefix(prefix)

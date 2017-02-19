@@ -79,12 +79,11 @@ func TestRedirectStdLog(t *testing.T) {
 }
 
 func TestRedirectStdLogCaller(t *testing.T) {
-	withLogger(t, DebugLevel, nil, func(l *Logger, logs *observer.ObservedLogs) {
-		l = l.WithOptions(AddCaller())
+	withLogger(t, DebugLevel, []Option{AddCaller()}, func(l *Logger, logs *observer.ObservedLogs) {
 		defer RedirectStdLog(l)()
 		log.Print("redirected")
 		entries := logs.All()
-		require.Len(t, entries, 1)
-		assert.Contains(t, entries[0].Entry.Caller.File, "global_test.go")
+		require.Len(t, entries, 1, "Unexpected number of logs.")
+		assert.Contains(t, entries[0].Entry.Caller.File, "global_test.go", "Unexpected caller annotation.")
 	})
 }
