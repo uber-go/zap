@@ -89,6 +89,7 @@ func NewProductionEncoderConfig() zapcore.EncoderConfig {
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 		EncodeTime:     zapcore.EpochTimeEncoder,
 		EncodeDuration: zapcore.SecondsDurationEncoder,
+		EncodeCaller:   zapcore.FullPathCallerEncoder,
 	}
 }
 
@@ -126,6 +127,7 @@ func NewDevelopmentEncoderConfig() zapcore.EncoderConfig {
 		EncodeLevel:    zapcore.CapitalLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeDuration: zapcore.StringDurationEncoder,
+		EncodeCaller:   zapcore.FullPathCallerEncoder,
 	}
 }
 

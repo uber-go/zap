@@ -162,14 +162,36 @@ func (e *DurationEncoder) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// A CallerEncoder serializes a EntryCaller to a primitive type.
+type CallerEncoder func(EntryCaller, PrimitiveArrayEncoder)
+
+// FullPathCallerEncoder serializes caller in /full/path/file:line format.
+func FullPathCallerEncoder(caller EntryCaller, enc PrimitiveArrayEncoder) {
+	// OPTIMIZE: after adding AppendBytes to PrimitiveArrayEncoder just copy bytes
+	// from buffer to not allocate string.
+	enc.AppendString(caller.String())
+}
+
+// UnmarshalText unmarshals text to a CallerEncoder.
+// Anything is unmarshaled to FullPathCallerEncoder at that moment.
+func (e *CallerEncoder) UnmarshalText(text []byte) error {
+	switch string(text) {
+	//case "gopath": // TODO
+	default:
+		*e = FullPathCallerEncoder
+	}
+	return nil
+}
+
 // An EncoderConfig allows users to configure the concrete encoders supplied by
 // zapcore.
 type EncoderConfig struct {
 	// Set the keys used for each log entry.
-	MessageKey    string `json:"messageKey" yaml:"messageKey"`
-	LevelKey      string `json:"levelKey" yaml:"levelKey"`
-	TimeKey       string `json:"timeKey" yaml:"timeKey"`
-	NameKey       string `json:"nameKey" yaml:"nameKey"`
+	MessageKey string `json:"messageKey" yaml:"messageKey"`
+	LevelKey   string `json:"levelKey" yaml:"levelKey"`
+	TimeKey    string `json:"timeKey" yaml:"timeKey"`
+	NameKey    string `json:"nameKey" yaml:"nameKey"`
+	// CallerKey sets key for caller. If empty, caller is not logged.
 	CallerKey     string `json:"callerKey" yaml:"callerKey"`
 	StacktraceKey string `json:"stacktraceKey" yaml:"stacktraceKey"`
 	// Configure the primitive representations of common complex types. For
@@ -178,6 +200,7 @@ type EncoderConfig struct {
 	EncodeLevel    LevelEncoder    `json:"levelEncoder" yaml:"levelEncoder"`
 	EncodeTime     TimeEncoder     `json:"timeEncoder" yaml:"timeEncoder"`
 	EncodeDuration DurationEncoder `json:"durationEncoder" yaml:"durationEncoder"`
+	EncodeCaller   CallerEncoder   `json:"callerEncoder" yaml:"callerEncoder"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a

@@ -295,7 +295,8 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	if ent.Caller.Defined && final.CallerKey != "" {
 		// NOTE: we add the field here for parity compromise with text
 		// prepending, while not actually mutating the message string.
-		final.AddString(final.CallerKey, ent.Caller.String())
+		final.addKey(final.CallerKey)
+		final.EncodeCaller(ent.Caller, final)
 	}
 	if final.MessageKey != "" {
 		final.addKey(enc.MessageKey)

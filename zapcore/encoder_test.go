@@ -53,6 +53,7 @@ func testEncoderConfig() EncoderConfig {
 		EncodeTime:     EpochTimeEncoder,
 		EncodeLevel:    LowercaseLevelEncoder,
 		EncodeDuration: SecondsDurationEncoder,
+		EncodeCaller:   FullPathCallerEncoder,
 	}
 }
 
@@ -105,6 +106,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
 			expectedConsole: "0\tinfo\tmain@foo.go:42\thello\nfake-stack",
@@ -121,6 +123,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
 			expectedConsole: "0\tmain@foo.go:42\thello\nfake-stack",
@@ -137,6 +140,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"info","N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
 			expectedConsole: "info\tmain@foo.go:42\thello\nfake-stack",
@@ -153,6 +157,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","S":"fake-stack"}`,
 			expectedConsole: "0\tinfo\tmain@foo.go:42\nfake-stack",
@@ -169,6 +174,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"info","T":0,"C":"foo.go:42","M":"hello","S":"fake-stack"}`,
 			expectedConsole: "0\tinfo\tfoo.go:42\thello\nfake-stack",
@@ -185,6 +191,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"info","T":0,"N":"main","M":"hello","S":"fake-stack"}`,
 			expectedConsole: "0\tinfo\tmain\thello\nfake-stack",
@@ -201,6 +208,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello"}`,
 			expectedConsole: "0\tinfo\tmain@foo.go:42\thello",
@@ -217,6 +225,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     func(t time.Time, enc PrimitiveArrayEncoder) { enc.AppendString(t.String()) },
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
 			},
 			extra: func(enc Encoder) {
 				enc.AddTime("extra", _epoch)
@@ -242,6 +251,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: StringDurationEncoder,
 				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
 			},
 			extra: func(enc Encoder) {
 				enc.AddDuration("extra", time.Second)
@@ -267,6 +277,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    CapitalLevelEncoder,
+				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"INFO","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
 			expectedConsole: "0\tINFO\tmain@foo.go:42\thello\nfake-stack",
@@ -283,6 +294,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
 			},
 			extra: func(enc Encoder) {
 				enc.OpenNamespace("outer")
@@ -307,6 +319,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     func(time.Time, PrimitiveArrayEncoder) {},
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
 			},
 			extra:           func(enc Encoder) { enc.AddTime("sometime", time.Unix(0, 100)) },
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","sometime":100,"S":"fake-stack"}`,
@@ -324,6 +337,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: func(time.Duration, PrimitiveArrayEncoder) {},
 				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
 			},
 			extra:           func(enc Encoder) { enc.AddDuration("someduration", time.Microsecond) },
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","someduration":1000,"S":"fake-stack"}`,
@@ -341,6 +355,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    func(Level, PrimitiveArrayEncoder) {},
+				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
 			expectedConsole: "0\tmain@foo.go:42\thello\nfake-stack",
@@ -448,6 +463,28 @@ func TestDurationEncoders(t *testing.T) {
 			tt.expected,
 			func(arr ArrayEncoder) { de(elapsed, arr) },
 			"Unexpected output serializing %v with %q.", elapsed, tt.name,
+		)
+	}
+}
+
+func TestCallerEncoders(t *testing.T) {
+	caller := _testEntry.Caller
+	tests := []struct {
+		name     string
+		expected interface{} // output of serializing caller
+	}{
+		{"", "foo.go:42"},
+		{"something-random", "foo.go:42"},
+	}
+
+	for _, tt := range tests {
+		var ce CallerEncoder
+		require.NoError(t, ce.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+		assertAppended(
+			t,
+			tt.expected,
+			func(arr ArrayEncoder) { ce(caller, arr) },
+			"Unexpected output serializing file name as %v with %q.", tt.expected, tt.name,
 		)
 	}
 }
