@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.uber.org/zap/internal/observer"
 	"go.uber.org/zap/zapcore"
@@ -75,4 +76,14 @@ func TestRedirectStdLog(t *testing.T) {
 
 	assert.Equal(t, initialFlags, log.Flags(), "Expected to reset initial flags.")
 	assert.Equal(t, initialPrefix, log.Prefix(), "Expected to reset initial prefix.")
+}
+
+func TestRedirectStdLogCaller(t *testing.T) {
+	withLogger(t, DebugLevel, []Option{AddCaller()}, func(l *Logger, logs *observer.ObservedLogs) {
+		defer RedirectStdLog(l)()
+		log.Print("redirected")
+		entries := logs.All()
+		require.Len(t, entries, 1, "Unexpected number of logs.")
+		assert.Contains(t, entries[0].Entry.Caller.File, "global_test.go", "Unexpected caller annotation.")
+	})
 }
