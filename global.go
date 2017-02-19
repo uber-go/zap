@@ -63,6 +63,11 @@ func RedirectStdLog(l *Logger) func() {
 	prefix := log.Prefix()
 	log.SetFlags(0)
 	log.SetPrefix("")
+	if l.addCaller {
+		const stdLogDefaultDepth = 4
+		const loggerWriterDepth = 1
+		l = l.WithOptions(AddCallerSkip(stdLogDefaultDepth + loggerWriterDepth))
+	}
 	log.SetOutput(&loggerWriter{l})
 	return func() {
 		log.SetFlags(flags)
