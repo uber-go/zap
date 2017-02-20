@@ -23,6 +23,7 @@ package zapcore_test
 import (
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"testing"
 	"time"
@@ -36,11 +37,19 @@ import (
 type users int
 
 func (u users) String() string {
-	return fmt.Sprintf("%d users", u)
+	return fmt.Sprintf("%d users", int(u))
 }
 
 func (u users) Error() string {
-	return fmt.Sprintf("%d too many users", u)
+	return fmt.Sprintf("%d too many users", int(u))
+}
+
+func (u users) Format(s fmt.State, verb rune) {
+	// Implement fmt.Formatter, but don't add any information beyond the basic
+	// Error method.
+	if verb == 'v' && s.Flag('+') {
+		io.WriteString(s, u.Error())
+	}
 }
 
 func (u users) MarshalLogObject(enc ObjectEncoder) error {
