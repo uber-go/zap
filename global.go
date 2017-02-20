@@ -24,31 +24,49 @@ import (
 	"bytes"
 	"log"
 	"os"
+	"sync"
 )
 
 var (
-	// L is a global Logger. It defaults to a no-op implementation but can be
-	// replaced using ReplaceGlobals.
-	//
-	// Both L and S are unsynchronized, so replacing them while they're in
-	// use isn't safe.
-	L = NewNop()
-	// S is a global SugaredLogger, similar to L. It also defaults to a no-op
-	// implementation.
-	S = L.Sugar()
+	_globalMu sync.RWMutex
+	_globalL  = NewNop()
+	_globalS  = _globalL.Sugar()
 )
 
-// ReplaceGlobals replaces the global Logger L and the global SugaredLogger S,
-// and returns a function to restore the original values.
+// L returns the global Logger, which can be reconfigured with ReplaceGlobals.
 //
-// Note that replacing the global loggers isn't safe while they're being used;
-// in practice, this means that only the owner of the application's main
-// function should use this method.
+// It's safe for concurrent use.
+func L() *Logger {
+	_globalMu.RLock()
+	l := _globalL
+	_globalMu.RUnlock()
+	return l
+}
+
+// S returns the global SugaredLogger, which can be reconfigured with
+// ReplaceGlobals.
+//
+// It's safe for concurrent use.
+func S() *SugaredLogger {
+	_globalMu.RLock()
+	s := _globalS
+	_globalMu.RUnlock()
+	return s
+}
+
+// ReplaceGlobals replaces the global Logger and the SugaredLogger, and returns
+// a function to restore the original values.
+//
+// It's safe for concurrent use.
 func ReplaceGlobals(logger *Logger) func() {
-	prev := *L
-	L = logger
-	S = logger.Sugar()
-	return func() { ReplaceGlobals(&prev) }
+	// This doesn't require synchronization to be safe, since pointers are a
+	// single word.
+	_globalMu.Lock()
+	prev := _globalL
+	_globalL = logger
+	_globalS = logger.Sugar()
+	_globalMu.Unlock()
+	return func() { ReplaceGlobals(prev) }
 }
 
 // RedirectStdLog redirects output from the standard library's "log" package to

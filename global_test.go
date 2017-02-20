@@ -22,28 +22,32 @@ package zap
 
 import (
 	"log"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 
 	"go.uber.org/zap/internal/observer"
+	"go.uber.org/zap/testutils"
 	"go.uber.org/zap/zapcore"
 )
 
 func TestReplaceGlobals(t *testing.T) {
-	initialL := *L
-	initialS := *S
+	initialL := *L()
+	initialS := *S()
 
 	withLogger(t, DebugLevel, nil, func(l *Logger, logs *observer.ObservedLogs) {
-		L.Info("no-op")
-		S.Info("no-op")
+		L().Info("no-op")
+		S().Info("no-op")
 		assert.Equal(t, 0, logs.Len(), "Expected initial logs to go to default no-op global.")
 
 		defer ReplaceGlobals(l)()
 
-		L.Info("captured")
-		S.Info("captured")
+		L().Info("captured")
+		S().Info("captured")
 		expected := observer.LoggedEntry{
 			Entry:   zapcore.Entry{Message: "captured"},
 			Context: []zapcore.Field{},
@@ -56,8 +60,36 @@ func TestReplaceGlobals(t *testing.T) {
 		)
 	})
 
-	assert.Equal(t, initialL, *L, "Expected func returned from ReplaceGlobals to restore initial L.")
-	assert.Equal(t, initialS, *S, "Expected func returned from ReplaceGlobals to restore initial S.")
+	assert.Equal(t, initialL, *L(), "Expected func returned from ReplaceGlobals to restore initial L.")
+	assert.Equal(t, initialS, *S(), "Expected func returned from ReplaceGlobals to restore initial S.")
+}
+
+func TestGlobalsConcurrentUse(t *testing.T) {
+	var (
+		stop atomic.Bool
+		wg   sync.WaitGroup
+	)
+
+	for i := 0; i < 100; i++ {
+		wg.Add(2)
+		go func() {
+			for !stop.Load() {
+				ReplaceGlobals(NewNop())
+			}
+			wg.Done()
+		}()
+		go func() {
+			for !stop.Load() {
+				L().With(Int("foo", 42)).Named("main").WithOptions(Development()).Info("")
+				S().Info("")
+			}
+			wg.Done()
+		}()
+	}
+
+	testutils.Sleep(100 * time.Millisecond)
+	stop.Toggle()
+	wg.Wait()
 }
 
 func TestRedirectStdLog(t *testing.T) {
