@@ -22,43 +22,70 @@ package zap
 
 import (
 	"runtime"
+	"strings"
+	"sync"
 
-	"go.uber.org/zap/buffer"
+	"go.uber.org/zap/internal/bufferpool"
+)
+
+var (
+	defaultUintptrSliceSize = 128
+	uintptrPool             = sync.Pool{
+		New: func() interface{} {
+			return make([]uintptr, defaultUintptrSliceSize)
+		},
+	}
 )
 
 // takeStacktrace attempts to use the provided byte slice to take a stacktrace.
 // If the provided slice isn't large enough, takeStacktrace will allocate
 // successively larger slices until it can capture the whole stack.
-func takeStacktrace(buffer *buffer.Buffer, skip int) string {
-	size := 16
-	programCounters := make([]uintptr, size)
-	n := runtime.Callers(skip+2, programCounters)
+func takeStacktrace() string {
+	buffer := bufferpool.Get()
+	programCounters := getUintptrSlice()
+	n := runtime.Callers(0, programCounters)
+	size := defaultUintptrSliceSize
 	for n >= size {
 		size *= 2
+		// Do not put programCounters back in pool, will put larger buffer in
+		// This is in case our size is always wrong, we optimize to pul
+		// correctly-sized buffers back in the pool
 		programCounters = make([]uintptr, size)
-		n = runtime.Callers(skip+2, programCounters)
+		n = runtime.Callers(0, programCounters)
 	}
 	programCounters = programCounters[:n]
 
-	for i, programCounter := range programCounters {
+	i := 0
+	for _, programCounter := range programCounters {
 		f := runtime.FuncForPC(programCounter)
 		name := f.Name()
-		// this strips everything below runtime.main
-		// TODO(pedge): we might want to do a better check than this
-		if name == "runtime.main" {
-			break
+		if strings.HasPrefix(name, "runtime.") || strings.HasPrefix(name, "go.uber.org/zap.") {
+			continue
 		}
-		// heh
 		if i != 0 {
 			buffer.AppendByte('\n')
 		}
+		i++
 		file, line := f.FileLine(programCounter - 1)
-		buffer.AppendString(f.Name())
+		buffer.AppendString(name)
 		buffer.AppendByte('\n')
 		buffer.AppendByte('\t')
 		buffer.AppendString(file)
 		buffer.AppendByte(':')
 		buffer.AppendInt(int64(line))
 	}
-	return buffer.String()
+
+	s := buffer.String()
+	bufferpool.Put(buffer)
+	putUintptrSlice(programCounters)
+	return s
+}
+
+func getUintptrSlice() []uintptr {
+	s := uintptrPool.Get().([]uintptr)
+	return s
+}
+
+func putUintptrSlice(s []uintptr) {
+	uintptrPool.Put(s)
 }
