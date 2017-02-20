@@ -175,6 +175,10 @@ func Time(key string, val time.Time) zapcore.Field {
 // "error". If passed a nil error, the field is a no-op. This is purely a
 // convenience for a common error-logging idiom; use String("someFieldName",
 // err.Error()) to customize the key.
+//
+// Errors which also implement fmt.Formatter (like those produced by
+// github.com/pkg/errors) will also have their verbose representation stored
+// under "errorVerbose".
 func Error(err error) zapcore.Field {
 	if err == nil {
 		return Skip()

@@ -126,6 +126,9 @@ func TestFields(t *testing.T) {
 		f := Field{Key: "k", Type: tt.t, Integer: tt.i, Interface: tt.iface, String: tt.s}
 		f.AddTo(enc)
 		assert.Equal(t, tt.want, enc.Fields["k"], "Unexpected output from field %+v.", f)
+
+		delete(enc.Fields, "k")
+		assert.Equal(t, 0, len(enc.Fields), "Unexpected extra fields present.")
 	}
 }
 
@@ -137,7 +140,9 @@ func TestRichErrorSupport(t *testing.T) {
 	}
 	enc := NewMapObjectEncoder()
 	f.AddTo(enc)
-	serialized := enc.Fields["k"]
+	assert.Equal(t, "failed: egad", enc.Fields["k"], "Unexpected basic error message.")
+
+	serialized := enc.Fields["kVerbose"]
 	// Don't assert the exact format used by a third-party package, but ensure
 	// that some critical elements are present.
 	assert.Regexp(t, `egad`, serialized, "Expected original error message to be present.")
