@@ -59,8 +59,6 @@ func S() *SugaredLogger {
 //
 // It's safe for concurrent use.
 func ReplaceGlobals(logger *Logger) func() {
-	// This doesn't require synchronization to be safe, since pointers are a
-	// single word.
 	_globalMu.Lock()
 	prev := _globalL
 	_globalL = logger

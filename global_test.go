@@ -26,13 +26,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
-
 	"go.uber.org/zap/internal/observer"
 	"go.uber.org/zap/testutils"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 )
 
 func TestReplaceGlobals(t *testing.T) {
