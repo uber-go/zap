@@ -18,6 +18,7 @@ testImport:
 - package: gopkg.in/inconshreveable/log15.v2
 - package: github.com/mattn/goveralls
 - package: github.com/pborman/uuid
+- package: github.com/pkg/errors
 - package: go.pedge.io/lion
 - package: golang.org/x/tools
   subpackages:

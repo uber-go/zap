@@ -23,10 +23,12 @@ package zapcore_test
 import (
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"testing"
 	"time"
 
+	richErrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
 	. "go.uber.org/zap/zapcore"
@@ -35,11 +37,19 @@ import (
 type users int
 
 func (u users) String() string {
-	return fmt.Sprintf("%d users", u)
+	return fmt.Sprintf("%d users", int(u))
 }
 
 func (u users) Error() string {
-	return fmt.Sprintf("%d too many users", u)
+	return fmt.Sprintf("%d too many users", int(u))
+}
+
+func (u users) Format(s fmt.State, verb rune) {
+	// Implement fmt.Formatter, but don't add any information beyond the basic
+	// Error method.
+	if verb == 'v' && s.Flag('+') {
+		io.WriteString(s, u.Error())
+	}
 }
 
 func (u users) MarshalLogObject(enc ObjectEncoder) error {
@@ -125,5 +135,26 @@ func TestFields(t *testing.T) {
 		f := Field{Key: "k", Type: tt.t, Integer: tt.i, Interface: tt.iface, String: tt.s}
 		f.AddTo(enc)
 		assert.Equal(t, tt.want, enc.Fields["k"], "Unexpected output from field %+v.", f)
+
+		delete(enc.Fields, "k")
+		assert.Equal(t, 0, len(enc.Fields), "Unexpected extra fields present.")
 	}
+}
+
+func TestRichErrorSupport(t *testing.T) {
+	f := Field{
+		Type:      ErrorType,
+		Interface: richErrors.WithMessage(richErrors.New("egad"), "failed"),
+		Key:       "k",
+	}
+	enc := NewMapObjectEncoder()
+	f.AddTo(enc)
+	assert.Equal(t, "failed: egad", enc.Fields["k"], "Unexpected basic error message.")
+
+	serialized := enc.Fields["kVerbose"]
+	// Don't assert the exact format used by a third-party package, but ensure
+	// that some critical elements are present.
+	assert.Regexp(t, `egad`, serialized, "Expected original error message to be present.")
+	assert.Regexp(t, `failed`, serialized, "Expected error annotation to be present.")
+	assert.Regexp(t, `TestRichErrorSupport`, serialized, "Expected calling function to be present in stacktrace.")
 }
