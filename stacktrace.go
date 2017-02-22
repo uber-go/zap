@@ -29,10 +29,13 @@ import (
 )
 
 var (
-	defaultUintptrSliceSize = 128
-	uintptrPool             = sync.Pool{
+	_stacktraceIgnorePrefixes = []string{
+		"go.uber.org/zap",
+		"runtime.",
+	}
+	_stacktraceUintptrPool = sync.Pool{
 		New: func() interface{} {
-			return make([]uintptr, defaultUintptrSliceSize)
+			return make([]uintptr, 64)
 		},
 	}
 )
@@ -42,24 +45,27 @@ var (
 // successively larger slices until it can capture the whole stack.
 func takeStacktrace() string {
 	buffer := bufferpool.Get()
-	programCounters := getUintptrSlice()
-	n := runtime.Callers(0, programCounters)
-	size := defaultUintptrSliceSize
-	for n >= size {
-		size *= 2
+	programCounters := _stacktraceUintptrPool.Get().([]uintptr)
+	defer bufferpool.Put(buffer)
+	defer _stacktraceUintptrPool.Put(programCounters)
+
+	for {
+		n := runtime.Callers(2, programCounters)
+		if n < len(programCounters) {
+			programCounters = programCounters[:n]
+			break
+		}
 		// Do not put programCounters back in pool, will put larger buffer in
 		// This is in case our size is always wrong, we optimize to pul
 		// correctly-sized buffers back in the pool
-		programCounters = make([]uintptr, size)
-		n = runtime.Callers(0, programCounters)
+		programCounters = make([]uintptr, len(programCounters)*2)
 	}
-	programCounters = programCounters[:n]
 
 	i := 0
 	for _, programCounter := range programCounters {
 		f := runtime.FuncForPC(programCounter)
 		name := f.Name()
-		if strings.HasPrefix(name, "runtime.") || strings.HasPrefix(name, "go.uber.org/zap.") {
+		if shouldIgnoreStacktraceName(name) {
 			continue
 		}
 		if i != 0 {
@@ -75,17 +81,14 @@ func takeStacktrace() string {
 		buffer.AppendInt(int64(line))
 	}
 
-	s := buffer.String()
-	bufferpool.Put(buffer)
-	putUintptrSlice(programCounters)
-	return s
+	return buffer.String()
 }
 
-func getUintptrSlice() []uintptr {
-	s := uintptrPool.Get().([]uintptr)
-	return s
-}
-
-func putUintptrSlice(s []uintptr) {
-	uintptrPool.Put(s)
+func shouldIgnoreStacktraceName(name string) bool {
+	for _, prefix := range _stacktraceIgnorePrefixes {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+	return false
 }

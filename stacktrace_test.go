@@ -21,13 +21,48 @@
 package zap
 
 import (
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTakeStacktrace(t *testing.T) {
-	trace := takeStacktrace()
-	// The stacktrace should also its immediate caller.
-	assert.Contains(t, trace, "TestTakeStacktrace", "Stacktrace should contain the test function.")
+var (
+	_stacktraceTestLock sync.Mutex
+)
+
+func TestEmptyStacktrace(t *testing.T) {
+	withStacktraceIgnorePrefixes(
+		[]string{
+			"go.uber.org/zap",
+			"runtime.",
+			"testing.",
+		},
+		func() {
+			assert.Empty(t, takeStacktrace(), "stacktrace should be empty if we ignore runtime, testing, and functions in this package")
+		},
+	)
+}
+
+func TestAllStacktrace(t *testing.T) {
+	withStacktraceIgnorePrefixes(
+		[]string{},
+		func() {
+			stacktrace := takeStacktrace()
+			assert.True(t, strings.HasPrefix(stacktrace, "go.uber.org/zap.TestAllStacktrace"),
+				"stacktrace should start with TestAllStacktrace if no prefixes set, but is %s", stacktrace)
+		},
+	)
+}
+
+// What happens with require functions? If they completely break out of the
+// function, will this lock never get unlocked?
+func withStacktraceIgnorePrefixes(prefixes []string, f func()) {
+	_stacktraceTestLock.Lock()
+	existing := _stacktraceIgnorePrefixes
+	_stacktraceIgnorePrefixes = prefixes
+	f()
+	_stacktraceIgnorePrefixes = existing
+	_stacktraceTestLock.Unlock()
 }

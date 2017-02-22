@@ -50,7 +50,7 @@ func TestConfig(t *testing.T) {
 			expectRe: "DEBUG\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\tdebug\t" + `{"k": "v", "z": "zz"}` + "\n" +
 				"INFO\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\tinfo\t" + `{"k": "v", "z": "zz"}` + "\n" +
 				"WARN\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\twarn\t" + `{"k": "v", "z": "zz"}` + "\n" +
-				`go.uber.org/zap.TestConfig.func1`,
+				`go.uber.org/zap.Stack`,
 		},
 	}
 
@@ -68,19 +68,25 @@ func TestConfig(t *testing.T) {
 			logger, err := tt.cfg.Build(Hooks(hook))
 			require.NoError(t, err, "Unexpected error constructing logger.")
 
-			logger.Debug("debug")
-			logger.Info("info")
-			logger.Warn("warn")
+			withStacktraceIgnorePrefixes([]string{}, func() {
+				logger.Debug("debug")
+				logger.Info("info")
+				logger.Warn("warn")
 
-			byteContents, err := ioutil.ReadAll(temp)
-			require.NoError(t, err, "Couldn't read log contents from temp file.")
-			logs := string(byteContents)
-			assert.Regexp(t, tt.expectRe, logs, "Unexpected log output.")
+				byteContents, err := ioutil.ReadAll(temp)
+				// not doing require so no problem with lock in withStacktraceIgnorePrefixes
+				assert.NoError(t, err, "Couldn't read log contents from temp file.")
+				if err != nil {
+					return
+				}
+				logs := string(byteContents)
+				assert.Regexp(t, tt.expectRe, logs, "Unexpected log output.")
 
-			for i := 0; i < 200; i++ {
-				logger.Info("sampling")
-			}
-			assert.Equal(t, tt.expectN, count.Load(), "Hook called an unexpected number of times.")
+				for i := 0; i < 200; i++ {
+					logger.Info("sampling")
+				}
+				assert.Equal(t, tt.expectN, count.Load(), "Hook called an unexpected number of times.")
+			})
 		})
 	}
 }

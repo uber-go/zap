@@ -360,23 +360,24 @@ func TestLoggerAddCallerFail(t *testing.T) {
 }
 
 func TestLoggerAddStacktrace(t *testing.T) {
-	assertHasStack := func(t testing.TB, obs observer.LoggedEntry) {
-		assert.Contains(t, obs.Entry.Stack, "zap.TestLoggerAddStacktrace", "Expected to find test function in stacktrace.")
-	}
+	withStacktraceIgnorePrefixes([]string{}, func() {
+		assertHasStack := func(t testing.TB, obs observer.LoggedEntry) {
+			assert.Contains(t, obs.Entry.Stack, "zap.TestLoggerAddStacktrace", "Expected to find test function in stacktrace.")
+		}
+		withLogger(t, DebugLevel, opts(AddStacktrace(InfoLevel)), func(logger *Logger, logs *observer.ObservedLogs) {
+			logger.Debug("")
+			assert.Empty(
+				t,
+				logs.AllUntimed()[0].Entry.Stack,
+				"Unexpected stacktrack at DebugLevel.",
+			)
 
-	withLogger(t, DebugLevel, opts(AddStacktrace(InfoLevel)), func(logger *Logger, logs *observer.ObservedLogs) {
-		logger.Debug("")
-		assert.Empty(
-			t,
-			logs.AllUntimed()[0].Entry.Stack,
-			"Unexpected stacktrack at DebugLevel.",
-		)
+			logger.Info("")
+			assertHasStack(t, logs.AllUntimed()[1])
 
-		logger.Info("")
-		assertHasStack(t, logs.AllUntimed()[1])
-
-		logger.Warn("")
-		assertHasStack(t, logs.AllUntimed()[2])
+			logger.Warn("")
+			assertHasStack(t, logs.AllUntimed()[2])
+		})
 	})
 }
 
