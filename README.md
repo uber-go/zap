@@ -90,8 +90,9 @@ Log a static string, without any context or `printf`-style templating:
 | apex/log | 3282 ns/op | 584 B/op | 11 allocs/op |
 
 ## Development Status: Release Candidate 1
-The current release is `v1.0.0-rc.1`. No further breaking changes are planned
-unless wider use reveals critical bugs or usability issues.
+The current release is `v1.0.0-rc.2`. No further breaking changes are *planned*
+unless wider use reveals critical bugs or usability issues, but users who need
+absolute stability should wait for the 1.0.0 release.
 
 <hr>
 Released under the [MIT License](LICENSE.txt).

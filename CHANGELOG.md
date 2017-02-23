@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.0.0-rc.2 (21 Feb 2017)
+This is the second release candidate for zap's stable release. It includes two
+breaking changes.
+
+Breaking changes:
+
+* [#316][]: Zap's global loggers are now fully concurrency-safe
+  (previously, users had to ensure that `ReplaceGlobals` was called before the
+  loggers were in use). However, they must now be accessed via the `L()` and
+  `S()` functions. Users can update their projects with
+
+  ```
+  gofmt -r "zap.L -> zap.L()" -w .
+  gofmt -r "zap.S -> zap.S()" -w .
+  ```
+* [#309][] and [#317][]: RC1 was mistakenly shipped with invalid
+  JSON and YAML struct tags on all config structs. This release fixes the tags
+  and adds static analysis to prevent similar bugs in the future.
+
+Bugfixes:
+
+* [#321][]: Redirecting the standard library's `log` output now
+  correctly reports the logger's caller.
+
+Enhancements:
+
+* [#325][] and [#333][]: Zap now transparently supports non-standard, rich
+  errors like those produced by `github.com/pkg/errors`.
+* [#326][]: Though `New(nil)` continues to return a no-op logger, `NewNop()` is
+  now preferred. Users can update their projects with `gofmt -r 'zap.New(nil) ->
+  zap.NewNop()' -w .`.
+* [#300][]: Incorrectly importing zap as `github.com/uber-go/zap` now returns a
+  more informative error.
+
+Thanks to @skipor and @chapsuk for their contributions to this release.
+
 ## v1.0.0-rc.1 (14 Feb 2017)
 This is the first release candidate for zap's stable release. There are multiple
 breaking changes and improvements from the pre-release version. Most notably:
@@ -26,3 +62,12 @@ backwards compatibility concerns and all functionality is new.
 
 Early zap adopters should pin to the 0.1.x minor version until they're ready to
 upgrade to the upcoming stable release.
+
+[#316]: https://github.com/uber-go/zap/pull/316
+[#309]: https://github.com/uber-go/zap/pull/309
+[#317]: https://github.com/uber-go/zap/pull/317
+[#321]: https://github.com/uber-go/zap/pull/321
+[#325]: https://github.com/uber-go/zap/pull/325
+[#333]: https://github.com/uber-go/zap/pull/333
+[#326]: https://github.com/uber-go/zap/pull/326
+[#300]: https://github.com/uber-go/zap/pull/300
