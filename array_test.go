@@ -25,8 +25,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
+
+	richErrors "github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func BenchmarkBoolsArrayMarshaler(b *testing.B) {
@@ -94,7 +97,11 @@ func TestArrayWrappers(t *testing.T) {
 		{"uint16s", Uint16s("", []uint16{1, 2}), []interface{}{uint16(1), uint16(2)}},
 		{"uint8s", Uint8s("", []uint8{1, 2}), []interface{}{uint8(1), uint8(2)}},
 		{"uintptrs", Uintptrs("", []uintptr{1, 2}), []interface{}{uintptr(1), uintptr(2)}},
-		{"errors", Errors("", []error{nil, errors.New("foo"), nil, errors.New("bar")}), []interface{}{"foo", "bar"}},
+		{
+			"errors",
+			Errors("", []error{nil, errors.New("foo"), nil, errors.New("bar")}),
+			[]interface{}{map[string]interface{}{"error": "foo"}, map[string]interface{}{"error": "bar"}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -104,4 +111,24 @@ func TestArrayWrappers(t *testing.T) {
 		assert.Equal(t, tt.expected, enc.Fields["k"], "%s: unexpected map contents.", tt.desc)
 		assert.Equal(t, 1, len(enc.Fields), "%s: found extra keys in map: %v", tt.desc, enc.Fields)
 	}
+}
+
+func TestErrorsArraysHandleRichErrors(t *testing.T) {
+	errs := []error{richErrors.New("egad")}
+
+	enc := zapcore.NewMapObjectEncoder()
+	Errors("k", errs).AddTo(enc)
+	assert.Equal(t, 1, len(enc.Fields), "Expected only top-level field.")
+
+	val := enc.Fields["k"]
+	arr, ok := val.([]interface{})
+	require.True(t, ok, "Expected top-level field to be an array.")
+	require.Equal(t, 1, len(arr), "Expected only one error object in array.")
+
+	serialized := arr[0]
+	errMap, ok := serialized.(map[string]interface{})
+	require.True(t, ok, "Expected serialized error to be a map, got %T.", serialized)
+	assert.Equal(t, "egad", errMap["error"], "Unexpected standard error string.")
+	assert.Contains(t, errMap["errorVerbose"], "egad", "Verbose error string should be a superset of standard error.")
+	assert.Contains(t, errMap["errorVerbose"], "TestErrorsArraysHandleRichErrors", "Verbose error string should contain a stacktrace.")
 }
