@@ -125,6 +125,18 @@ func BenchmarkErrorField(b *testing.B) {
 	})
 }
 
+func BenchmarkErrorsField(b *testing.B) {
+	errs := []error{
+		errors.New("egad"),
+		errors.New("oh no"),
+		errors.New("dear me"),
+		errors.New("such fail"),
+	}
+	withBenchedLogger(b, func(log *Logger) {
+		log.Info("Errors.", Errors("errors", errs))
+	})
+}
+
 func BenchmarkStackField(b *testing.B) {
 	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Error.", Stack("stacktrace"))

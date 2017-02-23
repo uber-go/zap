@@ -94,7 +94,11 @@ func TestArrayWrappers(t *testing.T) {
 		{"uint16s", Uint16s("", []uint16{1, 2}), []interface{}{uint16(1), uint16(2)}},
 		{"uint8s", Uint8s("", []uint8{1, 2}), []interface{}{uint8(1), uint8(2)}},
 		{"uintptrs", Uintptrs("", []uintptr{1, 2}), []interface{}{uintptr(1), uintptr(2)}},
-		{"errors", Errors("", []error{nil, errors.New("foo"), nil, errors.New("bar")}), []interface{}{"foo", "bar"}},
+		{
+			"errors",
+			Errors("", []error{nil, errors.New("foo"), nil, errors.New("bar")}),
+			[]interface{}{map[string]interface{}{"error": "foo"}, map[string]interface{}{"error": "bar"}},
+		},
 	}
 
 	for _, tt := range tests {

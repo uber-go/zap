@@ -171,19 +171,23 @@ func Time(key string, val time.Time) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.TimeType, Integer: val.UnixNano()}
 }
 
-// Error constructs a field that lazily stores err.Error() under the key
-// "error". If passed a nil error, the field is a no-op. This is purely a
-// convenience for a common error-logging idiom; use String("someFieldName",
-// err.Error()) to customize the key.
-//
-// Errors which also implement fmt.Formatter (like those produced by
-// github.com/pkg/errors) will also have their verbose representation stored
-// under "errorVerbose".
+// Error is shorthand for the common idiom NamedError("error", err).
 func Error(err error) zapcore.Field {
+	return NamedError("error", err)
+}
+
+// NamedError constructs a field that lazily stores err.Error() under the
+// provided key. Errors which also implement fmt.Formatter (like those produced
+// by github.com/pkg/errors) will also have their verbose representation stored
+// under key+"Verbose". If passed a nil error, the field is a no-op.
+//
+// For the common case in which the key is simply "error", the Error function
+// is shorter and less repetitive.
+func NamedError(key string, err error) zapcore.Field {
 	if err == nil {
 		return Skip()
 	}
-	return zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err}
+	return zapcore.Field{Key: key, Type: zapcore.ErrorType, Interface: err}
 }
 
 // Stack constructs a field that stores a stacktrace of the current goroutine
@@ -303,7 +307,7 @@ func Any(key string, value interface{}) zapcore.Field {
 	case []time.Duration:
 		return Durations(key, val)
 	case error:
-		return String(key, val.Error())
+		return NamedError(key, val)
 	case []error:
 		return Errors(key, val)
 	case fmt.Stringer:
