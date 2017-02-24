@@ -69,3 +69,10 @@ coveralls:
 BENCH ?= .
 bench:
 	@$(foreach pkg,$(PKGS),go test -bench=$(BENCH) -run="^$$" $(BENCH_FLAGS) $(pkg);)
+
+.PHONY: updatebench
+updatebench:
+	@if ! bash --version | grep 'version 4' > /dev/null; then \
+		echo "You need to use bash 4 to run update_benchmarks.sh"; \
+	fi
+	bash -x update_benchmarks.sh
