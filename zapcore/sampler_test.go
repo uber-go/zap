@@ -160,16 +160,19 @@ func TestSamplerConcurrent(t *testing.T) {
 	const (
 		logsPerTick   = 10
 		numMessages   = 5
-		numTicks      = 100
+		numTicks      = 25
 		numGoroutines = 10
+		expectedCount = numMessages * logsPerTick * numTicks
 	)
 
-	var tick = testutils.Timeout(time.Millisecond)
+	tick := testutils.Timeout(10 * time.Millisecond)
 	cc := &countingCore{}
 	sampler := NewSampler(cc, tick, logsPerTick, 100000)
 
-	var done atomic.Bool
-	var wg sync.WaitGroup
+	var (
+		done atomic.Bool
+		wg   sync.WaitGroup
+	)
 	for i := 0; i < numGoroutines; i++ {
 		wg.Add(1)
 		go func(i int) {
@@ -196,12 +199,11 @@ func TestSamplerConcurrent(t *testing.T) {
 	})
 	wg.Wait()
 
-	// We expect numMessages*logsPerTick in each tick, and we have 100 ticks.
 	assert.InDelta(
 		t,
-		numMessages*logsPerTick*numTicks,
+		expectedCount,
 		cc.logs.Load(),
-		500,
+		expectedCount/10,
 		"Unexpected number of logs",
 	)
 }
