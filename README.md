@@ -1,5 +1,14 @@
 # :zap: zap [![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov]
 
+[doc-img]: https://godoc.org/go.uber.org/zap?status.svg
+[doc]: https://godoc.org/go.uber.org/zap
+[ci-img]: https://travis-ci.org/uber-go/zap.svg?branch=master
+[ci]: https://travis-ci.org/uber-go/zap
+[cov-img]: https://coveralls.io/repos/github/uber-go/zap/badge.svg?branch=master
+[cov]: https://coveralls.io/github/uber-go/zap?branch=master
+[benchmarking suite]: https://github.com/uber-go/zap/tree/master/benchmarks
+[glide.lock]: https://github.com/uber-go/zap/blob/master/glide.lock
+
 Blazing fast, structured, leveled logging in Go.
 
 ## Installation
@@ -37,6 +46,18 @@ logger.Info("Failed to fetch URL.",
 )
 ```
 
+## Development Status: Release Candidate 1
+The current release is `v1.0.0-rc.2`. No further breaking changes are *planned*
+unless wider use reveals critical bugs or usability issues, but users who need
+absolute stability should wait for the 1.0.0 release.
+
+<hr>
+Released under the [MIT License](LICENSE.txt).
+
+<sup id="footnote-versions">1</sup> In particular, keep in mind that we may be
+benchmarking against slightly older versions of other libraries. Versions are
+pinned in zap's [glide.lock][] file. [↩](#anchor-versions)
+
 ## Performance
 
 For applications that log in the hot path, reflection-based serialization and
@@ -54,6 +75,8 @@ As measured by its own [benchmarking suite][], not only is zap more performant
 than comparable structured logging libraries &mdash; it's also faster than the
 standard library. Like all benchmarks, take these with a grain of salt.<sup
 id="anchor-versions">[1](#footnote-versions)</sup>
+
+### Benchmarks
 
 Log a message and 10 fields:
 
@@ -88,24 +111,3 @@ Log a static string, without any context or `printf`-style templating:
 | go-kit | 1318 ns/op | 656 B/op | 13 allocs/op |
 | log15 | 5720 ns/op | 1496 B/op | 24 allocs/op |
 | apex/log | 3282 ns/op | 584 B/op | 11 allocs/op |
-
-## Development Status: Release Candidate 1
-The current release is `v1.0.0-rc.2`. No further breaking changes are *planned*
-unless wider use reveals critical bugs or usability issues, but users who need
-absolute stability should wait for the 1.0.0 release.
-
-<hr>
-Released under the [MIT License](LICENSE.txt).
-
-<sup id="footnote-versions">1</sup> In particular, keep in mind that we may be
-benchmarking against slightly older versions of other libraries. Versions are
-pinned in zap's [glide.lock][] file. [↩](#anchor-versions)
-
-[doc-img]: https://godoc.org/go.uber.org/zap?status.svg
-[doc]: https://godoc.org/go.uber.org/zap
-[ci-img]: https://travis-ci.org/uber-go/zap.svg?branch=master
-[ci]: https://travis-ci.org/uber-go/zap
-[cov-img]: https://coveralls.io/repos/github/uber-go/zap/badge.svg?branch=master
-[cov]: https://coveralls.io/github/uber-go/zap?branch=master
-[benchmarking suite]: https://github.com/uber-go/zap/tree/master/benchmarks
-[glide.lock]: https://github.com/uber-go/zap/blob/master/glide.lock
