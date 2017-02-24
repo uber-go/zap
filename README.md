@@ -82,32 +82,35 @@ Log a message and 10 fields:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 1436 ns/op | 705 B/op | 2 allocs/op |
-| :zap: zap (sugared) | 2436 ns/op | 1931 B/op | 21 allocs/op |
-| logrus | 9393 ns/op | 5783 B/op | 77 allocs/op |
-| go-kit | 6929 ns/op | 3119 B/op | 65 allocs/op |
-| log15 | 25004 ns/op | 5535 B/op | 91 allocs/op |
-| apex/log | 18450 ns/op | 4025 B/op | 64 allocs/op |
+|:zap: zap|       826 ns/op|     706 B/op|       2 allocs/op|
+|:zap: zap (sugared)|      1340 ns/op|    1614 B/op|      20 allocs/op|
+|logrus|      5340 ns/op|    6103 B/op|      78 allocs/op|
+|go-kit|      3363 ns/op|    2898 B/op|      66 allocs/op|
+|log15|     18935 ns/op|    5634 B/op|      93 allocs/op|
+|apex/log|     15290 ns/op|    3835 B/op|      65 allocs/op|
+|lion|      4694 ns/op|    5812 B/op|      63 allocs/op|
 
 Log a message with a logger that already has 10 fields of context:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 368 ns/op | 0 B/op | 0 allocs/op |
-| :zap: zap (sugared) | 388 ns/op | 0 B/op | 0 allocs/op |
-| logrus | 8420 ns/op | 3967 B/op | 61 allocs/op |
-| go-kit | 7288 ns/op | 2950 B/op | 50 allocs/op |
-| log15 | 17678 ns/op | 2546 B/op | 42 allocs/op |
-| apex/log | 16126 ns/op | 2801 B/op | 49 allocs/op |
+|:zap: zap|       279 ns/op|       0 B/op|       0 allocs/op|
+|:zap: zap (sugared)|       370 ns/op|      80 B/op|       2 allocs/op|
+|logrus|      4595 ns/op|    4569 B/op|      63 allocs/op|
+|go-kit|      3607 ns/op|    3048 B/op|      52 allocs/op|
+|log15|     13805 ns/op|    2643 B/op|      44 allocs/op|
+|apex/log|     13650 ns/op|    2899 B/op|      51 allocs/op|
+|lion|      3100 ns/op|    4077 B/op|      38 allocs/op|
 
 Log a static string, without any context or `printf`-style templating:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 398 ns/op | 0 B/op | 0 allocs/op |
-| :zap: zap (sugared) | 400 ns/op | 80 B/op | 2 allocs/op |
-| standard library | 678 ns/op | 80 B/op | 2 allocs/op |
-| logrus | 2778 ns/op | 1409 B/op | 25 allocs/op |
-| go-kit | 1318 ns/op | 656 B/op | 13 allocs/op |
-| log15 | 5720 ns/op | 1496 B/op | 24 allocs/op |
-| apex/log | 3282 ns/op | 584 B/op | 11 allocs/op |
+|:zap: zap|       262 ns/op|       0 B/op|       0 allocs/op|
+|:zap: zap (sugared)|       344 ns/op|      80 B/op|       2 allocs/op|
+|standard library|       499 ns/op|      80 B/op|       2 allocs/op|
+|logrus|      1361 ns/op|    1507 B/op|      27 allocs/op|
+|go-kit|       546 ns/op|     656 B/op|      13 allocs/op|
+|log15|      5359 ns/op|    1592 B/op|      26 allocs/op|
+|apex/log|      3037 ns/op|     584 B/op|      11 allocs/op|
+|lion|       848 ns/op|    1225 B/op|      10 allocs/op|
