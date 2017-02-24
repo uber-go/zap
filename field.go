@@ -224,6 +224,12 @@ func Object(key string, val zapcore.ObjectMarshaler) zapcore.Field {
 // Any takes a key and an arbitrary value and chooses the best way to represent
 // them as a field, falling back to a reflection-based approach only if
 // necessary.
+// In golang, byte is an alias of uint8, and rune is an alias of int32, so:
+//
+// - []byte and []uint8 values will return Binary fields
+// - byte and uint8 values will return Uint fields
+// - []rune and []int32 values will return Int32s fields
+// - rune and int32 values will return Int32 fields
 func Any(key string, value interface{}) zapcore.Field {
 	switch val := value.(type) {
 	case zapcore.ObjectMarshaler:
@@ -292,8 +298,8 @@ func Any(key string, value interface{}) zapcore.Field {
 		return Uint16s(key, val)
 	case uint8:
 		return Uint8(key, val)
-	case []uint8:
-		return Uint8s(key, val)
+	case []byte:
+		return Binary(key, val)
 	case uintptr:
 		return Uintptr(key, val)
 	case []uintptr:
