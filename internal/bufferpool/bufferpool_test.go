@@ -21,12 +21,13 @@
 package bufferpool
 
 import (
-	"math/rand"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+const dummyData = "dummy data"
 
 func TestBuffers(t *testing.T) {
 	var wg sync.WaitGroup
@@ -38,11 +39,8 @@ func TestBuffers(t *testing.T) {
 				assert.Zero(t, buf.Len(), "Expected truncated buffer")
 				assert.NotZero(t, buf.Cap(), "Expected non-zero capacity")
 
-				b := getRandBytes()
-				_, err := buf.Write(b)
-				assert.NoError(t, err, "Unexpected error from buffer.Write")
-
-				assert.Equal(t, buf.Len(), len(b), "Expected same buffer size")
+				buf.AppendString(dummyData)
+				assert.Equal(t, buf.Len(), len(dummyData), "Expected buffer to contain dummy data")
 
 				Put(buf)
 			}
@@ -50,10 +48,4 @@ func TestBuffers(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-}
-
-func getRandBytes() []byte {
-	b := make([]byte, rand.Intn(5000))
-	rand.Read(b)
-	return b
 }
