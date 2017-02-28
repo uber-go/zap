@@ -24,6 +24,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -31,8 +32,7 @@ import (
 )
 
 var (
-	flagBenchCommand = flag.String("bench", "make bench", "The benchmarking command to use")
-	libraryNames     = []string{
+	libraryNames = []string{
 		"Zap",
 		"Zap.Sugar",
 		"stdlib.Println",
@@ -56,18 +56,13 @@ var (
 
 func main() {
 	flag.Parse()
-	if err := do(strings.Split(*flagBenchCommand, " ")); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(1)
+	if err := do(); err != nil {
+		log.Fatal(err)
 	}
 }
 
-func do(benchCommand []string) error {
-	benchOutput, err := getOutput(benchCommand)
-	if err != nil {
-		return err
-	}
-	tmplData, err := getTmplData(benchOutput)
+func do() error {
+	tmplData, err := getTmplData()
 	if err != nil {
 		return err
 	}
@@ -91,19 +86,19 @@ type tmplData struct {
 	BenchmarkWithoutFields      string
 }
 
-func getTmplData(input []string) (*tmplData, error) {
+func getTmplData() (*tmplData, error) {
 	tmplData := &tmplData{}
-	rows, err := getBenchmarkRows(input, "BenchmarkAddingFields")
+	rows, err := getBenchmarkRows("BenchmarkAddingFields")
 	if err != nil {
 		return nil, err
 	}
 	tmplData.BenchmarkAddingFields = rows
-	rows, err = getBenchmarkRows(input, "BenchmarkAccumulatedContext")
+	rows, err = getBenchmarkRows("BenchmarkAccumulatedContext")
 	if err != nil {
 		return nil, err
 	}
 	tmplData.BenchmarkAccumulatedContext = rows
-	rows, err = getBenchmarkRows(input, "BenchmarkWithoutFields")
+	rows, err = getBenchmarkRows("BenchmarkWithoutFields")
 	if err != nil {
 		return nil, err
 	}
@@ -111,13 +106,17 @@ func getTmplData(input []string) (*tmplData, error) {
 	return tmplData, nil
 }
 
-func getBenchmarkRows(input []string, benchmarkName string) (string, error) {
+func getBenchmarkRows(benchmarkName string) (string, error) {
+	benchmarkOutput, err := getBenchmarkOutput(benchmarkName)
+	if err != nil {
+		return "", err
+	}
 	rows := []string{
 		"| Library | Time | Bytes Allocated | Objects Allocated |",
 		"| :--- | :---: | :---: | :---: |",
 	}
 	for _, libraryName := range libraryNames {
-		row, err := getBenchmarkRow(input, benchmarkName, libraryName)
+		row, err := getBenchmarkRow(benchmarkOutput, benchmarkName, libraryName)
 		if err != nil {
 			return "", err
 		}
@@ -150,14 +149,6 @@ func getBenchmarkRow(input []string, benchmarkName string, libraryName string) (
 	), nil
 }
 
-func getOutput(command []string) ([]string, error) {
-	output, err := exec.Command(command[0], command[1:]...).CombinedOutput()
-	if err != nil {
-		return nil, err
-	}
-	return strings.Split(string(output), "\n"), nil
-}
-
 func findUniqueSubstring(input []string, substring string) (string, error) {
 	var output string
 	for _, line := range input {
@@ -169,4 +160,16 @@ func findUniqueSubstring(input []string, substring string) (string, error) {
 		}
 	}
 	return output, nil
+}
+
+func getBenchmarkOutput(benchmarkName string) ([]string, error) {
+	return getOutput("go", "test", fmt.Sprintf("-bench=%s", benchmarkName), "-benchmem", "./benchmarks")
+}
+
+func getOutput(name string, arg ...string) ([]string, error) {
+	output, err := exec.Command(name, arg...).CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("error running %s %s: %v\n%s", name, strings.Join(arg, " "), err, string(output))
+	}
+	return strings.Split(string(output), "\n"), nil
 }
