@@ -31,11 +31,12 @@ import (
 var (
 	_stacktraceIgnorePrefixes = []string{
 		"go.uber.org/zap",
-		"runtime.",
+		"runtime.goexit",
+		"runtime.main",
 	}
-	_stacktraceUintptrPool = sync.Pool{
+	_stacktracePool = sync.Pool{
 		New: func() interface{} {
-			return make([]uintptr, 64)
+			return newProgramCounters(64)
 		},
 	}
 )
@@ -45,24 +46,26 @@ var (
 // successively larger slices until it can capture the whole stack.
 func takeStacktrace() string {
 	buffer := bufferpool.Get()
-	programCounters := _stacktraceUintptrPool.Get().([]uintptr)
 	defer bufferpool.Put(buffer)
-	defer _stacktraceUintptrPool.Put(programCounters)
+	programCounters := _stacktracePool.Get().(*programCounters)
+	defer _stacktracePool.Put(programCounters)
 
 	for {
-		n := runtime.Callers(2, programCounters)
-		if n < len(programCounters) {
-			programCounters = programCounters[:n]
+		// skipping 2 skips the call to runtime.Counters and takeStacktrace
+		// so that the program counters start at the caller of takeStacktrace
+		n := runtime.Callers(2, programCounters.pcs)
+		if n < len(programCounters.pcs) {
+			programCounters.pcs = programCounters.pcs[:n]
 			break
 		}
 		// Do not put programCounters back in pool, will put larger buffer in
 		// This is in case our size is always wrong, we optimize to pul
 		// correctly-sized buffers back in the pool
-		programCounters = make([]uintptr, len(programCounters)*2)
+		programCounters = newProgramCounters(len(programCounters.pcs) * 2)
 	}
 
 	i := 0
-	for _, programCounter := range programCounters {
+	for _, programCounter := range programCounters.pcs {
 		f := runtime.FuncForPC(programCounter)
 		name := f.Name()
 		if shouldIgnoreStacktraceName(name) {
@@ -91,4 +94,12 @@ func shouldIgnoreStacktraceName(name string) bool {
 		}
 	}
 	return false
+}
+
+type programCounters struct {
+	pcs []uintptr
+}
+
+func newProgramCounters(size int) *programCounters {
+	return &programCounters{make([]uintptr, size)}
 }

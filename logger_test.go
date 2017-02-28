@@ -360,7 +360,7 @@ func TestLoggerAddCallerFail(t *testing.T) {
 }
 
 func TestLoggerAddStacktrace(t *testing.T) {
-	withStacktraceIgnorePrefixes([]string{}, func() {
+	withNoStacktraceIgnorePrefixes(func() {
 		assertHasStack := func(t testing.TB, obs observer.LoggedEntry) {
 			assert.Contains(t, obs.Entry.Stack, "zap.TestLoggerAddStacktrace", "Expected to find test function in stacktrace.")
 		}

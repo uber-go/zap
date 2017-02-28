@@ -68,17 +68,13 @@ func TestConfig(t *testing.T) {
 			logger, err := tt.cfg.Build(Hooks(hook))
 			require.NoError(t, err, "Unexpected error constructing logger.")
 
-			withStacktraceIgnorePrefixes([]string{}, func() {
+			withNoStacktraceIgnorePrefixes(func() {
 				logger.Debug("debug")
 				logger.Info("info")
 				logger.Warn("warn")
 
 				byteContents, err := ioutil.ReadAll(temp)
-				// not doing require so no problem with lock in withStacktraceIgnorePrefixes
-				assert.NoError(t, err, "Couldn't read log contents from temp file.")
-				if err != nil {
-					return
-				}
+				require.NoError(t, err, "Couldn't read log contents from temp file.")
 				logs := string(byteContents)
 				assert.Regexp(t, tt.expectRe, logs, "Unexpected log output.")
 

@@ -46,8 +46,7 @@ func TestEmptyStacktrace(t *testing.T) {
 }
 
 func TestAllStacktrace(t *testing.T) {
-	withStacktraceIgnorePrefixes(
-		[]string{},
+	withNoStacktraceIgnorePrefixes(
 		func() {
 			stacktrace := takeStacktrace()
 			assert.True(t, strings.HasPrefix(stacktrace, "go.uber.org/zap.TestAllStacktrace"),
@@ -56,13 +55,17 @@ func TestAllStacktrace(t *testing.T) {
 	)
 }
 
-// What happens with require functions? If they completely break out of the
-// function, will this lock never get unlocked?
+func withNoStacktraceIgnorePrefixes(f func()) {
+	withStacktraceIgnorePrefixes([]string{}, f)
+}
+
 func withStacktraceIgnorePrefixes(prefixes []string, f func()) {
 	_stacktraceTestLock.Lock()
+	defer _stacktraceTestLock.Unlock()
 	existing := _stacktraceIgnorePrefixes
 	_stacktraceIgnorePrefixes = prefixes
+	defer func() {
+		_stacktraceIgnorePrefixes = existing
+	}()
 	f()
-	_stacktraceIgnorePrefixes = existing
-	_stacktraceTestLock.Unlock()
 }
