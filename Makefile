@@ -69,3 +69,8 @@ coveralls:
 BENCH ?= .
 bench:
 	@$(foreach pkg,$(PKGS),go test -bench=$(BENCH) -run="^$$" $(BENCH_FLAGS) $(pkg);)
+
+.PHONY: updatereadme
+updatereadme:
+	rm -f README.md
+	cat .readme.tmpl | go run internal/readme/readme.go > README.md

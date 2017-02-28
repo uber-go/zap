@@ -57,40 +57,15 @@ id="anchor-versions">[1](#footnote-versions)</sup>
 
 Log a message and 10 fields:
 
-| Library | Time | Bytes Allocated | Objects Allocated |
-| :--- | :---: | :---: | :---: |
-| :zap: zap | 1175 ns/op | 706 B/op | 2 allocs/op |
-| :zap: zap (sugared) | 1801 ns/op | 1614 B/op | 20 allocs/op |
-| logrus | 7219 ns/op | 6103 B/op | 78 allocs/op |
-| go-kit | 4999 ns/op | 2898 B/op | 66 allocs/op |
-| log15 | 19603 ns/op | 5634 B/op | 93 allocs/op |
-| apex/log | 18545 ns/op | 3836 B/op | 65 allocs/op |
-| lion | 6923 ns/op | 5812 B/op | 63 allocs/op |
+{{.BenchmarkAddingFields}}
 
 Log a message with a logger that already has 10 fields of context:
 
-| Library | Time | Bytes Allocated | Objects Allocated |
-| :--- | :---: | :---: | :---: |
-| :zap: zap | 324 ns/op | 0 B/op | 0 allocs/op |
-| :zap: zap (sugared) | 470 ns/op | 80 B/op | 2 allocs/op |
-| logrus | 6512 ns/op | 4570 B/op | 63 allocs/op |
-| go-kit | 4990 ns/op | 3049 B/op | 52 allocs/op |
-| log15 | 15936 ns/op | 2643 B/op | 44 allocs/op |
-| apex/log | 16299 ns/op | 2899 B/op | 51 allocs/op |
-| lion | 4189 ns/op | 4077 B/op | 38 allocs/op |
+{{.BenchmarkAccumulatedContext}}
 
 Log a static string, without any context or `printf`-style templating:
 
-| Library | Time | Bytes Allocated | Objects Allocated |
-| :--- | :---: | :---: | :---: |
-| :zap: zap | 346 ns/op | 0 B/op | 0 allocs/op |
-| :zap: zap (sugared) | 446 ns/op | 80 B/op | 2 allocs/op |
-| standard library | 638 ns/op | 80 B/op | 2 allocs/op |
-| logrus | 1860 ns/op | 1507 B/op | 27 allocs/op |
-| go-kit | 749 ns/op | 656 B/op | 13 allocs/op |
-| log15 | 6783 ns/op | 1592 B/op | 26 allocs/op |
-| apex/log | 3529 ns/op | 584 B/op | 11 allocs/op |
-| lion | 1376 ns/op | 1225 B/op | 10 allocs/op |
+{{.BenchmarkWithoutFields}}
 
 ## Development Status: Release Candidate 2
 The current release is `v1.0.0-rc.2`. No further breaking changes are *planned*
