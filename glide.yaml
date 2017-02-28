@@ -2,6 +2,7 @@ package: go.uber.org/zap
 license: MIT
 import:
 - package: go.uber.org/atomic
+  version: ^1
 testImport:
 - package: github.com/satori/go.uuid
 - package: github.com/sirupsen/logrus
