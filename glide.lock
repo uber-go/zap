@@ -1,5 +1,5 @@
-hash: 914c2496c3082b58188a9d2417ff56745ab9699c391e74bf0dcb18bac732fcd2
-updated: 2017-02-19T10:17:25.136935868-08:00
+hash: e0772fca67e6ddb8b10aad5a68c2db217e94f31c4b8646753a8bdf8d27f8ab6f
+updated: 2017-02-27T14:29:10.445907666-08:00
 imports:
 - name: go.uber.org/atomic
   version: 0c9e689d64f004564b79d9a663634756df322902
@@ -62,7 +62,7 @@ testImports:
   subpackages:
   - unix
 - name: golang.org/x/tools
-  version: 6e7ee5a9ec598d425ca86d6aab6e76e21baf328c
+  version: 496819729719f9d07692195e0a94d6edd2251389
   subpackages:
   - cover
 - name: gopkg.in/inconshreveable/log15.v2
