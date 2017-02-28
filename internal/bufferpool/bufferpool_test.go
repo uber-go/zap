@@ -27,9 +27,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const dummyData = "dummy data"
-
 func TestBuffers(t *testing.T) {
+	const dummyData = "dummy data"
+
 	var wg sync.WaitGroup
 	for g := 0; g < 10; g++ {
 		wg.Add(1)
