@@ -27,6 +27,11 @@ import (
 	"sync"
 )
 
+const (
+	_stdLogDefaultDepth = 4
+	_loggerWriterDepth  = 1
+)
+
 var (
 	_globalMu sync.RWMutex
 	_globalL  = NewNop()
@@ -67,6 +72,13 @@ func ReplaceGlobals(logger *Logger) func() {
 	return func() { ReplaceGlobals(prev) }
 }
 
+// NewStdLog returns a standard logger which writes to the supplied zap logger at InfoLevel.
+func NewStdLog(l *Logger) *log.Logger {
+	return log.New(&loggerWriter{l.WithOptions(
+		AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth),
+	)}, "", 0)
+}
+
 // RedirectStdLog redirects output from the standard library's "log" package to
 // the supplied logger at InfoLevel. Since zap already handles caller
 // annotations, timestamps, etc., it automatically disables the standard
@@ -75,16 +87,12 @@ func ReplaceGlobals(logger *Logger) func() {
 // It returns a function to restore the original prefix and flags and reset the
 // standard library's output to os.Stdout.
 func RedirectStdLog(l *Logger) func() {
-	const (
-		stdLogDefaultDepth = 4
-		loggerWriterDepth  = 1
-	)
 	flags := log.Flags()
 	prefix := log.Prefix()
 	log.SetFlags(0)
 	log.SetPrefix("")
 	log.SetOutput(&loggerWriter{l.WithOptions(
-		AddCallerSkip(stdLogDefaultDepth + loggerWriterDepth),
+		AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth),
 	)})
 	return func() {
 		log.SetFlags(flags)

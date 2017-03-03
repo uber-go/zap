@@ -92,6 +92,18 @@ func TestGlobalsConcurrentUse(t *testing.T) {
 	wg.Wait()
 }
 
+func TestNewStdLog(t *testing.T) {
+	withLogger(t, DebugLevel, nil, func(l *Logger, logs *observer.ObservedLogs) {
+		std := NewStdLog(l)
+		std.Print("redirected")
+
+		assert.Equal(t, []observer.LoggedEntry{{
+			Entry:   zapcore.Entry{Message: "redirected"},
+			Context: []zapcore.Field{},
+		}}, logs.AllUntimed(), "Unexpected new standard log output.")
+	})
+}
+
 func TestRedirectStdLog(t *testing.T) {
 	initialFlags := log.Flags()
 	initialPrefix := log.Prefix()
