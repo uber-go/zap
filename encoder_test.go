@@ -52,6 +52,15 @@ func TestDuplicateRegisterEncoder(t *testing.T) {
 	})
 }
 
+func TestDuplicateMustRegisterEncoder(t *testing.T) {
+	testEncoders(func() {
+		RegisterEncoder("foo", newNilEncoder)
+		assert.Panics(t, func() {
+			MustRegisterEncoder("foo", newNilEncoder)
+		})
+	})
+}
+
 func TestRegisterEncoderNoName(t *testing.T) {
 	assert.Equal(t, errNoEncoderNameSpecified, RegisterEncoder("", newNilEncoder))
 }
