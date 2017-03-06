@@ -76,6 +76,30 @@ func (l Level) String() string {
 	}
 }
 
+// CapitalString returns an all-caps ASCII representation of the log level.
+func (l Level) CapitalString() string {
+	// Printing levels in all-caps is common enough that we should export this
+	// functionality.
+	switch l {
+	case DebugLevel:
+		return "DEBUG"
+	case InfoLevel:
+		return "INFO"
+	case WarnLevel:
+		return "WARN"
+	case ErrorLevel:
+		return "ERROR"
+	case DPanicLevel:
+		return "DPANIC"
+	case PanicLevel:
+		return "PANIC"
+	case FatalLevel:
+		return "FATAL"
+	default:
+		return fmt.Sprintf("LEVEL(%d)", l)
+	}
+}
+
 // MarshalText marshals the Level to text. Note that the text representation
 // drops the -Level suffix (see example).
 func (l *Level) MarshalText() ([]byte, error) {

@@ -42,7 +42,8 @@ func TestLevelString(t *testing.T) {
 	}
 
 	for lvl, stringLevel := range tests {
-		assert.Equal(t, stringLevel, lvl.String())
+		assert.Equal(t, stringLevel, lvl.String(), "Unexpected lowercase level string.")
+		assert.Equal(t, strings.ToUpper(stringLevel), lvl.CapitalString(), "Unexpected all-caps level string.")
 	}
 }
 
