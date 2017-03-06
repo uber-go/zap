@@ -5,6 +5,8 @@ PKGS ?= $(shell glide novendor)
 # Many Go tools take file globs or directories as arguments instead of packages.
 PKG_FILES ?= *.go zapcore benchmarks buffer testutils internal/bufferpool internal/exit internal/multierror internal/observer internal/color
 
+COVERALLS_IGNORE := internal/readme/readme.go
+
 # The linting tools evolve with each Go version, so run them only on the latest
 # stable release.
 GO_VERSION := $(shell go version | cut -d " " -f 3)
@@ -63,9 +65,14 @@ test:
 
 .PHONY: coveralls
 coveralls:
-	goveralls -service=travis-ci
+	goveralls -ignore=$(COVERALLS_IGNORE) -service=travis-ci
 
 .PHONY: bench
 BENCH ?= .
 bench:
 	@$(foreach pkg,$(PKGS),go test -bench=$(BENCH) -run="^$$" $(BENCH_FLAGS) $(pkg);)
+
+.PHONY: updatereadme
+updatereadme:
+	rm -f README.md
+	cat .readme.tmpl | go run internal/readme/readme.go > README.md
