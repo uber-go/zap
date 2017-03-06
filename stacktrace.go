@@ -30,7 +30,6 @@ import (
 
 var (
 	_stacktraceIgnorePrefixes = []string{
-		"go.uber.org/zap",
 		"runtime.goexit",
 		"runtime.main",
 	}
