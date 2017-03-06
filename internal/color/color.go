@@ -18,34 +18,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package bufferpool
+// Package color adds coloring functionality for TTY output.
+package color
 
-import (
-	"sync"
-	"testing"
+import "fmt"
 
-	"github.com/stretchr/testify/assert"
+// Foreground colors.
+const (
+	Black Color = iota + 30
+	Red
+	Green
+	Yellow
+	Blue
+	Magenta
+	Cyan
+	White
 )
 
-func TestBuffers(t *testing.T) {
-	const dummyData = "dummy data"
+// Color represents a text color.
+type Color uint8
 
-	var wg sync.WaitGroup
-	for g := 0; g < 10; g++ {
-		wg.Add(1)
-		go func() {
-			for i := 0; i < 100; i++ {
-				buf := Get()
-				assert.Zero(t, buf.Len(), "Expected truncated buffer")
-				assert.NotZero(t, buf.Cap(), "Expected non-zero capacity")
-
-				buf.AppendString(dummyData)
-				assert.Equal(t, buf.Len(), len(dummyData), "Expected buffer to contain dummy data")
-
-				Put(buf)
-			}
-			wg.Done()
-		}()
-	}
-	wg.Wait()
+// Add adds the coloring to the given string.
+func (c Color) Add(s string) string {
+	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", uint8(c), s)
 }

@@ -18,34 +18,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package bufferpool
+package zapcore
 
-import (
-	"sync"
-	"testing"
+import "go.uber.org/zap/internal/color"
 
-	"github.com/stretchr/testify/assert"
+var (
+	_levelToColor = map[Level]color.Color{
+		DebugLevel:  color.Magenta,
+		InfoLevel:   color.Blue,
+		WarnLevel:   color.Yellow,
+		ErrorLevel:  color.Red,
+		DPanicLevel: color.Red,
+		PanicLevel:  color.Red,
+		FatalLevel:  color.Red,
+	}
+	_unknownLevelColor = color.Red
+
+	_levelToLowercaseColorString = make(map[Level]string, len(_levelToColor))
+	_levelToCapitalColorString   = make(map[Level]string, len(_levelToColor))
 )
 
-func TestBuffers(t *testing.T) {
-	const dummyData = "dummy data"
-
-	var wg sync.WaitGroup
-	for g := 0; g < 10; g++ {
-		wg.Add(1)
-		go func() {
-			for i := 0; i < 100; i++ {
-				buf := Get()
-				assert.Zero(t, buf.Len(), "Expected truncated buffer")
-				assert.NotZero(t, buf.Cap(), "Expected non-zero capacity")
-
-				buf.AppendString(dummyData)
-				assert.Equal(t, buf.Len(), len(dummyData), "Expected buffer to contain dummy data")
-
-				Put(buf)
-			}
-			wg.Done()
-		}()
+func init() {
+	for level, color := range _levelToColor {
+		_levelToLowercaseColorString[level] = color.Add(level.String())
+		_levelToCapitalColorString[level] = color.Add(level.CapitalString())
 	}
-	wg.Wait()
 }

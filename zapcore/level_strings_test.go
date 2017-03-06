@@ -18,34 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package bufferpool
+package zapcore
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBuffers(t *testing.T) {
-	const dummyData = "dummy data"
+func TestAllLevelsCoveredByLevelString(t *testing.T) {
+	numLevels := int((_maxLevel - _minLevel) + 1)
 
-	var wg sync.WaitGroup
-	for g := 0; g < 10; g++ {
-		wg.Add(1)
-		go func() {
-			for i := 0; i < 100; i++ {
-				buf := Get()
-				assert.Zero(t, buf.Len(), "Expected truncated buffer")
-				assert.NotZero(t, buf.Cap(), "Expected non-zero capacity")
-
-				buf.AppendString(dummyData)
-				assert.Equal(t, buf.Len(), len(dummyData), "Expected buffer to contain dummy data")
-
-				Put(buf)
-			}
-			wg.Done()
-		}()
+	isComplete := func(m map[Level]string) bool {
+		return len(m) == numLevels
 	}
-	wg.Wait()
+
+	assert.True(t, isComplete(_levelToLowercaseColorString), "Colored lowercase strings don't cover all levels.")
+	assert.True(t, isComplete(_levelToCapitalColorString), "Colored capital strings don't cover all levels.")
 }

@@ -21,7 +21,6 @@
 package zapcore
 
 import (
-	"strings"
 	"time"
 
 	"go.uber.org/zap/buffer"
@@ -36,18 +35,44 @@ func LowercaseLevelEncoder(l Level, enc PrimitiveArrayEncoder) {
 	enc.AppendString(l.String())
 }
 
+// LowercaseColorLevelEncoder serializes a Level to a lowercase string and adds coloring.
+// For example, InfoLevel is serialized to "info" and colored blue.
+func LowercaseColorLevelEncoder(l Level, enc PrimitiveArrayEncoder) {
+	s, ok := _levelToLowercaseColorString[l]
+	if !ok {
+		s = _unknownLevelColor.Add(l.String())
+	}
+	enc.AppendString(s)
+}
+
 // CapitalLevelEncoder serializes a Level to an all-caps string. For example,
 // InfoLevel is serialized to "INFO".
 func CapitalLevelEncoder(l Level, enc PrimitiveArrayEncoder) {
-	enc.AppendString(strings.ToUpper(l.String()))
+	enc.AppendString(l.CapitalString())
+}
+
+// CapitalColorLevelEncoder serializes a Level to an all-caps string and adds color.
+// For example, InfoLevel is serialized to "INFO" and colored blue.
+func CapitalColorLevelEncoder(l Level, enc PrimitiveArrayEncoder) {
+	s, ok := _levelToCapitalColorString[l]
+	if !ok {
+		s = _unknownLevelColor.Add(l.CapitalString())
+	}
+	enc.AppendString(s)
 }
 
 // UnmarshalText unmarshals text to a LevelEncoder. "capital" is unmarshaled to
-// CapitalLevelEncoder, and anything else is unmarshaled to LowercaseLevelEncoder.
+// CapitalLevelEncoder, "coloredCapital" is unmarshaled to CapitalColorLevelEncoder,
+// "colored" is unmarshaled to LowercaseColorLevelEncoder, and anything else
+// is unmarshaled to LowercaseLevelEncoder.
 func (e *LevelEncoder) UnmarshalText(text []byte) error {
 	switch string(text) {
 	case "capital":
 		*e = CapitalLevelEncoder
+	case "capitalColor":
+		*e = CapitalColorLevelEncoder
+	case "color":
+		*e = LowercaseColorLevelEncoder
 	default:
 		*e = LowercaseLevelEncoder
 	}
