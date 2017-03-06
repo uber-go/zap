@@ -81,3 +81,28 @@ func TestOpen(t *testing.T) {
 		assert.Equal(t, tt.filenames, names, "Opened unexpected files given paths %v.", tt.paths)
 	}
 }
+
+type testWriter struct {
+	expected []byte
+	t        testing.TB
+}
+
+func (w *testWriter) Write(actual []byte) (int, error) {
+	assert.Equal(w.t, w.expected, actual, "expected writer to write %v, wrote %v", string(w.expected), string(actual))
+	return 0, nil
+}
+
+func (w *testWriter) Sync() error {
+	return nil
+}
+
+func TestOpenWriteSyncers(t *testing.T) {
+	tw := &testWriter{[]byte("test"), t}
+
+	w, err := OpenWriteSyncers(tw)
+	if err != nil {
+		require.NoError(t, err, "OpenWriters Failed.")
+	}
+
+	w.Write([]byte("test"))
+}
