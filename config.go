@@ -21,7 +21,6 @@
 package zap
 
 import (
-	"fmt"
 	"sort"
 	"time"
 
@@ -229,11 +228,5 @@ func (cfg Config) openSinks() (zapcore.WriteSyncer, zapcore.WriteSyncer, error) 
 }
 
 func (cfg Config) buildEncoder() (zapcore.Encoder, error) {
-	switch cfg.Encoding {
-	case "json":
-		return zapcore.NewJSONEncoder(cfg.EncoderConfig), nil
-	case "console":
-		return zapcore.NewConsoleEncoder(cfg.EncoderConfig), nil
-	}
-	return nil, fmt.Errorf("unknown encoding %q", cfg.Encoding)
+	return newEncoder(cfg.Encoding, cfg.EncoderConfig)
 }
