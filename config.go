@@ -77,6 +77,22 @@ type Config struct {
 	InitialFields map[string]interface{} `json:"initialFields" yaml:"initialFields"`
 }
 
+// NewProductionEncoderConfig returns an opinionated EncoderConfig for
+// production environments.
+func NewProductionEncoderConfig() zapcore.EncoderConfig {
+	return zapcore.EncoderConfig{
+		TimeKey:        "ts",
+		LevelKey:       "level",
+		NameKey:        "logger",
+		CallerKey:      "caller",
+		MessageKey:     "msg",
+		StacktraceKey:  "stacktrace",
+		EncodeLevel:    zapcore.LowercaseLevelEncoder,
+		EncodeTime:     zapcore.EpochTimeEncoder,
+		EncodeDuration: zapcore.SecondsDurationEncoder,
+	}
+}
+
 // NewProductionConfig is the recommended production configuration. Logging is
 // enabled at InfoLevel and above.
 //
@@ -90,20 +106,27 @@ func NewProductionConfig() Config {
 			Initial:    100,
 			Thereafter: 100,
 		},
-		Encoding: "json",
-		EncoderConfig: zapcore.EncoderConfig{
-			TimeKey:        "ts",
-			LevelKey:       "level",
-			NameKey:        "logger",
-			CallerKey:      "caller",
-			MessageKey:     "msg",
-			StacktraceKey:  "stacktrace",
-			EncodeLevel:    zapcore.LowercaseLevelEncoder,
-			EncodeTime:     zapcore.EpochTimeEncoder,
-			EncodeDuration: zapcore.SecondsDurationEncoder,
-		},
+		Encoding:         "json",
+		EncoderConfig:    NewProductionEncoderConfig(),
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
+	}
+}
+
+// NewDevelopmentEncoderConfig returns an opinionated EncoderConfig for
+// development environments.
+func NewDevelopmentEncoderConfig() zapcore.EncoderConfig {
+	return zapcore.EncoderConfig{
+		// Keys can be anything except the empty string.
+		TimeKey:        "T",
+		LevelKey:       "L",
+		NameKey:        "N",
+		CallerKey:      "C",
+		MessageKey:     "M",
+		StacktraceKey:  "S",
+		EncodeLevel:    zapcore.CapitalLevelEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.StringDurationEncoder,
 	}
 }
 
@@ -118,21 +141,10 @@ func NewDevelopmentConfig() Config {
 	dyn.SetLevel(DebugLevel)
 
 	return Config{
-		Level:       dyn,
-		Development: true,
-		Encoding:    "console",
-		EncoderConfig: zapcore.EncoderConfig{
-			// Keys can be anything except the empty string.
-			TimeKey:        "T",
-			LevelKey:       "L",
-			NameKey:        "N",
-			CallerKey:      "C",
-			MessageKey:     "M",
-			StacktraceKey:  "S",
-			EncodeLevel:    zapcore.CapitalLevelEncoder,
-			EncodeTime:     zapcore.ISO8601TimeEncoder,
-			EncodeDuration: zapcore.StringDurationEncoder,
-		},
+		Level:            dyn,
+		Development:      true,
+		Encoding:         "console",
+		EncoderConfig:    NewDevelopmentEncoderConfig(),
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
