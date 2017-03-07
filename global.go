@@ -72,15 +72,17 @@ func ReplaceGlobals(logger *Logger) func() {
 	return func() { ReplaceGlobals(prev) }
 }
 
-// NewStdLog returns a standard logger which writes to the supplied zap logger at InfoLevel.
+// NewStdLog returns a *log.Logger which writes to the supplied zap Logger at
+// InfoLevel. To redirect the standard library's package-global logging
+// functions, use RedirectStdLog instead.
 func NewStdLog(l *Logger) *log.Logger {
 	return log.New(&loggerWriter{l.WithOptions(
 		AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth),
-	)}, "", 0)
+	)}, "" /* prefix */, 0 /* flags */)
 }
 
-// RedirectStdLog redirects output from the standard library's "log" package to
-// the supplied logger at InfoLevel. Since zap already handles caller
+// RedirectStdLog redirects output from the standard library's package-global
+// logger to the supplied logger at InfoLevel. Since zap already handles caller
 // annotations, timestamps, etc., it automatically disables the standard
 // library's annotations and prefixing.
 //
