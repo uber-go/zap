@@ -92,6 +92,19 @@ func TestGlobalsConcurrentUse(t *testing.T) {
 	wg.Wait()
 }
 
+func TestNewStdLog(t *testing.T) {
+	withLogger(t, DebugLevel, []Option{AddCaller()}, func(l *Logger, logs *observer.ObservedLogs) {
+		std := NewStdLog(l)
+		std.Print("redirected")
+
+		require.Equal(t, 1, logs.Len(), "Expected exactly one entry to be logged.")
+		entry := logs.AllUntimed()[0]
+		assert.Equal(t, []zapcore.Field{}, entry.Context, "Unexpected entry context.")
+		assert.Equal(t, "redirected", entry.Entry.Message, "Unexpected entry message.")
+		assert.Contains(t, entry.Entry.Caller.File, "global_test.go", "Unexpected caller annotation.")
+	})
+}
+
 func TestRedirectStdLog(t *testing.T) {
 	initialFlags := log.Flags()
 	initialPrefix := log.Prefix()

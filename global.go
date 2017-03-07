@@ -27,6 +27,11 @@ import (
 	"sync"
 )
 
+const (
+	_stdLogDefaultDepth = 4
+	_loggerWriterDepth  = 1
+)
+
 var (
 	_globalMu sync.RWMutex
 	_globalL  = NewNop()
@@ -67,24 +72,29 @@ func ReplaceGlobals(logger *Logger) func() {
 	return func() { ReplaceGlobals(prev) }
 }
 
-// RedirectStdLog redirects output from the standard library's "log" package to
-// the supplied logger at InfoLevel. Since zap already handles caller
+// NewStdLog returns a *log.Logger which writes to the supplied zap Logger at
+// InfoLevel. To redirect the standard library's package-global logging
+// functions, use RedirectStdLog instead.
+func NewStdLog(l *Logger) *log.Logger {
+	return log.New(&loggerWriter{l.WithOptions(
+		AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth),
+	)}, "" /* prefix */, 0 /* flags */)
+}
+
+// RedirectStdLog redirects output from the standard library's package-global
+// logger to the supplied logger at InfoLevel. Since zap already handles caller
 // annotations, timestamps, etc., it automatically disables the standard
 // library's annotations and prefixing.
 //
 // It returns a function to restore the original prefix and flags and reset the
 // standard library's output to os.Stdout.
 func RedirectStdLog(l *Logger) func() {
-	const (
-		stdLogDefaultDepth = 4
-		loggerWriterDepth  = 1
-	)
 	flags := log.Flags()
 	prefix := log.Prefix()
 	log.SetFlags(0)
 	log.SetPrefix("")
 	log.SetOutput(&loggerWriter{l.WithOptions(
-		AddCallerSkip(stdLogDefaultDepth + loggerWriterDepth),
+		AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth),
 	)})
 	return func() {
 		log.SetFlags(flags)
