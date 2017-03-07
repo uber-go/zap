@@ -38,7 +38,7 @@ func init() {
 	registerDefaultEncoders()
 }
 
-// RegisterEncoder registers an encoder constructor for the given name.
+// MustRegisterEncoder registers an encoder constructor for the given name.
 //
 // If an encoder with the same name already exists, this will panic.
 // By default, the encoders "json" and "console" are registered.
