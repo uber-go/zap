@@ -59,41 +59,41 @@ Log a message and 10 fields:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 694 ns/op | 705 B/op | 2 allocs/op |
-| :zap: zap (sugared) | 1174 ns/op | 1613 B/op | 20 allocs/op |
-| logrus | 6824 ns/op | 6100 B/op | 78 allocs/op |
-| go-kit | 3830 ns/op | 2897 B/op | 66 allocs/op |
-| log15 | 16650 ns/op | 5632 B/op | 93 allocs/op |
-| apex/log | 13381 ns/op | 3834 B/op | 65 allocs/op |
-| lion | 5807 ns/op | 5811 B/op | 63 allocs/op |
+| :zap: zap | 1309 ns/op | 705 B/op | 2 allocs/op |
+| :zap: zap (sugared) | 2669 ns/op | 1931 B/op | 21 allocs/op |
+| logrus | 12689 ns/op | 5783 B/op | 77 allocs/op |
+| go-kit | 8191 ns/op | 3119 B/op | 65 allocs/op |
+| log15 | 25390 ns/op | 5536 B/op | 91 allocs/op |
+| apex/log | 20171 ns/op | 4025 B/op | 64 allocs/op |
+| lion | 11189 ns/op | 5999 B/op | 62 allocs/op |
 
 Log a message with a logger that already has 10 fields of context:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 233 ns/op | 0 B/op | 0 allocs/op |
-| :zap: zap (sugared) | 356 ns/op | 80 B/op | 2 allocs/op |
-| logrus | 5647 ns/op | 4568 B/op | 63 allocs/op |
-| go-kit | 4416 ns/op | 3048 B/op | 52 allocs/op |
-| log15 | 14623 ns/op | 2643 B/op | 44 allocs/op |
-| apex/log | 11730 ns/op | 2898 B/op | 51 allocs/op |
-| lion | 3553 ns/op | 4076 B/op | 38 allocs/op |
+| :zap: zap | 449 ns/op | 0 B/op | 0 allocs/op |
+| :zap: zap (sugared) | 675 ns/op | 80 B/op | 2 allocs/op |
+| logrus | 9984 ns/op | 3967 B/op | 61 allocs/op |
+| go-kit | 7760 ns/op | 2950 B/op | 50 allocs/op |
+| log15 | 17967 ns/op | 2546 B/op | 42 allocs/op |
+| apex/log | 17526 ns/op | 2801 B/op | 49 allocs/op |
+| lion | 6109 ns/op | 3978 B/op | 36 allocs/op |
 
 Log a static string, without any context or `printf`-style templating:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 266 ns/op | 0 B/op | 0 allocs/op |
-| :zap: zap (sugared) | 367 ns/op | 80 B/op | 2 allocs/op |
-| standard library | 584 ns/op | 80 B/op | 2 allocs/op |
-| logrus | 1586 ns/op | 1507 B/op | 27 allocs/op |
-| go-kit | 612 ns/op | 656 B/op | 13 allocs/op |
-| log15 | 4911 ns/op | 1592 B/op | 26 allocs/op |
-| apex/log | 2557 ns/op | 584 B/op | 11 allocs/op |
-| lion | 914 ns/op | 1225 B/op | 10 allocs/op |
+| :zap: zap | 437 ns/op | 0 B/op | 0 allocs/op |
+| :zap: zap (sugared) | 570 ns/op | 80 B/op | 2 allocs/op |
+| standard library | 615 ns/op | 80 B/op | 2 allocs/op |
+| logrus | 2807 ns/op | 1409 B/op | 25 allocs/op |
+| go-kit | 1177 ns/op | 656 B/op | 13 allocs/op |
+| log15 | 6737 ns/op | 1496 B/op | 24 allocs/op |
+| apex/log | 3342 ns/op | 584 B/op | 11 allocs/op |
+| lion | 1933 ns/op | 1224 B/op | 10 allocs/op |
 
-## Development Status: Release Candidate 2
-The current release is `v1.0.0-rc.2`. No further breaking changes are *planned*
+## Development Status: Release Candidate 3
+The current release is `v1.0.0-rc.3`. No further breaking changes are *planned*
 unless wider use reveals critical bugs or usability issues, but users who need
 absolute stability should wait for the 1.0.0 release.
 
