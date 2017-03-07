@@ -191,8 +191,8 @@ func NamedError(key string, err error) zapcore.Field {
 
 // Stack constructs a field that stores a stacktrace of the current goroutine
 // under provided key. Keep in mind that taking a stacktrace is eager and
-// extremely expensive (relatively speaking); this function both makes an
-// allocation and takes ~10 microseconds.
+// expensive (relatively speaking); this function both makes an allocation and
+// takes about two microseconds.
 func Stack(key string) zapcore.Field {
 	// Returning the stacktrace as a string costs an allocation, but saves us
 	// from expanding the zapcore.Field union struct to include a byte slice. Since

@@ -40,9 +40,6 @@ var (
 	}
 )
 
-// takeStacktrace attempts to use the provided byte slice to take a stacktrace.
-// If the provided slice isn't large enough, takeStacktrace will allocate
-// successively larger slices until it can capture the whole stack.
 func takeStacktrace() string {
 	buffer := bufferpool.Get()
 	defer bufferpool.Put(buffer)
@@ -50,16 +47,15 @@ func takeStacktrace() string {
 	defer _stacktracePool.Put(programCounters)
 
 	for {
-		// skipping 2 skips the call to runtime.Counters and takeStacktrace
-		// so that the program counters start at the caller of takeStacktrace
+		// Skip the call to runtime.Counters and takeStacktrace so that the
+		// program counters start at the caller of takeStacktrace.
 		n := runtime.Callers(2, programCounters.pcs)
-		if n < len(programCounters.pcs) {
+		if n < cap(programCounters.pcs) {
 			programCounters.pcs = programCounters.pcs[:n]
 			break
 		}
-		// Do not put programCounters back in pool, will put larger buffer in
-		// This is in case our size is always wrong, we optimize to pul
-		// correctly-sized buffers back in the pool
+		// Don't put the too-short counter slice back into the pool; this lets
+		// the pool adjust if we consistently take deep stacktraces.
 		programCounters = newProgramCounters(len(programCounters.pcs) * 2)
 	}
 

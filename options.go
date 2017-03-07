@@ -92,8 +92,7 @@ func AddCallerSkip(skip int) Option {
 }
 
 // AddStacktrace configures the Logger to record a stack trace for all messages at
-// or above a given level. Keep in mind that taking a stacktrace takes several
-// microseconds; relative to the cost of logging, this is quite slow.
+// or above a given level.
 func AddStacktrace(lvl zapcore.LevelEnabler) Option {
 	return optionFunc(func(log *Logger) {
 		log.addStack = lvl

@@ -68,21 +68,19 @@ func TestConfig(t *testing.T) {
 			logger, err := tt.cfg.Build(Hooks(hook))
 			require.NoError(t, err, "Unexpected error constructing logger.")
 
-			withNoStacktraceIgnorePrefixes(func() {
-				logger.Debug("debug")
-				logger.Info("info")
-				logger.Warn("warn")
+			logger.Debug("debug")
+			logger.Info("info")
+			logger.Warn("warn")
 
-				byteContents, err := ioutil.ReadAll(temp)
-				require.NoError(t, err, "Couldn't read log contents from temp file.")
-				logs := string(byteContents)
-				assert.Regexp(t, tt.expectRe, logs, "Unexpected log output.")
+			byteContents, err := ioutil.ReadAll(temp)
+			require.NoError(t, err, "Couldn't read log contents from temp file.")
+			logs := string(byteContents)
+			assert.Regexp(t, tt.expectRe, logs, "Unexpected log output.")
 
-				for i := 0; i < 200; i++ {
-					logger.Info("sampling")
-				}
-				assert.Equal(t, tt.expectN, count.Load(), "Hook called an unexpected number of times.")
-			})
+			for i := 0; i < 200; i++ {
+				logger.Info("sampling")
+			}
+			assert.Equal(t, tt.expectN, count.Load(), "Hook called an unexpected number of times.")
 		})
 	}
 }

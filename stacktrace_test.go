@@ -22,50 +22,20 @@ package zap
 
 import (
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-var (
-	_stacktraceTestLock sync.Mutex
-)
-
-func TestEmptyStacktrace(t *testing.T) {
-	withStacktraceIgnorePrefixes(
-		[]string{
-			"go.uber.org/zap",
-			"runtime.",
-			"testing.",
-		},
-		func() {
-			assert.Empty(t, takeStacktrace(), "stacktrace should be empty if we ignore runtime, testing, and functions in this package")
-		},
+func TestTakeStacktrace(t *testing.T) {
+	trace := takeStacktrace()
+	lines := strings.Split(trace, "\n")
+	require.True(t, len(lines) > 0, "Expected stacktrace to have at least one frame.")
+	assert.Contains(
+		t,
+		lines[0],
+		"TestTakeStacktrace",
+		"Expected stacktrace to start with this test function, but top frame is %s.", lines[0],
 	)
-}
-
-func TestAllStacktrace(t *testing.T) {
-	withNoStacktraceIgnorePrefixes(
-		func() {
-			stacktrace := takeStacktrace()
-			assert.True(t, strings.HasPrefix(stacktrace, "go.uber.org/zap.TestAllStacktrace"),
-				"stacktrace should start with TestAllStacktrace if no prefixes set, but is %s", stacktrace)
-		},
-	)
-}
-
-func withNoStacktraceIgnorePrefixes(f func()) {
-	withStacktraceIgnorePrefixes([]string{}, f)
-}
-
-func withStacktraceIgnorePrefixes(prefixes []string, f func()) {
-	_stacktraceTestLock.Lock()
-	defer _stacktraceTestLock.Unlock()
-	existing := _stacktraceIgnorePrefixes
-	_stacktraceIgnorePrefixes = prefixes
-	defer func() {
-		_stacktraceIgnorePrefixes = existing
-	}()
-	f()
 }
