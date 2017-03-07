@@ -31,10 +31,7 @@ import (
 // Open is a high-level wrapper that takes a variadic number of paths, opens or
 // creates each of the specified files, and combines them into a locked
 // WriteSyncer. It also returns any error encountered and a function to close
-// any opened files.
-//
-// Passing no paths returns a no-op WriteSyncer. The special paths "stdout" and
-// "stderr" are interpreted as os.Stdout and os.Stderr, respectively.
+// any opened files. Passing no paths returns a no-op WriteSyncer.
 func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
 	if len(paths) == 0 {
 		return zapcore.AddSync(ioutil.Discard), func() {}, nil
@@ -52,16 +49,6 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	writers := make([]zapcore.WriteSyncer, 0, len(paths))
 	files := make([]*os.File, 0, len(paths))
 	for _, path := range paths {
-		switch path {
-		case "stdout":
-			writers = append(writers, os.Stdout)
-			// Don't close standard out.
-			continue
-		case "stderr":
-			writers = append(writers, os.Stderr)
-			// Don't close standard error.
-			continue
-		}
 		f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		errs = errs.Append(err)
 		if err == nil {
@@ -75,4 +62,39 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 		}
 	}
 	return writers, close, errs.AsError()
+}
+
+// openOrGetStd calls open, but handles the special paths "stdout" and
+// "stderr" to be interpreted as os.Stdout and os.Stderr, respectively.
+func openOrGetStd(paths ...string) (zapcore.WriteSyncer, func(), error) {
+	if len(paths) == 0 {
+		return zapcore.AddSync(ioutil.Discard), func() {}, nil
+	}
+
+	var truncatedPaths []string
+	var writers []zapcore.WriteSyncer
+	close := func() {}
+	var err error
+
+	for _, path := range paths {
+		switch path {
+		case "stdout":
+			writers = append(writers, os.Stdout)
+		case "stderr":
+			writers = append(writers, os.Stderr)
+		default:
+			truncatedPaths = append(truncatedPaths, path)
+		}
+	}
+
+	if len(truncatedPaths) > 0 {
+		var extraWriters []zapcore.WriteSyncer
+		extraWriters, close, err = open(paths)
+		writers = append(writers, extraWriters...)
+	}
+
+	if len(writers) == 1 {
+		return zapcore.Lock(writers[0]), close, err
+	}
+	return zapcore.Lock(zapcore.NewMultiWriteSyncer(writers...)), close, err
 }

@@ -214,12 +214,12 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 }
 
 func (cfg Config) openSinks() (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
-	sink, closeOut, err := Open(cfg.OutputPaths...)
+	sink, closeOut, err := openOrGetStd(cfg.OutputPaths...)
 	if err != nil {
 		closeOut()
 		return nil, nil, err
 	}
-	errSink, closeErr, err := Open(cfg.ErrorOutputPaths...)
+	errSink, closeErr, err := openOrGetStd(cfg.ErrorOutputPaths...)
 	if err != nil {
 		closeOut()
 		closeErr()
