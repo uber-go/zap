@@ -21,20 +21,21 @@
 package zap
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTakeStacktrace(t *testing.T) {
-	// Even if we pass a tiny buffer, takeStacktrace should allocate until it
-	// can capture the whole stacktrace.
-	traceNil := takeStacktrace(nil, false)
-	traceTiny := takeStacktrace(make([]byte, 1), false)
-	for _, trace := range []string{traceNil, traceTiny} {
-		// The top frame should be takeStacktrace.
-		assert.Contains(t, trace, "zap.takeStacktrace", "Stacktrace should contain the takeStacktrace function.")
-		// The stacktrace should also capture its immediate caller.
-		assert.Contains(t, trace, "TestTakeStacktrace", "Stacktrace should contain the test function.")
-	}
+	trace := takeStacktrace()
+	lines := strings.Split(trace, "\n")
+	require.True(t, len(lines) > 0, "Expected stacktrace to have at least one frame.")
+	assert.Contains(
+		t,
+		lines[0],
+		"TestTakeStacktrace",
+		"Expected stacktrace to start with this test function, but top frame is %s.", lines[0],
+	)
 }

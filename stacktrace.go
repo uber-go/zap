@@ -20,23 +20,81 @@
 
 package zap
 
-import "runtime"
+import (
+	"runtime"
+	"strings"
+	"sync"
 
-// takeStacktrace attempts to use the provided byte slice to take a stacktrace.
-// If the provided slice isn't large enough, takeStacktrace will allocate
-// successively larger slices until it can capture the whole stack.
-func takeStacktrace(buf []byte, includeAllGoroutines bool) string {
-	if len(buf) == 0 {
-		// We may have been passed a nil byte slice.
-		buf = make([]byte, 1024)
+	"go.uber.org/zap/internal/bufferpool"
+)
+
+var (
+	_stacktraceIgnorePrefixes = []string{
+		"runtime.goexit",
+		"runtime.main",
 	}
-	n := runtime.Stack(buf, includeAllGoroutines)
-	for n >= len(buf) {
-		// Buffer wasn't large enough, allocate a larger one. No need to copy
-		// previous buffer's contents.
-		size := 2 * n
-		buf = make([]byte, size)
-		n = runtime.Stack(buf, includeAllGoroutines)
+	_stacktracePool = sync.Pool{
+		New: func() interface{} {
+			return newProgramCounters(64)
+		},
 	}
-	return string(buf[:n])
+)
+
+func takeStacktrace() string {
+	buffer := bufferpool.Get()
+	defer bufferpool.Put(buffer)
+	programCounters := _stacktracePool.Get().(*programCounters)
+	defer _stacktracePool.Put(programCounters)
+
+	for {
+		// Skip the call to runtime.Counters and takeStacktrace so that the
+		// program counters start at the caller of takeStacktrace.
+		n := runtime.Callers(2, programCounters.pcs)
+		if n < cap(programCounters.pcs) {
+			programCounters.pcs = programCounters.pcs[:n]
+			break
+		}
+		// Don't put the too-short counter slice back into the pool; this lets
+		// the pool adjust if we consistently take deep stacktraces.
+		programCounters = newProgramCounters(len(programCounters.pcs) * 2)
+	}
+
+	i := 0
+	for _, programCounter := range programCounters.pcs {
+		f := runtime.FuncForPC(programCounter)
+		name := f.Name()
+		if shouldIgnoreStacktraceName(name) {
+			continue
+		}
+		if i != 0 {
+			buffer.AppendByte('\n')
+		}
+		i++
+		file, line := f.FileLine(programCounter - 1)
+		buffer.AppendString(name)
+		buffer.AppendByte('\n')
+		buffer.AppendByte('\t')
+		buffer.AppendString(file)
+		buffer.AppendByte(':')
+		buffer.AppendInt(int64(line))
+	}
+
+	return buffer.String()
+}
+
+func shouldIgnoreStacktraceName(name string) bool {
+	for _, prefix := range _stacktraceIgnorePrefixes {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+type programCounters struct {
+	pcs []uintptr
+}
+
+func newProgramCounters(size int) *programCounters {
+	return &programCounters{make([]uintptr, size)}
 }
