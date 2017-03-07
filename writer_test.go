@@ -53,13 +53,11 @@ func TestOpen(t *testing.T) {
 		filenames []string
 		error     string
 	}{
-		{[]string{"stdout"}, []string{os.Stdout.Name()}, ""},
-		{[]string{"stderr"}, []string{os.Stderr.Name()}, ""},
 		{[]string{temp.Name()}, []string{temp.Name()}, ""},
 		{[]string{"/foo/bar/baz"}, []string{}, "open /foo/bar/baz: no such file or directory"},
 		{
-			paths:     []string{"stdout", "/foo/bar/baz", temp.Name(), "/baz/quux"},
-			filenames: []string{os.Stdout.Name(), temp.Name()},
+			paths:     []string{"/foo/bar/baz", temp.Name(), "/baz/quux"},
+			filenames: []string{temp.Name()},
 			error:     "open /foo/bar/baz: no such file or directory; open /baz/quux: no such file or directory",
 		},
 	}
