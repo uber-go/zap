@@ -18,24 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+package color
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestTakeStacktrace(t *testing.T) {
-	trace := takeStacktrace()
-	lines := strings.Split(trace, "\n")
-	require.True(t, len(lines) > 0, "Expected stacktrace to have at least one frame.")
-	assert.Contains(
+func TestColorFormatting(t *testing.T) {
+	assert.Equal(
 		t,
-		lines[0],
-		"TestTakeStacktrace",
-		"Expected stacktrace to start with this test function, but top frame is %s.", lines[0],
+		"\x1b[31mfoo\x1b[0m",
+		Red.Add("foo"),
+		"Unexpected colored output.",
 	)
 }

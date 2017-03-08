@@ -18,24 +18,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+// Package color adds coloring functionality for TTY output.
+package color
 
-import (
-	"strings"
-	"testing"
+import "fmt"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+// Foreground colors.
+const (
+	Black Color = iota + 30
+	Red
+	Green
+	Yellow
+	Blue
+	Magenta
+	Cyan
+	White
 )
 
-func TestTakeStacktrace(t *testing.T) {
-	trace := takeStacktrace()
-	lines := strings.Split(trace, "\n")
-	require.True(t, len(lines) > 0, "Expected stacktrace to have at least one frame.")
-	assert.Contains(
-		t,
-		lines[0],
-		"TestTakeStacktrace",
-		"Expected stacktrace to start with this test function, but top frame is %s.", lines[0],
-	)
+// Color represents a text color.
+type Color uint8
+
+// Add adds the coloring to the given string.
+func (c Color) Add(s string) string {
+	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", uint8(c), s)
 }

@@ -18,24 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+package zapcore
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestTakeStacktrace(t *testing.T) {
-	trace := takeStacktrace()
-	lines := strings.Split(trace, "\n")
-	require.True(t, len(lines) > 0, "Expected stacktrace to have at least one frame.")
-	assert.Contains(
-		t,
-		lines[0],
-		"TestTakeStacktrace",
-		"Expected stacktrace to start with this test function, but top frame is %s.", lines[0],
-	)
+func TestAllLevelsCoveredByLevelString(t *testing.T) {
+	numLevels := int((_maxLevel - _minLevel) + 1)
+
+	isComplete := func(m map[Level]string) bool {
+		return len(m) == numLevels
+	}
+
+	assert.True(t, isComplete(_levelToLowercaseColorString), "Colored lowercase strings don't cover all levels.")
+	assert.True(t, isComplete(_levelToCapitalColorString), "Colored capital strings don't cover all levels.")
 }

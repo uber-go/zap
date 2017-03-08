@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.0.0-rc.3 (7 Mar 2017)
+This is the third release candidate for zap's stable release. There are no
+breaking changes.
+
+Bugfixes:
+
+* [#339][]: Byte slices passed to `zap.Any` are now correctly treated as binary blobs
+  rather than `[]uint8`.
+
+Enhancements:
+
+* [#307][]: Users can opt into colored output for log levels.
+* [#353][]: In addition to hijacking the output of the standard library's
+  package-global logging functions, users can now construct a zap-backed
+  `log.Logger` instance.
+* [#311][]: Frames from common runtime functions and some of zap's internal
+  machinery are now omitted from stacktraces.
+
+Thanks to @ansel1 and @suyash for their contributions to this release.
+
 ## v1.0.0-rc.2 (21 Feb 2017)
 This is the second release candidate for zap's stable release. It includes two
 breaking changes.
@@ -71,3 +91,7 @@ upgrade to the upcoming stable release.
 [#333]: https://github.com/uber-go/zap/pull/333
 [#326]: https://github.com/uber-go/zap/pull/326
 [#300]: https://github.com/uber-go/zap/pull/300
+[#339]: https://github.com/uber-go/zap/pull/339
+[#307]: https://github.com/uber-go/zap/pull/307
+[#353]: https://github.com/uber-go/zap/pull/353
+[#311]: https://github.com/uber-go/zap/pull/311

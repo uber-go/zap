@@ -25,7 +25,6 @@ import (
 	"math"
 	"time"
 
-	"go.uber.org/zap/internal/bufferpool"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -192,19 +191,14 @@ func NamedError(key string, err error) zapcore.Field {
 
 // Stack constructs a field that stores a stacktrace of the current goroutine
 // under provided key. Keep in mind that taking a stacktrace is eager and
-// extremely expensive (relatively speaking); this function both makes an
-// allocation and takes ~10 microseconds.
+// expensive (relatively speaking); this function both makes an allocation and
+// takes about two microseconds.
 func Stack(key string) zapcore.Field {
-	// Try to avoid allocating a buffer.
-	buf := bufferpool.Get()
-	bs := buf.Bytes()
 	// Returning the stacktrace as a string costs an allocation, but saves us
 	// from expanding the zapcore.Field union struct to include a byte slice. Since
 	// taking a stacktrace is already so expensive (~10us), the extra allocation
 	// is okay.
-	field := String(key, takeStacktrace(bs[:cap(bs)], false))
-	bufferpool.Put(buf)
-	return field
+	return String(key, takeStacktrace())
 }
 
 // Duration constructs a field with the given key and value. The encoder

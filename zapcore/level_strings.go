@@ -18,24 +18,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+package zapcore
 
-import (
-	"strings"
-	"testing"
+import "go.uber.org/zap/internal/color"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+var (
+	_levelToColor = map[Level]color.Color{
+		DebugLevel:  color.Magenta,
+		InfoLevel:   color.Blue,
+		WarnLevel:   color.Yellow,
+		ErrorLevel:  color.Red,
+		DPanicLevel: color.Red,
+		PanicLevel:  color.Red,
+		FatalLevel:  color.Red,
+	}
+	_unknownLevelColor = color.Red
+
+	_levelToLowercaseColorString = make(map[Level]string, len(_levelToColor))
+	_levelToCapitalColorString   = make(map[Level]string, len(_levelToColor))
 )
 
-func TestTakeStacktrace(t *testing.T) {
-	trace := takeStacktrace()
-	lines := strings.Split(trace, "\n")
-	require.True(t, len(lines) > 0, "Expected stacktrace to have at least one frame.")
-	assert.Contains(
-		t,
-		lines[0],
-		"TestTakeStacktrace",
-		"Expected stacktrace to start with this test function, but top frame is %s.", lines[0],
-	)
+func init() {
+	for level, color := range _levelToColor {
+		_levelToLowercaseColorString[level] = color.Add(level.String())
+		_levelToCapitalColorString[level] = color.Add(level.CapitalString())
+	}
 }
