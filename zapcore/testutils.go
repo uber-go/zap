@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testutils
+package zapcore
 
 import (
 	"bytes"
@@ -27,70 +27,75 @@ import (
 	"strings"
 )
 
-// A Syncer is a spy for the Sync portion of zapcore.WriteSyncer.
-type Syncer struct {
+// A TestSyncer is a spy for the Sync portion of WriteTestSyncer.
+type TestSyncer struct {
 	err    error
 	called bool
 }
 
 // SetError sets the error that the Sync method will return.
-func (s *Syncer) SetError(err error) {
+func (s *TestSyncer) SetError(err error) {
 	s.err = err
 }
 
 // Sync records that it was called, then returns the user-supplied error (if
 // any).
-func (s *Syncer) Sync() error {
+func (s *TestSyncer) Sync() error {
 	s.called = true
 	return s.err
 }
 
 // Called reports whether the Sync method was called.
-func (s *Syncer) Called() bool {
+func (s *TestSyncer) Called() bool {
 	return s.called
 }
 
-// A Discarder sends all writes to ioutil.Discard.
-type Discarder struct{ Syncer }
+// A TestDiscarder sends all writes to ioutil.Discard.
+type TestDiscarder struct{ TestSyncer }
 
-// Write implements io.Writer.
-func (d *Discarder) Write(b []byte) (int, error) {
+// Push implements Pusher.
+func (d *TestDiscarder) Push(_ Level, b []byte) (int, error) {
 	return ioutil.Discard.Write(b)
 }
 
-// FailWriter is a WriteSyncer that always returns an error on writes.
-type FailWriter struct{ Syncer }
+// TestFailPusher is a Pusher that always returns an error on writes.
+type TestFailPusher struct{ TestSyncer }
 
-// Write implements io.Writer.
-func (w FailWriter) Write(b []byte) (int, error) {
+// Push implements Pusher.
+func (w *TestFailPusher) Push(_ Level, b []byte) (int, error) {
 	return len(b), errors.New("failed")
 }
 
-// ShortWriter is a WriteSyncer whose write method never fails, but
+// TestShortPusher is a Pusher whose write method never fails, but
 // nevertheless fails to the last byte of the input.
-type ShortWriter struct{ Syncer }
+type TestShortPusher struct{ TestSyncer }
 
-// Write implements io.Writer.
-func (w ShortWriter) Write(b []byte) (int, error) {
+// Push implements Pusher.
+func (w *TestShortPusher) Push(_ Level, b []byte) (int, error) {
 	return len(b) - 1, nil
 }
 
-// Buffer is an implementation of zapcore.WriteSyncer that sends all writes to
-// a bytes.Buffer. It has convenience methods to split the accumulated buffer
+// TestBuffer is an implementation of Pusher that sends all writes to
+// a bytes.TestBuffer. It has convenience methods to split the accumulated buffer
 // on newlines.
-type Buffer struct {
+type TestBuffer struct {
 	bytes.Buffer
-	Syncer
+	TestSyncer
+}
+
+// Push implements Pusher.
+func (b *TestBuffer) Push(_ Level, p []byte) (int, error) {
+	return b.Write(p)
 }
 
 // Lines returns the current buffer contents, split on newlines.
-func (b *Buffer) Lines() []string {
+func (b *TestBuffer) Lines() []string {
 	output := strings.Split(b.String(), "\n")
 	return output[:len(output)-1]
 }
 
 // Stripped returns the current buffer contents with the last trailing newline
 // stripped.
-func (b *Buffer) Stripped() string {
+func (b *TestBuffer) Stripped() string {
 	return strings.TrimRight(b.String(), "\n")
 }

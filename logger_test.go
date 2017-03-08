@@ -26,7 +26,6 @@ import (
 
 	"go.uber.org/zap/internal/exit"
 	"go.uber.org/zap/internal/observer"
-	"go.uber.org/zap/testutils"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/assert"
@@ -297,11 +296,11 @@ func TestLoggerNames(t *testing.T) {
 }
 
 func TestLoggerWriteFailure(t *testing.T) {
-	errSink := &testutils.Buffer{}
+	errSink := &zapcore.TestBuffer{}
 	logger := New(
 		zapcore.NewCore(
 			zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
-			zapcore.Lock(zapcore.AddSync(testutils.FailWriter{})),
+			zapcore.Lock(&zapcore.TestFailPusher{}),
 			DebugLevel,
 		),
 		ErrorOutput(errSink),
@@ -341,7 +340,7 @@ func TestLoggerAddCaller(t *testing.T) {
 }
 
 func TestLoggerAddCallerFail(t *testing.T) {
-	errBuf := &testutils.Buffer{}
+	errBuf := &zapcore.TestBuffer{}
 	withLogger(t, DebugLevel, opts(AddCaller(), ErrorOutput(errBuf)), func(log *Logger, logs *observer.ObservedLogs) {
 		log.callerSkip = 1e3
 		log.Info("Failure.")

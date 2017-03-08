@@ -29,27 +29,26 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/testutils"
 )
 
 type writeSyncSpy struct {
 	io.Writer
-	testutils.Syncer
+	TestSyncer
 }
 
-func requireWriteWorks(t testing.TB, ws WriteSyncer) {
-	n, err := ws.Write([]byte("foo"))
-	require.NoError(t, err, "Unexpected error writing to WriteSyncer.")
+func requireWriteWorks(t testing.TB, ws Pusher) {
+	n, err := ws.Push(DebugLevel, []byte("foo"))
+	require.NoError(t, err, "Unexpected error writing to Pusher.")
 	require.Equal(t, 3, n, "Wrote an unexpected number of bytes.")
 }
 
-func TestAddSyncWriteSyncer(t *testing.T) {
+func TestAddSyncPusher(t *testing.T) {
 	buf := &bytes.Buffer{}
 	concrete := &writeSyncSpy{Writer: buf}
-	ws := AddSync(concrete)
+	ws := IgnoreLevel(AddSync(concrete))
 	requireWriteWorks(t, ws)
 
-	require.NoError(t, ws.Sync(), "Unexpected error syncing a WriteSyncer.")
+	require.NoError(t, ws.Sync(), "Unexpected error syncing a Pusher.")
 	require.True(t, concrete.Called(), "Expected to dispatch to concrete type's Sync method.")
 
 	concrete.SetError(errors.New("fail"))
@@ -57,21 +56,21 @@ func TestAddSyncWriteSyncer(t *testing.T) {
 }
 
 func TestAddSyncWriter(t *testing.T) {
-	// If we pass a plain io.Writer, make sure that we still get a WriteSyncer
+	// If we pass a plain io.Writer, make sure that we still get a Pusher
 	// with a no-op Sync.
 	buf := &bytes.Buffer{}
-	ws := AddSync(buf)
+	ws := IgnoreLevel(AddSync(buf))
 	requireWriteWorks(t, ws)
 	assert.NoError(t, ws.Sync(), "Unexpected error calling a no-op Sync method.")
 }
 
-func TestMultiWriteSyncerWritesBoth(t *testing.T) {
+func TestMultiPusherWritesBoth(t *testing.T) {
 	first := &bytes.Buffer{}
 	second := &bytes.Buffer{}
-	ws := NewMultiWriteSyncer(AddSync(first), AddSync(second))
+	ws := NewMultiPusher(IgnoreLevel(AddSync(first)), IgnoreLevel(AddSync(second)))
 
 	msg := []byte("dumbledore")
-	n, err := ws.Write(msg)
+	n, err := ws.Push(DebugLevel, msg)
 	require.NoError(t, err, "Expected successful buffer write")
 	assert.Equal(t, len(msg), n)
 
@@ -79,47 +78,47 @@ func TestMultiWriteSyncerWritesBoth(t *testing.T) {
 	assert.Equal(t, msg, second.Bytes())
 }
 
-func TestMultiWriteSyncerFailsWrite(t *testing.T) {
-	ws := NewMultiWriteSyncer(AddSync(&testutils.FailWriter{}))
-	_, err := ws.Write([]byte("test"))
+func TestMultiPusherFailsWrite(t *testing.T) {
+	ws := NewMultiPusher(&TestFailPusher{})
+	_, err := ws.Push(DebugLevel, []byte("test"))
 	assert.Error(t, err, "Write error should propagate")
 }
 
-func TestMultiWriteSyncerFailsShortWrite(t *testing.T) {
-	ws := NewMultiWriteSyncer(AddSync(&testutils.ShortWriter{}))
-	n, err := ws.Write([]byte("test"))
+func TestMultiPusherFailsShortWrite(t *testing.T) {
+	ws := NewMultiPusher(&TestShortPusher{})
+	n, err := ws.Push(DebugLevel, []byte("test"))
 	assert.NoError(t, err, "Expected fake-success from short write")
 	assert.Equal(t, 3, n, "Expected byte count to return from underlying writer")
 }
 
 func TestWritestoAllSyncs_EvenIfFirstErrors(t *testing.T) {
-	failer := &testutils.FailWriter{}
+	failer := &TestFailPusher{}
 	second := &bytes.Buffer{}
-	ws := NewMultiWriteSyncer(AddSync(failer), AddSync(second))
+	ws := NewMultiPusher(failer, IgnoreLevel(AddSync(second)))
 
-	_, err := ws.Write([]byte("fail"))
+	_, err := ws.Push(DebugLevel, []byte("fail"))
 	assert.Error(t, err, "Expected error from call to a writer that failed")
 	assert.Equal(t, []byte("fail"), second.Bytes(), "Expected second sink to be written after first error")
 }
 
-func TestMultiWriteSyncerSync_PropagatesErrors(t *testing.T) {
-	badsink := &testutils.Buffer{}
+func TestMultiPusherSync_PropagatesErrors(t *testing.T) {
+	badsink := &TestBuffer{}
 	badsink.SetError(errors.New("sink is full"))
-	ws := NewMultiWriteSyncer(&testutils.Discarder{}, badsink)
+	ws := NewMultiPusher(&TestDiscarder{}, badsink)
 
 	assert.Error(t, ws.Sync(), "Expected sync error to propagate")
 }
 
-func TestMultiWriteSyncerSync_NoErrorsOnDiscard(t *testing.T) {
-	ws := NewMultiWriteSyncer(&testutils.Discarder{})
+func TestMultiPusherSync_NoErrorsOnDiscard(t *testing.T) {
+	ws := NewMultiPusher(&TestDiscarder{})
 	assert.NoError(t, ws.Sync(), "Expected error-free sync to /dev/null")
 }
 
-func TestMultiWriteSyncerSync_AllCalled(t *testing.T) {
-	failed, second := &testutils.Buffer{}, &testutils.Buffer{}
+func TestMultiPusherSync_AllCalled(t *testing.T) {
+	failed, second := &TestBuffer{}, &TestBuffer{}
 
 	failed.SetError(errors.New("disposal broken"))
-	ws := NewMultiWriteSyncer(failed, second)
+	ws := NewMultiPusher(failed, second)
 
 	assert.Error(t, ws.Sync(), "Expected first sink to fail")
 	assert.True(t, failed.Called(), "Expected first sink to have Sync method called.")

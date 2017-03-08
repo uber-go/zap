@@ -40,7 +40,7 @@ type Logger struct {
 
 	development bool
 	name        string
-	errorOutput zapcore.WriteSyncer
+	errorOutput zapcore.Pusher
 
 	addCaller bool
 	addStack  zapcore.LevelEnabler
@@ -61,7 +61,7 @@ func New(core zapcore.Core, options ...Option) *Logger {
 	}
 	log := &Logger{
 		core:        core,
-		errorOutput: zapcore.Lock(os.Stderr),
+		errorOutput: zapcore.Lock(zapcore.IgnoreLevel(os.Stderr)),
 		addStack:    zapcore.FatalLevel + 1,
 	}
 	return log.WithOptions(options...)
@@ -260,7 +260,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	if log.addCaller {
 		ce.Entry.Caller = zapcore.NewEntryCaller(runtime.Caller(log.callerSkip + callerSkipOffset))
 		if !ce.Entry.Caller.Defined {
-			fmt.Fprintf(log.errorOutput, "%v Logger.check error: failed to get caller\n", time.Now().UTC())
+			log.errorOutput.Push(ErrorLevel, []byte(fmt.Sprintf("%v Logger.check error: failed to get caller\n", time.Now().UTC())))
 			log.errorOutput.Sync()
 		}
 	}
