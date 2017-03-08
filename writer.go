@@ -37,13 +37,12 @@ import (
 // "stderr" are interpreted as os.Stdout and os.Stderr, respectively.
 func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
 	writers, close, err := open(paths)
-
 	if err != nil {
 		return nil, nil, err
 	}
 
-	writer, err := OpenWriteSyncers(writers...)
-	return writer, close, err
+	writer := CombineWriteSyncers(writers...)
+	return writer, close, nil
 }
 
 func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
@@ -76,11 +75,11 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	return writers, close, errs.AsError()
 }
 
-// OpenWriteSyncers combines the passed set of WriteSyncer objects into a locked
-// WriteSyncer. It returns any error encountered.
-func OpenWriteSyncers(writers ...zapcore.WriteSyncer) (zapcore.WriteSyncer, error) {
+// CombineWriteSyncers combines the passed set of WriteSyncer objects into a
+// locked WriteSyncer.
+func CombineWriteSyncers(writers ...zapcore.WriteSyncer) zapcore.WriteSyncer {
 	if len(writers) == 0 {
-		return zapcore.AddSync(ioutil.Discard), nil
+		return zapcore.AddSync(ioutil.Discard)
 	}
-	return zapcore.Lock(zapcore.NewMultiWriteSyncer(writers...)), nil
+	return zapcore.Lock(zapcore.NewMultiWriteSyncer(writers...))
 }

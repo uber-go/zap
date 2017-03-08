@@ -66,9 +66,13 @@ func TestAddSyncWriter(t *testing.T) {
 }
 
 func TestNewMultiWriteSyncerWorksForSingleWriter(t *testing.T) {
-	w := AddSync(&bytes.Buffer{})
+	w := &testutils.Buffer{}
+
 	ws := NewMultiWriteSyncer(w)
 	assert.Equal(t, w, ws, "Expected NewMultiWriteSyncer to return the same WriteSyncer object for a single argument.")
+
+	ws.Sync()
+	assert.True(t, w.Called(), "Expected Sync to be called on the created WriteSyncer")
 }
 
 func TestMultiWriteSyncerWritesBoth(t *testing.T) {

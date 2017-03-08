@@ -83,13 +83,13 @@ func TestOpen(t *testing.T) {
 }
 
 type testWriter struct {
-	expected []byte
+	expected string
 	t        testing.TB
 }
 
 func (w *testWriter) Write(actual []byte) (int, error) {
-	assert.Equal(w.t, w.expected, actual, "expected writer to write %v, wrote %v", string(w.expected), string(actual))
-	return 0, nil
+	assert.Equal(w.t, []byte(w.expected), actual, "Unexpected write error.")
+	return len(actual), nil
 }
 
 func (w *testWriter) Sync() error {
@@ -97,12 +97,7 @@ func (w *testWriter) Sync() error {
 }
 
 func TestOpenWriteSyncers(t *testing.T) {
-	tw := &testWriter{[]byte("test"), t}
-
-	w, err := OpenWriteSyncers(tw)
-	if err != nil {
-		require.NoError(t, err, "OpenWriters Failed.")
-	}
-
+	tw := &testWriter{"test", t}
+	w := CombineWriteSyncers(tw)
 	w.Write([]byte("test"))
 }
