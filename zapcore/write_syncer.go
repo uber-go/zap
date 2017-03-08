@@ -88,6 +88,9 @@ type multiWriteSyncer []WriteSyncer
 // NewMultiWriteSyncer creates a WriteSyncer that duplicates its writes
 // and sync calls, much like io.MultiWriter.
 func NewMultiWriteSyncer(ws ...WriteSyncer) WriteSyncer {
+	if len(ws) == 1 {
+		return ws[0]
+	}
 	// Copy to protect against https://github.com/golang/go/issues/7809
 	return multiWriteSyncer(append([]WriteSyncer(nil), ws...))
 }
