@@ -96,7 +96,7 @@ func (w *testWriter) Sync() error {
 	return nil
 }
 
-func TestOpenWriteSyncers(t *testing.T) {
+func TestCombineWriteSyncers(t *testing.T) {
 	tw := &testWriter{"test", t}
 	w := CombineWriteSyncers(tw)
 	w.Write([]byte("test"))
