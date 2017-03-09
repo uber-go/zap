@@ -73,23 +73,6 @@ func do() error {
 	return nil
 }
 
-type tmplData struct {
-	BenchmarkAddingFields       string
-	BenchmarkAccumulatedContext string
-	BenchmarkWithoutFields      string
-}
-
-type benchmarkRow struct {
-	Name             string
-	Time             time.Duration
-	AllocatedBytes   int
-	AllocatedObjects int
-}
-
-func (b *benchmarkRow) String() string {
-	return fmt.Sprintf("| %s | %d ns/op | %d B/op | %d allocs/op |", b.Name, b.Time.Nanoseconds(), b.AllocatedBytes, b.AllocatedObjects)
-}
-
 func getTmplData() (*tmplData, error) {
 	tmplData := &tmplData{}
 	rows, err := getBenchmarkRows("BenchmarkAddingFields")
@@ -126,9 +109,7 @@ func getBenchmarkRows(benchmarkName string) (string, error) {
 		}
 		benchmarkRows = append(benchmarkRows, benchmarkRow)
 	}
-	sort.Slice(benchmarkRows, func(i int, j int) bool {
-		return benchmarkRows[i].Time.Nanoseconds() < benchmarkRows[j].Time.Nanoseconds()
-	})
+	sort.Sort(benchmarkRowsByTime(benchmarkRows))
 	rows := []string{
 		"| Library | Time | Bytes Allocated | Objects Allocated |",
 		"| :--- | :---: | :---: | :---: |",
@@ -194,4 +175,29 @@ func getOutput(name string, arg ...string) ([]string, error) {
 		return nil, fmt.Errorf("error running %s %s: %v\n%s", name, strings.Join(arg, " "), err, string(output))
 	}
 	return strings.Split(string(output), "\n"), nil
+}
+
+type tmplData struct {
+	BenchmarkAddingFields       string
+	BenchmarkAccumulatedContext string
+	BenchmarkWithoutFields      string
+}
+
+type benchmarkRow struct {
+	Name             string
+	Time             time.Duration
+	AllocatedBytes   int
+	AllocatedObjects int
+}
+
+func (b *benchmarkRow) String() string {
+	return fmt.Sprintf("| %s | %d ns/op | %d B/op | %d allocs/op |", b.Name, b.Time.Nanoseconds(), b.AllocatedBytes, b.AllocatedObjects)
+}
+
+type benchmarkRowsByTime []*benchmarkRow
+
+func (b benchmarkRowsByTime) Len() int      { return len(b) }
+func (b benchmarkRowsByTime) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+func (b benchmarkRowsByTime) Less(i, j int) bool {
+	return b[i].Time.Nanoseconds() < b[j].Time.Nanoseconds()
 }
