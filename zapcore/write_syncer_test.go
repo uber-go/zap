@@ -56,6 +56,16 @@ func TestAddSyncWriteSyncer(t *testing.T) {
 	assert.Error(t, ws.Sync(), "Expected to propagate errors from concrete type's Sync method.")
 }
 
+func TestLockedWriteSyncerInterface(t *testing.T) {
+	buf := &bytes.Buffer{}
+	ws := AddSync(buf)
+	var lws WriteSyncer = &lockedWriteSyncer{ws: ws}
+
+	_, ok := lws.(LockedWriteSyncer)
+	require.True(t, ok, "Wrong implementation of the builtin lockedWriteSyncer")
+	require.Equal(t, lws, Lock(lws), "Unnessessary wrapped lock for locked WriteSyncer")
+}
+
 func TestAddSyncWriter(t *testing.T) {
 	// If we pass a plain io.Writer, make sure that we still get a WriteSyncer
 	// with a no-op Sync.

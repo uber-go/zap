@@ -34,6 +34,12 @@ type WriteSyncer interface {
 	Sync() error
 }
 
+// LockedWriteSyncer is the interface that groups sync.Locker and WriteSyncer methods.
+type LockedWriteSyncer interface {
+	sync.Locker
+	WriteSyncer
+}
+
 // AddSync converts an io.Writer to a WriteSyncer. It attempts to be
 // intelligent: if the concrete type of the io.Writer implements WriteSyncer,
 // we'll use the existing Sync method. If it doesn't, we'll add a no-op Sync.
@@ -54,7 +60,7 @@ type lockedWriteSyncer struct {
 // Lock wraps a WriteSyncer in a mutex to make it safe for concurrent use. In
 // particular, *os.Files must be locked before use.
 func Lock(ws WriteSyncer) WriteSyncer {
-	if _, ok := ws.(*lockedWriteSyncer); ok {
+	if _, ok := ws.(LockedWriteSyncer); ok {
 		// no need to layer on another lock
 		return ws
 	}
