@@ -31,8 +31,15 @@ import (
 var (
 	errNoEncoderNameSpecified = errors.New("no encoder name specified")
 
-	_encoderNameToConstructor = defaultEncoders()
-	_encoderMutex             sync.RWMutex
+	_encoderNameToConstructor = map[string]func(zapcore.EncoderConfig) (zapcore.Encoder, error){
+		"console": func(encoderConfig zapcore.EncoderConfig) (zapcore.Encoder, error) {
+			return zapcore.NewConsoleEncoder(encoderConfig), nil
+		},
+		"json": func(encoderConfig zapcore.EncoderConfig) (zapcore.Encoder, error) {
+			return zapcore.NewJSONEncoder(encoderConfig), nil
+		},
+	}
+	_encoderMutex sync.RWMutex
 )
 
 // RegisterEncoder registers an encoder constructor for the given name.
@@ -63,15 +70,4 @@ func newEncoder(name string, encoderConfig zapcore.EncoderConfig) (zapcore.Encod
 		return nil, fmt.Errorf("no encoder registered for name %q", name)
 	}
 	return constructor(encoderConfig)
-}
-
-func defaultEncoders() map[string]func(zapcore.EncoderConfig) (zapcore.Encoder, error) {
-	return map[string]func(zapcore.EncoderConfig) (zapcore.Encoder, error){
-		"console": func(encoderConfig zapcore.EncoderConfig) (zapcore.Encoder, error) {
-			return zapcore.NewConsoleEncoder(encoderConfig), nil
-		},
-		"json": func(encoderConfig zapcore.EncoderConfig) (zapcore.Encoder, error) {
-			return zapcore.NewJSONEncoder(encoderConfig), nil
-		},
-	}
 }
