@@ -28,12 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	newNilEncoder = func(_ zapcore.EncoderConfig) zapcore.Encoder {
-		return nil
-	}
-)
-
 func TestRegisterDefaultEncoders(t *testing.T) {
 	testEncodersRegistered(t, "console", "json")
 }
@@ -85,11 +79,9 @@ func TestNewEncoderNoName(t *testing.T) {
 }
 
 func testEncoders(f func()) {
-	encoderNameToConstructor = make(map[string]func(zapcore.EncoderConfig) zapcore.Encoder)
-	defer func() {
-		encoderNameToConstructor = make(map[string]func(zapcore.EncoderConfig) zapcore.Encoder)
-		registerDefaultEncoders()
-	}()
+	existing := encoderNameToConstructor
+	encoderNameToConstructor = make(map[string]func(zapcore.EncoderConfig) (zapcore.Encoder, error))
+	defer func() { encoderNameToConstructor = existing }()
 	f()
 }
 
@@ -98,4 +90,8 @@ func testEncodersRegistered(t *testing.T, names ...string) {
 	for _, name := range names {
 		assert.NotNil(t, encoderNameToConstructor[name])
 	}
+}
+
+func newNilEncoder(_ zapcore.EncoderConfig) (zapcore.Encoder, error) {
+	return nil, nil
 }
