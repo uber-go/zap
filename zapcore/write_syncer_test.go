@@ -65,6 +65,16 @@ func TestAddSyncWriter(t *testing.T) {
 	assert.NoError(t, ws.Sync(), "Unexpected error calling a no-op Sync method.")
 }
 
+func TestNewMultiWriteSyncerWorksForSingleWriter(t *testing.T) {
+	w := &testutils.Buffer{}
+
+	ws := NewMultiWriteSyncer(w)
+	assert.Equal(t, w, ws, "Expected NewMultiWriteSyncer to return the same WriteSyncer object for a single argument.")
+
+	ws.Sync()
+	assert.True(t, w.Called(), "Expected Sync to be called on the created WriteSyncer")
+}
+
 func TestMultiWriteSyncerWritesBoth(t *testing.T) {
 	first := &bytes.Buffer{}
 	second := &bytes.Buffer{}

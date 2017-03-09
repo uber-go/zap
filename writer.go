@@ -36,15 +36,13 @@ import (
 // Passing no paths returns a no-op WriteSyncer. The special paths "stdout" and
 // "stderr" are interpreted as os.Stdout and os.Stderr, respectively.
 func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
-	if len(paths) == 0 {
-		return zapcore.AddSync(ioutil.Discard), func() {}, nil
+	writers, close, err := open(paths)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	writers, close, err := open(paths)
-	if len(writers) == 1 {
-		return zapcore.Lock(writers[0]), close, err
-	}
-	return zapcore.Lock(zapcore.NewMultiWriteSyncer(writers...)), close, err
+	writer := CombineWriteSyncers(writers...)
+	return writer, close, nil
 }
 
 func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
@@ -75,4 +73,13 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 		}
 	}
 	return writers, close, errs.AsError()
+}
+
+// CombineWriteSyncers combines the passed set of WriteSyncer objects into a
+// locked WriteSyncer.
+func CombineWriteSyncers(writers ...zapcore.WriteSyncer) zapcore.WriteSyncer {
+	if len(writers) == 0 {
+		return zapcore.AddSync(ioutil.Discard)
+	}
+	return zapcore.Lock(zapcore.NewMultiWriteSyncer(writers...))
 }

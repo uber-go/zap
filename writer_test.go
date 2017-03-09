@@ -81,3 +81,23 @@ func TestOpen(t *testing.T) {
 		assert.Equal(t, tt.filenames, names, "Opened unexpected files given paths %v.", tt.paths)
 	}
 }
+
+type testWriter struct {
+	expected string
+	t        testing.TB
+}
+
+func (w *testWriter) Write(actual []byte) (int, error) {
+	assert.Equal(w.t, []byte(w.expected), actual, "Unexpected write error.")
+	return len(actual), nil
+}
+
+func (w *testWriter) Sync() error {
+	return nil
+}
+
+func TestCombineWriteSyncers(t *testing.T) {
+	tw := &testWriter{"test", t}
+	w := CombineWriteSyncers(tw)
+	w.Write([]byte("test"))
+}
