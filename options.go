@@ -71,7 +71,7 @@ func ErrorOutput(w zapcore.WriteSyncer) Option {
 // of the DPanic method.
 func Development() Option {
 	return optionFunc(func(log *Logger) {
-		log.development = true
+		log.dpanicAction = zapcore.WriteThenPanic
 	})
 }
 
