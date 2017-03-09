@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	errNoEncoderNameSpecified = errors.New("no encoder name specified ")
+	errNoEncoderNameSpecified = errors.New("no encoder name specified")
 
 	_encoderNameToConstructor = defaultEncoders()
 	_encoderMutex             sync.RWMutex
