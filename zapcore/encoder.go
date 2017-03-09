@@ -107,7 +107,7 @@ func EpochNanosTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 // ISO8601TimeEncoder serializes a time.Time to an ISO8601-formatted string
 // with millisecond precision.
 func ISO8601TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
-	enc.AppendString(t.Format("2006-01-02T15:04:05.999Z0700"))
+	enc.AppendString(t.Format("2006-01-02T15:04:05.000Z0700"))
 }
 
 // UnmarshalText unmarshals text to a TimeEncoder. "iso8601" and "ISO8601" are
