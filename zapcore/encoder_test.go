@@ -403,17 +403,17 @@ func TestLevelEncoders(t *testing.T) {
 }
 
 func TestTimeEncoders(t *testing.T) {
-	moment := time.Unix(100, 5000500).UTC()
+	moment := time.Unix(100, 50005000).UTC()
 	tests := []struct {
 		name     string
 		expected interface{} // output of serializing moment
 	}{
-		{"iso8601", "1970-01-01T00:01:40.005Z"},
-		{"ISO8601", "1970-01-01T00:01:40.005Z"},
-		{"millis", 100005.0005},
-		{"nanos", int64(100005000500)},
-		{"", 100.0050005},
-		{"something-random", 100.0050005},
+		{"iso8601", "1970-01-01T00:01:40.050Z"},
+		{"ISO8601", "1970-01-01T00:01:40.050Z"},
+		{"millis", 100050.005},
+		{"nanos", int64(100050005000)},
+		{"", 100.050005},
+		{"something-random", 100.050005},
 	}
 
 	for _, tt := range tests {
