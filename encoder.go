@@ -30,61 +30,48 @@ import (
 
 var (
 	errNoEncoderNameSpecified = errors.New("no encoder name specified ")
-	encoderNameToConstructor  = make(map[string]func(zapcore.EncoderConfig) (zapcore.Encoder, error))
-	encoderMutex              sync.RWMutex
+
+	_encoderNameToConstructor = defaultEncoders()
+	_encoderMutex             sync.RWMutex
 )
-
-func init() {
-	registerDefaultEncoders()
-}
-
-// MustRegisterEncoder registers an encoder constructor for the given name.
-//
-// If an encoder with the same name already exists, this will panic.
-// By default, the encoders "json" and "console" are registered.
-func MustRegisterEncoder(name string, constructor func(zapcore.EncoderConfig) (zapcore.Encoder, error)) {
-	if err := RegisterEncoder(name, constructor); err != nil {
-		panic(err.Error())
-	}
-}
 
 // RegisterEncoder registers an encoder constructor for the given name.
 //
 // If an encoder with the same name already exists, this will return an error.
 // By default, the encoders "json" and "console" are registered.
 func RegisterEncoder(name string, constructor func(zapcore.EncoderConfig) (zapcore.Encoder, error)) error {
-	encoderMutex.Lock()
-	defer encoderMutex.Unlock()
+	_encoderMutex.Lock()
+	defer _encoderMutex.Unlock()
 	if name == "" {
 		return errNoEncoderNameSpecified
 	}
-	if _, ok := encoderNameToConstructor[name]; ok {
+	if _, ok := _encoderNameToConstructor[name]; ok {
 		return fmt.Errorf("encoder already registered for name %q", name)
 	}
-	encoderNameToConstructor[name] = constructor
+	_encoderNameToConstructor[name] = constructor
 	return nil
 }
 
-func registerDefaultEncoders() {
-	MustRegisterEncoder("console", wrapEncoderConstructorNoError(zapcore.NewConsoleEncoder))
-	MustRegisterEncoder("json", wrapEncoderConstructorNoError(zapcore.NewJSONEncoder))
-}
-
 func newEncoder(name string, encoderConfig zapcore.EncoderConfig) (zapcore.Encoder, error) {
-	encoderMutex.RLock()
-	defer encoderMutex.RUnlock()
+	_encoderMutex.RLock()
+	defer _encoderMutex.RUnlock()
 	if name == "" {
 		return nil, errNoEncoderNameSpecified
 	}
-	constructor, ok := encoderNameToConstructor[name]
+	constructor, ok := _encoderNameToConstructor[name]
 	if !ok {
 		return nil, fmt.Errorf("no encoder registered for name %q", name)
 	}
 	return constructor(encoderConfig)
 }
 
-func wrapEncoderConstructorNoError(constructor func(zapcore.EncoderConfig) zapcore.Encoder) func(zapcore.EncoderConfig) (zapcore.Encoder, error) {
-	return func(encoderConfig zapcore.EncoderConfig) (zapcore.Encoder, error) {
-		return constructor(encoderConfig), nil
+func defaultEncoders() map[string]func(zapcore.EncoderConfig) (zapcore.Encoder, error) {
+	return map[string]func(zapcore.EncoderConfig) (zapcore.Encoder, error){
+		"console": func(encoderConfig zapcore.EncoderConfig) (zapcore.Encoder, error) {
+			return zapcore.NewConsoleEncoder(encoderConfig), nil
+		},
+		"json": func(encoderConfig zapcore.EncoderConfig) (zapcore.Encoder, error) {
+			return zapcore.NewJSONEncoder(encoderConfig), nil
+		},
 	}
 }

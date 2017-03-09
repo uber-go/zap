@@ -46,15 +46,6 @@ func TestDuplicateRegisterEncoder(t *testing.T) {
 	})
 }
 
-func TestDuplicateMustRegisterEncoder(t *testing.T) {
-	testEncoders(func() {
-		RegisterEncoder("foo", newNilEncoder)
-		assert.Panics(t, func() {
-			MustRegisterEncoder("foo", newNilEncoder)
-		})
-	})
-}
-
 func TestRegisterEncoderNoName(t *testing.T) {
 	assert.Equal(t, errNoEncoderNameSpecified, RegisterEncoder("", newNilEncoder))
 }
@@ -79,16 +70,16 @@ func TestNewEncoderNoName(t *testing.T) {
 }
 
 func testEncoders(f func()) {
-	existing := encoderNameToConstructor
-	encoderNameToConstructor = make(map[string]func(zapcore.EncoderConfig) (zapcore.Encoder, error))
-	defer func() { encoderNameToConstructor = existing }()
+	existing := _encoderNameToConstructor
+	_encoderNameToConstructor = make(map[string]func(zapcore.EncoderConfig) (zapcore.Encoder, error))
+	defer func() { _encoderNameToConstructor = existing }()
 	f()
 }
 
 func testEncodersRegistered(t *testing.T, names ...string) {
-	assert.Len(t, encoderNameToConstructor, len(names))
+	assert.Len(t, _encoderNameToConstructor, len(names))
 	for _, name := range names {
-		assert.NotNil(t, encoderNameToConstructor[name])
+		assert.NotNil(t, _encoderNameToConstructor[name])
 	}
 }
 
