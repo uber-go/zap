@@ -124,6 +124,10 @@ func (o *observer) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 	return o.sink(LoggedEntry{ent, fields})
 }
 
+func (o *observer) Sync() error {
+	return nil
+}
+
 type contextObserver struct {
 	zapcore.LevelEnabler
 	sink    func(LoggedEntry) error
@@ -150,4 +154,8 @@ func (co *contextObserver) Write(ent zapcore.Entry, fields []zapcore.Field) erro
 	all = append(all, co.context...)
 	all = append(all, fields...)
 	return co.sink(LoggedEntry{ent, all})
+}
+
+func (co *contextObserver) Sync() error {
+	return nil
 }

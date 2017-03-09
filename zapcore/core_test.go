@@ -21,6 +21,7 @@
 package zapcore_test
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -62,6 +63,7 @@ func TestNopCore(t *testing.T) {
 		assert.False(t, core.Enabled(level), "Expected all levels to be disabled in no-op core.")
 		assert.Equal(t, ce, core.Check(entry, ce), "Expected no-op Check to return checked entry unchanged.")
 		assert.NoError(t, core.Write(entry, nil), "Expected no-op Writes to always succeed.")
+		assert.NoError(t, core.Sync(), "Expected no-op Syncs to always succeed.")
 	}
 }
 
@@ -80,6 +82,7 @@ func TestIOCore(t *testing.T) {
 		temp,
 		InfoLevel,
 	).With([]Field{makeInt64Field("k", 1)})
+	defer assert.NoError(t, core.Sync(), "Expected Syncing a temp file to succeed.")
 
 	if ce := core.Check(Entry{Level: DebugLevel, Message: "debug"}, nil); ce != nil {
 		ce.Write(makeInt64Field("k", 2))
@@ -99,6 +102,25 @@ func TestIOCore(t *testing.T) {
 			`{"level":"warn","msg":"warn","k":1,"k":4}`+"\n",
 		string(logged),
 		"Unexpected log output.",
+	)
+}
+
+func TestIOCoreSyncFail(t *testing.T) {
+	sink := &testutils.Discarder{}
+	err := errors.New("failed")
+	sink.SetError(err)
+
+	core := NewCore(
+		NewJSONEncoder(testEncoderConfig()),
+		sink,
+		DebugLevel,
+	)
+
+	assert.Equal(
+		t,
+		err,
+		core.Sync(),
+		"Expected core.Sync to return errors from underlying WriteSyncer.",
 	)
 }
 

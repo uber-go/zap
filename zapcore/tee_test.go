@@ -21,9 +21,11 @@
 package zapcore_test
 
 import (
+	"errors"
 	"testing"
 
 	"go.uber.org/zap/internal/observer"
+	"go.uber.org/zap/testutils"
 	. "go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/assert"
@@ -132,4 +134,24 @@ func TestTeeEnabled(t *testing.T) {
 	for _, tt := range tests {
 		assert.Equal(t, tt.enabled, tee.Enabled(tt.lvl), "Unexpected Enabled result for level %s.", tt.lvl)
 	}
+}
+
+func TestTeeSync(t *testing.T) {
+	tee := NewTee(
+		observer.New(InfoLevel, nil, false),
+		observer.New(WarnLevel, nil, false),
+	)
+	assert.NoError(t, tee.Sync(), "Unexpected error from Syncing a tee.")
+
+	sink := &testutils.Discarder{}
+	err := errors.New("failed")
+	sink.SetError(err)
+
+	noSync := NewCore(
+		NewJSONEncoder(testEncoderConfig()),
+		sink,
+		DebugLevel,
+	)
+	tee = NewTee(tee, noSync)
+	assert.Equal(t, err, tee.Sync(), "Expected an error when part of tee can't Sync.")
 }

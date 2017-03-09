@@ -71,3 +71,11 @@ func (mc multiCore) Write(ent Entry, fields []Field) error {
 	}
 	return errs.AsError()
 }
+
+func (mc multiCore) Sync() error {
+	var errs multierror.Error
+	for i := range mc {
+		errs = errs.Append(mc[i].Sync())
+	}
+	return errs.AsError()
+}
