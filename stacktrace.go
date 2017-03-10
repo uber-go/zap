@@ -60,31 +60,29 @@ func takeStacktrace() string {
 	}
 
 	i := 0
-	for _, programCounter := range programCounters.pcs {
-		f := runtime.FuncForPC(programCounter)
-		name := f.Name()
-		if shouldIgnoreStacktraceName(name) {
+	frames := runtime.CallersFrames(programCounters.pcs)
+	for frame, more := frames.Next(); more; frame, more = frames.Next() {
+		if shouldIgnoreStacktraceFunction(frame.Function) {
 			continue
 		}
 		if i != 0 {
 			buffer.AppendByte('\n')
 		}
 		i++
-		file, line := f.FileLine(programCounter - 1)
-		buffer.AppendString(name)
+		buffer.AppendString(frame.Function)
 		buffer.AppendByte('\n')
 		buffer.AppendByte('\t')
-		buffer.AppendString(file)
+		buffer.AppendString(frame.File)
 		buffer.AppendByte(':')
-		buffer.AppendInt(int64(line))
+		buffer.AppendInt(int64(frame.Line))
 	}
 
 	return buffer.String()
 }
 
-func shouldIgnoreStacktraceName(name string) bool {
+func shouldIgnoreStacktraceFunction(function string) bool {
 	for _, prefix := range _stacktraceIgnorePrefixes {
-		if strings.HasPrefix(name, prefix) {
+		if strings.HasPrefix(function, prefix) {
 			return true
 		}
 	}
