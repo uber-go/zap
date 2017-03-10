@@ -27,21 +27,14 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sort"
+	"strconv"
 	"strings"
 	"text/template"
+	"time"
 )
 
 var (
-	libraryNames = []string{
-		"Zap",
-		"Zap.Sugar",
-		"stdlib.Println",
-		"sirupsen/logrus",
-		"go-kit/kit/log",
-		"inconshreveable/log15",
-		"apex/log",
-		"go.pedge.io/lion",
-	}
 	libraryNameToMarkdownName = map[string]string{
 		"Zap":                   ":zap: zap",
 		"Zap.Sugar":             ":zap: zap (sugared)",
@@ -80,12 +73,6 @@ func do() error {
 	return nil
 }
 
-type tmplData struct {
-	BenchmarkAddingFields       string
-	BenchmarkAccumulatedContext string
-	BenchmarkWithoutFields      string
-}
-
 func getTmplData() (*tmplData, error) {
 	tmplData := &tmplData{}
 	rows, err := getBenchmarkRows("BenchmarkAddingFields")
@@ -111,42 +98,58 @@ func getBenchmarkRows(benchmarkName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	var benchmarkRows []*benchmarkRow
+	for libraryName := range libraryNameToMarkdownName {
+		benchmarkRow, err := getBenchmarkRow(benchmarkOutput, benchmarkName, libraryName)
+		if err != nil {
+			return "", err
+		}
+		if benchmarkRow == nil {
+			continue
+		}
+		benchmarkRows = append(benchmarkRows, benchmarkRow)
+	}
+	sort.Sort(benchmarkRowsByTime(benchmarkRows))
 	rows := []string{
 		"| Library | Time | Bytes Allocated | Objects Allocated |",
 		"| :--- | :---: | :---: | :---: |",
 	}
-	for _, libraryName := range libraryNames {
-		row, err := getBenchmarkRow(benchmarkOutput, benchmarkName, libraryName)
-		if err != nil {
-			return "", err
-		}
-		if row == "" {
-			continue
-		}
-		rows = append(rows, row)
+	for _, benchmarkRow := range benchmarkRows {
+		rows = append(rows, benchmarkRow.String())
 	}
 	return strings.Join(rows, "\n"), nil
 }
 
-func getBenchmarkRow(input []string, benchmarkName string, libraryName string) (string, error) {
+func getBenchmarkRow(input []string, benchmarkName string, libraryName string) (*benchmarkRow, error) {
 	line, err := findUniqueSubstring(input, fmt.Sprintf("%s/%s-", benchmarkName, libraryName))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if line == "" {
-		return "", nil
+		return nil, nil
 	}
 	split := strings.Split(line, "\t")
 	if len(split) < 5 {
-		return "", fmt.Errorf("unknown benchmark line: %s", line)
+		return nil, fmt.Errorf("unknown benchmark line: %s", line)
 	}
-	return fmt.Sprintf(
-		"| %s | %s | %s | %s |",
+	duration, err := time.ParseDuration(strings.Replace(strings.TrimSuffix(strings.TrimSpace(split[2]), "/op"), " ", "", -1))
+	if err != nil {
+		return nil, err
+	}
+	allocatedBytes, err := strconv.Atoi(strings.TrimSuffix(strings.TrimSpace(split[3]), " B/op"))
+	if err != nil {
+		return nil, err
+	}
+	allocatedObjects, err := strconv.Atoi(strings.TrimSuffix(strings.TrimSpace(split[4]), " allocs/op"))
+	if err != nil {
+		return nil, err
+	}
+	return &benchmarkRow{
 		libraryNameToMarkdownName[libraryName],
-		strings.TrimSpace(split[2]),
-		strings.TrimSpace(split[3]),
-		strings.TrimSpace(split[4]),
-	), nil
+		duration,
+		allocatedBytes,
+		allocatedObjects,
+	}, nil
 }
 
 func findUniqueSubstring(input []string, substring string) (string, error) {
@@ -172,4 +175,29 @@ func getOutput(name string, arg ...string) ([]string, error) {
 		return nil, fmt.Errorf("error running %s %s: %v\n%s", name, strings.Join(arg, " "), err, string(output))
 	}
 	return strings.Split(string(output), "\n"), nil
+}
+
+type tmplData struct {
+	BenchmarkAddingFields       string
+	BenchmarkAccumulatedContext string
+	BenchmarkWithoutFields      string
+}
+
+type benchmarkRow struct {
+	Name             string
+	Time             time.Duration
+	AllocatedBytes   int
+	AllocatedObjects int
+}
+
+func (b *benchmarkRow) String() string {
+	return fmt.Sprintf("| %s | %d ns/op | %d B/op | %d allocs/op |", b.Name, b.Time.Nanoseconds(), b.AllocatedBytes, b.AllocatedObjects)
+}
+
+type benchmarkRowsByTime []*benchmarkRow
+
+func (b benchmarkRowsByTime) Len() int      { return len(b) }
+func (b benchmarkRowsByTime) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+func (b benchmarkRowsByTime) Less(i, j int) bool {
+	return b[i].Time.Nanoseconds() < b[j].Time.Nanoseconds()
 }
