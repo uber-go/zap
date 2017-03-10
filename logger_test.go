@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"errors"
 	"sync"
 	"testing"
 
@@ -311,6 +312,26 @@ func TestLoggerWriteFailure(t *testing.T) {
 	// Should log the error.
 	assert.Regexp(t, `write error: failed`, errSink.Stripped(), "Expected to log the error to the error output.")
 	assert.True(t, errSink.Called(), "Expected logging an internal error to call Sync the error sink.")
+}
+
+func TestLoggerSync(t *testing.T) {
+	withLogger(t, DebugLevel, nil, func(logger *Logger, _ *observer.ObservedLogs) {
+		assert.NoError(t, logger.Sync(), "Expected syncing a test logger to succeed.")
+		assert.NoError(t, logger.Sugar().Sync(), "Expected syncing a sugared logger to succeed.")
+	})
+}
+
+func TestLoggerSyncFail(t *testing.T) {
+	noSync := &testutils.Buffer{}
+	err := errors.New("fail")
+	noSync.SetError(err)
+	logger := New(zapcore.NewCore(
+		zapcore.NewJSONEncoder(zapcore.EncoderConfig{}),
+		noSync,
+		DebugLevel,
+	))
+	assert.Equal(t, err, logger.Sync(), "Expected Logger.Sync to propagate errors.")
+	assert.Equal(t, err, logger.Sugar().Sync(), "Expected SugaredLogger.Sync to propagate errors.")
 }
 
 func TestLoggerAddCaller(t *testing.T) {

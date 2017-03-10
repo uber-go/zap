@@ -200,6 +200,11 @@ func (s *SugaredLogger) Fatalw(msg string, keysAndValues ...interface{}) {
 	s.log(FatalLevel, msg, nil, keysAndValues)
 }
 
+// Sync flushes any buffered log entries.
+func (s *SugaredLogger) Sync() error {
+	return s.base.Sync()
+}
+
 func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interface{}, context []interface{}) {
 	// If logging at this level is completely disabled, skip the overhead of
 	// string formatting.

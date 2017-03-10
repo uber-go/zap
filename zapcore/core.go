@@ -42,6 +42,8 @@ type Core interface {
 	// If called, Write should always log the Entry and Fields; it should not
 	// replicate the logic of Check.
 	Write(Entry, []Field) error
+	// Sync flushes buffered logs (if any).
+	Sync() error
 }
 
 type nopCore struct{}
@@ -52,6 +54,7 @@ func (nopCore) Enabled(Level) bool                            { return false }
 func (n nopCore) With([]Field) Core                           { return n }
 func (nopCore) Check(_ Entry, ce *CheckedEntry) *CheckedEntry { return ce }
 func (nopCore) Write(Entry, []Field) error                    { return nil }
+func (nopCore) Sync() error                                   { return nil }
 
 // NewCore creates a Core that writes logs to a WriteSyncer.
 func NewCore(enc Encoder, ws WriteSyncer, enab LevelEnabler) Core {
@@ -93,9 +96,13 @@ func (c *ioCore) Write(ent Entry, fields []Field) error {
 	}
 	if ent.Level > ErrorLevel {
 		// Since we may be crashing the program, sync the output.
-		return c.out.Sync()
+		return c.Sync()
 	}
 	return nil
+}
+
+func (c *ioCore) Sync() error {
+	return c.out.Sync()
 }
 
 func (c *ioCore) clone() *ioCore {

@@ -210,6 +210,11 @@ func (log *Logger) Fatal(msg string, fields ...zapcore.Field) {
 	}
 }
 
+// Sync flushes any buffered log entries.
+func (log *Logger) Sync() error {
+	return log.core.Sync()
+}
+
 // Core returns the underlying zapcore.Core.
 func (log *Logger) Core() zapcore.Core {
 	return log.core
