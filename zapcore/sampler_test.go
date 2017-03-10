@@ -139,10 +139,6 @@ type countingCore struct {
 	logs atomic.Uint32
 }
 
-func (c *countingCore) Enabled(Level) bool {
-	return true
-}
-
 func (c *countingCore) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	return ce.AddCore(ent, c)
 }
@@ -152,9 +148,9 @@ func (c *countingCore) Write(Entry, []Field) error {
 	return nil
 }
 
-func (c *countingCore) With([]Field) Core {
-	return c
-}
+func (c *countingCore) With([]Field) Core { return c }
+func (*countingCore) Enabled(Level) bool  { return true }
+func (*countingCore) Sync() error         { return nil }
 
 func TestSamplerConcurrent(t *testing.T) {
 	const (
