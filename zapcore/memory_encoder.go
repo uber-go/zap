@@ -59,6 +59,9 @@ func (m *MapObjectEncoder) AddObject(k string, v ObjectMarshaler) error {
 // AddBinary implements ObjectEncoder.
 func (m *MapObjectEncoder) AddBinary(k string, v []byte) { m.cur[k] = v }
 
+// AddByteString implements ObjectEncoder.
+func (m *MapObjectEncoder) AddByteString(k string, v []byte) { m.cur[k] = v }
+
 // AddBool implements ObjectEncoder.
 func (m *MapObjectEncoder) AddBool(k string, v bool) { m.cur[k] = v }
 
@@ -155,6 +158,7 @@ func (s *sliceArrayEncoder) AppendReflected(v interface{}) error {
 }
 
 func (s *sliceArrayEncoder) AppendBool(v bool)              { s.elems = append(s.elems, v) }
+func (s *sliceArrayEncoder) AppendByteString(v []byte)      { s.elems = append(s.elems, v) }
 func (s *sliceArrayEncoder) AppendComplex128(v complex128)  { s.elems = append(s.elems, v) }
 func (s *sliceArrayEncoder) AppendComplex64(v complex64)    { s.elems = append(s.elems, v) }
 func (s *sliceArrayEncoder) AppendDuration(v time.Duration) { s.elems = append(s.elems, v) }

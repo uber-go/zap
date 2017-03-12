@@ -216,11 +216,17 @@ type EncoderConfig struct {
 // aren't safe for concurrent use (though typical use shouldn't require locks).
 type ObjectEncoder interface {
 	// Logging-specific marshalers.
+
 	AddArray(key string, marshaler ArrayMarshaler) error
 	AddObject(key string, marshaler ObjectMarshaler) error
 
 	// Built-in types.
+
+	// AddBinary adds raw blob of binary data.
 	AddBinary(key string, value []byte)
+	// AddByteString adds bytes as UTF-8 string.
+	// No-alloc equivalent of AddString(string(value)) for []byte values.
+	AddByteString(key string, value []byte)
 	AddBool(key string, value bool)
 	AddComplex128(key string, value complex128)
 	AddComplex64(key string, value complex64)
@@ -277,6 +283,7 @@ type ArrayEncoder interface {
 type PrimitiveArrayEncoder interface {
 	// Built-in types.
 	AppendBool(bool)
+	AppendByteString([]byte)
 	AppendComplex128(complex128)
 	AppendComplex64(complex64)
 	AppendFloat64(float64)

@@ -94,6 +94,11 @@ func (enc *jsonEncoder) AddBinary(key string, val []byte) {
 	enc.AddString(key, base64.StdEncoding.EncodeToString(val))
 }
 
+func (enc *jsonEncoder) AddByteString(key string, val []byte) {
+	enc.addKey(key)
+	enc.AppendByteString(val)
+}
+
 func (enc *jsonEncoder) AddBool(key string, val bool) {
 	enc.addKey(key)
 	enc.AppendBool(val)
@@ -169,6 +174,13 @@ func (enc *jsonEncoder) AppendObject(obj ObjectMarshaler) error {
 func (enc *jsonEncoder) AppendBool(val bool) {
 	enc.addElementSeparator()
 	enc.buf.AppendBool(val)
+}
+
+func (enc *jsonEncoder) AppendByteString(val []byte) {
+	enc.addElementSeparator()
+	enc.buf.AppendByte('"')
+	enc.safeAddByteString(val)
+	enc.buf.AppendByte('"')
 }
 
 func (enc *jsonEncoder) AppendComplex128(val complex128) {
@@ -379,40 +391,73 @@ func (enc *jsonEncoder) appendFloat(val float64, bitSize int) {
 // user from browser vulnerabilities or JSONP-related problems.
 func (enc *jsonEncoder) safeAddString(s string) {
 	for i := 0; i < len(s); {
-		if b := s[i]; b < utf8.RuneSelf {
+		if enc.tryAddRuneSelf(s[i]) {
 			i++
-			if 0x20 <= b && b != '\\' && b != '"' {
-				enc.buf.AppendByte(b)
-				continue
-			}
-			switch b {
-			case '\\', '"':
-				enc.buf.AppendByte('\\')
-				enc.buf.AppendByte(b)
-			case '\n':
-				enc.buf.AppendByte('\\')
-				enc.buf.AppendByte('n')
-			case '\r':
-				enc.buf.AppendByte('\\')
-				enc.buf.AppendByte('r')
-			case '\t':
-				enc.buf.AppendByte('\\')
-				enc.buf.AppendByte('t')
-			default:
-				// Encode bytes < 0x20, except for the escape sequences above.
-				enc.buf.AppendString(`\u00`)
-				enc.buf.AppendByte(_hex[b>>4])
-				enc.buf.AppendByte(_hex[b&0xF])
-			}
 			continue
 		}
-		c, size := utf8.DecodeRuneInString(s[i:])
-		if c == utf8.RuneError && size == 1 {
-			enc.buf.AppendString(`\ufffd`)
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if enc.tryAddRuneError(r, size) {
 			i++
 			continue
 		}
 		enc.buf.AppendString(s[i : i+size])
 		i += size
 	}
+}
+
+// safeAddByteString is no-alloc equivalent of safeAddString(string(s)) for s []byte.
+func (enc *jsonEncoder) safeAddByteString(s []byte) {
+	for i := 0; i < len(s); {
+		if enc.tryAddRuneSelf(s[i]) {
+			i++
+			continue
+		}
+		r, size := utf8.DecodeRune(s[i:])
+		if enc.tryAddRuneError(r, size) {
+			i++
+			continue
+		}
+		enc.buf.Write(s[i : i+size])
+		i += size
+	}
+}
+
+// tryAddRuneSelf appends b if it is valid UTF-8 character represented in a single byte.
+func (enc *jsonEncoder) tryAddRuneSelf(b byte) (ok bool) {
+	ok = b < utf8.RuneSelf
+	if !ok {
+		return
+	}
+	if 0x20 <= b && b != '\\' && b != '"' {
+		enc.buf.AppendByte(b)
+		return
+	}
+	switch b {
+	case '\\', '"':
+		enc.buf.AppendByte('\\')
+		enc.buf.AppendByte(b)
+	case '\n':
+		enc.buf.AppendByte('\\')
+		enc.buf.AppendByte('n')
+	case '\r':
+		enc.buf.AppendByte('\\')
+		enc.buf.AppendByte('r')
+	case '\t':
+		enc.buf.AppendByte('\\')
+		enc.buf.AppendByte('t')
+	default:
+		// Encode bytes < 0x20, except for the escape sequences above.
+		enc.buf.AppendString(`\u00`)
+		enc.buf.AppendByte(_hex[b>>4])
+		enc.buf.AppendByte(_hex[b&0xF])
+	}
+	return
+}
+
+func (enc *jsonEncoder) tryAddRuneError(r rune, size int) (ok bool) {
+	ok = r == utf8.RuneError && size == 1
+	if ok {
+		enc.buf.AppendString(`\ufffd`)
+	}
+	return
 }

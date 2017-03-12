@@ -50,6 +50,14 @@ func Bool(key string, val bool) zapcore.Field {
 	return zapcore.Field{Key: key, Type: zapcore.BoolType, Integer: ival}
 }
 
+// ByteString constructs a field that carries a []byte that assumed to be UTF-8 encoded.
+//
+// Saves on []byte to string cast copy and allocation, but costs smaller allocation to convert
+// the []byte to interface{}.
+func ByteString(key string, val []byte) zapcore.Field {
+	return zapcore.Field{Key: key, Type: zapcore.ByteStringType, Interface: val}
+}
+
 // Complex128 constructs a field that carries a complex number. Unlike most
 // numeric fields, this costs an allocation (to convert the complex128 to
 // interface{}).
