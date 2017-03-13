@@ -25,8 +25,8 @@ import (
 	"testing"
 
 	"go.uber.org/zap/internal/observer"
-	"go.uber.org/zap/testutils"
 	. "go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -143,7 +143,7 @@ func TestTeeSync(t *testing.T) {
 	)
 	assert.NoError(t, tee.Sync(), "Unexpected error from Syncing a tee.")
 
-	sink := &testutils.Discarder{}
+	sink := &zaptest.Discarder{}
 	err := errors.New("failed")
 	sink.SetError(err)
 

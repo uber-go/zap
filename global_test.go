@@ -27,8 +27,8 @@ import (
 	"time"
 
 	"go.uber.org/zap/internal/observer"
-	"go.uber.org/zap/testutils"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -87,7 +87,7 @@ func TestGlobalsConcurrentUse(t *testing.T) {
 		}()
 	}
 
-	testutils.Sleep(100 * time.Millisecond)
+	zaptest.Sleep(100 * time.Millisecond)
 	stop.Toggle()
 	wg.Wait()
 }
