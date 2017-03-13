@@ -40,24 +40,10 @@ type WriteSyncer interface {
 func AddSync(w io.Writer) WriteSyncer {
 	switch w := w.(type) {
 	case WriteSyncer:
-		if !checkSync(w.(WriteSyncer)) {
-			return writerWrapper{w}
-		}
 		return w
 	default:
 		return writerWrapper{w}
 	}
-}
-
-// checkSync executes a Sync() on the WriteSyncer to check whether it operates
-// cleanly.  In the particular case of the WriteSyncer being a special file,
-// calling Sync will return an `os.ErrInvalid` error.  If, for whatever reason,
-// the call of `Sync()` returns an error, this will return a `false`.
-func checkSync(w WriteSyncer) bool {
-	if err := w.Sync(); err != nil {
-		return false
-	}
-	return true
 }
 
 type lockedWriteSyncer struct {
