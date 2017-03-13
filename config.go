@@ -162,8 +162,8 @@ func (cfg Config) Build(opts ...Option) (*Logger, error) {
 	}
 
 	log := New(
-		zapcore.NewCore(enc, zapcore.Lock(sink), cfg.Level),
-		cfg.buildOptions(zapcore.Lock(errSink))...,
+		zapcore.NewCore(enc, sink, cfg.Level),
+		cfg.buildOptions(errSink)...,
 	)
 	if len(opts) > 0 {
 		log = log.WithOptions(opts...)
