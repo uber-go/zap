@@ -22,7 +22,6 @@ package zap
 
 import (
 	"errors"
-	"math"
 	"net"
 	"sync"
 	"testing"
@@ -30,11 +29,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
-)
-
-var (
-	// Compiler complains about constants overflowing, so store this in a variable.
-	maxUint64 = uint64(math.MaxUint64)
 )
 
 type username string

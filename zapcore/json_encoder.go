@@ -32,12 +32,8 @@ import (
 	"go.uber.org/zap/internal/bufferpool"
 )
 
-const (
-	// For JSON-escaping; see jsonEncoder.safeAddString below.
-	_hex = "0123456789abcdef"
-	// Initial buffer size for encoders.
-	_initialBufSize = 1024
-)
+// For JSON-escaping; see jsonEncoder.safeAddString below.
+const _hex = "0123456789abcdef"
 
 var _jsonPool = sync.Pool{New: func() interface{} {
 	return &jsonEncoder{}
