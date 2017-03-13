@@ -31,8 +31,8 @@ import (
 
 	"go.uber.org/atomic"
 	"go.uber.org/zap/internal/observer"
-	"go.uber.org/zap/testutils"
 	. "go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 )
 
 func fakeSampler(lvl LevelEnabler, tick time.Duration, first, thereafter int) (Core, *observer.ObservedLogs) {
@@ -106,7 +106,7 @@ func TestSamplerTicking(t *testing.T) {
 		for i := 1; i <= 5; i++ {
 			writeSequence(sampler, i, InfoLevel)
 		}
-		testutils.Sleep(15 * time.Millisecond)
+		zaptest.Sleep(15 * time.Millisecond)
 	}
 	assertSequence(
 		t,
@@ -122,7 +122,7 @@ func TestSamplerTicking(t *testing.T) {
 		for i := 1; i < 18; i++ {
 			writeSequence(sampler, i, InfoLevel)
 		}
-		testutils.Sleep(10 * time.Millisecond)
+		zaptest.Sleep(10 * time.Millisecond)
 	}
 
 	assertSequence(
@@ -161,7 +161,7 @@ func TestSamplerConcurrent(t *testing.T) {
 		expectedCount = numMessages * logsPerTick * numTicks
 	)
 
-	tick := testutils.Timeout(10 * time.Millisecond)
+	tick := zaptest.Timeout(10 * time.Millisecond)
 	cc := &countingCore{}
 	sampler := NewSampler(cc, tick, logsPerTick, 100000)
 
