@@ -26,20 +26,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"go.uber.org/atomic"
-	"go.uber.org/zap/internal/observer"
 	. "go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func fakeSampler(lvl LevelEnabler, tick time.Duration, first, thereafter int) (Core, *observer.ObservedLogs) {
-	var logs observer.ObservedLogs
-	core := observer.New(lvl, logs.Add, true)
+	core, logs := observer.New(lvl)
 	core = NewSampler(core, tick, first, thereafter)
-	return core, &logs
+	return core, logs
 }
 
 func assertSequence(t testing.TB, logs []observer.LoggedEntry, lvl Level, seq ...int64) {

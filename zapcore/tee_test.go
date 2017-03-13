@@ -24,26 +24,24 @@ import (
 	"errors"
 	"testing"
 
-	"go.uber.org/zap/internal/observer"
 	. "go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func withTee(f func(core Core, debugLogs, warnLogs *observer.ObservedLogs)) {
-	var debugLogs, warnLogs observer.ObservedLogs
-	tee := NewTee(
-		observer.New(DebugLevel, debugLogs.Add, true),
-		observer.New(WarnLevel, warnLogs.Add, true),
-	)
-	f(tee, &debugLogs, &warnLogs)
+	debugLogger, debugLogs := observer.New(DebugLevel)
+	warnLogger, warnLogs := observer.New(WarnLevel)
+	tee := NewTee(debugLogger, warnLogger)
+	f(tee, debugLogs, warnLogs)
 }
 
 func TestTeeUnusualInput(t *testing.T) {
 	// Verify that Tee handles receiving one and no inputs correctly.
 	t.Run("one input", func(t *testing.T) {
-		obs := observer.New(DebugLevel, nil, true)
+		obs, _ := observer.New(DebugLevel)
 		assert.Equal(t, obs, NewTee(obs), "Expected to return single inputs unchanged.")
 	})
 	t.Run("no input", func(t *testing.T) {
@@ -114,10 +112,9 @@ func TestTeeWith(t *testing.T) {
 }
 
 func TestTeeEnabled(t *testing.T) {
-	tee := NewTee(
-		observer.New(InfoLevel, nil, false),
-		observer.New(WarnLevel, nil, false),
-	)
+	infoLogger, _ := observer.New(InfoLevel)
+	warnLogger, _ := observer.New(WarnLevel)
+	tee := NewTee(infoLogger, warnLogger)
 	tests := []struct {
 		lvl     Level
 		enabled bool
@@ -137,10 +134,9 @@ func TestTeeEnabled(t *testing.T) {
 }
 
 func TestTeeSync(t *testing.T) {
-	tee := NewTee(
-		observer.New(InfoLevel, nil, false),
-		observer.New(WarnLevel, nil, false),
-	)
+	infoLogger, _ := observer.New(InfoLevel)
+	warnLogger, _ := observer.New(WarnLevel)
+	tee := NewTee(infoLogger, warnLogger)
 	assert.NoError(t, tee.Sync(), "Unexpected error from Syncing a tee.")
 
 	sink := &zaptest.Discarder{}

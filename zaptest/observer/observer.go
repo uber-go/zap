@@ -40,13 +40,11 @@ type ObservedLogs struct {
 	logs []LoggedEntry
 }
 
-// Add appends a new observed log to the collection. It always returns nil
-// error, but does so that it can be used as an observer sink function.
-func (o *ObservedLogs) Add(log LoggedEntry) error {
+// Add appends a new observed log to the collection.
+func (o *ObservedLogs) Add(log LoggedEntry) {
 	o.mu.Lock()
 	o.logs = append(o.logs, log)
 	o.mu.Unlock()
-	return nil
 }
 
 // Len returns the number of items in the collection.
@@ -89,48 +87,19 @@ func (o *ObservedLogs) AllUntimed() []LoggedEntry {
 	return ret
 }
 
-type observer struct {
-	zapcore.LevelEnabler
-	sink func(LoggedEntry) error
-}
-
 // New creates a new Core that buffers logs in memory (without any encoding).
 // It's particularly useful in tests.
-func New(enab zapcore.LevelEnabler, sink func(LoggedEntry) error, withContext bool) zapcore.Core {
-	if withContext {
-		return &contextObserver{
-			LevelEnabler: enab,
-			sink:         sink,
-		}
-	}
-	return &observer{
+func New(enab zapcore.LevelEnabler) (zapcore.Core, *ObservedLogs) {
+	ol := &ObservedLogs{}
+	return &contextObserver{
 		LevelEnabler: enab,
-		sink:         sink,
-	}
-}
-
-func (o *observer) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
-	if o.Enabled(ent.Level) {
-		return ce.AddCore(ent, o)
-	}
-	return ce
-}
-
-func (o *observer) With(fields []zapcore.Field) zapcore.Core {
-	return &observer{LevelEnabler: o.LevelEnabler, sink: o.sink}
-}
-
-func (o *observer) Write(ent zapcore.Entry, fields []zapcore.Field) error {
-	return o.sink(LoggedEntry{ent, fields})
-}
-
-func (o *observer) Sync() error {
-	return nil
+		logs:         ol,
+	}, ol
 }
 
 type contextObserver struct {
 	zapcore.LevelEnabler
-	sink    func(LoggedEntry) error
+	logs    *ObservedLogs
 	context []zapcore.Field
 }
 
@@ -144,7 +113,7 @@ func (co *contextObserver) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *z
 func (co *contextObserver) With(fields []zapcore.Field) zapcore.Core {
 	return &contextObserver{
 		LevelEnabler: co.LevelEnabler,
-		sink:         co.sink,
+		logs:         co.logs,
 		context:      append(co.context[:len(co.context):len(co.context)], fields...),
 	}
 }
@@ -153,7 +122,8 @@ func (co *contextObserver) Write(ent zapcore.Entry, fields []zapcore.Field) erro
 	all := make([]zapcore.Field, 0, len(fields)+len(co.context))
 	all = append(all, co.context...)
 	all = append(all, fields...)
-	return co.sink(LoggedEntry{ent, all})
+	co.logs.Add(LoggedEntry{ent, all})
+	return nil
 }
 
 func (co *contextObserver) Sync() error {

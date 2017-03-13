@@ -23,10 +23,10 @@ package zapcore_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
-	"go.uber.org/zap/internal/observer"
 	. "go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHooks(t *testing.T) {
@@ -41,8 +41,7 @@ func TestHooks(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		var logs observer.ObservedLogs
-		fac := observer.New(tt.coreLevel, logs.Add, true)
+		fac, logs := observer.New(tt.coreLevel)
 		intField := makeInt64Field("foo", 42)
 		ent := Entry{Message: "bar", Level: tt.entryLevel}
 
