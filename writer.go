@@ -81,5 +81,5 @@ func CombineWriteSyncers(writers ...zapcore.WriteSyncer) zapcore.WriteSyncer {
 	if len(writers) == 0 {
 		return zapcore.AddSync(ioutil.Discard)
 	}
-	return zapcore.Lock(zapcore.NewMultiWriteSyncer(writers...))
+	return zapcore.NewMultiWriteSyncer(writers...)
 }

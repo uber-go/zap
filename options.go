@@ -63,7 +63,7 @@ func Fields(fs ...zapcore.Field) Option {
 // safe for concurrent use.
 func ErrorOutput(w zapcore.WriteSyncer) Option {
 	return optionFunc(func(log *Logger) {
-		log.errorOutput = zapcore.Lock(w)
+		log.errorOutput = w
 	})
 }
 
