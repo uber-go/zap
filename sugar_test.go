@@ -28,8 +28,8 @@ import (
 
 	"go.uber.org/zap/internal/exit"
 	"go.uber.org/zap/internal/observer"
-	"go.uber.org/zap/testutils"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 )
 
 func TestSugarWith(t *testing.T) {
@@ -356,7 +356,7 @@ func TestSugarAddCaller(t *testing.T) {
 }
 
 func TestSugarAddCallerFail(t *testing.T) {
-	errBuf := &testutils.Buffer{}
+	errBuf := &zaptest.Buffer{}
 	withSugar(t, DebugLevel, opts(AddCaller(), AddCallerSkip(1e3), ErrorOutput(errBuf)), func(log *SugaredLogger, logs *observer.ObservedLogs) {
 		log.Info("Failure.")
 		assert.Regexp(

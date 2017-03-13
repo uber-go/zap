@@ -18,9 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package testutils provides some simple testing helpers (most of which aren't
-// specifically logging-related).
-package testutils
+// Package zaptest provides helpers for testing logs.
+package zaptest
 
 import (
 	"log"
