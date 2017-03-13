@@ -162,21 +162,19 @@ func (e *DurationEncoder) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// A CallerEncoder serializes a EntryCaller to a primitive type.
+// A CallerEncoder serializes an EntryCaller to a primitive type.
 type CallerEncoder func(EntryCaller, PrimitiveArrayEncoder)
 
-// FullPathCallerEncoder serializes caller in /full/path/file:line format.
+// FullPathCallerEncoder serializes a caller in /full/path/file:line format.
 func FullPathCallerEncoder(caller EntryCaller, enc PrimitiveArrayEncoder) {
-	// OPTIMIZE: after adding AppendBytes to PrimitiveArrayEncoder just copy bytes
-	// from buffer to not allocate string.
+	// TODO: consider using a byte-oriented API to save an allocation.
 	enc.AppendString(caller.String())
 }
 
 // UnmarshalText unmarshals text to a CallerEncoder.
-// Anything is unmarshaled to FullPathCallerEncoder at that moment.
+// FIXME: Support more options.
 func (e *CallerEncoder) UnmarshalText(text []byte) error {
 	switch string(text) {
-	//case "gopath": // TODO
 	default:
 		*e = FullPathCallerEncoder
 	}

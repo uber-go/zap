@@ -293,10 +293,14 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 		final.AppendString(ent.LoggerName)
 	}
 	if ent.Caller.Defined && final.CallerKey != "" {
-		// NOTE: we add the field here for parity compromise with text
-		// prepending, while not actually mutating the message string.
 		final.addKey(final.CallerKey)
+		cur := final.buf.Len()
 		final.EncodeCaller(ent.Caller, final)
+		if cur == final.buf.Len() {
+			// User-supplied EncodeCaller was a no-op. Fall back to strings to
+			// keep output JSON valid.
+			final.AppendString(ent.Caller.String())
+		}
 	}
 	if final.MessageKey != "" {
 		final.addKey(enc.MessageKey)

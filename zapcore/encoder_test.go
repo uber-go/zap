@@ -360,6 +360,23 @@ func TestEncoderConfiguration(t *testing.T) {
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
 			expectedConsole: "0\tmain@foo.go:42\thello\nfake-stack",
 		},
+		{
+			desc: "handle no-op EncodeCaller",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      "C",
+				StacktraceKey:  "S",
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   func(EntryCaller, PrimitiveArrayEncoder) {},
+			},
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
+			expectedConsole: "0\tinfo\tmain@foo.go:42\thello\nfake-stack",
+		},
 	}
 
 	for i, tt := range tests {
@@ -468,13 +485,13 @@ func TestDurationEncoders(t *testing.T) {
 }
 
 func TestCallerEncoders(t *testing.T) {
-	caller := _testEntry.Caller
+	caller := EntryCaller{Defined: true, File: "/home/jack/src/github.com/foo/foo.go", Line: 42}
 	tests := []struct {
 		name     string
 		expected interface{} // output of serializing caller
 	}{
-		{"", "foo.go:42"},
-		{"something-random", "foo.go:42"},
+		{"", "/home/jack/src/github.com/foo/foo.go:42"},
+		{"something-random", "/home/jack/src/github.com/foo/foo.go:42"},
 	}
 
 	for _, tt := range tests {
