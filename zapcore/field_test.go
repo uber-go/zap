@@ -100,15 +100,14 @@ func TestFields(t *testing.T) {
 		t     FieldType
 		i     int64
 		s     string
-		b     []byte
 		iface interface{}
 		want  interface{}
 	}{
 		{t: ArrayMarshalerType, iface: users(2), want: []interface{}{"user", "user"}},
 		{t: ObjectMarshalerType, iface: users(2), want: map[string]interface{}{"users": 2}},
-		{t: BinaryType, b: []byte("foo"), want: []byte("foo")},
-		{t: ByteStringType, b: []byte("foo"), want: []byte("foo")},
+		{t: BinaryType, iface: []byte("foo"), want: []byte("foo")},
 		{t: BoolType, i: 0, want: false},
+		{t: ByteStringType, iface: []byte("foo"), want: []byte("foo")},
 		{t: Complex128Type, iface: 1 + 2i, want: 1 + 2i},
 		{t: Complex64Type, iface: complex64(1 + 2i), want: complex64(1 + 2i)},
 		{t: DurationType, i: 1000, want: time.Microsecond},
@@ -134,7 +133,7 @@ func TestFields(t *testing.T) {
 
 	for _, tt := range tests {
 		enc := NewMapObjectEncoder()
-		f := Field{Key: "k", Type: tt.t, Integer: tt.i, Interface: tt.iface, Bytes: tt.b, String: tt.s}
+		f := Field{Key: "k", Type: tt.t, Integer: tt.i, Interface: tt.iface, String: tt.s}
 		f.AddTo(enc)
 		assert.Equal(t, tt.want, enc.Fields["k"], "Unexpected output from field %+v.", f)
 
