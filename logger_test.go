@@ -26,9 +26,9 @@ import (
 	"testing"
 
 	"go.uber.org/zap/internal/exit"
-	"go.uber.org/zap/internal/observer"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

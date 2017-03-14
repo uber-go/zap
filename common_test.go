@@ -24,8 +24,8 @@ import (
 	"sync"
 	"testing"
 
-	"go.uber.org/zap/internal/observer"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func opts(opts ...Option) []Option {
@@ -35,10 +35,9 @@ func opts(opts ...Option) []Option {
 // Here specifically to introduce an easily-identifiable filename for testing
 // stacktraces and caller skips.
 func withLogger(t testing.TB, e zapcore.LevelEnabler, opts []Option, f func(*Logger, *observer.ObservedLogs)) {
-	var logs observer.ObservedLogs
-	fac := observer.New(e, logs.Add, true)
+	fac, logs := observer.New(e)
 	log := New(fac, opts...)
-	f(log, &logs)
+	f(log, logs)
 }
 
 func withSugar(t testing.TB, e zapcore.LevelEnabler, opts []Option, f func(*SugaredLogger, *observer.ObservedLogs)) {

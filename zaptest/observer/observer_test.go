@@ -21,7 +21,6 @@
 package observer_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -29,8 +28,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.uber.org/zap"
-	. "go.uber.org/zap/internal/observer"
 	"go.uber.org/zap/zapcore"
+	. "go.uber.org/zap/zaptest/observer"
 )
 
 func assertEmpty(t testing.TB, logs *ObservedLogs) {
@@ -39,43 +38,37 @@ func assertEmpty(t testing.TB, logs *ObservedLogs) {
 }
 
 func TestObserver(t *testing.T) {
-	for _, includeContext := range []bool{false, true} {
-		t.Run(fmt.Sprint("withContext ", includeContext), func(t *testing.T) {
-			logs := &ObservedLogs{}
-			assertEmpty(t, logs)
+	observer, logs := New(zap.InfoLevel)
+	assertEmpty(t, logs)
 
-			obs := zap.New(New(zap.InfoLevel, logs.Add, includeContext)).With(zap.Int("i", 1))
-			obs.Info("foo")
-			obs.Debug("bar")
-			want := []LoggedEntry{{
-				Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "foo"},
-				Context: nil,
-			}}
-			if includeContext {
-				want[0].Context = []zapcore.Field{zap.Int("i", 1)}
-			}
+	assert.NoError(t, observer.Sync(), "Unexpected failure in no-op Sync")
 
-			assert.Equal(t, 1, logs.Len(), "Unexpected observed logs Len.")
-			assert.Equal(t, want, logs.AllUntimed(), "Unexpected contents from AllUntimed.")
+	obs := zap.New(observer).With(zap.Int("i", 1))
+	obs.Info("foo")
+	obs.Debug("bar")
+	want := []LoggedEntry{{
+		Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "foo"},
+		Context: []zapcore.Field{zap.Int("i", 1)},
+	}}
 
-			all := logs.All()
-			require.Equal(t, 1, len(all), "Unexpected numbed of LoggedEntries returned from All.")
-			assert.NotEqual(t, time.Time{}, all[0].Time, "Expected non-zero time on LoggedEntry.")
+	assert.Equal(t, 1, logs.Len(), "Unexpected observed logs Len.")
+	assert.Equal(t, want, logs.AllUntimed(), "Unexpected contents from AllUntimed.")
 
-			// copy & zero time for stable assertions
-			untimed := append([]LoggedEntry{}, all...)
-			untimed[0].Time = time.Time{}
-			assert.Equal(t, want, untimed, "Unexpected LoggedEntries from All.")
+	all := logs.All()
+	require.Equal(t, 1, len(all), "Unexpected numbed of LoggedEntries returned from All.")
+	assert.NotEqual(t, time.Time{}, all[0].Time, "Expected non-zero time on LoggedEntry.")
 
-			assert.Equal(t, all, logs.TakeAll(), "Expected All and TakeAll to return identical results.")
-			assertEmpty(t, logs)
-		})
-	}
+	// copy & zero time for stable assertions
+	untimed := append([]LoggedEntry{}, all...)
+	untimed[0].Time = time.Time{}
+	assert.Equal(t, want, untimed, "Unexpected LoggedEntries from All.")
+
+	assert.Equal(t, all, logs.TakeAll(), "Expected All and TakeAll to return identical results.")
+	assertEmpty(t, logs)
 }
 
 func TestObserverWith(t *testing.T) {
-	var logs ObservedLogs
-	sf1 := New(zap.InfoLevel, logs.Add, true)
+	sf1, logs := New(zap.InfoLevel)
 
 	// need to pad out enough initial fields so that the underlying slice cap()
 	// gets ahead of its len() so that the sf3/4 With append's could choose
