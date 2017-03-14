@@ -43,6 +43,12 @@ func Bools(key string, bs []bool) zapcore.Field {
 	return Array(key, bools(bs))
 }
 
+// ByteStrings constructs a field that carries a slice of []byte, each of which
+// must be UTF-8 encoded text.
+func ByteStrings(key string, bss [][]byte) zapcore.Field {
+	return Array(key, byteStringsArray(bss))
+}
+
 // Complex128s constructs a field that carries a slice of complex numbers.
 func Complex128s(key string, nums []complex128) zapcore.Field {
 	return Array(key, complex128s(nums))
@@ -143,6 +149,15 @@ type bools []bool
 func (bs bools) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	for i := range bs {
 		arr.AppendBool(bs[i])
+	}
+	return nil
+}
+
+type byteStringsArray [][]byte
+
+func (bss byteStringsArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
+	for i := range bss {
+		arr.AppendByteString(bss[i])
 	}
 	return nil
 }

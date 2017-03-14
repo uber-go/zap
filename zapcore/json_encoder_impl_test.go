@@ -83,11 +83,22 @@ func TestJSONEscaping(t *testing.T) {
 		"\xed\xa0\x80":    `\ufffd\ufffd\ufffd`,
 		"foo\xed\xa0\x80": `foo\ufffd\ufffd\ufffd`,
 	}
-	for input, output := range cases {
-		enc.truncate()
-		enc.safeAddString(input)
-		assertJSON(t, output, enc)
-	}
+
+	t.Run("String", func(t *testing.T) {
+		for input, output := range cases {
+			enc.truncate()
+			enc.safeAddString(input)
+			assertJSON(t, output, enc)
+		}
+	})
+
+	t.Run("ByteString", func(t *testing.T) {
+		for input, output := range cases {
+			enc.truncate()
+			enc.safeAddByteString([]byte(input))
+			assertJSON(t, output, enc)
+		}
+	})
 }
 
 func TestJSONEncoderObjectFields(t *testing.T) {
@@ -100,6 +111,10 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 		{"bool", `"k\\":true`, func(e Encoder) { e.AddBool(`k\`, true) }}, // test key escaping once
 		{"bool", `"k":true`, func(e Encoder) { e.AddBool("k", true) }},
 		{"bool", `"k":false`, func(e Encoder) { e.AddBool("k", false) }},
+		{"byteString", `"k":"v\\"`, func(e Encoder) { e.AddByteString(`k`, []byte(`v\`)) }},
+		{"byteString", `"k":"v"`, func(e Encoder) { e.AddByteString("k", []byte("v")) }},
+		{"byteString", `"k":""`, func(e Encoder) { e.AddByteString("k", []byte{}) }},
+		{"byteString", `"k":""`, func(e Encoder) { e.AddByteString("k", nil) }},
 		{"complex128", `"k":"1+2i"`, func(e Encoder) { e.AddComplex128("k", 1+2i) }},
 		{"complex64", `"k":"1+2i"`, func(e Encoder) { e.AddComplex64("k", 1+2i) }},
 		{"duration", `"k":0.000000001`, func(e Encoder) { e.AddDuration("k", 1) }},
@@ -219,6 +234,8 @@ func TestJSONEncoderArrays(t *testing.T) {
 		f        func(ArrayEncoder)
 	}{
 		{"bool", `[true,true]`, func(e ArrayEncoder) { e.AppendBool(true) }},
+		{"byteString", `["k","k"]`, func(e ArrayEncoder) { e.AppendByteString([]byte("k")) }},
+		{"byteString", `["k\\","k\\"]`, func(e ArrayEncoder) { e.AppendByteString([]byte(`k\`)) }},
 		{"complex128", `["1+2i","1+2i"]`, func(e ArrayEncoder) { e.AppendComplex128(1 + 2i) }},
 		{"complex64", `["1+2i","1+2i"]`, func(e ArrayEncoder) { e.AppendComplex64(1 + 2i) }},
 		{"durations", `[0.000000002,0.000000002]`, func(e ArrayEncoder) { e.AppendDuration(2) }},
@@ -385,22 +402,24 @@ func (nj noJSON) MarshalJSON() ([]byte, error) {
 	return nil, errors.New("no")
 }
 
-func zapEncodeString(s string) []byte {
-	enc := &jsonEncoder{buf: bufferpool.Get()}
-	// Escape and quote a string using our encoder.
-	var ret []byte
-	enc.safeAddString(s)
-	ret = make([]byte, 0, enc.buf.Len()+2)
-	ret = append(ret, '"')
-	ret = append(ret, enc.buf.Bytes()...)
-	ret = append(ret, '"')
-	return ret
+func zapEncode(encode func(*jsonEncoder, string)) func(s string) []byte {
+	return func(s string) []byte {
+		enc := &jsonEncoder{buf: bufferpool.Get()}
+		// Escape and quote a string using our encoder.
+		var ret []byte
+		encode(enc, s)
+		ret = make([]byte, 0, enc.buf.Len()+2)
+		ret = append(ret, '"')
+		ret = append(ret, enc.buf.Bytes()...)
+		ret = append(ret, '"')
+		return ret
+	}
 }
 
-func roundTripsCorrectly(original string) bool {
+func roundTripsCorrectly(encode func(string) []byte, original string) bool {
 	// Encode using our encoder, decode using the standard library, and assert
 	// that we haven't lost any information.
-	encoded := zapEncodeString(original)
+	encoded := encode(original)
 
 	var decoded string
 	err := json.Unmarshal(encoded, &decoded)
@@ -408,6 +427,18 @@ func roundTripsCorrectly(original string) bool {
 		return false
 	}
 	return original == decoded
+}
+
+func roundTripsCorrectlyString(original string) bool {
+	return roundTripsCorrectly(zapEncode((*jsonEncoder).safeAddString), original)
+}
+
+func roundTripsCorrectlyByteString(original string) bool {
+	return roundTripsCorrectly(
+		zapEncode(func(enc *jsonEncoder, s string) {
+			enc.safeAddByteString([]byte(s))
+		}),
+		original)
 }
 
 type ASCII string
@@ -421,20 +452,24 @@ func (s ASCII) Generate(r *rand.Rand, size int) reflect.Value {
 	return reflect.ValueOf(a)
 }
 
-func asciiRoundTripsCorrectly(s ASCII) bool {
-	return roundTripsCorrectly(string(s))
+func asciiRoundTripsCorrectlyString(s ASCII) bool {
+	return roundTripsCorrectlyString(string(s))
+}
+
+func asciiRoundTripsCorrectlyByteString(s ASCII) bool {
+	return roundTripsCorrectlyByteString(string(s))
 }
 
 func TestJSONQuick(t *testing.T) {
-	// Test the full range of UTF-8 strings.
-	err := quick.Check(roundTripsCorrectly, &quick.Config{MaxCountScale: 100.0})
-	if err != nil {
-		t.Error(err.Error())
+	check := func(f interface{}) {
+		err := quick.Check(f, &quick.Config{MaxCountScale: 100.0})
+		assert.NoError(t, err)
 	}
+	// Test the full range of UTF-8 strings.
+	check(roundTripsCorrectlyString)
+	check(roundTripsCorrectlyByteString)
 
 	// Focus on ASCII strings.
-	err = quick.Check(asciiRoundTripsCorrectly, &quick.Config{MaxCountScale: 100.0})
-	if err != nil {
-		t.Error(err.Error())
-	}
+	check(asciiRoundTripsCorrectlyString)
+	check(asciiRoundTripsCorrectlyByteString)
 }

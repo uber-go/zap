@@ -41,6 +41,8 @@ const (
 	BinaryType
 	// BoolType indicates that the field carries a bool.
 	BoolType
+	// ByteStringType indicates that the field carries UTF-8 encoded bytes.
+	ByteStringType
 	// Complex128Type indicates that the field carries a complex128.
 	Complex128Type
 	// Complex64Type indicates that the field carries a complex128.
@@ -112,6 +114,8 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		enc.AddBinary(f.Key, f.Interface.([]byte))
 	case BoolType:
 		enc.AddBool(f.Key, f.Integer == 1)
+	case ByteStringType:
+		enc.AddByteString(f.Key, f.Interface.([]byte))
 	case Complex128Type:
 		enc.AddComplex128(f.Key, f.Interface.(complex128))
 	case Complex64Type:

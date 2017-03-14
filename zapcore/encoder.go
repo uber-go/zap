@@ -220,7 +220,8 @@ type ObjectEncoder interface {
 	AddObject(key string, marshaler ObjectMarshaler) error
 
 	// Built-in types.
-	AddBinary(key string, value []byte)
+	AddBinary(key string, value []byte)     // for arbitrary bytes
+	AddByteString(key string, value []byte) // for UTF-8 encoded bytes
 	AddBool(key string, value bool)
 	AddComplex128(key string, value complex128)
 	AddComplex64(key string, value complex64)
@@ -277,6 +278,7 @@ type ArrayEncoder interface {
 type PrimitiveArrayEncoder interface {
 	// Built-in types.
 	AppendBool(bool)
+	AppendByteString([]byte) // for UTF-8 encoded bytes
 	AppendComplex128(complex128)
 	AppendComplex64(complex64)
 	AppendFloat64(float64)

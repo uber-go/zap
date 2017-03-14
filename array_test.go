@@ -59,6 +59,7 @@ func TestArrayWrappers(t *testing.T) {
 		expected []interface{}
 	}{
 		{"empty bools", Bools("", []bool{}), []interface{}(nil)},
+		{"empty byte strings", ByteStrings("", [][]byte{}), []interface{}(nil)},
 		{"empty complex128s", Complex128s("", []complex128{}), []interface{}(nil)},
 		{"empty complex64s", Complex64s("", []complex64{}), []interface{}(nil)},
 		{"empty durations", Durations("", []time.Duration{}), []interface{}(nil)},
@@ -79,6 +80,7 @@ func TestArrayWrappers(t *testing.T) {
 		{"empty uintptrs", Uintptrs("", []uintptr{}), []interface{}(nil)},
 		{"empty errors", Errors("", []error{}), []interface{}(nil)},
 		{"bools", Bools("", []bool{true, false}), []interface{}{true, false}},
+		{"byte strings", ByteStrings("", [][]byte{{1, 2}, {3, 4}}), []interface{}{[]byte{1, 2}, []byte{3, 4}}},
 		{"complex128s", Complex128s("", []complex128{1 + 2i, 3 + 4i}), []interface{}{1 + 2i, 3 + 4i}},
 		{"complex64s", Complex64s("", []complex64{1 + 2i, 3 + 4i}), []interface{}{complex64(1 + 2i), complex64(3 + 4i)}},
 		{"durations", Durations("", []time.Duration{1, 2}), []interface{}{time.Nanosecond, 2 * time.Nanosecond}},

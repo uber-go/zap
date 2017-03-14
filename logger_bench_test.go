@@ -75,6 +75,13 @@ func BenchmarkBoolField(b *testing.B) {
 	})
 }
 
+func BenchmarkByteStringField(b *testing.B) {
+	val := []byte("bar")
+	withBenchedLogger(b, func(log *Logger) {
+		log.Info("ByteString.", ByteString("foo", val))
+	})
+}
+
 func BenchmarkFloat64Field(b *testing.B) {
 	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Floating point.", Float64("foo", 3.14))
