@@ -92,7 +92,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				return ent
 			},
 			expectedJSON:    `{"level":"info","ts":0,"name":"main","caller":"foo.go:42","msg":"hello\\","stacktrace":"fake-stack"}`,
-			expectedConsole: "0\tinfo\tmain@foo.go:42\thello\\\nfake-stack",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\\\nfake-stack",
 		},
 		{
 			desc: "use custom entry keys in JSON output and ignore them in console output",
@@ -109,7 +109,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
-			expectedConsole: "0\tinfo\tmain@foo.go:42\thello\nfake-stack",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\nfake-stack",
 		},
 		{
 			desc: "skip level if LevelKey is omitted",
@@ -126,7 +126,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
-			expectedConsole: "0\tmain@foo.go:42\thello\nfake-stack",
+			expectedConsole: "0\tmain\tfoo.go:42\thello\nfake-stack",
 		},
 		{
 			desc: "skip timestamp if TimeKey is omitted",
@@ -143,7 +143,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"info","N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
-			expectedConsole: "info\tmain@foo.go:42\thello\nfake-stack",
+			expectedConsole: "info\tmain\tfoo.go:42\thello\nfake-stack",
 		},
 		{
 			desc: "skip message if MessageKey is omitted",
@@ -160,7 +160,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","S":"fake-stack"}`,
-			expectedConsole: "0\tinfo\tmain@foo.go:42\nfake-stack",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\nfake-stack",
 		},
 		{
 			desc: "skip name if NameKey is omitted",
@@ -211,7 +211,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello"}`,
-			expectedConsole: "0\tinfo\tmain@foo.go:42\thello",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello",
 		},
 		{
 			desc: "use the supplied EncodeTime, for both the entry and any times added",
@@ -235,7 +235,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				}))
 			},
 			expectedJSON: `{"L":"info","T":"1970-01-01 00:00:00 +0000 UTC","N":"main","C":"foo.go:42","M":"hello","extra":"1970-01-01 00:00:00 +0000 UTC","extras":["1970-01-01 00:00:00 +0000 UTC"],"S":"fake-stack"}`,
-			expectedConsole: "1970-01-01 00:00:00 +0000 UTC\tinfo\tmain@foo.go:42\thello\t" + // plain-text preamble
+			expectedConsole: "1970-01-01 00:00:00 +0000 UTC\tinfo\tmain\tfoo.go:42\thello\t" + // plain-text preamble
 				`{"extra": "1970-01-01 00:00:00 +0000 UTC", "extras": ["1970-01-01 00:00:00 +0000 UTC"]}` + // JSON context
 				"\nfake-stack", // stacktrace after newline
 		},
@@ -261,7 +261,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				}))
 			},
 			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","extra":"1s","extras":["1m0s"],"S":"fake-stack"}`,
-			expectedConsole: "0\tinfo\tmain@foo.go:42\thello\t" + // preamble
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\t" + // preamble
 				`{"extra": "1s", "extras": ["1m0s"]}` + // context
 				"\nfake-stack", // stacktrace
 		},
@@ -280,7 +280,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"INFO","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
-			expectedConsole: "0\tINFO\tmain@foo.go:42\thello\nfake-stack",
+			expectedConsole: "0\tINFO\tmain\tfoo.go:42\thello\nfake-stack",
 		},
 		{
 			desc: "close all open namespaces",
@@ -303,7 +303,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				enc.OpenNamespace("innermost")
 			},
 			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","outer":{"inner":{"foo":"bar","innermost":{}}},"S":"fake-stack"}`,
-			expectedConsole: "0\tinfo\tmain@foo.go:42\thello\t" +
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\t" +
 				`{"outer": {"inner": {"foo": "bar", "innermost": {}}}}` +
 				"\nfake-stack",
 		},
@@ -323,7 +323,7 @@ func TestEncoderConfiguration(t *testing.T) {
 			},
 			extra:           func(enc Encoder) { enc.AddTime("sometime", time.Unix(0, 100)) },
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","sometime":100,"S":"fake-stack"}`,
-			expectedConsole: "info\tmain@foo.go:42\thello\t" + `{"sometime": 100}` + "\nfake-stack",
+			expectedConsole: "info\tmain\tfoo.go:42\thello\t" + `{"sometime": 100}` + "\nfake-stack",
 		},
 		{
 			desc: "handle no-op EncodeDuration",
@@ -341,7 +341,7 @@ func TestEncoderConfiguration(t *testing.T) {
 			},
 			extra:           func(enc Encoder) { enc.AddDuration("someduration", time.Microsecond) },
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","someduration":1000,"S":"fake-stack"}`,
-			expectedConsole: "0\tinfo\tmain@foo.go:42\thello\t" + `{"someduration": 1000}` + "\nfake-stack",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\t" + `{"someduration": 1000}` + "\nfake-stack",
 		},
 		{
 			desc: "handle no-op EncodeLevel",
@@ -358,7 +358,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeCaller:   base.EncodeCaller,
 			},
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
-			expectedConsole: "0\tmain@foo.go:42\thello\nfake-stack",
+			expectedConsole: "0\tmain\tfoo.go:42\thello\nfake-stack",
 		},
 		{
 			desc: "handle no-op EncodeCaller",
@@ -375,7 +375,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeCaller:   func(EntryCaller, PrimitiveArrayEncoder) {},
 			},
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}`,
-			expectedConsole: "0\tinfo\tmain@foo.go:42\thello\nfake-stack",
+			expectedConsole: "0\tinfo\tmain\thello\nfake-stack",
 		},
 	}
 

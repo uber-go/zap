@@ -40,16 +40,16 @@ func TestConfig(t *testing.T) {
 			desc:    "production",
 			cfg:     NewProductionConfig(),
 			expectN: 2 + 100 + 1, // 2 from initial logs, 100 initial sampled logs, 1 from off-by-one in sampler
-			expectRe: `{"level":"info","caller":".*/go.uber.org/zap/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
-				`{"level":"warn","caller":".*/go.uber.org/zap/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n",
+			expectRe: `{"level":"info","caller":"zap/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
+				`{"level":"warn","caller":"zap/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n",
 		},
 		{
 			desc:    "development",
 			cfg:     NewDevelopmentConfig(),
 			expectN: 3 + 200, // 3 initial logs, all 200 subsequent logs
-			expectRe: "DEBUG\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\tdebug\t" + `{"k": "v", "z": "zz"}` + "\n" +
-				"INFO\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\tinfo\t" + `{"k": "v", "z": "zz"}` + "\n" +
-				"WARN\t.*go.uber.org/zap/config_test.go:" + `\d+` + "\twarn\t" + `{"k": "v", "z": "zz"}` + "\n" +
+			expectRe: "DEBUG\tzap/config_test.go:" + `\d+` + "\tdebug\t" + `{"k": "v", "z": "zz"}` + "\n" +
+				"INFO\tzap/config_test.go:" + `\d+` + "\tinfo\t" + `{"k": "v", "z": "zz"}` + "\n" +
+				"WARN\tzap/config_test.go:" + `\d+` + "\twarn\t" + `{"k": "v", "z": "zz"}` + "\n" +
 				`go.uber.org/zap.Stack`,
 		},
 	}
