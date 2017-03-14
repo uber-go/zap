@@ -97,6 +97,7 @@ type Field struct {
 	Type      FieldType
 	Integer   int64
 	String    string
+	Bytes     []byte
 	Interface interface{}
 }
 
@@ -111,11 +112,11 @@ func (f Field) AddTo(enc ObjectEncoder) {
 	case ObjectMarshalerType:
 		err = enc.AddObject(f.Key, f.Interface.(ObjectMarshaler))
 	case BinaryType:
-		enc.AddBinary(f.Key, f.Interface.([]byte))
+		enc.AddBinary(f.Key, f.Bytes)
 	case BoolType:
 		enc.AddBool(f.Key, f.Integer == 1)
 	case ByteStringType:
-		enc.AddByteString(f.Key, f.Interface.([]byte))
+		enc.AddByteString(f.Key, f.Bytes)
 	case Complex128Type:
 		enc.AddComplex128(f.Key, f.Interface.(complex128))
 	case Complex64Type:

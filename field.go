@@ -39,7 +39,7 @@ func Skip() zapcore.Field {
 // zap's JSON encoder base64-encodes binary blobs. To log UTF-8 encoded text,
 // use ByteString.
 func Binary(key string, val []byte) zapcore.Field {
-	return zapcore.Field{Key: key, Type: zapcore.BinaryType, Interface: val}
+	return zapcore.Field{Key: key, Type: zapcore.BinaryType, Bytes: val}
 }
 
 // Bool constructs a field that carries a bool.
@@ -55,7 +55,7 @@ func Bool(key string, val bool) zapcore.Field {
 // To log opaque binary blobs (which aren't necessarily valid UTF-8), use
 // Binary.
 func ByteString(key string, val []byte) zapcore.Field {
-	return zapcore.Field{Key: key, Type: zapcore.ByteStringType, Interface: val}
+	return zapcore.Field{Key: key, Type: zapcore.ByteStringType, Bytes: val}
 }
 
 // Complex128 constructs a field that carries a complex number. Unlike most
