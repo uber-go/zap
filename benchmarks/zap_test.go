@@ -69,8 +69,7 @@ var _jane = user{
 
 func newZapLogger(lvl zapcore.Level) *zap.Logger {
 	// use the canned production encoder configuration
-	cfg := zap.NewProductionConfig()
-	enc := zapcore.NewJSONEncoder(cfg.EncoderConfig)
+	enc := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
 	return zap.New(zapcore.NewCore(
 		enc,
 		&zaptest.Discarder{},

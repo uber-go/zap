@@ -53,7 +53,7 @@ func testEncoderConfig() EncoderConfig {
 		EncodeTime:     EpochTimeEncoder,
 		EncodeLevel:    LowercaseLevelEncoder,
 		EncodeDuration: SecondsDurationEncoder,
-		EncodeCaller:   FullPathCallerEncoder,
+		EncodeCaller:   ShortCallerEncoder,
 	}
 }
 
@@ -490,8 +490,10 @@ func TestCallerEncoders(t *testing.T) {
 		name     string
 		expected interface{} // output of serializing caller
 	}{
-		{"", "/home/jack/src/github.com/foo/foo.go:42"},
-		{"something-random", "/home/jack/src/github.com/foo/foo.go:42"},
+		{"", "foo/foo.go:42"},
+		{"something-random", "foo/foo.go:42"},
+		{"short", "foo/foo.go:42"},
+		{"full", "/home/jack/src/github.com/foo/foo.go:42"},
 	}
 
 	for _, tt := range tests {

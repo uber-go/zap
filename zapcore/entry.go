@@ -22,6 +22,8 @@ package zapcore
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -74,14 +76,45 @@ type EntryCaller struct {
 	Line    int
 }
 
-// String returns a "file:line" string if the EntryCaller is Defined, and the
-// empty string otherwise.
+// String returns the full path and line number of the caller.
 func (ec EntryCaller) String() string {
+	return ec.FullPath()
+}
+
+// FullPath returns a /full/path/to/package/file:line description of the
+// caller.
+func (ec EntryCaller) FullPath() string {
 	if !ec.Defined {
-		return ""
+		return "undefined"
 	}
 	buf := bufferpool.Get()
 	buf.AppendString(ec.File)
+	buf.AppendByte(':')
+	buf.AppendInt(int64(ec.Line))
+	caller := buf.String()
+	bufferpool.Put(buf)
+	return caller
+}
+
+// TrimmedPath returns a package/file:line description of the caller,
+// preserving only the leaf directory name and file name.
+func (ec EntryCaller) TrimmedPath() string {
+	if !ec.Defined {
+		return "undefined"
+	}
+	// Find the last separator.
+	idx := strings.LastIndexByte(ec.File, os.PathSeparator)
+	if idx == -1 {
+		return ec.FullPath()
+	}
+	// Find the penultimate separator.
+	idx = strings.LastIndexByte(ec.File[:idx], os.PathSeparator)
+	if idx == -1 {
+		return ec.FullPath()
+	}
+	buf := bufferpool.Get()
+	// Keep everything after the penultimate separator.
+	buf.AppendString(ec.File[idx+1:])
 	buf.AppendByte(':')
 	buf.AppendInt(int64(ec.Line))
 	caller := buf.String()
