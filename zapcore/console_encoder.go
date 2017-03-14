@@ -66,18 +66,24 @@ func (c consoleEncoder) Clone() Encoder {
 func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, error) {
 	line := bufferpool.Get()
 
-	// We don't want the date and level to be quoted and escaped (if they're
+	// We don't want the entry's metadata to be quoted and escaped (if it's
 	// encoded as strings), which means that we can't use the JSON encoder. The
 	// simplest option is to use the memory encoder and fmt.Fprint.
 	//
 	// If this ever becomes a performance bottleneck, we can implement
 	// ArrayEncoder for our plain-text format.
 	arr := getSliceEncoder()
-	if c.TimeKey != "" {
+	if c.TimeKey != "" && c.EncodeTime != nil {
 		c.EncodeTime(ent.Time, arr)
 	}
-	if c.LevelKey != "" {
+	if c.LevelKey != "" && c.EncodeLevel != nil {
 		c.EncodeLevel(ent.Level, arr)
+	}
+	if ent.LoggerName != "" && c.NameKey != "" {
+		arr.AppendString(ent.LoggerName)
+	}
+	if ent.Caller.Defined && c.CallerKey != "" && c.EncodeCaller != nil {
+		c.EncodeCaller(ent.Caller, arr)
 	}
 	for i := range arr.elems {
 		if i > 0 {
@@ -86,9 +92,6 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 		fmt.Fprint(line, arr.elems[i])
 	}
 	putSliceEncoder(arr)
-
-	// Compose the logger name and caller info into a call site and add it.
-	c.writeCallSite(line, ent.LoggerName, ent.Caller)
 
 	// Add the message itself.
 	if c.MessageKey != "" {
@@ -108,26 +111,6 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 
 	line.AppendByte('\n')
 	return line, nil
-}
-
-func (c consoleEncoder) writeCallSite(line *buffer.Buffer, name string, caller EntryCaller) {
-	shouldWriteName := name != "" && c.NameKey != ""
-	shouldWriteCaller := caller.Defined && c.CallerKey != ""
-	if !shouldWriteName && !shouldWriteCaller {
-		return
-	}
-	c.addTabIfNecessary(line)
-	if shouldWriteName {
-		line.AppendString(name)
-		if shouldWriteCaller {
-			line.AppendByte('@')
-		}
-	}
-	if shouldWriteCaller {
-		line.AppendString(caller.File)
-		line.AppendByte(':')
-		line.AppendInt(int64(caller.Line))
-	}
 }
 
 func (c consoleEncoder) writeContext(line *buffer.Buffer, extra []Field) {

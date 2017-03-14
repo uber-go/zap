@@ -59,18 +59,31 @@ func TestPutNilEntry(t *testing.T) {
 
 func TestEntryCaller(t *testing.T) {
 	tests := []struct {
-		ok   bool
-		want EntryCaller
-		str  string
+		caller EntryCaller
+		full   string
+		short  string
 	}{
-		{true, EntryCaller{PC: 100, Defined: true, File: "foo.go", Line: 42}, "foo.go:42"},
-		{false, EntryCaller{}, ""},
+		{
+			caller: NewEntryCaller(100, "/path/to/foo.go", 42, false),
+			full:   "undefined",
+			short:  "undefined",
+		},
+		{
+			caller: NewEntryCaller(100, "/path/to/foo.go", 42, true),
+			full:   "/path/to/foo.go:42",
+			short:  "to/foo.go:42",
+		},
+		{
+			caller: NewEntryCaller(100, "to/foo.go", 42, true),
+			full:   "to/foo.go:42",
+			short:  "to/foo.go:42",
+		},
 	}
 
 	for _, tt := range tests {
-		caller := NewEntryCaller(100, "foo.go", 42, tt.ok)
-		assert.Equal(t, tt.want, caller, "Unexpected output from NewEntryCaller.")
-		assert.Equal(t, tt.str, caller.String(), "Unexpected string output from EntryCaller")
+		assert.Equal(t, tt.full, tt.caller.String(), "Unexpected string from EntryCaller.")
+		assert.Equal(t, tt.full, tt.caller.FullPath(), "Unexpected FullPath from EntryCaller.")
+		assert.Equal(t, tt.short, tt.caller.TrimmedPath(), "Unexpected TrimmedPath from EntryCaller.")
 	}
 }
 

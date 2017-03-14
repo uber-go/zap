@@ -162,10 +162,40 @@ func (e *DurationEncoder) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// A CallerEncoder serializes an EntryCaller to a primitive type.
+type CallerEncoder func(EntryCaller, PrimitiveArrayEncoder)
+
+// FullCallerEncoder serializes a caller in /full/path/to/package/file:line
+// format.
+func FullCallerEncoder(caller EntryCaller, enc PrimitiveArrayEncoder) {
+	// TODO: consider using a byte-oriented API to save an allocation.
+	enc.AppendString(caller.String())
+}
+
+// ShortCallerEncoder serializes a caller in package/file:line format, trimming
+// all but the final directory from the full path.
+func ShortCallerEncoder(caller EntryCaller, enc PrimitiveArrayEncoder) {
+	// TODO: consider using a byte-oriented API to save an allocation.
+	enc.AppendString(caller.TrimmedPath())
+}
+
+// UnmarshalText unmarshals text to a CallerEncoder. "full" is unmarshaled to
+// FullCallerEncoder and anything else is unmarshaled to ShortCallerEncoder.
+func (e *CallerEncoder) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "full":
+		*e = FullCallerEncoder
+	default:
+		*e = ShortCallerEncoder
+	}
+	return nil
+}
+
 // An EncoderConfig allows users to configure the concrete encoders supplied by
 // zapcore.
 type EncoderConfig struct {
-	// Set the keys used for each log entry.
+	// Set the keys used for each log entry. If any key is empty, that portion
+	// of the entry is omitted.
 	MessageKey    string `json:"messageKey" yaml:"messageKey"`
 	LevelKey      string `json:"levelKey" yaml:"levelKey"`
 	TimeKey       string `json:"timeKey" yaml:"timeKey"`
@@ -178,6 +208,7 @@ type EncoderConfig struct {
 	EncodeLevel    LevelEncoder    `json:"levelEncoder" yaml:"levelEncoder"`
 	EncodeTime     TimeEncoder     `json:"timeEncoder" yaml:"timeEncoder"`
 	EncodeDuration DurationEncoder `json:"durationEncoder" yaml:"durationEncoder"`
+	EncodeCaller   CallerEncoder   `json:"callerEncoder" yaml:"callerEncoder"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a
