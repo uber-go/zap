@@ -423,14 +423,13 @@ func (enc *jsonEncoder) safeAddByteString(s []byte) {
 }
 
 // tryAddRuneSelf appends b if it is valid UTF-8 character represented in a single byte.
-func (enc *jsonEncoder) tryAddRuneSelf(b byte) (ok bool) {
-	ok = b < utf8.RuneSelf
-	if !ok {
-		return
+func (enc *jsonEncoder) tryAddRuneSelf(b byte) bool {
+	if b >= utf8.RuneSelf {
+		return false
 	}
 	if 0x20 <= b && b != '\\' && b != '"' {
 		enc.buf.AppendByte(b)
-		return
+		return true
 	}
 	switch b {
 	case '\\', '"':
@@ -451,13 +450,13 @@ func (enc *jsonEncoder) tryAddRuneSelf(b byte) (ok bool) {
 		enc.buf.AppendByte(_hex[b>>4])
 		enc.buf.AppendByte(_hex[b&0xF])
 	}
-	return
+	return true
 }
 
-func (enc *jsonEncoder) tryAddRuneError(r rune, size int) (ok bool) {
-	ok = r == utf8.RuneError && size == 1
-	if ok {
+func (enc *jsonEncoder) tryAddRuneError(r rune, size int) bool {
+	if r == utf8.RuneError && size == 1 {
 		enc.buf.AppendString(`\ufffd`)
+		return true
 	}
-	return
+	return false
 }

@@ -43,8 +43,8 @@ func Bools(key string, bs []bool) zapcore.Field {
 	return Array(key, bools(bs))
 }
 
-// ByteStrings constructs a field that carries a slice of []byte
-// that assumed to be UTF-8 encoded.
+// ByteStrings constructs a field that carries a slice of []byte, each of which
+// must be UTF-8 encoded text.
 func ByteStrings(key string, bss [][]byte) zapcore.Field {
 	return Array(key, byteStringsArray(bss))
 }

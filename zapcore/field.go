@@ -41,7 +41,7 @@ const (
 	BinaryType
 	// BoolType indicates that the field carries a bool.
 	BoolType
-	// ByteStringType indicates that the field carries a []byte that assumed to be UTF-8 encoded.
+	// ByteStringType indicates that the field carries a UTF-8 encoded bytes.
 	ByteStringType
 	// Complex128Type indicates that the field carries a complex128.
 	Complex128Type

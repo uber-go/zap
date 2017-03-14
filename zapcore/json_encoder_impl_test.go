@@ -467,11 +467,9 @@ func TestJSONQuick(t *testing.T) {
 	}
 	// Test the full range of UTF-8 strings.
 	check(roundTripsCorrectlyString)
+	check(roundTripsCorrectlyByteString)
 
 	// Focus on ASCII strings.
 	check(asciiRoundTripsCorrectlyString)
-
-	// Same for adding string as []byte.
-	check(roundTripsCorrectlyByteString)
 	check(asciiRoundTripsCorrectlyByteString)
 }
