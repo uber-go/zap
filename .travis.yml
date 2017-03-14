@@ -3,7 +3,6 @@ sudo: false
 go:
   - 1.7
   - 1.8
-  - tip
 go_import_path: go.uber.org/zap
 env:
   global:
