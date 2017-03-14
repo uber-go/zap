@@ -18,34 +18,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package bufferpool
+package buffer
 
-import (
-	"sync"
-	"testing"
+import "sync"
 
-	"github.com/stretchr/testify/assert"
-)
+// A Pool is a type-safe wrapper around a sync.Pool.
+type Pool struct {
+	p *sync.Pool
+}
 
-func TestBuffers(t *testing.T) {
-	const dummyData = "dummy data"
+// NewPool constructs a new Pool.
+func NewPool() Pool {
+	return Pool{p: &sync.Pool{
+		New: func() interface{} {
+			return &Buffer{bs: make([]byte, 0, _size)}
+		},
+	}}
+}
 
-	var wg sync.WaitGroup
-	for g := 0; g < 10; g++ {
-		wg.Add(1)
-		go func() {
-			for i := 0; i < 100; i++ {
-				buf := Get()
-				assert.Zero(t, buf.Len(), "Expected truncated buffer")
-				assert.NotZero(t, buf.Cap(), "Expected non-zero capacity")
+// Get retrieves a Buffer from the pool, creating one if necessary.
+func (p Pool) Get() *Buffer {
+	buf := p.p.Get().(*Buffer)
+	buf.Reset()
+	buf.pool = p
+	return buf
+}
 
-				buf.AppendString(dummyData)
-				assert.Equal(t, buf.Len(), len(dummyData), "Expected buffer to contain dummy data")
-
-				Put(buf)
-			}
-			wg.Done()
-		}()
-	}
-	wg.Wait()
+func (p Pool) put(buf *Buffer) {
+	p.p.Put(buf)
 }

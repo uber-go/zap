@@ -27,14 +27,11 @@ import "strconv"
 
 const _size = 1024 // by default, create 1 KiB buffers
 
-// Buffer is a thin wrapper around a byte slice.
+// Buffer is a thin wrapper around a byte slice. It's intended to be pooled, so
+// the only way to construct one is via a Pool.
 type Buffer struct {
-	bs []byte
-}
-
-// New creates a new Buffer of the default size.
-func New() *Buffer {
-	return &Buffer{make([]byte, 0, _size)}
+	bs   []byte
+	pool Pool
 }
 
 // AppendByte writes a single byte to the Buffer.
@@ -99,4 +96,11 @@ func (b *Buffer) Reset() {
 func (b *Buffer) Write(bs []byte) (int, error) {
 	b.bs = append(b.bs, bs...)
 	return len(bs), nil
+}
+
+// Free returns the Buffer to its Pool.
+//
+// Callers must not retain references to the Buffer after calling Free.
+func (b *Buffer) Free() {
+	b.pool.put(b)
 }

@@ -18,32 +18,35 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore_test
+package buffer
 
 import (
+	"sync"
 	"testing"
 
-	. "go.uber.org/zap/zapcore"
+	"github.com/stretchr/testify/assert"
 )
 
-func BenchmarkZapConsole(b *testing.B) {
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			enc := NewConsoleEncoder(humanEncoderConfig())
-			enc.AddString("str", "foo")
-			enc.AddInt64("int64-1", 1)
-			enc.AddInt64("int64-2", 2)
-			enc.AddFloat64("float64", 1.0)
-			enc.AddString("string1", "\n")
-			enc.AddString("string2", "💩")
-			enc.AddString("string3", "🤔")
-			enc.AddString("string4", "🙊")
-			enc.AddBool("bool", true)
-			buf, _ := enc.EncodeEntry(Entry{
-				Message: "fake",
-				Level:   DebugLevel,
-			}, nil)
-			buf.Free()
-		}
-	})
+func TestBuffers(t *testing.T) {
+	const dummyData = "dummy data"
+	p := NewPool()
+
+	var wg sync.WaitGroup
+	for g := 0; g < 10; g++ {
+		wg.Add(1)
+		go func() {
+			for i := 0; i < 100; i++ {
+				buf := p.Get()
+				assert.Zero(t, buf.Len(), "Expected truncated buffer")
+				assert.NotZero(t, buf.Cap(), "Expected non-zero capacity")
+
+				buf.AppendString(dummyData)
+				assert.Equal(t, buf.Len(), len(dummyData), "Expected buffer to contain dummy data")
+
+				buf.Free()
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 }
