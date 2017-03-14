@@ -13,7 +13,7 @@ In contexts where performance is nice, but not critical, use the
 and includes both structured and `printf`-style APIs.
 
 ```go
-logger, _ := NewProduction()
+logger, _ := zap.NewProduction()
 sugar := logger.Sugar()
 sugar.Infow("Failed to fetch URL.",
   // Structured context as loosely-typed key-value pairs.
@@ -28,7 +28,7 @@ When performance and type safety are critical, use the `Logger`. It's even faste
 the `SugaredLogger` and allocates far less, but it only supports structured logging.
 
 ```go
-logger, _ := NewProduction()
+logger, _ := zap.NewProduction()
 logger.Info("Failed to fetch URL.",
   // Structured context as strongly-typed Field values.
   zap.String("url", url),
