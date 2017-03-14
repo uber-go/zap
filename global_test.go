@@ -101,7 +101,12 @@ func TestNewStdLog(t *testing.T) {
 		entry := logs.AllUntimed()[0]
 		assert.Equal(t, []zapcore.Field{}, entry.Context, "Unexpected entry context.")
 		assert.Equal(t, "redirected", entry.Entry.Message, "Unexpected entry message.")
-		assert.Contains(t, entry.Entry.Caller.File, "global_test.go", "Unexpected caller annotation.")
+		assert.Regexp(
+			t,
+			`go.uber.org/zap/global_test.go:\d+$`,
+			entry.Entry.Caller.String(),
+			"Unexpected caller annotation.",
+		)
 	})
 }
 
