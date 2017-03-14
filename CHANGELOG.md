@@ -1,6 +1,7 @@
 # Changelog
 
 ## v1.0.0 (14 Mar 2017)
+
 This is zap's first stable release. All exported APIs are now final, and no
 further breaking changes will be made in the 1.x release series. Anyone using a
 semver-aware dependency manager should now pin to `^1`.
@@ -45,6 +46,7 @@ Thanks to @suyash, @htrendev, @flisky, @Ulexus, and @skipor for their
 contributions to this release.
  
 ## v1.0.0-rc.3 (7 Mar 2017)
+
 This is the third release candidate for zap's stable release. There are no
 breaking changes.
 
@@ -65,6 +67,7 @@ Enhancements:
 Thanks to @ansel1 and @suyash for their contributions to this release.
 
 ## v1.0.0-rc.2 (21 Feb 2017)
+
 This is the second release candidate for zap's stable release. It includes two
 breaking changes.
 
@@ -101,6 +104,7 @@ Enhancements:
 Thanks to @skipor and @chapsuk for their contributions to this release.
 
 ## v1.0.0-rc.1 (14 Feb 2017)
+
 This is the first release candidate for zap's stable release. There are multiple
 breaking changes and improvements from the pre-release version. Most notably:
 
@@ -120,6 +124,7 @@ breaking changes and improvements from the pre-release version. Most notably:
   timer heap.
 
 ## v0.1.0-beta.1 (6 Feb 2017)
+
 This is a minor version, tagged to allow users to pin to the pre-1.0 APIs and
 upgrade at their leisure. Since this is the first tagged release, there are no
 backwards compatibility concerns and all functionality is new.
