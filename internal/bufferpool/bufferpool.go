@@ -18,30 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package bufferpool provides strongly-typed functions to interact with a shared
-// pool of byte buffers.
+// Package bufferpool houses zap's shared internal buffer pool. Third-party
+// packages can recreate the same functionality with buffers.NewPool.
 package bufferpool
 
-import (
-	"sync"
+import "go.uber.org/zap/buffer"
 
-	"go.uber.org/zap/buffer"
+var (
+	_pool = buffer.NewPool()
+	// Get retrieves a buffer from the pool, creating one if necessary.
+	Get = _pool.Get
 )
-
-var _pool = sync.Pool{
-	New: func() interface{} {
-		return buffer.New()
-	},
-}
-
-// Get retrieves a buffer from the pool, creating one if necessary.
-func Get() *buffer.Buffer {
-	buf := _pool.Get().(*buffer.Buffer)
-	buf.Reset()
-	return buf
-}
-
-// Put returns a slice to the pool.
-func Put(buf *buffer.Buffer) {
-	_pool.Put(buf)
-}

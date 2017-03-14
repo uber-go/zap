@@ -20,8 +20,6 @@
 
 package zapcore
 
-import "go.uber.org/zap/internal/bufferpool"
-
 // Core is a minimal, fast logger interface. It's designed for library authors
 // to wrap in a more user-friendly API.
 type Core interface {
@@ -90,7 +88,7 @@ func (c *ioCore) Write(ent Entry, fields []Field) error {
 		return err
 	}
 	_, err = c.out.Write(buf.Bytes())
-	bufferpool.Put(buf)
+	buf.Free()
 	if err != nil {
 		return err
 	}

@@ -42,7 +42,7 @@ var (
 
 func takeStacktrace() string {
 	buffer := bufferpool.Get()
-	defer bufferpool.Put(buffer)
+	defer buffer.Free()
 	programCounters := _stacktracePool.Get().(*programCounters)
 	defer _stacktracePool.Put(programCounters)
 

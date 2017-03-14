@@ -92,7 +92,7 @@ func (ec EntryCaller) FullPath() string {
 	buf.AppendByte(':')
 	buf.AppendInt(int64(ec.Line))
 	caller := buf.String()
-	bufferpool.Put(buf)
+	buf.Free()
 	return caller
 }
 
@@ -118,7 +118,7 @@ func (ec EntryCaller) TrimmedPath() string {
 	buf.AppendByte(':')
 	buf.AppendInt(int64(ec.Line))
 	caller := buf.String()
-	bufferpool.Put(buf)
+	buf.Free()
 	return caller
 }
 
