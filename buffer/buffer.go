@@ -31,7 +31,7 @@ const _size = 1024 // by default, create 1 KiB buffers
 // the only way to construct one is via a Pool.
 type Buffer struct {
 	bs   []byte
-	pool *Pool
+	pool Pool
 }
 
 // AppendByte writes a single byte to the Buffer.
