@@ -61,7 +61,7 @@ func NewCore(enc Encoder, ws WriteSyncer, enab LevelEnabler) Core {
 	return &ioCore{
 		LevelEnabler: enab,
 		enc:          enc,
-		out:          Lock(ws),
+		out:          ws,
 	}
 }
 
