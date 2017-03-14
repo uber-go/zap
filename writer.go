@@ -75,8 +75,8 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	return writers, close, errs.AsError()
 }
 
-// CombineWriteSyncers combines the passed set of WriteSyncer objects into a
-// locked WriteSyncer.
+// CombineWriteSyncers combines multiple WriteSyncers into a single, locked
+// WriteSyncer.
 func CombineWriteSyncers(writers ...zapcore.WriteSyncer) zapcore.WriteSyncer {
 	if len(writers) == 0 {
 		return zapcore.AddSync(ioutil.Discard)
