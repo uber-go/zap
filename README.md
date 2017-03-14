@@ -13,7 +13,7 @@ In contexts where performance is nice, but not critical, use the
 and includes both structured and `printf`-style APIs.
 
 ```go
-logger, _ := NewProduction()
+logger, _ := zap.NewProduction()
 sugar := logger.Sugar()
 sugar.Infow("Failed to fetch URL.",
   // Structured context as loosely-typed key-value pairs.
@@ -28,7 +28,7 @@ When performance and type safety are critical, use the `Logger`. It's even faste
 the `SugaredLogger` and allocates far less, but it only supports structured logging.
 
 ```go
-logger, _ := NewProduction()
+logger, _ := zap.NewProduction()
 logger.Info("Failed to fetch URL.",
   // Structured context as strongly-typed Field values.
   zap.String("url", url),
@@ -59,38 +59,38 @@ Log a message and 10 fields:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 670 ns/op | 705 B/op | 2 allocs/op |
-| :zap: zap (sugared) | 1378 ns/op | 1613 B/op | 20 allocs/op |
-| go-kit | 3824 ns/op | 2897 B/op | 66 allocs/op |
-| lion | 5220 ns/op | 5811 B/op | 63 allocs/op |
-| logrus | 5468 ns/op | 6100 B/op | 78 allocs/op |
-| apex/log | 13576 ns/op | 3834 B/op | 65 allocs/op |
-| log15 | 16969 ns/op | 5633 B/op | 93 allocs/op |
+| :zap: zap | 923 ns/op | 705 B/op | 2 allocs/op |
+| :zap: zap (sugared) | 1458 ns/op | 1613 B/op | 20 allocs/op |
+| go-kit | 3980 ns/op | 2897 B/op | 66 allocs/op |
+| lion | 5394 ns/op | 5811 B/op | 63 allocs/op |
+| logrus | 6460 ns/op | 6100 B/op | 78 allocs/op |
+| apex/log | 17594 ns/op | 3834 B/op | 65 allocs/op |
+| log15 | 19246 ns/op | 5633 B/op | 93 allocs/op |
 
 Log a message with a logger that already has 10 fields of context:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 247 ns/op | 0 B/op | 0 allocs/op |
-| :zap: zap (sugared) | 346 ns/op | 80 B/op | 2 allocs/op |
-| lion | 3361 ns/op | 4076 B/op | 38 allocs/op |
-| go-kit | 3853 ns/op | 3048 B/op | 52 allocs/op |
-| logrus | 5161 ns/op | 4568 B/op | 63 allocs/op |
-| apex/log | 11464 ns/op | 2898 B/op | 51 allocs/op |
-| log15 | 12148 ns/op | 2642 B/op | 44 allocs/op |
+| :zap: zap | 233 ns/op | 0 B/op | 0 allocs/op |
+| :zap: zap (sugared) | 312 ns/op | 80 B/op | 2 allocs/op |
+| go-kit | 4188 ns/op | 3048 B/op | 52 allocs/op |
+| lion | 4753 ns/op | 4076 B/op | 38 allocs/op |
+| logrus | 5498 ns/op | 4567 B/op | 63 allocs/op |
+| apex/log | 14204 ns/op | 2898 B/op | 51 allocs/op |
+| log15 | 16380 ns/op | 2643 B/op | 44 allocs/op |
 
 Log a static string, without any context or `printf`-style templating:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 252 ns/op | 0 B/op | 0 allocs/op |
-| :zap: zap (sugared) | 386 ns/op | 80 B/op | 2 allocs/op |
-| standard library | 611 ns/op | 80 B/op | 2 allocs/op |
-| go-kit | 636 ns/op | 656 B/op | 13 allocs/op |
-| lion | 912 ns/op | 1225 B/op | 10 allocs/op |
-| logrus | 1707 ns/op | 1507 B/op | 27 allocs/op |
-| apex/log | 2459 ns/op | 584 B/op | 11 allocs/op |
-| log15 | 5087 ns/op | 1592 B/op | 26 allocs/op |
+| :zap: zap | 234 ns/op | 0 B/op | 0 allocs/op |
+| :zap: zap (sugared) | 415 ns/op | 80 B/op | 2 allocs/op |
+| standard library | 657 ns/op | 80 B/op | 2 allocs/op |
+| go-kit | 694 ns/op | 656 B/op | 13 allocs/op |
+| lion | 1042 ns/op | 1225 B/op | 10 allocs/op |
+| logrus | 1819 ns/op | 1507 B/op | 27 allocs/op |
+| apex/log | 3482 ns/op | 584 B/op | 11 allocs/op |
+| log15 | 5597 ns/op | 1592 B/op | 26 allocs/op |
 
 ## Development Status: Release Candidate 3
 The current release is `v1.0.0-rc.3`. No further breaking changes are *planned*
