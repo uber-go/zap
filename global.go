@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	_stdLogDefaultDepth = 4
+	_stdLogDefaultDepth = 2
 	_loggerWriterDepth  = 1
 )
 
