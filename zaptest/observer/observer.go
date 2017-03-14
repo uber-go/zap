@@ -40,13 +40,6 @@ type ObservedLogs struct {
 	logs []LoggedEntry
 }
 
-// Add appends a new observed log to the collection.
-func (o *ObservedLogs) Add(log LoggedEntry) {
-	o.mu.Lock()
-	o.logs = append(o.logs, log)
-	o.mu.Unlock()
-}
-
 // Len returns the number of items in the collection.
 func (o *ObservedLogs) Len() int {
 	o.mu.RLock()
@@ -87,6 +80,12 @@ func (o *ObservedLogs) AllUntimed() []LoggedEntry {
 	return ret
 }
 
+func (o *ObservedLogs) add(log LoggedEntry) {
+	o.mu.Lock()
+	o.logs = append(o.logs, log)
+	o.mu.Unlock()
+}
+
 // New creates a new Core that buffers logs in memory (without any encoding).
 // It's particularly useful in tests.
 func New(enab zapcore.LevelEnabler) (zapcore.Core, *ObservedLogs) {
@@ -122,7 +121,7 @@ func (co *contextObserver) Write(ent zapcore.Entry, fields []zapcore.Field) erro
 	all := make([]zapcore.Field, 0, len(fields)+len(co.context))
 	all = append(all, co.context...)
 	all = append(all, fields...)
-	co.logs.Add(LoggedEntry{ent, all})
+	co.logs.add(LoggedEntry{ent, all})
 	return nil
 }
 
