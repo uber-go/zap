@@ -118,3 +118,57 @@ func TestObserverWith(t *testing.T) {
 		},
 	}, logs.All(), "expected no field sharing between With siblings")
 }
+
+func TestFilters(t *testing.T) {
+	logs := []LoggedEntry{
+		{
+			Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "log a"},
+			Context: []zapcore.Field{zap.String("fStr", "1"), zap.Int("a", 1)},
+		},
+		{
+			Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "log a"},
+			Context: []zapcore.Field{zap.String("fStr", "2"), zap.Int("b", 2)},
+		},
+		{
+			Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "log b"},
+			Context: []zapcore.Field{zap.Int("a", 1), zap.Int("b", 2)},
+		},
+	}
+
+	logger, sink := New(zap.InfoLevel)
+	for _, log := range logs {
+		logger.Write(log.Entry, log.Context)
+	}
+
+	tests := []struct {
+		msg      string
+		filtered *ObservedLogs
+		want     []LoggedEntry
+	}{
+		{
+			msg:      "filter by message",
+			filtered: sink.FilterMessage("log a"),
+			want:     logs[0:2],
+		},
+		{
+			msg:      "filter by field",
+			filtered: sink.FilterField(zap.String("fStr", "1")),
+			want:     logs[0:1],
+		},
+		{
+			msg:      "filter by message and field",
+			filtered: sink.FilterMessage("log a").FilterField(zap.Int("b", 2)),
+			want:     logs[1:2],
+		},
+		{
+			msg:      "filter doesn't match any messages",
+			filtered: sink.FilterMessage("no match"),
+			want:     []LoggedEntry{},
+		},
+	}
+
+	for _, tt := range tests {
+		got := tt.filtered.AllUntimed()
+		assert.Equal(t, tt.want, got, tt.msg)
+	}
+}

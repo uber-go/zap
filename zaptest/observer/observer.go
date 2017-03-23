@@ -80,6 +80,39 @@ func (o *ObservedLogs) AllUntimed() []LoggedEntry {
 	return ret
 }
 
+// FilterMessage filters entries to those that have the specified message.
+func (o *ObservedLogs) FilterMessage(msg string) *ObservedLogs {
+	return o.filter(func(e LoggedEntry) bool {
+		return e.Message == msg
+	})
+}
+
+// FilterField filters entries to those that have the specified field.
+func (o *ObservedLogs) FilterField(field zapcore.Field) *ObservedLogs {
+	return o.filter(func(e LoggedEntry) bool {
+		for _, ctxField := range e.Context {
+			if ctxField.Key != field.Key {
+				continue
+			}
+			return ctxField == field
+		}
+		return false
+	})
+}
+
+func (o *ObservedLogs) filter(match func(LoggedEntry) bool) *ObservedLogs {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
+	var filtered []LoggedEntry
+	for _, entry := range o.logs {
+		if match(entry) {
+			filtered = append(filtered, entry)
+		}
+	}
+	return &ObservedLogs{logs: filtered}
+}
+
 func (o *ObservedLogs) add(log LoggedEntry) {
 	o.mu.Lock()
 	o.logs = append(o.logs, log)
