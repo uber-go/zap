@@ -91,10 +91,9 @@ func (o *ObservedLogs) FilterMessage(msg string) *ObservedLogs {
 func (o *ObservedLogs) FilterField(field zapcore.Field) *ObservedLogs {
 	return o.filter(func(e LoggedEntry) bool {
 		for _, ctxField := range e.Context {
-			if ctxField.Key != field.Key {
-				continue
+			if ctxField == field {
+				return true
 			}
-			return ctxField == field
 		}
 		return false
 	})

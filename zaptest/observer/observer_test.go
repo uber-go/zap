@@ -133,6 +133,10 @@ func TestFilters(t *testing.T) {
 			Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "log b"},
 			Context: []zapcore.Field{zap.Int("a", 1), zap.Int("b", 2)},
 		},
+		{
+			Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "log c"},
+			Context: []zapcore.Field{zap.Int("a", 1), zap.Namespace("ns"), zap.Int("a", 2)},
+		},
 	}
 
 	logger, sink := New(zap.InfoLevel)
@@ -159,6 +163,11 @@ func TestFilters(t *testing.T) {
 			msg:      "filter by message and field",
 			filtered: sink.FilterMessage("log a").FilterField(zap.Int("b", 2)),
 			want:     logs[1:2],
+		},
+		{
+			msg:      "filter by field with duplicate fields",
+			filtered: sink.FilterField(zap.Int("a", 2)),
+			want:     logs[3:4],
 		},
 		{
 			msg:      "filter doesn't match any messages",
