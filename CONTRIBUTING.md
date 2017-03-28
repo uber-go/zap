@@ -12,7 +12,7 @@ you to accept the CLA when you open your pull request.
 
 ## Setup
 
-Fork, then clone the repository:
+[Fork][fork], then clone the repository:
 
 ```
 mkdir -p $GOPATH/src/go.uber.org
@@ -73,6 +73,7 @@ We're much more likely to approve your changes if you:
 * Write a [good commit message][commit-message].
 * Maintain backward compatibility.
 
+[fork]: https://github.com/uber-go/zap/fork
 [open-issue]: https://github.com/uber-go/zap/issues/new
 [cla]: https://cla-assistant.io/uber-go/zap
 [commit-message]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
