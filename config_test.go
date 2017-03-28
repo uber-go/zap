@@ -93,7 +93,7 @@ func TestConfigWithInvalidPaths(t *testing.T) {
 	}{
 		{"output directory doesn't exist", "/tmp/not-there/foo.log", "stderr"},
 		{"error output directory doesn't exist", "stdout", "/tmp/not-there/foo-errors.log"},
-		{"both output directories don't exist", "/tmp/not-there/foo.log", "/tmp/not-there/foo-errors.log"},
+		{"neither output directory exists", "/tmp/not-there/foo.log", "/tmp/not-there/foo-errors.log"},
 	}
 
 	for _, tt := range tests {
