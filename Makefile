@@ -65,7 +65,7 @@ test:
 
 .PHONY: coveralls
 coveralls:
-	goveralls -ignore=$(COVERALLS_IGNORE) -service=travis-ci
+	travis_retry goveralls -ignore=$(COVERALLS_IGNORE) -service=travis-ci
 
 .PHONY: bench
 BENCH ?= .
