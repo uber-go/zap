@@ -18,4 +18,4 @@ script:
   - make test
   - make bench
 after_success:
-  - make coveralls
+  - travis_retry make coveralls
