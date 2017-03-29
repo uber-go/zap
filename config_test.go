@@ -84,3 +84,25 @@ func TestConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigWithInvalidPaths(t *testing.T) {
+	tests := []struct {
+		desc      string
+		output    string
+		errOutput string
+	}{
+		{"output directory doesn't exist", "/tmp/not-there/foo.log", "stderr"},
+		{"error output directory doesn't exist", "stdout", "/tmp/not-there/foo-errors.log"},
+		{"neither output directory exists", "/tmp/not-there/foo.log", "/tmp/not-there/foo-errors.log"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			cfg := NewProductionConfig()
+			cfg.OutputPaths = []string{tt.output}
+			cfg.ErrorOutputPaths = []string{tt.errOutput}
+			_, err := cfg.Build()
+			assert.Error(t, err, "Expected an error opening a non-existent directory.")
+		})
+	}
+}

@@ -66,7 +66,10 @@ func TestOpen(t *testing.T) {
 
 	for _, tt := range tests {
 		wss, cleanup, err := open(tt.paths)
-		defer cleanup()
+		if err == nil {
+			defer cleanup()
+		}
+
 		if tt.error == "" {
 			assert.NoError(t, err, "Unexpected error opening paths %v.", tt.paths)
 		} else {
@@ -79,6 +82,25 @@ func TestOpen(t *testing.T) {
 			names[i] = f.Name()
 		}
 		assert.Equal(t, tt.filenames, names, "Opened unexpected files given paths %v.", tt.paths)
+	}
+}
+
+func TestOpenFails(t *testing.T) {
+	tests := []struct {
+		paths []string
+	}{
+		{
+			paths: []string{"./non-existent-dir/file"},
+		},
+		{
+			paths: []string{"stdout", "./non-existent-dir/file"},
+		},
+	}
+
+	for _, tt := range tests {
+		_, cleanup, err := Open(tt.paths...)
+		require.Nil(t, cleanup, "Cleanup function should never be nil")
+		assert.Error(t, err, "Open with non-existent directory should fail")
 	}
 }
 
