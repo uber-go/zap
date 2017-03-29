@@ -87,8 +87,7 @@ func TestOpen(t *testing.T) {
 
 func TestOpenFails(t *testing.T) {
 	tests := []struct {
-		paths   []string
-		wantErr string
+		paths []string
 	}{
 		{
 			paths: []string{"./non-existent-dir/file"},
