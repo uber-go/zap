@@ -49,6 +49,11 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	var errs multierror.Error
 	writers := make([]zapcore.WriteSyncer, 0, len(paths))
 	files := make([]*os.File, 0, len(paths))
+	close := func() {
+		for _, f := range files {
+			f.Close()
+		}
+	}
 	for _, path := range paths {
 		switch path {
 		case "stdout":
@@ -67,12 +72,13 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 			files = append(files, f)
 		}
 	}
-	close := func() {
-		for _, f := range files {
-			f.Close()
-		}
+
+	if err := errs.AsError(); err != nil {
+		close()
+		return writers, nil, err
 	}
-	return writers, close, errs.AsError()
+
+	return writers, close, nil
 }
 
 // CombineWriteSyncers combines multiple WriteSyncers into a single, locked
