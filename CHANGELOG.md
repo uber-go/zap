@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.1.0 (31 Mar 2017)
+
+This release fixes two bugs and adds some enhancements to zap's testing helpers.
+It is fully backward-compatible.
+
+Bugfixes:
+
+* [#385][]: Fix caller path trimming on Windows.
+* [#396][]: Fix a panic when attempting to use non-existent directories with
+  zap's configuration struct.
+
+Enhancements:
+
+* [#386][]: Add filtering helpers to zaptest's observing logger.
+
+Thanks to @moitias for contributing to this release.
+
 ## v1.0.0 (14 Mar 2017)
 
 This is zap's first stable release. All exported APIs are now final, and no
@@ -127,7 +144,7 @@ breaking changes and improvements from the pre-release version. Most notably:
 
 This is a minor version, tagged to allow users to pin to the pre-1.0 APIs and
 upgrade at their leisure. Since this is the first tagged release, there are no
-backwards compatibility concerns and all functionality is new.
+backward compatibility concerns and all functionality is new.
 
 Early zap adopters should pin to the 0.1.x minor version until they're ready to
 upgrade to the upcoming stable release.
@@ -157,3 +174,6 @@ upgrade to the upcoming stable release.
 [#346]: https://github.com/uber-go/zap/pull/346
 [#365]: https://github.com/uber-go/zap/pull/365
 [#372]: https://github.com/uber-go/zap/pull/372
+[#385]: https://github.com/uber-go/zap/pull/385
+[#396]: https://github.com/uber-go/zap/pull/396
+[#386]: https://github.com/uber-go/zap/pull/386
