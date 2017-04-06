@@ -35,8 +35,6 @@ func WithDebug() LoggerOption {
 }
 
 // NewLogger returns a new Logger.
-//
-// Print statements will log at the Info level.
 func NewLogger(l *zap.Logger, options ...LoggerOption) *Logger {
 	loggerOptions := newLoggerOptions(options...)
 	return &Logger{
