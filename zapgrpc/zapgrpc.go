@@ -24,26 +24,29 @@ package zapgrpc // import "go.uber.org/zap/zapgrpc"
 import "go.uber.org/zap"
 
 // LoggerOption is an option for a new Logger.
-type LoggerOption func(*loggerOptions)
+type LoggerOption func(*Logger)
 
 // WithDebug says to print the debug level instead of the default info level.
 func WithDebug() LoggerOption {
-	return func(loggerOptions *loggerOptions) {
-		loggerOptions.printFunc = (*zap.SugaredLogger).Debug
-		loggerOptions.printfFunc = (*zap.SugaredLogger).Debugf
+	return func(logger *Logger) {
+		logger.printFunc = (*zap.SugaredLogger).Debug
+		logger.printfFunc = (*zap.SugaredLogger).Debugf
 	}
 }
 
 // NewLogger returns a new Logger.
 func NewLogger(l *zap.Logger, options ...LoggerOption) *Logger {
-	loggerOptions := newLoggerOptions(options...)
-	return &Logger{
+	logger := &Logger{
 		l.Sugar(),
 		(*zap.SugaredLogger).Fatal,
 		(*zap.SugaredLogger).Fatalf,
-		loggerOptions.printFunc,
-		loggerOptions.printfFunc,
+		(*zap.SugaredLogger).Info,
+		(*zap.SugaredLogger).Infof,
 	}
+	for _, option := range options {
+		option(logger)
+	}
+	return logger
 }
 
 // Logger is a logger that is compatible with the grpclog Logger interface.
@@ -83,23 +86,4 @@ func (l *Logger) Printf(format string, args ...interface{}) {
 // Println implements grpclog.Logger#Println.
 func (l *Logger) Println(args ...interface{}) {
 	l.printFunc(l.sugaredLogger, args...)
-}
-
-type loggerOptions struct {
-	printFunc  func(*zap.SugaredLogger, ...interface{})
-	printfFunc func(*zap.SugaredLogger, string, ...interface{})
-}
-
-func newLoggerOptions(options ...LoggerOption) *loggerOptions {
-	loggerOptions := &loggerOptions{}
-	for _, option := range options {
-		option(loggerOptions)
-	}
-	if loggerOptions.printFunc == nil {
-		loggerOptions.printFunc = (*zap.SugaredLogger).Info
-	}
-	if loggerOptions.printfFunc == nil {
-		loggerOptions.printfFunc = (*zap.SugaredLogger).Infof
-	}
-	return loggerOptions
 }
