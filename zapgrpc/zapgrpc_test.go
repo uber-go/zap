@@ -43,7 +43,7 @@ func TestLoggerInfoExpected(t *testing.T) {
 }
 
 func TestLoggerDebugExpected(t *testing.T) {
-	checkMessages(t, zapcore.DebugLevel, []LoggerOption{WithDebug()}, zapcore.DebugLevel, []string{
+	checkMessages(t, zapcore.DebugLevel, []Option{WithDebug()}, zapcore.DebugLevel, []string{
 		"hello",
 		"world",
 		"foo",
@@ -55,7 +55,7 @@ func TestLoggerDebugExpected(t *testing.T) {
 }
 
 func TestLoggerDebugSuppressed(t *testing.T) {
-	checkMessages(t, zapcore.InfoLevel, []LoggerOption{WithDebug()}, zapcore.DebugLevel, nil, func(logger *Logger) {
+	checkMessages(t, zapcore.InfoLevel, []Option{WithDebug()}, zapcore.DebugLevel, nil, func(logger *Logger) {
 		logger.Print("hello")
 		logger.Printf("world")
 		logger.Println("foo")
@@ -76,8 +76,8 @@ func TestLoggerFatalExpected(t *testing.T) {
 
 func checkMessages(
 	t testing.TB,
-	levelEnabler zapcore.LevelEnabler,
-	loggerOptions []LoggerOption,
+	enab zapcore.LevelEnabler,
+	opts []Option,
 	expectedLevel zapcore.Level,
 	expectedMessages []string,
 	f func(*Logger),
@@ -85,7 +85,7 @@ func checkMessages(
 	if expectedLevel == zapcore.FatalLevel {
 		expectedLevel = zapcore.WarnLevel
 	}
-	withLogger(levelEnabler, loggerOptions, func(logger *Logger, observedLogs *observer.ObservedLogs) {
+	withLogger(enab, opts, func(logger *Logger, observedLogs *observer.ObservedLogs) {
 		f(logger)
 		logEntries := observedLogs.All()
 		require.Equal(t, len(expectedMessages), len(logEntries))
@@ -97,20 +97,19 @@ func checkMessages(
 }
 
 func withLogger(
-	levelEnabler zapcore.LevelEnabler,
-	loggerOptions []LoggerOption,
+	enab zapcore.LevelEnabler,
+	opts []Option,
 	f func(*Logger, *observer.ObservedLogs),
 ) {
-	core, observedLogs := observer.New(levelEnabler)
-	f(NewLogger(zap.New(core), append(loggerOptions, withWarn())...), observedLogs)
+	core, observedLogs := observer.New(enab)
+	f(NewLogger(zap.New(core), append(opts, withWarn())...), observedLogs)
 }
 
-// withWarn redirects the fatal level to the warn level.
-//
-// This is used for testing.
-func withWarn() LoggerOption {
-	return func(logger *Logger) {
-		logger.fatalFunc = (*zap.SugaredLogger).Warn
-		logger.fatalfFunc = (*zap.SugaredLogger).Warnf
-	}
+// withWarn redirects the fatal level to the warn level, which makes testing
+// easier.
+func withWarn() Option {
+	return optionFunc(func(logger *Logger) {
+		logger.fatal = (*zap.SugaredLogger).Warn
+		logger.fatalf = (*zap.SugaredLogger).Warnf
+	})
 }

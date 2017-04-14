@@ -23,67 +23,78 @@ package zapgrpc // import "go.uber.org/zap/zapgrpc"
 
 import "go.uber.org/zap"
 
-// LoggerOption is an option for a new Logger.
-type LoggerOption func(*Logger)
+// An Option overrides a Logger's default configuration.
+type Option interface {
+	apply(*Logger)
+}
 
-// WithDebug says to print the debug level instead of the default info level.
-func WithDebug() LoggerOption {
-	return func(logger *Logger) {
-		logger.printFunc = (*zap.SugaredLogger).Debug
-		logger.printfFunc = (*zap.SugaredLogger).Debugf
-	}
+type optionFunc func(*Logger)
+
+func (f optionFunc) apply(log *Logger) {
+	f(log)
+}
+
+// WithDebug configures a Logger to print at zap's DebugLevel instead of
+// InfoLevel.
+func WithDebug() Option {
+	return optionFunc(func(logger *Logger) {
+		logger.print = (*zap.SugaredLogger).Debug
+		logger.printf = (*zap.SugaredLogger).Debugf
+	})
 }
 
 // NewLogger returns a new Logger.
-func NewLogger(l *zap.Logger, options ...LoggerOption) *Logger {
+//
+// By default, Loggers print at zap's InfoLevel.
+func NewLogger(l *zap.Logger, options ...Option) *Logger {
 	logger := &Logger{
-		l.Sugar(),
-		(*zap.SugaredLogger).Fatal,
-		(*zap.SugaredLogger).Fatalf,
-		(*zap.SugaredLogger).Info,
-		(*zap.SugaredLogger).Infof,
+		log:    l.Sugar(),
+		fatal:  (*zap.SugaredLogger).Fatal,
+		fatalf: (*zap.SugaredLogger).Fatalf,
+		print:  (*zap.SugaredLogger).Info,
+		printf: (*zap.SugaredLogger).Infof,
 	}
 	for _, option := range options {
-		option(logger)
+		option.apply(logger)
 	}
 	return logger
 }
 
-// Logger is a logger that is compatible with the grpclog Logger interface.
+// Logger adapts zap's Logger to be compatible with grpclog.Logger.
 type Logger struct {
-	sugaredLogger *zap.SugaredLogger
-	fatalFunc     func(*zap.SugaredLogger, ...interface{})
-	fatalfFunc    func(*zap.SugaredLogger, string, ...interface{})
-	printFunc     func(*zap.SugaredLogger, ...interface{})
-	printfFunc    func(*zap.SugaredLogger, string, ...interface{})
+	log    *zap.SugaredLogger
+	fatal  func(*zap.SugaredLogger, ...interface{})
+	fatalf func(*zap.SugaredLogger, string, ...interface{})
+	print  func(*zap.SugaredLogger, ...interface{})
+	printf func(*zap.SugaredLogger, string, ...interface{})
 }
 
-// Fatal implements grpclog.Logger#Fatal.
+// Fatal implements grpclog.Logger.
 func (l *Logger) Fatal(args ...interface{}) {
-	l.fatalFunc(l.sugaredLogger, args...)
+	l.fatal(l.log, args...)
 }
 
-// Fatalf implements grpclog.Logger#Fatalf.
+// Fatalf implements grpclog.Logger.
 func (l *Logger) Fatalf(format string, args ...interface{}) {
-	l.fatalfFunc(l.sugaredLogger, format, args...)
+	l.fatalf(l.log, format, args...)
 }
 
-// Fatalln implements grpclog.Logger#Fatalln.
+// Fatalln implements grpclog.Logger.
 func (l *Logger) Fatalln(args ...interface{}) {
-	l.fatalFunc(l.sugaredLogger, args...)
+	l.fatal(l.log, args...)
 }
 
-// Print implements grpclog.Logger#Print.
+// Print implements grpclog.Logger.
 func (l *Logger) Print(args ...interface{}) {
-	l.printFunc(l.sugaredLogger, args...)
+	l.print(l.log, args...)
 }
 
-// Printf implements grpclog.Logger#Printf.
+// Printf implements grpclog.Logger.
 func (l *Logger) Printf(format string, args ...interface{}) {
-	l.printfFunc(l.sugaredLogger, format, args...)
+	l.printf(l.log, format, args...)
 }
 
-// Println implements grpclog.Logger#Println.
+// Println implements grpclog.Logger.
 func (l *Logger) Println(args ...interface{}) {
-	l.printFunc(l.sugaredLogger, args...)
+	l.print(l.log, args...)
 }
