@@ -3,7 +3,7 @@ export GO15VENDOREXPERIMENT=1
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 PKGS ?= $(shell glide novendor)
 # Many Go tools take file globs or directories as arguments instead of packages.
-PKG_FILES ?= *.go zapcore benchmarks buffer zaptest zaptest/observer internal/bufferpool internal/exit internal/multierror internal/color
+PKG_FILES ?= *.go zapcore benchmarks buffer zapgrpc zaptest zaptest/observer internal/bufferpool internal/exit internal/multierror internal/color
 
 COVERALLS_IGNORE := internal/readme/readme.go
 
