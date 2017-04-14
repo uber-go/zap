@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.2.0 (13 Apr 2017)
+
+This release adds a gRPC compatibility wrapper. It is fully backward-compatible.
+
+Enhancements:
+
+* [#402][]: Add a `zapgrpc` package that wraps zap's Logger and implements
+  `grpclog.Logger`.
+
 ## v1.1.0 (31 Mar 2017)
 
 This release fixes two bugs and adds some enhancements to zap's testing helpers.
@@ -61,7 +70,7 @@ Enhancements:
 
 Thanks to @suyash, @htrendev, @flisky, @Ulexus, and @skipor for their
 contributions to this release.
- 
+
 ## v1.0.0-rc.3 (7 Mar 2017)
 
 This is the third release candidate for zap's stable release. There are no
@@ -177,3 +186,4 @@ upgrade to the upcoming stable release.
 [#385]: https://github.com/uber-go/zap/pull/385
 [#396]: https://github.com/uber-go/zap/pull/396
 [#386]: https://github.com/uber-go/zap/pull/386
+[#402]: https://github.com/uber-go/zap/pull/402
