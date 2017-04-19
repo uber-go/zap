@@ -191,6 +191,10 @@ func (e *CallerEncoder) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// DefaultLineSeparator defines the default line ending when writing logs
+// Can be overwritten defining the LineSeparator in the EncoderConfig
+const DefaultLineSeparator = "\n"
+
 // An EncoderConfig allows users to configure the concrete encoders supplied by
 // zapcore.
 type EncoderConfig struct {
@@ -202,6 +206,7 @@ type EncoderConfig struct {
 	NameKey       string `json:"nameKey" yaml:"nameKey"`
 	CallerKey     string `json:"callerKey" yaml:"callerKey"`
 	StacktraceKey string `json:"stacktraceKey" yaml:"stacktraceKey"`
+	LineSeparator string `json:"lineSeparator" yaml:"lineSeparator"`
 	// Configure the primitive representations of common complex types. For
 	// example, some users may want all time.Times serialized as floating-point
 	// seconds since epoch, while others may prefer ISO8601 strings.

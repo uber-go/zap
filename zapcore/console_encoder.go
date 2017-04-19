@@ -109,7 +109,11 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 		line.AppendString(ent.Stack)
 	}
 
-	line.AppendByte('\n')
+	if c.LineSeparator != "" {
+		line.AppendString(c.LineSeparator)
+	} else {
+		line.AppendString(DefaultLineSeparator)
+	}
 	return line, nil
 }
 
