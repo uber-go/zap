@@ -53,6 +53,8 @@ func TestNewAtomicLevel(t *testing.T) {
 	assert.Equal(t, InfoLevel, lvl.Level(), "Unexpected initial level.")
 	lvl.SetLevel(ErrorLevel)
 	assert.Equal(t, ErrorLevel, lvl.Level(), "Unexpected level after SetLevel.")
+	lvl = NewAtomicLevelAt(WarnLevel)
+	assert.Equal(t, WarnLevel, lvl.Level(), "Unexpected level after SetLevel.")
 }
 
 func TestAtomicLevelMutation(t *testing.T) {
