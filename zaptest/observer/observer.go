@@ -21,6 +21,7 @@
 package observer
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -84,6 +85,13 @@ func (o *ObservedLogs) AllUntimed() []LoggedEntry {
 func (o *ObservedLogs) FilterMessage(msg string) *ObservedLogs {
 	return o.filter(func(e LoggedEntry) bool {
 		return e.Message == msg
+	})
+}
+
+// FilterMessageSnippet filters entries to those that have a message containing the specified snippet.
+func (o *ObservedLogs) FilterMessageSnippet(snippet string) *ObservedLogs {
+	return o.filter(func(e LoggedEntry) bool {
+		return strings.Contains(e.Message, snippet)
 	})
 }
 

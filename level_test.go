@@ -73,7 +73,7 @@ func TestAtomicLevelMutation(t *testing.T) {
 	wg.Wait()
 }
 
-func TestAtomicLevelUnmarshalText(t *testing.T) {
+func TestAtomicLevelText(t *testing.T) {
 	tests := []struct {
 		text   string
 		expect zapcore.Level
@@ -101,6 +101,14 @@ func TestAtomicLevelUnmarshalText(t *testing.T) {
 			}
 			assert.Equal(t, tt.expect, lvl.Level(), "Unexpected level after unmarshaling.")
 			lvl.SetLevel(InfoLevel)
+		}
+
+		// Test marshalling
+		if tt.text != "" && !tt.err {
+			lvl.SetLevel(tt.expect)
+			marshaled, err := lvl.MarshalText()
+			assert.NoError(t, err, `Unexpected error marshalling level "%v" to text.`, tt.expect)
+			assert.Equal(t, tt.text, string(marshaled), "Expected marshaled text to match")
 		}
 	}
 }
