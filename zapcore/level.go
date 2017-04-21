@@ -25,7 +25,7 @@ import (
 	"fmt"
 )
 
-var errMarshalNilLevel = errors.New("can't marshal a nil *Level to text")
+var errUnmarshalNilLevel = errors.New("can't unmarshal a nil *Level")
 
 // A Level is a logging priority. Higher levels are more important.
 type Level int8
@@ -102,10 +102,7 @@ func (l Level) CapitalString() string {
 
 // MarshalText marshals the Level to text. Note that the text representation
 // drops the -Level suffix (see example).
-func (l *Level) MarshalText() ([]byte, error) {
-	if l == nil {
-		return nil, errMarshalNilLevel
-	}
+func (l Level) MarshalText() ([]byte, error) {
 	return []byte(l.String()), nil
 }
 
@@ -116,6 +113,9 @@ func (l *Level) MarshalText() ([]byte, error) {
 // In particular, this makes it easy to configure logging levels using YAML,
 // TOML, or JSON files.
 func (l *Level) UnmarshalText(text []byte) error {
+	if l == nil {
+		return errUnmarshalNilLevel
+	}
 	switch string(text) {
 	case "debug":
 		*l = DebugLevel
