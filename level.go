@@ -114,3 +114,10 @@ func (lvl *AtomicLevel) UnmarshalText(text []byte) error {
 	lvl.SetLevel(l)
 	return nil
 }
+
+// MarshalText marshals the AtomicLevel to a byte slice. It uses the same
+// text representation as the static zapcore.Levels ("debug", "info", "warn",
+// "error", "dpanic", "panic", and "fatal").
+func (lvl AtomicLevel) MarshalText() (text []byte, err error) {
+	return lvl.Level().MarshalText()
+}
