@@ -137,6 +137,10 @@ func TestFilters(t *testing.T) {
 			Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "log c"},
 			Context: []zapcore.Field{zap.Int("a", 1), zap.Namespace("ns"), zap.Int("a", 2)},
 		},
+		{
+			Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "msg 1"},
+			Context: []zapcore.Field{zap.Int("a", 1), zap.Namespace("ns")},
+		},
 	}
 
 	logger, sink := New(zap.InfoLevel)
@@ -173,6 +177,16 @@ func TestFilters(t *testing.T) {
 			msg:      "filter doesn't match any messages",
 			filtered: sink.FilterMessage("no match"),
 			want:     []LoggedEntry{},
+		},
+		{
+			msg:      "filter by snippet",
+			filtered: sink.FilterMessageSnippet("log"),
+			want:     logs[0:4],
+		},
+		{
+			msg:      "filter by snippet and field",
+			filtered: sink.FilterMessageSnippet("a").FilterField(zap.Int("b", 2)),
+			want:     logs[1:2],
 		},
 	}
 
