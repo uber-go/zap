@@ -100,7 +100,7 @@ func NewProductionEncoderConfig() zapcore.EncoderConfig {
 // Stacktraces are automatically included on logs of ErrorLevel and above.
 func NewProductionConfig() Config {
 	return Config{
-		Level:       NewAtomicLevel(),
+		Level:       NewAtomicLevelAt(InfoLevel),
 		Development: false,
 		Sampling: &SamplingConfig{
 			Initial:    100,
@@ -138,11 +138,8 @@ func NewDevelopmentEncoderConfig() zapcore.EncoderConfig {
 // console encoder, writes to standard error, and disables sampling.
 // Stacktraces are automatically included on logs of WarnLevel and above.
 func NewDevelopmentConfig() Config {
-	dyn := NewAtomicLevel()
-	dyn.SetLevel(DebugLevel)
-
 	return Config{
-		Level:            dyn,
+		Level:            NewAtomicLevelAt(DebugLevel),
 		Development:      true,
 		Encoding:         "console",
 		EncoderConfig:    NewDevelopmentEncoderConfig(),

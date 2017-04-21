@@ -74,6 +74,14 @@ func NewAtomicLevel() AtomicLevel {
 	}
 }
 
+// NewAtomicLevelAt is a convienence function that creates an AtomicLevel
+// and then calls SetLevel with the given level.
+func NewAtomicLevelAt(l zapcore.Level) AtomicLevel {
+	a := NewAtomicLevel()
+	a.SetLevel(l)
+	return a
+}
+
 // Enabled implements the zapcore.LevelEnabler interface, which allows the
 // AtomicLevel to be used in place of traditional static levels.
 func (lvl AtomicLevel) Enabled(l zapcore.Level) bool {
