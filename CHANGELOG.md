@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.3.0 (25 Apr 2017)
+
+This release adds an enhancement to zap's testing helpers as well as the
+ability to marshal an AtomicLevel. It is fully backward-compatible.
+
+Enhancements:
+
+* [#415][]: Add FilterMessageSnippet to zaptest/observer. This enables filtering
+  observed logs by substrings. This is useful when testing code which uses
+  zap.SugaredLogger
+* [#416][]: Add MarshalText to AtomicLevel
+
 ## v1.2.0 (13 Apr 2017)
 
 This release adds a gRPC compatibility wrapper. It is fully backward-compatible.
@@ -187,3 +199,5 @@ upgrade to the upcoming stable release.
 [#396]: https://github.com/uber-go/zap/pull/396
 [#386]: https://github.com/uber-go/zap/pull/386
 [#402]: https://github.com/uber-go/zap/pull/402
+[#415]: https://github.com/uber-go/zap/pull/415
+[#416]: https://github.com/uber-go/zap/pull/416
