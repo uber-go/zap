@@ -7,10 +7,9 @@ ability to marshal an AtomicLevel. It is fully backward-compatible.
 
 Enhancements:
 
-* [#415][]: Add FilterMessageSnippet to zaptest/observer. This enables filtering
-  observed logs by substrings. This is useful when testing code which uses
-  zap.SugaredLogger
-* [#416][]: Add MarshalText to AtomicLevel
+* [#415][]: Add a substring-filtering helper to zap's observer. This is
+  particularly useful when testing the `SugaredLogger`.
+* [#416][]: Make `AtomicLevel` implement `encoding.TextMarshaler`.
 
 ## v1.2.0 (13 Apr 2017)
 
