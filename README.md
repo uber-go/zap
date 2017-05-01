@@ -16,11 +16,12 @@ and includes both structured and `printf`-style APIs.
 
 ```go
 logger, _ := zap.NewProduction()
+defer logger.Sync() // flushes buffer, if any
 sugar := logger.Sugar()
 sugar.Infow("Failed to fetch URL.",
   // Structured context as loosely-typed key-value pairs.
   "url", url,
-  "attempt", retryNum,
+  "attempt", 3,
   "backoff", time.Second,
 )
 sugar.Infof("Failed to fetch URL: %s", url)
@@ -31,10 +32,11 @@ the `SugaredLogger` and allocates far less, but it only supports structured logg
 
 ```go
 logger, _ := zap.NewProduction()
+defer logger.Sync()
 logger.Info("Failed to fetch URL.",
   // Structured context as strongly-typed Field values.
   zap.String("url", url),
-  zap.Int("attempt", tryNum),
+  zap.Int("attempt", 3),
   zap.Duration("backoff", time.Second),
 )
 ```
@@ -61,38 +63,38 @@ Log a message and 10 fields:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 1758 ns/op | 705 B/op | 2 allocs/op |
-| :zap: zap (sugared) | 3301 ns/op | 1610 B/op | 20 allocs/op |
-| go-kit | 8923 ns/op | 2895 B/op | 66 allocs/op |
-| lion | 10449 ns/op | 5807 B/op | 63 allocs/op |
-| logrus | 14566 ns/op | 6092 B/op | 78 allocs/op |
-| apex/log | 21129 ns/op | 3833 B/op | 65 allocs/op |
-| log15 | 24687 ns/op | 5632 B/op | 93 allocs/op |
+| :zap: zap | 1526 ns/op | 704 B/op | 2 allocs/op |
+| :zap: zap (sugared) | 2274 ns/op | 1610 B/op | 20 allocs/op |
+| go-kit | 5854 ns/op | 2895 B/op | 66 allocs/op |
+| logrus | 9117 ns/op | 6092 B/op | 78 allocs/op |
+| lion | 9408 ns/op | 5807 B/op | 63 allocs/op |
+| apex/log | 17007 ns/op | 3832 B/op | 65 allocs/op |
+| log15 | 21290 ns/op | 5632 B/op | 93 allocs/op |
 
 Log a message with a logger that already has 10 fields of context:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 519 ns/op | 0 B/op | 0 allocs/op |
-| :zap: zap (sugared) | 690 ns/op | 80 B/op | 2 allocs/op |
-| lion | 6012 ns/op | 4074 B/op | 38 allocs/op |
-| go-kit | 7777 ns/op | 3046 B/op | 52 allocs/op |
-| logrus | 9013 ns/op | 4564 B/op | 63 allocs/op |
-| apex/log | 15824 ns/op | 2897 B/op | 51 allocs/op |
-| log15 | 16194 ns/op | 2642 B/op | 44 allocs/op |
+| :zap: zap | 446 ns/op | 0 B/op | 0 allocs/op |
+| :zap: zap (sugared) | 599 ns/op | 80 B/op | 2 allocs/op |
+| lion | 5231 ns/op | 4074 B/op | 38 allocs/op |
+| go-kit | 6424 ns/op | 3046 B/op | 52 allocs/op |
+| logrus | 7578 ns/op | 4564 B/op | 63 allocs/op |
+| apex/log | 15697 ns/op | 2898 B/op | 51 allocs/op |
+| log15 | 15879 ns/op | 2642 B/op | 44 allocs/op |
 
 Log a static string, without any context or `printf`-style templating:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
-| :zap: zap | 594 ns/op | 0 B/op | 0 allocs/op |
-| standard library | 633 ns/op | 80 B/op | 2 allocs/op |
-| :zap: zap (sugared) | 702 ns/op | 80 B/op | 2 allocs/op |
-| go-kit | 1004 ns/op | 656 B/op | 13 allocs/op |
-| lion | 1543 ns/op | 1224 B/op | 10 allocs/op |
-| logrus | 2476 ns/op | 1505 B/op | 27 allocs/op |
-| apex/log | 3311 ns/op | 584 B/op | 11 allocs/op |
-| log15 | 6159 ns/op | 1592 B/op | 26 allocs/op |
+| :zap: zap | 418 ns/op | 0 B/op | 0 allocs/op |
+| standard library | 524 ns/op | 80 B/op | 2 allocs/op |
+| :zap: zap (sugared) | 628 ns/op | 80 B/op | 2 allocs/op |
+| go-kit | 1011 ns/op | 656 B/op | 13 allocs/op |
+| lion | 1382 ns/op | 1224 B/op | 10 allocs/op |
+| logrus | 2263 ns/op | 1505 B/op | 27 allocs/op |
+| apex/log | 3198 ns/op | 584 B/op | 11 allocs/op |
+| log15 | 5787 ns/op | 1592 B/op | 26 allocs/op |
 
 ## Development Status: Stable
 All APIs are finalized, and no breaking changes will be made in the 1.x series
