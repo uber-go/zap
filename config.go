@@ -170,6 +170,23 @@ func (cfg Config) Build(opts ...Option) (*Logger, error) {
 	return log, nil
 }
 
+// BuildWithCustomSyncers constructs a logger from the config, and Options using a custom WriteSyncer
+func (cfg Config) BuildWithCustomSyncers(out zapcore.WriteSyncer, errOut zapcore.WriteSyncer, opts ...Option) (*Logger, error) {
+	enc, err := cfg.buildEncoder()
+	if err != nil {
+		return nil, err
+	}
+
+	log := New(
+		zapcore.NewCore(enc, out, cfg.Level),
+		cfg.buildOptions(errOut)...,
+	)
+	if len(opts) > 0 {
+		log = log.WithOptions(opts...)
+	}
+	return log, nil
+}
+
 func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 	opts := []Option{ErrorOutput(errSink)}
 
