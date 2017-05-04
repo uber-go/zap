@@ -37,8 +37,6 @@ func TestJSONEncoder_EncodeEntry(t *testing.T) {
 						zap.Time("created_at", time.Date(2017, 5, 3, 21, 9, 11, 980000000, time.UTC)),
 					},
 					want: "{\"created_at\":\"2017-05-03T21:09:11.980Z\"}\n",
-					// Actually I got the following result on machine whose TZ=JST+9
-					// "{\"created_at\":\"2017-05-04T06:09:11.980+9000\"}\n",
 				},
 			},
 		},
