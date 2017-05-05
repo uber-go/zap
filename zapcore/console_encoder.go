@@ -109,10 +109,10 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 		line.AppendString(ent.Stack)
 	}
 
-	if c.LineSeparator != "" {
-		line.AppendString(c.LineSeparator)
+	if c.LineEnding != "" {
+		line.AppendString(c.LineEnding)
 	} else {
-		line.AppendString(DefaultLineSeparator)
+		line.AppendString(DefaultLineEnding)
 	}
 	return line, nil
 }
