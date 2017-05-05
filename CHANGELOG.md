@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.4.0 (05 May 2017)
+
+This release adds the ability to customize the line endings used in zap's log
+output. It is fully backward-compatible.
+
+Enhancements:
+
+* [#424][]: Add a `LineEnding` field to `EncoderConfig`, allowing users to
+  override the Unix-style default.
+
 ## v1.3.0 (25 Apr 2017)
 
 This release adds an enhancement to zap's testing helpers as well as the
@@ -200,3 +210,4 @@ upgrade to the upcoming stable release.
 [#402]: https://github.com/uber-go/zap/pull/402
 [#415]: https://github.com/uber-go/zap/pull/415
 [#416]: https://github.com/uber-go/zap/pull/416
+[#424]: https://github.com/uber-go/zap/pull/424
