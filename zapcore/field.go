@@ -138,7 +138,7 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		enc.AddString(f.Key, f.String)
 	case TimeType:
 		if f.Interface != nil {
-			enc.AddTime(f.Key, f.Interface.(time.Time))
+			enc.AddTime(f.Key, time.Unix(0, f.Integer).In(f.Interface.(*time.Location)))
 		} else {
 			// For backward compatibility, we use f.Integer when f.Interface is nil.
 			enc.AddTime(f.Key, time.Unix(0, f.Integer))
