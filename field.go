@@ -175,7 +175,7 @@ func Stringer(key string, val fmt.Stringer) zapcore.Field {
 // Time constructs a zapcore.Field with the given key and value. The encoder
 // controls how the time is serialized.
 func Time(key string, val time.Time) zapcore.Field {
-	return zapcore.Field{Key: key, Type: zapcore.TimeType, Integer: val.UnixNano()}
+	return zapcore.Field{Key: key, Type: zapcore.TimeType, Integer: val.UnixNano(), Interface: val.Location()}
 }
 
 // Error is shorthand for the common idiom NamedError("error", err).

@@ -137,7 +137,12 @@ func (f Field) AddTo(enc ObjectEncoder) {
 	case StringType:
 		enc.AddString(f.Key, f.String)
 	case TimeType:
-		enc.AddTime(f.Key, time.Unix(0, f.Integer))
+		if f.Interface != nil {
+			enc.AddTime(f.Key, time.Unix(0, f.Integer).In(f.Interface.(*time.Location)))
+		} else {
+			// Fall back to UTC if location is nil.
+			enc.AddTime(f.Key, time.Unix(0, f.Integer))
+		}
 	case Uint64Type:
 		enc.AddUint64(f.Key, uint64(f.Integer))
 	case Uint32Type:
