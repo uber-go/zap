@@ -140,7 +140,7 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		if f.Interface != nil {
 			enc.AddTime(f.Key, time.Unix(0, f.Integer).In(f.Interface.(*time.Location)))
 		} else {
-			// For backward compatibility, we use f.Integer when f.Interface is nil.
+			// Fall back to UTC if location is nil.
 			enc.AddTime(f.Key, time.Unix(0, f.Integer))
 		}
 	case Uint64Type:
