@@ -2,13 +2,15 @@
 
 ## v1.4.0 (05 May 2017)
 
-This release adds the ability to customize the line endings used in zap's log
-output. It is fully backward-compatible.
+This release adds a few small features and is fully backward-compatible.
 
 Enhancements:
 
 * [#424][]: Add a `LineEnding` field to `EncoderConfig`, allowing users to
   override the Unix-style default.
+* [#425][]: Preserve time zones when logging times.
+* [#431][]: Make `zap.AtomicLevel` implement `fmt.Stringer`, which makes a
+  variety of operations a bit simpler.
 
 ## v1.3.0 (25 Apr 2017)
 
@@ -211,3 +213,5 @@ upgrade to the upcoming stable release.
 [#415]: https://github.com/uber-go/zap/pull/415
 [#416]: https://github.com/uber-go/zap/pull/416
 [#424]: https://github.com/uber-go/zap/pull/424
+[#425]: https://github.com/uber-go/zap/pull/425
+[#431]: https://github.com/uber-go/zap/pull/431
