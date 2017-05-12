@@ -98,6 +98,11 @@ func (lvl AtomicLevel) SetLevel(l zapcore.Level) {
 	lvl.l.Store(int32(l))
 }
 
+// String returns the string representation of the underlying Level.
+func (lvl AtomicLevel) String() string {
+	return lvl.Level().String()
+}
+
 // UnmarshalText unmarshals the text to an AtomicLevel. It uses the same text
 // representations as the static zapcore.Levels ("debug", "info", "warn",
 // "error", "dpanic", "panic", and "fatal").

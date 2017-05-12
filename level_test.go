@@ -111,6 +111,7 @@ func TestAtomicLevelText(t *testing.T) {
 			marshaled, err := lvl.MarshalText()
 			assert.NoError(t, err, `Unexpected error marshalling level "%v" to text.`, tt.expect)
 			assert.Equal(t, tt.text, string(marshaled), "Expected marshaled text to match")
+			assert.Equal(t, tt.text, lvl.String(), "Expected Stringer call to match")
 		}
 	}
 }
