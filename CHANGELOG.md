@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.4.0 (05 May 2017)
+## v1.4.0 (12 May 2017)
 
 This release adds a few small features and is fully backward-compatible.
 
