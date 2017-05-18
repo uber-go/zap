@@ -117,19 +117,19 @@ func (l *Level) UnmarshalText(text []byte) error {
 		return errUnmarshalNilLevel
 	}
 	switch string(text) {
-	case "debug":
+	case "debug", "DEBUG":
 		*l = DebugLevel
-	case "info", "": // make the zero value useful
+	case "info", "INFO", "": // make the zero value useful
 		*l = InfoLevel
-	case "warn":
+	case "warn", "WARN":
 		*l = WarnLevel
-	case "error":
+	case "error", "ERROR":
 		*l = ErrorLevel
-	case "dpanic":
+	case "dpanic", "DPANIC":
 		*l = DPanicLevel
-	case "panic":
+	case "panic", "PANIC":
 		*l = PanicLevel
-	case "fatal":
+	case "fatal", "FATAL":
 		*l = FatalLevel
 	default:
 		return fmt.Errorf("unrecognized level: %v", string(text))
