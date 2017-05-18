@@ -71,8 +71,8 @@ func TestLevelText(t *testing.T) {
 
 		var unmarshaled Level
 		err := unmarshaled.UnmarshalText([]byte(tt.text))
-		assert.NoError(t, err, `Unexpected error unmarshaling text "%v" to level.`, tt.text)
-		assert.Equal(t, tt.level, unmarshaled, `Text "%v" unmarshaled to an unexpected level.`, tt.text)
+		assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, tt.text)
+		assert.Equal(t, tt.level, unmarshaled, `Text %q unmarshaled to an unexpected level.`, tt.text)
 	}
 }
 
