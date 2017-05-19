@@ -26,6 +26,10 @@ import (
 	"github.com/go-kit/kit/log"
 )
 
-func newKitLog() *log.Context {
-	return log.NewContext(log.NewJSONLogger(ioutil.Discard))
+func newKitLog() log.Logger {
+	return log.NewJSONLogger(ioutil.Discard)
+}
+
+func fakeKitContext(l log.Logger) log.Logger {
+	return log.With(l, fakeSugarFields()...)
 }
