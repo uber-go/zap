@@ -21,6 +21,7 @@
 package zapcore
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 )
@@ -116,7 +117,7 @@ func (l *Level) UnmarshalText(text []byte) error {
 	if l == nil {
 		return errUnmarshalNilLevel
 	}
-	if !l.unmarshalText(text) {
+	if !l.unmarshalText(text) && !l.unmarshalText(bytes.ToLower(text)) {
 		return fmt.Errorf("unrecognized level: %v", string(text))
 	}
 	return nil

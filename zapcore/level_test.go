@@ -97,6 +97,37 @@ func TestCapitalLevelsParse(t *testing.T) {
 	}
 }
 
+func TestWeirdLevelsParse(t *testing.T) {
+	tests := []struct {
+		text  string
+		level Level
+	}{
+		// I guess...
+		{"Debug", DebugLevel},
+		{"Info", InfoLevel},
+		{"Warn", WarnLevel},
+		{"Error", ErrorLevel},
+		{"Dpanic", DPanicLevel},
+		{"Panic", PanicLevel},
+		{"Fatal", FatalLevel},
+
+		// What even is...
+		{"DeBuG", DebugLevel},
+		{"InFo", InfoLevel},
+		{"WaRn", WarnLevel},
+		{"ErRor", ErrorLevel},
+		{"DpAnIc", DPanicLevel},
+		{"PaNiC", PanicLevel},
+		{"FaTaL", FatalLevel},
+	}
+	for _, tt := range tests {
+		var unmarshaled Level
+		err := unmarshaled.UnmarshalText([]byte(tt.text))
+		assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, tt.text)
+		assert.Equal(t, tt.level, unmarshaled, `Text %q unmarshaled to an unexpected level.`, tt.text)
+	}
+}
+
 func TestLevelNils(t *testing.T) {
 	var l *Level
 
