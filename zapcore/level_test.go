@@ -170,7 +170,7 @@ func TestLevelAsFlagValue(t *testing.T) {
 	assert.Error(t, fs.Parse([]string{"-level", "nope"}))
 	assert.Equal(
 		t,
-		`invalid value "nope" for flag -level: unrecognized level: nope`,
+		`invalid value "nope" for flag -level: unrecognized level: "nope"`,
 		strings.Split(buf.String(), "\n")[0], // second line is help message
 		"Unexpected error output from invalid flag input.",
 	)

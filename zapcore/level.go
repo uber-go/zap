@@ -118,7 +118,7 @@ func (l *Level) UnmarshalText(text []byte) error {
 		return errUnmarshalNilLevel
 	}
 	if !l.unmarshalText(text) && !l.unmarshalText(bytes.ToLower(text)) {
-		return fmt.Errorf("unrecognized level: %v", string(text))
+		return fmt.Errorf("unrecognized level: %q", text)
 	}
 	return nil
 }
