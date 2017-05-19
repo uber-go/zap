@@ -116,6 +116,13 @@ func (l *Level) UnmarshalText(text []byte) error {
 	if l == nil {
 		return errUnmarshalNilLevel
 	}
+	if !l.unmarshalText(text) {
+		return fmt.Errorf("unrecognized level: %v", string(text))
+	}
+	return nil
+}
+
+func (l *Level) unmarshalText(text []byte) bool {
 	switch string(text) {
 	case "debug", "DEBUG":
 		*l = DebugLevel
@@ -132,9 +139,9 @@ func (l *Level) UnmarshalText(text []byte) error {
 	case "fatal", "FATAL":
 		*l = FatalLevel
 	default:
-		return fmt.Errorf("unrecognized level: %v", string(text))
+		return false
 	}
-	return nil
+	return true
 }
 
 // Set sets the level for the flag.Value interface.
