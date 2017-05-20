@@ -17,6 +17,7 @@ testImport:
   - assert
   - require
 - package: gopkg.in/inconshreveable/log15.v2
+- package: github.com/rs/zerolog
 - package: github.com/mattn/goveralls
 - package: github.com/pborman/uuid
 - package: github.com/pkg/errors
