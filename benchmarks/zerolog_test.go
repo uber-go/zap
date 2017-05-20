@@ -19,7 +19,7 @@ func newSampledZerolog() zerolog.Logger {
 	return zerolog.New(ioutil.Discard).Sample(zerolog.Often)
 }
 
-func fakeZerologFields(e zerolog.Event) zerolog.Event {
+func fakeZerologFields(e *zerolog.Event) *zerolog.Event {
 	return e.
 		Int("int", 1).
 		Int64("int64", 2).
@@ -29,7 +29,7 @@ func fakeZerologFields(e zerolog.Event) zerolog.Event {
 		Time("time", time.Unix(0, 0)).
 		Err(errExample).
 		Int("duration", int(time.Second)).
-		Str("obj", "not supported yet").
+		Object("user-defined type", _jane).
 		Str("another string", "done!")
 }
 
@@ -43,6 +43,6 @@ func fakeZerologContext(c zerolog.Context) zerolog.Context {
 		Time("time", time.Unix(0, 0)).
 		Err(errExample).
 		Str("duration", time.Second.String()).
-		Str("obj", "not supported yet").
+		Object("user-defined type", _jane).
 		Str("another string", "done!")
 }

@@ -63,9 +63,9 @@ Log a message and 10 fields:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
+| zerolog | 787 ns/op | 80 B/op | 6 allocs/op |
 | :zap: zap | 848 ns/op | 704 B/op | 2 allocs/op |
 | :zap: zap (sugared) | 1363 ns/op | 1610 B/op | 20 allocs/op |
-| zerolog | 1528 ns/op | 80 B/op | 6 allocs/op |
 | go-kit | 3614 ns/op | 2895 B/op | 66 allocs/op |
 | lion | 5392 ns/op | 5807 B/op | 63 allocs/op |
 | logrus | 5661 ns/op | 6092 B/op | 78 allocs/op |
@@ -76,9 +76,9 @@ Log a message with a logger that already has 10 fields of context:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
+| zerolog | 80 ns/op | 0 B/op | 0 allocs/op |
 | :zap: zap | 283 ns/op | 0 B/op | 0 allocs/op |
 | :zap: zap (sugared) | 337 ns/op | 80 B/op | 2 allocs/op |
-| zerolog | 352 ns/op | 0 B/op | 0 allocs/op |
 | lion | 2702 ns/op | 4074 B/op | 38 allocs/op |
 | go-kit | 3378 ns/op | 3046 B/op | 52 allocs/op |
 | logrus | 4309 ns/op | 4564 B/op | 63 allocs/op |
@@ -90,8 +90,8 @@ Log a static string, without any context or `printf`-style templating:
 
 | Library | Time | Bytes Allocated | Objects Allocated |
 | :--- | :---: | :---: | :---: |
+| zerolog | 76.2 ns/op | 0 B/op | 0 allocs/op |
 | :zap: zap | 236 ns/op | 0 B/op | 0 allocs/op |
-| zerolog | 245 ns/op | 0 B/op | 0 allocs/op |
 | standard library | 453 ns/op | 80 B/op | 2 allocs/op |
 | :zap: zap (sugared) | 337 ns/op | 80 B/op | 2 allocs/op |
 | go-kit | 508 ns/op | 656 B/op | 13 allocs/op |
