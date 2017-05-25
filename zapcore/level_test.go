@@ -71,8 +71,60 @@ func TestLevelText(t *testing.T) {
 
 		var unmarshaled Level
 		err := unmarshaled.UnmarshalText([]byte(tt.text))
-		assert.NoError(t, err, `Unexpected error unmarshaling text "%v" to level.`, tt.text)
-		assert.Equal(t, tt.level, unmarshaled, `Text "%v" unmarshaled to an unexpected level.`, tt.text)
+		assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, tt.text)
+		assert.Equal(t, tt.level, unmarshaled, `Text %q unmarshaled to an unexpected level.`, tt.text)
+	}
+}
+
+func TestCapitalLevelsParse(t *testing.T) {
+	tests := []struct {
+		text  string
+		level Level
+	}{
+		{"DEBUG", DebugLevel},
+		{"INFO", InfoLevel},
+		{"WARN", WarnLevel},
+		{"ERROR", ErrorLevel},
+		{"DPANIC", DPanicLevel},
+		{"PANIC", PanicLevel},
+		{"FATAL", FatalLevel},
+	}
+	for _, tt := range tests {
+		var unmarshaled Level
+		err := unmarshaled.UnmarshalText([]byte(tt.text))
+		assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, tt.text)
+		assert.Equal(t, tt.level, unmarshaled, `Text %q unmarshaled to an unexpected level.`, tt.text)
+	}
+}
+
+func TestWeirdLevelsParse(t *testing.T) {
+	tests := []struct {
+		text  string
+		level Level
+	}{
+		// I guess...
+		{"Debug", DebugLevel},
+		{"Info", InfoLevel},
+		{"Warn", WarnLevel},
+		{"Error", ErrorLevel},
+		{"Dpanic", DPanicLevel},
+		{"Panic", PanicLevel},
+		{"Fatal", FatalLevel},
+
+		// What even is...
+		{"DeBuG", DebugLevel},
+		{"InFo", InfoLevel},
+		{"WaRn", WarnLevel},
+		{"ErRor", ErrorLevel},
+		{"DpAnIc", DPanicLevel},
+		{"PaNiC", PanicLevel},
+		{"FaTaL", FatalLevel},
+	}
+	for _, tt := range tests {
+		var unmarshaled Level
+		err := unmarshaled.UnmarshalText([]byte(tt.text))
+		assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, tt.text)
+		assert.Equal(t, tt.level, unmarshaled, `Text %q unmarshaled to an unexpected level.`, tt.text)
 	}
 }
 
@@ -118,7 +170,7 @@ func TestLevelAsFlagValue(t *testing.T) {
 	assert.Error(t, fs.Parse([]string{"-level", "nope"}))
 	assert.Equal(
 		t,
-		`invalid value "nope" for flag -level: unrecognized level: nope`,
+		`invalid value "nope" for flag -level: unrecognized level: "nope"`,
 		strings.Split(buf.String(), "\n")[0], // second line is help message
 		"Unexpected error output from invalid flag input.",
 	)
