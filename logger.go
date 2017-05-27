@@ -38,9 +38,9 @@ import (
 type Logger struct {
 	core zapcore.Core
 
-	development bool
-	name        string
-	errorOutput zapcore.WriteSyncer
+	dpanicAction zapcore.CheckWriteAction
+	name         string
+	errorOutput  zapcore.WriteSyncer
 
 	addCaller bool
 	addStack  zapcore.LevelEnabler
@@ -143,89 +143,26 @@ func (log *Logger) With(fields ...zapcore.Field) *Logger {
 // is enabled. It's a completely optional optimization; in high-performance
 // applications, Check can help avoid allocating a slice to hold fields.
 func (log *Logger) Check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
-	return log.check(lvl, msg)
-}
+	var action zapcore.CheckWriteAction
 
-// Debug logs a message at DebugLevel. The message includes any fields passed
-// at the log site, as well as any fields accumulated on the logger.
-func (log *Logger) Debug(msg string, fields ...zapcore.Field) {
-	if ce := log.check(DebugLevel, msg); ce != nil {
-		ce.Write(fields...)
+	switch lvl {
+	case PanicLevel:
+		action = zapcore.WriteThenPanic
+	case FatalLevel:
+		action = zapcore.WriteThenFatal
+	case DPanicLevel:
+		action = log.dpanicAction
+	default:
+		action = zapcore.WriteThenNoop
 	}
+
+	return log.CheckWithAction(lvl, action, msg)
 }
 
-// Info logs a message at InfoLevel. The message includes any fields passed
-// at the log site, as well as any fields accumulated on the logger.
-func (log *Logger) Info(msg string, fields ...zapcore.Field) {
-	if ce := log.check(InfoLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
-}
-
-// Warn logs a message at WarnLevel. The message includes any fields passed
-// at the log site, as well as any fields accumulated on the logger.
-func (log *Logger) Warn(msg string, fields ...zapcore.Field) {
-	if ce := log.check(WarnLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
-}
-
-// Error logs a message at ErrorLevel. The message includes any fields passed
-// at the log site, as well as any fields accumulated on the logger.
-func (log *Logger) Error(msg string, fields ...zapcore.Field) {
-	if ce := log.check(ErrorLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
-}
-
-// DPanic logs a message at DPanicLevel. The message includes any fields passed
-// at the log site, as well as any fields accumulated on the logger.
-//
-// If the logger is in development mode, it then panics (DPanic means
-// "development panic"). This is useful for catching errors that are
-// recoverable, but shouldn't ever happen.
-func (log *Logger) DPanic(msg string, fields ...zapcore.Field) {
-	if ce := log.check(DPanicLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
-}
-
-// Panic logs a message at PanicLevel. The message includes any fields passed
-// at the log site, as well as any fields accumulated on the logger.
-//
-// The logger then panics, even if logging at PanicLevel is disabled.
-func (log *Logger) Panic(msg string, fields ...zapcore.Field) {
-	if ce := log.check(PanicLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
-}
-
-// Fatal logs a message at FatalLevel. The message includes any fields passed
-// at the log site, as well as any fields accumulated on the logger.
-//
-// The logger then calls os.Exit(1), even if logging at FatalLevel is disabled.
-func (log *Logger) Fatal(msg string, fields ...zapcore.Field) {
-	if ce := log.check(FatalLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
-}
-
-// Sync flushes any buffered log entries.
-func (log *Logger) Sync() error {
-	return log.core.Sync()
-}
-
-// Core returns the underlying zapcore.Core.
-func (log *Logger) Core() zapcore.Core {
-	return log.core
-}
-
-func (log *Logger) clone() *Logger {
-	copy := *log
-	return &copy
-}
-
-func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
+// CheckWithAction similarly to Check returns a CheckedEntry if logging a
+// message at the specified level is enabled. But additionally it allows
+// one to specify the action to take after writing out the message.
+func (log *Logger) CheckWithAction(lvl zapcore.Level, action zapcore.CheckWriteAction, msg string) *zapcore.CheckedEntry {
 	// check must always be called directly by a method in the Logger interface
 	// (e.g., Check, Info, Fatal).
 	const callerSkipOffset = 2
@@ -242,15 +179,8 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	willWrite := ce != nil
 
 	// Set up any required terminal behavior.
-	switch ent.Level {
-	case zapcore.PanicLevel:
-		ce = ce.Should(ent, zapcore.WriteThenPanic)
-	case zapcore.FatalLevel:
-		ce = ce.Should(ent, zapcore.WriteThenFatal)
-	case zapcore.DPanicLevel:
-		if log.development {
-			ce = ce.Should(ent, zapcore.WriteThenPanic)
-		}
+	if action != zapcore.WriteThenNoop {
+		ce = ce.Should(ent, action)
 	}
 
 	// Only do further annotation if we're going to write this message; checked
@@ -274,4 +204,83 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	}
 
 	return ce
+}
+
+// Debug logs a message at DebugLevel. The message includes any fields passed
+// at the log site, as well as any fields accumulated on the logger.
+func (log *Logger) Debug(msg string, fields ...zapcore.Field) {
+	if ce := log.CheckWithAction(DebugLevel, zapcore.WriteThenNoop, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+// Info logs a message at InfoLevel. The message includes any fields passed
+// at the log site, as well as any fields accumulated on the logger.
+func (log *Logger) Info(msg string, fields ...zapcore.Field) {
+	if ce := log.CheckWithAction(InfoLevel, zapcore.WriteThenNoop, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+// Warn logs a message at WarnLevel. The message includes any fields passed
+// at the log site, as well as any fields accumulated on the logger.
+func (log *Logger) Warn(msg string, fields ...zapcore.Field) {
+	if ce := log.CheckWithAction(WarnLevel, zapcore.WriteThenNoop, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+// Error logs a message at ErrorLevel. The message includes any fields passed
+// at the log site, as well as any fields accumulated on the logger.
+func (log *Logger) Error(msg string, fields ...zapcore.Field) {
+	if ce := log.CheckWithAction(ErrorLevel, zapcore.WriteThenNoop, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+// DPanic logs a message at DPanicLevel. The message includes any fields passed
+// at the log site, as well as any fields accumulated on the logger.
+//
+// If the logger is in development mode, it then panics (DPanic means
+// "development panic"). This is useful for catching errors that are
+// recoverable, but shouldn't ever happen.
+func (log *Logger) DPanic(msg string, fields ...zapcore.Field) {
+	if ce := log.CheckWithAction(DPanicLevel, log.dpanicAction, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+// Panic logs a message at PanicLevel. The message includes any fields passed
+// at the log site, as well as any fields accumulated on the logger.
+//
+// The logger then panics, even if logging at PanicLevel is disabled.
+func (log *Logger) Panic(msg string, fields ...zapcore.Field) {
+	if ce := log.CheckWithAction(PanicLevel, zapcore.WriteThenPanic, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+// Fatal logs a message at FatalLevel. The message includes any fields passed
+// at the log site, as well as any fields accumulated on the logger.
+//
+// The logger then calls os.Exit(1), even if logging at FatalLevel is disabled.
+func (log *Logger) Fatal(msg string, fields ...zapcore.Field) {
+	if ce := log.CheckWithAction(FatalLevel, zapcore.WriteThenFatal, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+// Sync flushes any buffered log entries.
+func (log *Logger) Sync() error {
+	return log.core.Sync()
+}
+
+// Core returns the underlying zapcore.Core.
+func (log *Logger) Core() zapcore.Core {
+	return log.core
+}
+
+func (log *Logger) clone() *Logger {
+	copy := *log
+	return &copy
 }
