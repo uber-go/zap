@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.1 (05 June 2017)
+
+This release adds a patch fix for level text unmarshalling.
+
 ## v1.4.0 (12 May 2017)
 
 This release adds a few small features and is fully backward-compatible.
