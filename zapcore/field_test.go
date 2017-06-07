@@ -28,6 +28,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/zap"
+
 	richErrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
@@ -139,6 +141,8 @@ func TestFields(t *testing.T) {
 
 		delete(enc.Fields, "k")
 		assert.Equal(t, 0, len(enc.Fields), "Unexpected extra fields present.")
+
+		assert.True(t, f.Equals(f), "Field does not equal itself")
 	}
 }
 
@@ -158,4 +162,102 @@ func TestRichErrorSupport(t *testing.T) {
 	assert.Regexp(t, `egad`, serialized, "Expected original error message to be present.")
 	assert.Regexp(t, `failed`, serialized, "Expected error annotation to be present.")
 	assert.Regexp(t, `TestRichErrorSupport`, serialized, "Expected calling function to be present in stacktrace.")
+}
+
+func TestEquals(t *testing.T) {
+	tests := []struct {
+		a, b Field
+		want bool
+	}{
+		{
+			a:    zap.Int16("a", 1),
+			b:    zap.Int32("a", 1),
+			want: false,
+		},
+		{
+			a:    zap.String("k", "a"),
+			b:    zap.String("k", "a"),
+			want: true,
+		},
+		{
+			a:    zap.String("k", "a"),
+			b:    zap.String("k2", "a"),
+			want: false,
+		},
+		{
+			a:    zap.String("k", "a"),
+			b:    zap.String("k", "b"),
+			want: false,
+		},
+		{
+			a:    zap.Time("k", time.Unix(1000, 1000)),
+			b:    zap.Time("k", time.Unix(1000, 1000)),
+			want: true,
+		},
+		{
+			a:    zap.Time("k", time.Unix(1000, 1000).In(time.UTC)),
+			b:    zap.Time("k", time.Unix(1000, 1000).In(time.FixedZone("TEST", -8))),
+			want: false,
+		},
+		{
+			a:    zap.Time("k", time.Unix(1000, 1000)),
+			b:    zap.Time("k", time.Unix(1000, 2000)),
+			want: false,
+		},
+		{
+			a:    zap.Binary("k", []byte{1, 2}),
+			b:    zap.Binary("k", []byte{1, 2}),
+			want: true,
+		},
+		{
+			a:    zap.Binary("k", []byte{1, 2}),
+			b:    zap.Binary("k", []byte{1, 3}),
+			want: false,
+		},
+		{
+			a:    zap.ByteString("k", []byte("abc")),
+			b:    zap.ByteString("k", []byte("abc")),
+			want: true,
+		},
+		{
+			a:    zap.ByteString("k", []byte("abc")),
+			b:    zap.ByteString("k", []byte("abd")),
+			want: false,
+		},
+		{
+			a:    zap.Ints("k", []int{1, 2}),
+			b:    zap.Ints("k", []int{1, 2}),
+			want: true,
+		},
+		{
+			a:    zap.Ints("k", []int{1, 2}),
+			b:    zap.Ints("k", []int{1, 3}),
+			want: false,
+		},
+		{
+			a:    zap.Object("k", users(10)),
+			b:    zap.Object("k", users(10)),
+			want: true,
+		},
+		{
+			a:    zap.Object("k", users(10)),
+			b:    zap.Object("k", users(20)),
+			want: false,
+		},
+		{
+			a:    zap.Any("k", map[string]string{"a": "b"}),
+			b:    zap.Any("k", map[string]string{"a": "b"}),
+			want: true,
+		},
+		{
+			a:    zap.Any("k", map[string]string{"a": "b"}),
+			b:    zap.Any("k", map[string]string{"a": "d"}),
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, tt.a.Equals(tt.b), "a.Equals(b) a: %#v b: %#v", tt.a, tt.b)
+		assert.Equal(t, tt.want, tt.b.Equals(tt.a), "b.Equals(a) a: %#v b: %#v", tt.a, tt.b)
+	}
 }

@@ -141,6 +141,14 @@ func TestFilters(t *testing.T) {
 			Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "msg 1"},
 			Context: []zapcore.Field{zap.Int("a", 1), zap.Namespace("ns")},
 		},
+		{
+			Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "any map"},
+			Context: []zapcore.Field{zap.Any("map", map[string]string{"a": "b"})},
+		},
+		{
+			Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "any slice"},
+			Context: []zapcore.Field{zap.Any("slice", []string{"a"})},
+		},
 	}
 
 	logger, sink := New(zap.InfoLevel)
@@ -187,6 +195,16 @@ func TestFilters(t *testing.T) {
 			msg:      "filter by snippet and field",
 			filtered: sink.FilterMessageSnippet("a").FilterField(zap.Int("b", 2)),
 			want:     logs[1:2],
+		},
+		{
+			msg:      "filter for map",
+			filtered: sink.FilterField(zap.Any("map", map[string]string{"a": "b"})),
+			want:     logs[5:6],
+		},
+		{
+			msg:      "filter for slice",
+			filtered: sink.FilterField(zap.Any("slice", []string{"a"})),
+			want:     logs[6:7],
 		},
 	}
 

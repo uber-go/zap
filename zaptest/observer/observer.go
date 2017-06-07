@@ -99,7 +99,7 @@ func (o *ObservedLogs) FilterMessageSnippet(snippet string) *ObservedLogs {
 func (o *ObservedLogs) FilterField(field zapcore.Field) *ObservedLogs {
 	return o.filter(func(e LoggedEntry) bool {
 		for _, ctxField := range e.Context {
-			if ctxField == field {
+			if ctxField.Equals(field) {
 				return true
 			}
 		}
