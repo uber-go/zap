@@ -21,8 +21,10 @@
 package zapcore
 
 import (
+	"bytes"
 	"fmt"
 	"math"
+	"reflect"
 	"time"
 )
 
@@ -179,6 +181,26 @@ func (f Field) AddTo(enc ObjectEncoder) {
 
 	if err != nil {
 		enc.AddString(fmt.Sprintf("%sError", f.Key), err.Error())
+	}
+}
+
+// Equals returns whether two fields are equal. For non-primitive types such as
+// errors, marshalers, or reflect types, it uses reflect.DeepEqual.
+func (f Field) Equals(other Field) bool {
+	if f.Type != other.Type {
+		return false
+	}
+	if f.Key != other.Key {
+		return false
+	}
+
+	switch f.Type {
+	case BinaryType, ByteStringType:
+		return bytes.Equal(f.Interface.([]byte), other.Interface.([]byte))
+	case ArrayMarshalerType, ObjectMarshalerType, ErrorType, ReflectType:
+		return reflect.DeepEqual(f.Interface, other.Interface)
+	default:
+		return f == other
 	}
 }
 
