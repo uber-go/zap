@@ -1,8 +1,13 @@
 # Changelog
 
-## v1.4.1 (05 June 2017)
+## v1.4.1 (08 June 2017)
 
-This release adds a patch fix for level text unmarshalling.
+This release fixes two bugs.
+
+Bugfixes:
+
+* [#435][]: Support a variety of case conventions when unmarshaling levels.
+* [#444][]: Fix a panic in the observer.
 
 ## v1.4.0 (12 May 2017)
 
@@ -219,3 +224,5 @@ upgrade to the upcoming stable release.
 [#424]: https://github.com/uber-go/zap/pull/424
 [#425]: https://github.com/uber-go/zap/pull/425
 [#431]: https://github.com/uber-go/zap/pull/431
+[#435]: https://github.com/uber-go/zap/pull/435
+[#444]: https://github.com/uber-go/zap/pull/444
