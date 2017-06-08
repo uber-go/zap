@@ -38,7 +38,7 @@ import (
 func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
 	writers, close, err := open(paths)
 	if err != nil {
-		return nil, nil, err
+		return nil, close, err
 	}
 
 	writer := CombineWriteSyncers(writers...)
