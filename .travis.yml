@@ -18,4 +18,4 @@ script:
   - make test
   - make bench
 after_success:
-  - travis_retry make coveralls
+  - bash <(curl -s https://codecov.io/bash)
