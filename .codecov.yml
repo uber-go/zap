@@ -12,4 +12,6 @@ coverage:
                                #   option: "X%" a static target percentage to hit
         if_not_found: success  # if parent is not found report status as success, error, or failure
         if_ci_failed: error    # if ci fails report status as success, error, or failure
+ignore:
+  - internal/readme/readme.go
 
