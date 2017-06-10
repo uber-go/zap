@@ -61,6 +61,10 @@ endif
 test:
 	go test -race $(PKGS)
 
+.PHONY: cover
+cover:
+	./scripts/cover.sh $(PKGS)
+
 .PHONY: bench
 BENCH ?= .
 bench:
