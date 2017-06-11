@@ -19,7 +19,7 @@ testImports:
 - name: github.com/fatih/color
   version: 5ec5d9d3c2cf82e9688b34e9bc27a94d616a7193
 - name: github.com/go-kit/kit
-  version: 0d6c91c61a1b3ac2467facd58a06fe89fd34aa3c
+  version: 6964666de57c88f7d93da127e900d201b632f561
   subpackages:
   - log
 - name: github.com/go-logfmt/logfmt
@@ -50,6 +50,8 @@ testImports:
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/sirupsen/logrus
   version: 9b48ece7fc373043054858f8c0d362665e866004
+- name: github.com/rs/zerolog
+  version: 6925dbdff191b554cb2aaddb24a403e1bffda8b6
 - name: github.com/stretchr/testify
   version: 4d4bfba8f1d1027c4fdbe371823030df51419987
   subpackages:
