@@ -21,12 +21,14 @@
 package zap
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
 )
 
 func TestConfig(t *testing.T) {
@@ -105,4 +107,35 @@ func TestConfigWithInvalidPaths(t *testing.T) {
 			assert.Error(t, err, "Expected an error opening a non-existent directory.")
 		})
 	}
+}
+
+func TestConfigWithSinkFunction(t *testing.T) {
+	temp, err := ioutil.TempFile("", "zap-prod-config-test")
+	require.NoError(t, err, "Failed to create temp file.")
+	defer os.Remove(temp.Name())
+
+	var output bytes.Buffer
+	var errOutput bytes.Buffer
+
+	cfg := NewDevelopmentConfig()
+	cfg.DisableCaller = true
+	cfg.DisableStacktrace = true
+	cfg.EncoderConfig.TimeKey = ""
+	cfg.SinkFunction = func(cfg Config) (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
+		return CombineWriteSyncers(temp, zapcore.AddSync(&output)), CombineWriteSyncers(zapcore.AddSync(&errOutput)), nil
+	}
+	logger, err := cfg.Build()
+	require.NoError(t, err, "Unexpected error constructing logger.")
+
+	//logger.Info("ok", zap.Int("code", 200))
+	logger.Error("fail", Int("code", 404))
+	expected := []byte("ERROR\tfail\t{\"code\": 404}\n")
+	assert.Equal(t, expected, output.Bytes(), "Unexpected log output")
+
+	temp.Sync()
+	temp.Seek(0, 0)
+	tempContent, err := ioutil.ReadAll(temp)
+	require.NoError(t, err, "Failed to read temp file.")
+	assert.Equal(t, expected, tempContent, "Unexpected log output")
+	assert.Equal(t, []byte(nil), errOutput.Bytes(), "Unexpected log error")
 }
