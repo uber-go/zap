@@ -21,7 +21,6 @@
 package zap
 
 import (
-	"errors"
 	"net"
 	"sync"
 	"testing"
@@ -60,7 +59,6 @@ func assertCanBeReused(t testing.TB, field zapcore.Field) {
 
 func TestFieldConstructors(t *testing.T) {
 	// Interface types.
-	fail := errors.New("fail")
 	addr := net.ParseIP("1.2.3.4")
 	name := username("phil")
 	ints := []int{5, 6}
@@ -93,17 +91,11 @@ func TestFieldConstructors(t *testing.T) {
 		{"Uint8", zapcore.Field{Key: "k", Type: zapcore.Uint8Type, Integer: 1}, Uint8("k", 1)},
 		{"Uintptr", zapcore.Field{Key: "k", Type: zapcore.UintptrType, Integer: 10}, Uintptr("k", 0xa)},
 		{"Reflect", zapcore.Field{Key: "k", Type: zapcore.ReflectType, Interface: ints}, Reflect("k", ints)},
-		{"Error", Skip(), Error(nil)},
-		{"Error", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: fail}, Error(fail)},
-		{"NamedError", Skip(), NamedError("foo", nil)},
-		{"NamedError", zapcore.Field{Key: "foo", Type: zapcore.ErrorType, Interface: fail}, NamedError("foo", fail)},
 		{"Stringer", zapcore.Field{Key: "k", Type: zapcore.StringerType, Interface: addr}, Stringer("k", addr)},
 		{"Object", zapcore.Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: name}, Object("k", name)},
 		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
 		{"Any:ArrayMarshaler", Any("k", bools([]bool{true})), Array("k", bools([]bool{true}))},
 		{"Any:Stringer", Any("k", addr), Stringer("k", addr)},
-		{"Any:Error", Any("k", errors.New("v")), NamedError("k", errors.New("v"))},
-		{"Any:Errors", Any("k", []error{errors.New("v")}), Errors("k", []error{errors.New("v")})},
 		{"Any:Bool", Any("k", true), Bool("k", true)},
 		{"Any:Bools", Any("k", []bool{true}), Bools("k", []bool{true})},
 		{"Any:Byte", Any("k", byte(1)), Uint8("k", 1)},
