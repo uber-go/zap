@@ -23,8 +23,9 @@ package zap
 import (
 	"fmt"
 
-	"go.uber.org/zap/internal/multierror"
 	"go.uber.org/zap/zapcore"
+
+	"go.uber.org/multierr"
 )
 
 const (
@@ -286,9 +287,9 @@ func (p invalidPair) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 type invalidPairs []invalidPair
 
 func (ps invalidPairs) MarshalLogArray(enc zapcore.ArrayEncoder) error {
-	var errs multierror.Error
+	var err error
 	for i := range ps {
-		errs = errs.Append(enc.AppendObject(ps[i]))
+		err = multierr.Append(err, enc.AppendObject(ps[i]))
 	}
-	return errs.AsError()
+	return err
 }

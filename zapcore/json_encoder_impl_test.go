@@ -31,9 +31,9 @@ import (
 	"time"
 
 	"go.uber.org/zap/internal/bufferpool"
-	"go.uber.org/zap/internal/multierror"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/multierr"
 )
 
 func TestJSONClone(t *testing.T) {
@@ -370,12 +370,12 @@ func (t turducken) MarshalLogObject(enc ObjectEncoder) error {
 type turduckens int
 
 func (t turduckens) MarshalLogArray(enc ArrayEncoder) error {
-	var errs multierror.Error
+	var err error
 	tur := turducken{}
 	for i := 0; i < int(t); i++ {
-		errs = errs.Append(enc.AppendObject(tur))
+		err = multierr.Append(err, enc.AppendObject(tur))
 	}
-	return errs.AsError()
+	return err
 }
 
 type loggable struct{ bool }
