@@ -20,7 +20,7 @@
 
 package zapcore
 
-import "go.uber.org/zap/internal/multierror"
+import "go.uber.org/multierr"
 
 type multiCore []Core
 
@@ -65,17 +65,17 @@ func (mc multiCore) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 }
 
 func (mc multiCore) Write(ent Entry, fields []Field) error {
-	var errs multierror.Error
+	var err error
 	for i := range mc {
-		errs = errs.Append(mc[i].Write(ent, fields))
+		err = multierr.Append(err, mc[i].Write(ent, fields))
 	}
-	return errs.AsError()
+	return err
 }
 
 func (mc multiCore) Sync() error {
-	var errs multierror.Error
+	var err error
 	for i := range mc {
-		errs = errs.Append(mc[i].Sync())
+		err = multierr.Append(err, mc[i].Sync())
 	}
-	return errs.AsError()
+	return err
 }

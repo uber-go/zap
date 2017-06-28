@@ -28,7 +28,8 @@ import (
 
 	"go.uber.org/zap/internal/bufferpool"
 	"go.uber.org/zap/internal/exit"
-	"go.uber.org/zap/internal/multierror"
+
+	"go.uber.org/multierr"
 )
 
 var (
@@ -209,12 +210,12 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 	}
 	ce.dirty = true
 
-	var errs multierror.Error
+	var err error
 	for i := range ce.cores {
-		errs = errs.Append(ce.cores[i].Write(ce.Entry, fields))
+		err = multierr.Append(err, ce.cores[i].Write(ce.Entry, fields))
 	}
 	if ce.ErrorOutput != nil {
-		if err := errs.AsError(); err != nil {
+		if err != nil {
 			fmt.Fprintf(ce.ErrorOutput, "%v write error: %v\n", time.Now(), err)
 			ce.ErrorOutput.Sync()
 		}

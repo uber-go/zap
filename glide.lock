@@ -1,8 +1,10 @@
-hash: e0772fca67e6ddb8b10aad5a68c2db217e94f31c4b8646753a8bdf8d27f8ab6f
-updated: 2017-06-27T16:30:15.464674127-07:00
+hash: 2b8be1588d6028696f61ce80eb1b50dbad19144b4d4ead760977ad54064f4f26
+updated: 2017-06-27T16:21:01.272833298-07:00
 imports:
 - name: go.uber.org/atomic
   version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
+- name: go.uber.org/multierr
+  version: ef109dc7f883f3a99db2d89edc701c25cac40571
 testImports:
 - name: github.com/apex/log
   version: 8f3a15d95392c8fc202d1e1059f46df21dff2992
