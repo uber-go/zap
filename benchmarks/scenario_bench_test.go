@@ -436,7 +436,7 @@ func BenchmarkAccumulatedContext(b *testing.B) {
 		})
 	})
 	b.Run("go-kit/kit/log", func(b *testing.B) {
-		logger := newKitLog().With(fakeSugarFields()...)
+		logger := newKitLog(fakeSugarFields()...)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {

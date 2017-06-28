@@ -1,68 +1,68 @@
 hash: e0772fca67e6ddb8b10aad5a68c2db217e94f31c4b8646753a8bdf8d27f8ab6f
-updated: 2017-02-27T14:29:10.445907666-08:00
+updated: 2017-06-27T16:30:15.464674127-07:00
 imports:
 - name: go.uber.org/atomic
-  version: 0c9e689d64f004564b79d9a663634756df322902
+  version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
 testImports:
 - name: github.com/apex/log
-  version: 4ea85e918cc8389903d5f12d7ccac5c23ab7d89b
+  version: 8f3a15d95392c8fc202d1e1059f46df21dff2992
   subpackages:
   - handlers/json
 - name: github.com/axw/gocov
-  version: c77561ca0c0cb1ed5d4ce4a912a75f5532566422
+  version: 3a69a0d2a4ef1f263e2d92b041a69593d6964fe8
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/fatih/color
-  version: 5ec5d9d3c2cf82e9688b34e9bc27a94d616a7193
+  version: 62e9147c64a1ed519147b62a56a14e83e2be02c1
 - name: github.com/go-kit/kit
-  version: 0d6c91c61a1b3ac2467facd58a06fe89fd34aa3c
+  version: 0c52d4024a04395dabac42b65e5825d08d3335df
   subpackages:
   - log
 - name: github.com/go-logfmt/logfmt
   version: 390ab7935ee28ec6b286364bba9b4dd6410cb3d5
 - name: github.com/go-stack/stack
-  version: 100eb0c0a9c5b306ca2fb4f165df21d80ada4b82
+  version: 7a2f19628aabfe68f0766b59e74d6315f8347d22
 - name: github.com/golang/lint
-  version: b8599f7d71e7fead76b25aeb919c0e2558672f4a
+  version: c5fb716d6688a859aae56d26d3e6070808df29f7
   subpackages:
   - golint
 - name: github.com/kr/logfmt
   version: b84e30acd515aadc4b783ad4ff83aff3299bdfe0
 - name: github.com/mattn/go-colorable
-  version: d228849504861217f796da67fae4f6e347643f15
+  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
 - name: github.com/mattn/go-isatty
-  version: 30a891c33c7cde7b02a981314b4228ec99380cca
+  version: 57fdcb988a5c543893cc61bce354a6e24ab70022
 - name: github.com/mattn/goveralls
-  version: 8482d0ebd2a64f95ce02d2b9b7065b0d6fe9151b
+  version: a2cbbd7cdce4f5e051016fedf639c64bb05ef031
 - name: github.com/pborman/uuid
-  version: 1b00554d822231195d1babd97ff4a781231955c9
+  version: e790cca94e6cc75c7064b1332e63811d4aae1a53
 - name: github.com/pkg/errors
-  version: 645ef00459ed84a119197bfb8d8205042c6df63d
+  version: c605e284fe17294bda444b34710735b29d1a9d90
 - name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/satori/go.uuid
-  version: 879c5887cd475cd7864858769793b2ceb0d44feb
+  version: 5bf94b69c6b68ee1b541973bb8e1144db23a194b
 - name: github.com/sirupsen/logrus
-  version: 9b48ece7fc373043054858f8c0d362665e866004
+  version: 3d4380f53a34dcdc95f0c1db702615992b38d9a4
 - name: github.com/stretchr/testify
-  version: 4d4bfba8f1d1027c4fdbe371823030df51419987
+  version: f6abca593680b2315d2075e0f5e2a9751e3f431a
   subpackages:
   - assert
   - require
 - name: go.pedge.io/lion
-  version: d0ba5a16db3710bd9af5511722d8ddaf897fb0c1
+  version: 87958e8713f1fa138d993087133b97e976642159
 - name: golang.org/x/sys
-  version: d4feaf1a7e61e1d9e79e6c4e76c6349e9cab0a03
+  version: 90796e5a05ce440b41c768bd9af257005e470461
   subpackages:
   - unix
 - name: golang.org/x/tools
-  version: 496819729719f9d07692195e0a94d6edd2251389
+  version: e6cb469339aef5b7be0c89de730d5f3cc8e47e50
   subpackages:
   - cover
 - name: gopkg.in/inconshreveable/log15.v2
