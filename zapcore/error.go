@@ -61,7 +61,7 @@ func encodeError(key string, err error, enc ObjectEncoder) error {
 	case causer:
 		el := newErrArrayElem(e.Cause())
 		err := enc.AddArray(key+"Causes", el)
-		el.Release()
+		el.Free()
 		return err
 	}
 
@@ -94,7 +94,7 @@ func (errs errArray) MarshalLogArray(arr ArrayEncoder) error {
 
 		el := newErrArrayElem(errs[i])
 		arr.AppendObject(el)
-		el.Release()
+		el.Free()
 	}
 	return nil
 }
@@ -122,7 +122,7 @@ func (e *errArrayElem) MarshalLogObject(enc ObjectEncoder) error {
 	return encodeError("error", e.err, enc)
 }
 
-func (e *errArrayElem) Release() {
+func (e *errArrayElem) Free() {
 	e.err = nil
 	_errArrayElemPool.Put(e)
 }
