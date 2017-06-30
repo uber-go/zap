@@ -1,15 +1,17 @@
-#!/bin/bash
-
-text=`head -1 LICENSE.txt`
+#!/bin/bash -e
 
 ERROR_COUNT=0
-while read file
+while read -r file
 do
-    head -1 ${file} | grep -q "${text}"
-    if [ $? -ne 0 ]; then
-        echo "$file is missing license header."
-        (( ERROR_COUNT++ ))
-    fi
+	case "$(head -1 "${file}")" in
+		*"Copyright (c) "*" Uber Technologies, Inc.")
+			# everything's cool
+			;;
+		*)
+			echo "$file is missing license header."
+			(( ERROR_COUNT++ ))
+			;;
+	esac
 done < <(git ls-files "*\.go")
 
 exit $ERROR_COUNT
