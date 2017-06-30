@@ -37,6 +37,9 @@ type SamplingConfig struct {
 	Thereafter int `json:"thereafter" yaml:"thereafter"`
 }
 
+// SinkFunc customize output targets, for example log to io.Writer, not just files named by OutputPaths.
+type SinkFunc func(Config) (zapcore.WriteSyncer, zapcore.WriteSyncer, error)
+
 // Config offers a declarative way to construct a logger.
 //
 // It doesn't do anything that can't be done with New, Options, and the various
@@ -72,6 +75,9 @@ type Config struct {
 	// ErrorOutputPaths is a list of paths to write internal logger errors to.
 	// The default is standard error.
 	ErrorOutputPaths []string `json:"errorOutputPaths" yaml:"errorOutputPaths"`
+	// SinkFunction customize output target and error target for the log. So we can
+	// log to other targets, not just files named by OutputPaths.
+	SinkFunction SinkFunc `json:"-" yaml:"-"`
 	// InitialFields is a collection of fields to add to the root logger.
 	InitialFields map[string]interface{} `json:"initialFields" yaml:"initialFields"`
 }
@@ -214,6 +220,11 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 }
 
 func (cfg Config) openSinks() (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
+	// customize output?
+	if cfg.SinkFunction != nil {
+		return cfg.SinkFunction(cfg)
+	}
+
 	sink, closeOut, err := Open(cfg.OutputPaths...)
 	if err != nil {
 		return nil, nil, err
