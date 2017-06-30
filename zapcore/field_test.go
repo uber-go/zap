@@ -121,6 +121,7 @@ func TestFields(t *testing.T) {
 		{t: Int8Type, i: 42, want: int8(42)},
 		{t: StringType, s: "foo", want: "foo"},
 		{t: TimeType, i: 1000, iface: time.UTC, want: time.Unix(0, 1000).In(time.UTC)},
+		{t: TimeType, i: 1000, want: time.Unix(0, 1000)},
 		{t: Uint64Type, i: 42, want: uint64(42)},
 		{t: Uint32Type, i: 42, want: uint32(42)},
 		{t: Uint16Type, i: 42, want: uint16(42)},
