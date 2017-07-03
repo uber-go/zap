@@ -162,7 +162,17 @@ func (f Field) AddTo(enc ObjectEncoder) {
 	case StringerType:
 		enc.AddString(f.Key, f.Interface.(fmt.Stringer).String())
 	case ErrorType:
-		encodeError(f.Key, f.Interface.(error), enc)
+		val := f.Interface.(error)
+		basic := val.Error()
+		enc.AddString(f.Key, basic)
+		if fancy, ok := val.(fmt.Formatter); ok {
+			verbose := fmt.Sprintf("%+v", fancy)
+			if verbose != basic {
+				// This is a rich error type, like those produced by
+				// github.com/pkg/errors.
+				enc.AddString(f.Key+"Verbose", verbose)
+			}
+		}
 	case SkipType:
 		break
 	default:
