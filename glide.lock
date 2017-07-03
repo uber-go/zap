@@ -1,10 +1,10 @@
 hash: 2b8be1588d6028696f61ce80eb1b50dbad19144b4d4ead760977ad54064f4f26
-updated: 2017-06-30T10:57:16.454459206-07:00
+updated: 2017-06-27T16:21:01.272833298-07:00
 imports:
 - name: go.uber.org/atomic
   version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
 - name: go.uber.org/multierr
-  version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
+  version: ef109dc7f883f3a99db2d89edc701c25cac40571
 testImports:
 - name: github.com/apex/log
   version: 8f3a15d95392c8fc202d1e1059f46df21dff2992
@@ -21,7 +21,7 @@ testImports:
 - name: github.com/fatih/color
   version: 62e9147c64a1ed519147b62a56a14e83e2be02c1
 - name: github.com/go-kit/kit
-  version: 9917269ff0e9fc93df46474b411ea1716195a61b
+  version: 0c52d4024a04395dabac42b65e5825d08d3335df
   subpackages:
   - log
 - name: github.com/go-logfmt/logfmt
@@ -41,9 +41,9 @@ testImports:
 - name: github.com/mattn/goveralls
   version: a2cbbd7cdce4f5e051016fedf639c64bb05ef031
 - name: github.com/pborman/uuid
-  version: 1b00554d822231195d1babd97ff4a781231955c9
+  version: e790cca94e6cc75c7064b1332e63811d4aae1a53
 - name: github.com/pkg/errors
-  version: 645ef00459ed84a119197bfb8d8205042c6df63d
+  version: c605e284fe17294bda444b34710735b29d1a9d90
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
@@ -51,7 +51,7 @@ testImports:
 - name: github.com/satori/go.uuid
   version: 5bf94b69c6b68ee1b541973bb8e1144db23a194b
 - name: github.com/sirupsen/logrus
-  version: 68cec9f21fbf3ea8d8f98c044bc6ce05f17b267a
+  version: 3d4380f53a34dcdc95f0c1db702615992b38d9a4
 - name: github.com/stretchr/testify
   version: f6abca593680b2315d2075e0f5e2a9751e3f431a
   subpackages:
@@ -60,11 +60,11 @@ testImports:
 - name: go.pedge.io/lion
   version: 87958e8713f1fa138d993087133b97e976642159
 - name: golang.org/x/sys
-  version: d4feaf1a7e61e1d9e79e6c4e76c6349e9cab0a03
+  version: 90796e5a05ce440b41c768bd9af257005e470461
   subpackages:
   - unix
 - name: golang.org/x/tools
-  version: 1529f889eb4b594d1f047f2fb8d5b3cc85c8f006
+  version: e6cb469339aef5b7be0c89de730d5f3cc8e47e50
   subpackages:
   - cover
 - name: gopkg.in/inconshreveable/log15.v2
