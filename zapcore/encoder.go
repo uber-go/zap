@@ -21,6 +21,7 @@
 package zapcore
 
 import (
+	"strings"
 	"time"
 
 	"go.uber.org/zap/buffer"
@@ -196,6 +197,31 @@ func (e *CallerEncoder) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// A LoggerNameEncoder serializes a LoggerName to a primitive type.
+type LoggerNameEncoder func(string, PrimitiveArrayEncoder)
+
+// FullLoggerNameEncoder serializes a logger name as is
+func FullLoggerNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
+	enc.AppendString(loggerName)
+}
+
+// CapitalLoggerNameEncoder serializes a logger name in all caps
+func CapitalLoggerNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
+	enc.AppendString(strings.ToUpper(loggerName))
+}
+
+// UnmarshalText unmarshals text to a LoggerNameEncoder. "capital" is unmarshaled to
+// CapitalLoggerNameEncoder and anything else is unmarshaled to FullLoggerNameEncoder.
+func (e *LoggerNameEncoder) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "capital":
+		*e = CapitalLoggerNameEncoder
+	default:
+		*e = FullLoggerNameEncoder
+	}
+	return nil
+}
+
 // An EncoderConfig allows users to configure the concrete encoders supplied by
 // zapcore.
 type EncoderConfig struct {
@@ -211,10 +237,11 @@ type EncoderConfig struct {
 	// Configure the primitive representations of common complex types. For
 	// example, some users may want all time.Times serialized as floating-point
 	// seconds since epoch, while others may prefer ISO8601 strings.
-	EncodeLevel    LevelEncoder    `json:"levelEncoder" yaml:"levelEncoder"`
-	EncodeTime     TimeEncoder     `json:"timeEncoder" yaml:"timeEncoder"`
-	EncodeDuration DurationEncoder `json:"durationEncoder" yaml:"durationEncoder"`
-	EncodeCaller   CallerEncoder   `json:"callerEncoder" yaml:"callerEncoder"`
+	EncodeLevel      LevelEncoder      `json:"levelEncoder" yaml:"levelEncoder"`
+	EncodeTime       TimeEncoder       `json:"timeEncoder" yaml:"timeEncoder"`
+	EncodeDuration   DurationEncoder   `json:"durationEncoder" yaml:"durationEncoder"`
+	EncodeCaller     CallerEncoder     `json:"callerEncoder" yaml:"callerEncoder"`
+	EncodeLoggerName LoggerNameEncoder `json:"nameEncoder" yaml:"nameEncoder"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a
