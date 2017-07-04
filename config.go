@@ -27,9 +27,9 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// SamplingConfig sets a sampling strategy for the logger. Sampling
-// caps the global CPU and I/O load that logging puts on your process while
-// attempting to preserve a representative subset of your logs.
+// SamplingConfig sets a sampling strategy for the logger. Sampling caps the
+// global CPU and I/O load that logging puts on your process while attempting
+// to preserve a representative subset of your logs.
 //
 // Values configured here are per-second. See zapcore.NewSampler for details.
 type SamplingConfig struct {
@@ -37,16 +37,23 @@ type SamplingConfig struct {
 	Thereafter int `json:"thereafter" yaml:"thereafter"`
 }
 
-// Config offers a declarative way to construct a logger.
-//
-// It doesn't do anything that can't be done with New, Options, and the various
+// Config offers a declarative way to construct a logger. It doesn't do
+// anything that can't be done with New, Options, and the various
 // zapcore.WriteSyncer and zapcore.Core wrappers, but it's a simpler way to
 // toggle common options.
+//
+// Note that Config intentionally supports only the most common options. More
+// unusual logging setups (logging to network connections or message queues,
+// splitting output between multiple files, etc.) are possible, but require
+// direct use of the zapcore package. For sample code, see the package-level
+// BasicConfiguration and AdvancedConfiguration examples.
+//
+// For an example showing runtime log level changes, see the documentation for
+// AtomicLevel.
 type Config struct {
 	// Level is the minimum enabled logging level. Note that this is a dynamic
 	// level, so calling Config.Level.SetLevel will atomically change the log
-	// level of all loggers descended from this config. The zero value is
-	// InfoLevel.
+	// level of all loggers descended from this config.
 	Level AtomicLevel `json:"level" yaml:"level"`
 	// Development puts the logger in development mode, which changes the
 	// behavior of DPanicLevel and takes stacktraces more liberally.
@@ -61,7 +68,8 @@ type Config struct {
 	// Sampling sets a sampling policy. A nil SamplingConfig disables sampling.
 	Sampling *SamplingConfig `json:"sampling" yaml:"sampling"`
 	// Encoding sets the logger's encoding. Valid values are "json" and
-	// "console".
+	// "console", as well as any third-party encodings registered via
+	// RegisterEncoder.
 	Encoding string `json:"encoding" yaml:"encoding"`
 	// EncoderConfig sets options for the chosen encoder. See
 	// zapcore.EncoderConfig for details.
@@ -71,6 +79,10 @@ type Config struct {
 	OutputPaths []string `json:"outputPaths" yaml:"outputPaths"`
 	// ErrorOutputPaths is a list of paths to write internal logger errors to.
 	// The default is standard error.
+	//
+	// Note that this setting only affects internal errors; for sample code that
+	// sends error-level logs to a different location from info- and debug-level
+	// logs, see the package-level AdvancedConfiguration example.
 	ErrorOutputPaths []string `json:"errorOutputPaths" yaml:"errorOutputPaths"`
 	// InitialFields is a collection of fields to add to the root logger.
 	InitialFields map[string]interface{} `json:"initialFields" yaml:"initialFields"`
@@ -94,8 +106,8 @@ func NewProductionEncoderConfig() zapcore.EncoderConfig {
 	}
 }
 
-// NewProductionConfig is the recommended production configuration. Logging is
-// enabled at InfoLevel and above.
+// NewProductionConfig is a reasonable production logging configuration.
+// Logging is enabled at InfoLevel and above.
 //
 // It uses a JSON encoder, writes to standard error, and enables sampling.
 // Stacktraces are automatically included on logs of ErrorLevel and above.
@@ -133,8 +145,8 @@ func NewDevelopmentEncoderConfig() zapcore.EncoderConfig {
 	}
 }
 
-// NewDevelopmentConfig is a reasonable development configuration. Logging is
-// enabled at DebugLevel and above.
+// NewDevelopmentConfig is a reasonable development logging configuration.
+// Logging is enabled at DebugLevel and above.
 //
 // It enables development mode (which makes DPanicLevel logs panic), uses a
 // console encoder, writes to standard error, and disables sampling.

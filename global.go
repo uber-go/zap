@@ -39,7 +39,6 @@ var (
 )
 
 // L returns the global Logger, which can be reconfigured with ReplaceGlobals.
-//
 // It's safe for concurrent use.
 func L() *Logger {
 	_globalMu.RLock()
@@ -49,9 +48,7 @@ func L() *Logger {
 }
 
 // S returns the global SugaredLogger, which can be reconfigured with
-// ReplaceGlobals.
-//
-// It's safe for concurrent use.
+// ReplaceGlobals. It's safe for concurrent use.
 func S() *SugaredLogger {
 	_globalMu.RLock()
 	s := _globalS
@@ -59,10 +56,8 @@ func S() *SugaredLogger {
 	return s
 }
 
-// ReplaceGlobals replaces the global Logger and the SugaredLogger, and returns
-// a function to restore the original values.
-//
-// It's safe for concurrent use.
+// ReplaceGlobals replaces the global Logger and SugaredLogger, and returns a
+// function to restore the original values. It's safe for concurrent use.
 func ReplaceGlobals(logger *Logger) func() {
 	_globalMu.Lock()
 	prev := _globalL
