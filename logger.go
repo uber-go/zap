@@ -106,7 +106,7 @@ func NewDevelopment(options ...Option) (*Logger, error) {
 // examples. It writes DebugLevel and above logs to standard out as JSON, but
 // omits the timestamp and calling function to keep example output
 // short and deterministic.
-func NewExample() *Logger {
+func NewExample(options ...Option) *Logger {
 	encoderCfg := zapcore.EncoderConfig{
 		MessageKey:     "msg",
 		LevelKey:       "level",
@@ -116,7 +116,7 @@ func NewExample() *Logger {
 		EncodeDuration: zapcore.StringDurationEncoder,
 	}
 	core := zapcore.NewCore(zapcore.NewJSONEncoder(encoderCfg), os.Stdout, DebugLevel)
-	return New(core)
+	return New(core).WithOptions(options...)
 }
 
 // Sugar wraps the Logger to provide a more ergonomic, but slightly slower,
