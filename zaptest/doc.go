@@ -18,5 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package zaptest provides helpers for testing log output.
+// Package zaptest provides low-level helpers for testing log output. These
+// utilities are helpful in zap's own unit tests, but any assertions using
+// them are strongly coupled to a single encoding.
+//
+// Users are likely better-served by the high-level utilities in
+// go.uber.org/zap/zaptest/observer.
 package zaptest // import "go.uber.org/zap/zaptest"
