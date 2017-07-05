@@ -111,7 +111,7 @@ func getBenchmarkRows(benchmarkName string) (string, error) {
 	}
 	sort.Sort(benchmarkRowsByTime(benchmarkRows))
 	rows := []string{
-		"| Library | Time | Bytes Allocated | Objects Allocated |",
+		"| Package | Time | Bytes Allocated | Objects Allocated |",
 		"| :--- | :---: | :---: | :---: |",
 	}
 	for _, benchmarkRow := range benchmarkRows {
