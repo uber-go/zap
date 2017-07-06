@@ -22,6 +22,6 @@
 // utilities are helpful in zap's own unit tests, but any assertions using
 // them are strongly coupled to a single encoding.
 //
-// Users are likely better-served by the high-level utilities in
-// go.uber.org/zap/zaptest/observer.
+// Most users should use go.uber.org/zap/zaptest/observer instead of this
+// package.
 package zaptest // import "go.uber.org/zap/zaptest"
