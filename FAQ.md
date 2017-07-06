@@ -4,7 +4,7 @@
 
 ### Why spend so much effort on logger performance?
 
-Of couse, most applications won't notice the impact of a slow logger: they
+Of course, most applications won't notice the impact of a slow logger: they
 already take tens or hundreds of milliseconds for each operation, so an extra
 millisecond doesn't matter.
 
@@ -16,37 +16,41 @@ up quickly.
 
 ### Why aren't `Logger` and `SugaredLogger` interfaces?
 
-Unlike most widely used interfaces, both `Logger` and `SugaredLogger`
-interfaces would include *many* methods. As [Rob Pike points
+Unlike the familiar `io.Writer` and `http.Handler`, `Logger` and
+`SugaredLogger` interfaces would include *many* methods. As [Rob Pike points
 out][go-proverbs], "The bigger the interface, the weaker the abstraction."
 Interfaces are also rigid &mdash; *any* change requires releasing a new major
 version, since it breaks all third-party implementations.
 
 Making the `Logger` and `SugaredLogger` concrete types doesn't sacrifice much
 abstraction, and it lets us add methods without introducing breaking changes.
-Your applications can and should define and depend upon an interface that
-includes just the methods you use.
+Your applications should define and depend upon an interface that includes
+just the methods you use.
 
 ### Why sample application logs?
 
 Applications often experience runs of errors, either because of a bug or
 because of a misbehaving user. Logging errors is usually a good idea, but it
-can sometimes make a bad situation worse: not only is your application coping
-with an increased number of errors, it's also spending extra CPU cycles and
-I/O logging those errors. In the worst case, each call to your logger is
-contending over the same mutex, limiting throughput when you need it most.
+can easily make this bad situation worse: not only is your application coping
+with a flood of errors, it's also spending extra CPU cycles and I/O logging
+those errors. Since writes are typically serialized, logging limits throughput
+when you need it most.
 
 Sampling fixes this problem by dropping repetitive log entries. Under normal
-conditions, your application writes out every entry. When the similar entries
-are logged hundreds or thousands of times each second, though, zap begins
-dropping duplicates to preserve throughput.
+conditions, your application writes out every entry. When similar entries are
+logged hundreds or thousands of times each second, though, zap begins dropping
+duplicates to preserve throughput.
 
 ### Why do the structured logging APIs take a message in addition to fields?
 
-Zap's sampling algorithm uses the message to identify duplicate entries. In
-our experience, this is a practical middle ground between random sampling
-(which often drops the exact entry that you need while debugging) and
-hashing the complete entry (which is prohibitively expensive).
+Subjectively, we find it helpful to accompany structured context with a brief
+description. This isn't critical during development, but it makes debugging
+and operating unfamiliar systems much easier.
+
+More concretely, zap's sampling algorithm uses the message to identify
+duplicate entries. In our experience, this is a practical middle ground
+between random sampling (which often drops the exact entry that you need while
+debugging) and hashing the complete entry (which is prohibitively expensive).
 
 ### Why include package-global loggers?
 
@@ -55,7 +59,7 @@ applications aren't designed to accept loggers as explicit parameters.
 Changing function signatures is often a breaking change, so zap includes
 global loggers to simplify migration.
 
-Where possible, avoid using them.
+Avoid them where possible.
 
 ### Why include dedicated Panic and Fatal log levels?
 
@@ -74,16 +78,15 @@ See the discussion in uber-go/zap#207 for more details.
 ### What's `DPanic`?
 
 `DPanic` stands for "panic in development." In development, it logs at
-`PanicLevel`; otherwise, it logs at `ErrorLevel`. It's designed to make it
-easier to catch errors that are theoretically possible, but shouldn't ever
-happen in practice.
+`PanicLevel`; otherwise, it logs at `ErrorLevel`. `DPanic` makes it easier to
+catch errors that are theoretically possible, but shouldn't actually happen,
+*without* crashing in production.
 
 If you've ever written code like this, you need `DPanic`:
 
 ```go
 if err != nil {
-  logger.Print("shouldn't ever get here: %v", err)
-  return err
+  panic(fmt.Sprintf("shouldn't ever get here: %v", err))
 }
 ```
 
@@ -107,7 +110,7 @@ get -u go.uber.org/zap`, and always import it in your code with `import
 
 ## Usage
 
-### Does zap support rotating log files?
+### Does zap support log rotation?
 
 Zap doesn't natively support rotating log files, since we prefer to leave this
 to an external program like `logrotate`.
