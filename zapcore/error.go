@@ -46,6 +46,10 @@ func encodeError(key string, err error, enc ObjectEncoder) error {
 	basic := err.Error()
 	enc.AddString(key, basic)
 
+	if group, ok := err.(errorGroup); ok {
+		return enc.AddArray(key+"Causes", errArray(group.Errors()))
+	}
+
 	if fancy, ok := err.(fmt.Formatter); ok {
 		verbose := fmt.Sprintf("%+v", fancy)
 		if verbose != basic {
@@ -54,17 +58,6 @@ func encodeError(key string, err error, enc ObjectEncoder) error {
 			enc.AddString(key+"Verbose", verbose)
 		}
 	}
-
-	switch e := err.(type) {
-	case errorGroup:
-		return enc.AddArray(key+"Causes", errArray(e.Errors()))
-	case causer:
-		el := newErrArrayElem(e.Cause())
-		err := enc.AddArray(key+"Causes", el)
-		el.Free()
-		return err
-	}
-
 	return nil
 }
 
