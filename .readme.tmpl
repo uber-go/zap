@@ -41,6 +41,8 @@ logger.Info("Failed to fetch URL.",
 )
 ```
 
+See the [documentation][doc] and [FAQ](FAQ.md) for more details.
+
 ## Performance
 
 For applications that log in the hot path, reflection-based serialization and
