@@ -18,34 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zaptest
-
-import (
-	"log"
-	"os"
-	"strconv"
-	"time"
-)
-
-var _timeoutScale = 1.0
-
-// Timeout scales the provided duration by $TEST_TIMEOUT_SCALE.
-func Timeout(base time.Duration) time.Duration {
-	return time.Duration(float64(base) * _timeoutScale)
-}
-
-// Sleep scales the sleep duration by $TEST_TIMEOUT_SCALE.
-func Sleep(base time.Duration) {
-	time.Sleep(Timeout(base))
-}
-
-func init() {
-	if v := os.Getenv("TEST_TIMEOUT_SCALE"); v != "" {
-		fv, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			panic(err)
-		}
-		_timeoutScale = fv
-		log.Printf("Scaling timeouts by %vx.\n", _timeoutScale)
-	}
-}
+// Package zaptest provides low-level helpers for testing log output. These
+// utilities are helpful in zap's own unit tests, but any assertions using
+// them are strongly coupled to a single encoding.
+//
+// Most users should use go.uber.org/zap/zaptest/observer instead of this
+// package.
+package zaptest // import "go.uber.org/zap/zaptest"

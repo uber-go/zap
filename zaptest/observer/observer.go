@@ -18,7 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package observer
+// Package observer provides a zapcore.Core that keeps an in-memory,
+// encoding-agnostic repesentation of log entries. It's useful for
+// applications that want to unit test their log output without tying their
+// tests to a particular output encoding.
+package observer // import "go.uber.org/zap/zaptest/observer"
 
 import (
 	"strings"
