@@ -28,7 +28,6 @@ import (
 
 	richErrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.uber.org/multierr"
 	. "go.uber.org/zap/zapcore"
@@ -88,10 +87,6 @@ func TestErrorEncoding(t *testing.T) {
 			),
 			want: map[string]interface{}{
 				"err": "foo; bar; baz",
-				"errVerbose": "the following errors occurred:\n" +
-					" -  foo\n" +
-					" -  bar\n" +
-					" -  baz",
 				"errCauses": []interface{}{
 					map[string]interface{}{"error": "foo"},
 					map[string]interface{}{"error": "bar"},
@@ -108,9 +103,6 @@ func TestErrorEncoding(t *testing.T) {
 					map[string]interface{}{"error": "foo"},
 					map[string]interface{}{
 						"error": "bar; baz",
-						"errorVerbose": "the following errors occurred:\n" +
-							" -  bar\n" +
-							" -  baz",
 						"errorCauses": []interface{}{
 							map[string]interface{}{"error": "bar"},
 							map[string]interface{}{"error": "baz"},
@@ -123,14 +115,8 @@ func TestErrorEncoding(t *testing.T) {
 			k:     "k",
 			iface: richErrors.WithMessage(errors.New("egad"), "failed"),
 			want: map[string]interface{}{
-				"k": "failed: egad",
-				"kVerbose": "egad\n" +
-					"failed",
-				"kCauses": []interface{}{
-					map[string]interface{}{
-						"error": "egad",
-					},
-				},
+				"k":        "failed: egad",
+				"kVerbose": "egad\nfailed",
 			},
 		},
 		{
@@ -145,14 +131,6 @@ func TestErrorEncoding(t *testing.T) {
 			),
 			want: map[string]interface{}{
 				"error": "hello: foo; bar; baz; world: qux",
-				"errorVerbose": "the following errors occurred:\n" +
-					" -  the following errors occurred:\n" +
-					"     -  foo\n" +
-					"     -  bar\n" +
-					"    hello\n" +
-					" -  baz\n" +
-					" -  qux\n" +
-					"    world",
 				"errorCauses": []interface{}{
 					map[string]interface{}{
 						"error": "hello: foo; bar",
@@ -160,27 +138,9 @@ func TestErrorEncoding(t *testing.T) {
 							" -  foo\n" +
 							" -  bar\n" +
 							"hello",
-						"errorCauses": []interface{}{
-							map[string]interface{}{
-								"error": "foo; bar",
-								"errorVerbose": "the following errors occurred:\n" +
-									" -  foo\n" +
-									" -  bar",
-								"errorCauses": []interface{}{
-									map[string]interface{}{"error": "foo"},
-									map[string]interface{}{"error": "bar"},
-								},
-							},
-						},
 					},
 					map[string]interface{}{"error": "baz"},
-					map[string]interface{}{
-						"error":        "world: qux",
-						"errorVerbose": "qux\nworld",
-						"errorCauses": []interface{}{
-							map[string]interface{}{"error": "qux"},
-						},
-					},
+					map[string]interface{}{"error": "world: qux", "errorVerbose": "qux\nworld"},
 				},
 			},
 		},
@@ -214,14 +174,4 @@ func TestRichErrorSupport(t *testing.T) {
 	assert.Regexp(t, `egad`, serialized, "Expected original error message to be present.")
 	assert.Regexp(t, `failed`, serialized, "Expected error annotation to be present.")
 	assert.Regexp(t, `TestRichErrorSupport`, serialized, "Expected calling function to be present in stacktrace.")
-
-	arr, ok := enc.Fields["kCauses"].([]interface{})
-	require.True(t, ok, "Expected causes array to be present")
-	require.Len(t, arr, 1, "Expected a single cause")
-
-	cause, ok := arr[0].(map[string]interface{})
-	require.True(t, ok, "Expected cause object")
-	assert.Equal(t, "egad", cause["error"], "Expected error message to match")
-	assert.Regexp(t, `egad`, cause["errorVerbose"], "Expected verbose message to match")
-	assert.Regexp(t, `TestRichErrorSupport`, cause["errorVerbose"], "Expected verbose message to match")
 }
