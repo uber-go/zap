@@ -46,12 +46,11 @@ func encodeError(key string, err error, enc ObjectEncoder) error {
 	basic := err.Error()
 	enc.AddString(key, basic)
 
-	if group, ok := err.(errorGroup); ok {
-		return enc.AddArray(key+"Causes", errArray(group.Errors()))
-	}
-
-	if fancy, ok := err.(fmt.Formatter); ok {
-		verbose := fmt.Sprintf("%+v", fancy)
+	switch e := err.(type) {
+	case errorGroup:
+		return enc.AddArray(key+"Causes", errArray(e.Errors()))
+	case fmt.Formatter:
+		verbose := fmt.Sprintf("%+v", e)
 		if verbose != basic {
 			// This is a rich error type, like those produced by
 			// github.com/pkg/errors.
