@@ -50,6 +50,10 @@
 //  )
 //  sugar.Printf("failed to fetch URL: %s", "http://example.com")
 //
+// By default, loggers are unbuffered. However, since zap's low-level APIs
+// allow buffering, calling `Sync` before letting your process exit is a good
+// habit.
+//
 // In the rare contexts where every microsecond and every allocation matter,
 // use the Logger. It's even faster than the SugaredLogger and allocates far
 // less, but it only supports strongly-typed, structured logging.
