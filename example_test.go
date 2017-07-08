@@ -75,17 +75,18 @@ func Example_basicConfiguration() {
 	// See the documentation for Config and zapcore.EncoderConfig for all the
 	// available options.
 	rawJSON := []byte(`{
-		"level": "debug",
-		"encoding": "json",
-		"outputPaths": ["stdout", "/tmp/logs"],
-		"errorOutputPaths": ["stderr"],
-		"initialFields": {"foo": "bar"},
-		"encoderConfig": {
-			"messageKey": "message",
-			"levelKey": "level",
-			"levelEncoder": "lowercase"
-		}
+	  "level": "debug",
+	  "encoding": "json",
+	  "outputPaths": ["stdout", "/tmp/logs"],
+	  "errorOutputPaths": ["stderr"],
+	  "initialFields": {"foo": "bar"},
+	  "encoderConfig": {
+	    "messageKey": "message",
+	    "levelKey": "level",
+	    "levelEncoder": "lowercase"
+	  }
 	}`)
+
 	var cfg zap.Config
 	if err := json.Unmarshal(rawJSON, &cfg); err != nil {
 		panic(err)
@@ -124,11 +125,13 @@ func Example_advancedConfiguration() {
 	// implement io.Writer, we can use zapcore.AddSync to add a no-op Sync
 	// method. If they're not safe for concurrent use, we can add a protecting
 	// mutex with zapcore.Lock.)
-	topicDebugging, topicErrors := zapcore.AddSync(ioutil.Discard), zapcore.AddSync(ioutil.Discard)
+	topicDebugging := zapcore.AddSync(ioutil.Discard)
+	topicErrors := zapcore.AddSync(ioutil.Discard)
 
 	// High-priority output should also go to standard error, and low-priority
 	// output should also go to standard out.
-	consoleDebugging, consoleErrors := zapcore.Lock(os.Stdout), zapcore.Lock(os.Stderr)
+	consoleDebugging := zapcore.Lock(os.Stdout)
+	consoleErrors := zapcore.Lock(os.Stderr)
 
 	// Optimize the Kafka output for machine consumption and the console output
 	// for human operators.
