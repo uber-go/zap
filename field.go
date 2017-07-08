@@ -28,7 +28,8 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// Skip constructs a no-op field.
+// Skip constructs a no-op field, which is often useful when handling invalid
+// inputs in other Field constructors.
 func Skip() zapcore.Field {
 	return zapcore.Field{Type: zapcore.SkipType}
 }

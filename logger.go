@@ -31,10 +31,13 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// A Logger provides fast, leveled, structured logging. All methods are safe for
-// concurrent use.
+// A Logger provides fast, leveled, structured logging. All methods are safe
+// for concurrent use.
 //
-// If you'd prefer a slower but less verbose logger, see the SugaredLogger.
+// The Logger is designed for contexts in which every microsecond and every
+// allocation matters, so its API intentionally favors performance and type
+// safety over brevity. For most applications, the SugaredLogger strikes a
+// better balance between performance and ergonomics.
 type Logger struct {
 	core zapcore.Core
 
@@ -49,12 +52,15 @@ type Logger struct {
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
-// the passed zapcore.Core is nil, we fall back to using a no-op
+// the passed zapcore.Core is nil, it falls back to using a no-op
 // implementation.
 //
 // This is the most flexible way to construct a Logger, but also the most
-// verbose. For typical use cases, NewProduction and NewDevelopment are more
-// convenient.
+// verbose. For typical use cases, the highly-opinionated presets
+// (NewProduction, NewDevelopment, and NewExample) or the Config struct are
+// more convenient.
+//
+// For sample code, see the package-level AdvancedConfiguration example.
 func New(core zapcore.Core, options ...Option) *Logger {
 	if core == nil {
 		return NewNop()
@@ -96,7 +102,27 @@ func NewDevelopment(options ...Option) (*Logger, error) {
 	return NewDevelopmentConfig().Build(options...)
 }
 
-// Sugar converts a Logger to a SugaredLogger.
+// NewExample builds a Logger that's designed for use in zap's testable
+// examples. It writes DebugLevel and above logs to standard out as JSON, but
+// omits the timestamp and calling function to keep example output
+// short and deterministic.
+func NewExample(options ...Option) *Logger {
+	encoderCfg := zapcore.EncoderConfig{
+		MessageKey:     "msg",
+		LevelKey:       "level",
+		NameKey:        "logger",
+		EncodeLevel:    zapcore.LowercaseLevelEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.StringDurationEncoder,
+	}
+	core := zapcore.NewCore(zapcore.NewJSONEncoder(encoderCfg), os.Stdout, DebugLevel)
+	return New(core).WithOptions(options...)
+}
+
+// Sugar wraps the Logger to provide a more ergonomic, but slightly slower,
+// API. Sugaring a Logger is quite inexpensive, so it's reasonable for a
+// single application to use both Loggers and SugaredLoggers, converting
+// between them on the boundaries of performance-sensitive code.
 func (log *Logger) Sugar() *SugaredLogger {
 	core := log.clone()
 	core.callerSkip += 2
@@ -104,7 +130,7 @@ func (log *Logger) Sugar() *SugaredLogger {
 }
 
 // Named adds a new path segment to the logger's name. Segments are joined by
-// periods.
+// periods. By default, Loggers are unnamed.
 func (log *Logger) Named(s string) *Logger {
 	if s == "" {
 		return log
@@ -178,8 +204,8 @@ func (log *Logger) Error(msg string, fields ...zapcore.Field) {
 	}
 }
 
-// DPanic logs a message at DPanicLevel. The message includes any fields passed
-// at the log site, as well as any fields accumulated on the logger.
+// DPanic logs a message at DPanicLevel. The message includes any fields
+// passed at the log site, as well as any fields accumulated on the logger.
 //
 // If the logger is in development mode, it then panics (DPanic means
 // "development panic"). This is useful for catching errors that are
@@ -203,19 +229,21 @@ func (log *Logger) Panic(msg string, fields ...zapcore.Field) {
 // Fatal logs a message at FatalLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 //
-// The logger then calls os.Exit(1), even if logging at FatalLevel is disabled.
+// The logger then calls os.Exit(1), even if logging at FatalLevel is
+// disabled.
 func (log *Logger) Fatal(msg string, fields ...zapcore.Field) {
 	if ce := log.check(FatalLevel, msg); ce != nil {
 		ce.Write(fields...)
 	}
 }
 
-// Sync flushes any buffered log entries.
+// Sync calls the underlying Core's Sync method, flushing any buffered log
+// entries. Applications should take care to call Sync before exiting.
 func (log *Logger) Sync() error {
 	return log.core.Sync()
 }
 
-// Core returns the underlying zapcore.Core.
+// Core returns the Logger's underlying zapcore.Core.
 func (log *Logger) Core() zapcore.Core {
 	return log.core
 }

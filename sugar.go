@@ -36,11 +36,20 @@ const (
 // A SugaredLogger wraps the base Logger functionality in a slower, but less
 // verbose, API. Any Logger can be converted to a SugaredLogger with its Sugar
 // method.
+//
+// Unlike the Logger, the SugaredLogger doesn't insist on structured logging.
+// For each log level, it exposes three methods: one for loosely-typed
+// structured logging, one for println-style formatting, and one for
+// printf-style formatting. For example, SugaredLoggers can produce InfoLevel
+// output with Infow ("info with" structured context), Info, or Infof.
 type SugaredLogger struct {
 	base *Logger
 }
 
-// Desugar unwraps a SugaredLogger, exposing the original Logger.
+// Desugar unwraps a SugaredLogger, exposing the original Logger. Desugaring
+// is quite inexpensive, so it's reasonable for a single application to use
+// both Loggers and SugaredLoggers, converting between them on the boundaries
+// of performance-sensitive code.
 func (s *SugaredLogger) Desugar() *Logger {
 	base := s.base.clone()
 	base.callerSkip -= 2
@@ -66,7 +75,7 @@ func (s *SugaredLogger) Named(name string) *SugaredLogger {
 //     "user", User{Name: "alice"},
 //  )
 // is the equivalent of
-//   baseLogger.With(
+//   unsugared.With(
 //     String("hello", "world"),
 //     String("failure", "oh no"),
 //     Stack(),
@@ -76,8 +85,8 @@ func (s *SugaredLogger) Named(name string) *SugaredLogger {
 //
 // Note that the keys in key-value pairs should be strings. In development,
 // passing a non-string key panics. In production, the logger is more
-// forgiving: a separate error is logged, but the key-value pair is skipped and
-// execution continues. Passing an orphaned key triggers similar behavior:
+// forgiving: a separate error is logged, but the key-value pair is skipped
+// and execution continues. Passing an orphaned key triggers similar behavior:
 // panics in development and errors in production.
 func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
 	return &SugaredLogger{base: s.base.With(s.sweetenFields(args)...)}

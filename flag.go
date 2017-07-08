@@ -26,11 +26,12 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// LevelFlag defines a Level flag with specified name, default value and
-// usage string. The return value is the address of a Level value that stores
-// the value of the flag.
+// LevelFlag uses the standard library's flag.Var to declare a global flag
+// with the specified name, default, and usage guidance. The returned value is
+// a pointer to the value of the flag.
 //
-// Note that you can also use any non-nil *Level as a flag.Value.
+// If you don't want to use the flag package's global state, you can use any
+// non-nil *Level as a flag.Value with your own *flag.FlagSet.
 func LevelFlag(name string, defaultLevel zapcore.Level, usage string) *zapcore.Level {
 	lvl := defaultLevel
 	flag.Var(&lvl, name, usage)

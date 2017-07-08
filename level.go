@@ -48,6 +48,10 @@ const (
 
 // LevelEnablerFunc is a convenient way to implement zapcore.LevelEnabler with
 // an anonymous function.
+//
+// It's particularly useful when splitting log output between different
+// outputs (e.g., standard error and standard out). For sample code, see the
+// package-level AdvancedConfiguration example.
 type LevelEnablerFunc func(zapcore.Level) bool
 
 // Enabled calls the wrapped function.
