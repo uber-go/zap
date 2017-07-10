@@ -21,7 +21,6 @@
 package zapcore
 
 import (
-	"strings"
 	"time"
 
 	"go.uber.org/zap/buffer"
@@ -197,27 +196,20 @@ func (e *CallerEncoder) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// A LoggerNameEncoder serializes a LoggerName to a primitive type.
-type LoggerNameEncoder func(string, PrimitiveArrayEncoder)
+// A NameEncoder serializes a LoggerName to a primitive type.
+type NameEncoder func(string, PrimitiveArrayEncoder)
 
-// FullLoggerNameEncoder serializes a logger name as is
-func FullLoggerNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
+// FullNameEncoder serializes a logger name as is
+func FullNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
 	enc.AppendString(loggerName)
 }
 
-// CapitalLoggerNameEncoder serializes a logger name in all caps
-func CapitalLoggerNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
-	enc.AppendString(strings.ToUpper(loggerName))
-}
-
-// UnmarshalText unmarshals text to a LoggerNameEncoder. "capital" is unmarshaled to
-// CapitalLoggerNameEncoder and anything else is unmarshaled to FullLoggerNameEncoder.
-func (e *LoggerNameEncoder) UnmarshalText(text []byte) error {
+// UnmarshalText unmarshals text to a NameEncoder. "capital" is unmarshaled to
+// CapitalNameEncoder and anything else is unmarshaled to FullNameEncoder.
+func (e *NameEncoder) UnmarshalText(text []byte) error {
 	switch string(text) {
-	case "capital":
-		*e = CapitalLoggerNameEncoder
 	default:
-		*e = FullLoggerNameEncoder
+		*e = FullNameEncoder
 	}
 	return nil
 }
@@ -236,12 +228,14 @@ type EncoderConfig struct {
 	LineEnding    string `json:"lineEnding" yaml:"lineEnding"`
 	// Configure the primitive representations of common complex types. For
 	// example, some users may want all time.Times serialized as floating-point
-	// seconds since epoch, while others may prefer ISO8601 strings.
-	EncodeLevel      LevelEncoder      `json:"levelEncoder" yaml:"levelEncoder"`
-	EncodeTime       TimeEncoder       `json:"timeEncoder" yaml:"timeEncoder"`
-	EncodeDuration   DurationEncoder   `json:"durationEncoder" yaml:"durationEncoder"`
-	EncodeCaller     CallerEncoder     `json:"callerEncoder" yaml:"callerEncoder"`
-	EncodeLoggerName LoggerNameEncoder `json:"nameEncoder" yaml:"nameEncoder"`
+	// seconds since epoch, while others may prefer ISO8601 strings. EncodeName
+	// is optional - initializing it to nil will fall back to printing the logger
+	// name as is (using FullNameEncoder)
+	EncodeLevel    LevelEncoder    `json:"levelEncoder" yaml:"levelEncoder"`
+	EncodeTime     TimeEncoder     `json:"timeEncoder" yaml:"timeEncoder"`
+	EncodeDuration DurationEncoder `json:"durationEncoder" yaml:"durationEncoder"`
+	EncodeCaller   CallerEncoder   `json:"callerEncoder" yaml:"callerEncoder"`
+	EncodeName     NameEncoder     `json:"nameEncoder" yaml:"nameEncoder"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a
