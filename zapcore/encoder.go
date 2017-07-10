@@ -204,8 +204,8 @@ func FullNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
 	enc.AppendString(loggerName)
 }
 
-// UnmarshalText unmarshals text to a NameEncoder. "capital" is unmarshaled to
-// CapitalNameEncoder and anything else is unmarshaled to FullNameEncoder.
+// UnmarshalText unmarshals text to a NameEncoder. everything is unmarshaled to
+// FullNameEncoder.
 func (e *NameEncoder) UnmarshalText(text []byte) error {
 	switch string(text) {
 	default:

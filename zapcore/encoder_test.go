@@ -75,7 +75,7 @@ func withConsoleEncoder(f func(Encoder)) {
 	f(NewConsoleEncoder(humanEncoderConfig()))
 }
 
-// CapitalNameEncoder serializes a logger name in all caps
+// capitalNameEncoder serializes a logger name in all caps
 func capitalNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
 	enc.AppendString(strings.ToUpper(loggerName))
 }
