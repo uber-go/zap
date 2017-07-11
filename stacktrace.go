@@ -46,12 +46,12 @@ func takeStacktrace() string {
 	programCounters := _stacktracePool.Get().(*programCounters)
 	defer _stacktracePool.Put(programCounters)
 
+	var numFrames int
 	for {
 		// Skip the call to runtime.Counters and takeStacktrace so that the
 		// program counters start at the caller of takeStacktrace.
-		n := runtime.Callers(2, programCounters.pcs)
-		if n < cap(programCounters.pcs) {
-			programCounters.pcs = programCounters.pcs[:n]
+		numFrames = runtime.Callers(2, programCounters.pcs)
+		if numFrames < len(programCounters.pcs) {
 			break
 		}
 		// Don't put the too-short counter slice back into the pool; this lets
@@ -60,7 +60,7 @@ func takeStacktrace() string {
 	}
 
 	i := 0
-	frames := runtime.CallersFrames(programCounters.pcs)
+	frames := runtime.CallersFrames(programCounters.pcs[:numFrames])
 	for frame, more := frames.Next(); more; frame, more = frames.Next() {
 		if shouldIgnoreStacktraceFunction(frame.Function) {
 			continue
