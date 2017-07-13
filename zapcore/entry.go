@@ -22,6 +22,7 @@ package zapcore
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -54,26 +55,40 @@ func putCheckedEntry(ce *CheckedEntry) {
 	_cePool.Put(ce)
 }
 
+func classFunctionName(f string) string {
+	i := strings.LastIndex(f, "/")
+	j := strings.Index(f[i+1:], ".")
+	return f[i+j+2:]
+}
+
 // NewEntryCaller makes an EntryCaller from the return signature of
 // runtime.Caller.
 func NewEntryCaller(pc uintptr, file string, line int, ok bool) EntryCaller {
 	if !ok {
 		return EntryCaller{}
 	}
+
+	classFunc := "unknown"
+	if f := runtime.FuncForPC(pc); f != nil {
+		classFunc = classFunctionName(f.Name())
+	}
+
 	return EntryCaller{
-		PC:      pc,
-		File:    file,
-		Line:    line,
-		Defined: true,
+		PC:                  pc,
+		File:                file,
+		Line:                line,
+		Defined:             true,
+		CallerClassFunction: classFunc,
 	}
 }
 
 // EntryCaller represents the caller of a logging function.
 type EntryCaller struct {
-	Defined bool
-	PC      uintptr
-	File    string
-	Line    int
+	Defined             bool
+	PC                  uintptr
+	File                string
+	Line                int
+	CallerClassFunction string
 }
 
 // String returns the full path and line number of the caller.
@@ -98,7 +113,9 @@ func (ec EntryCaller) FullPath() string {
 
 // TrimmedPath returns a package/file:line description of the caller,
 // preserving only the leaf directory name and file name.
-func (ec EntryCaller) TrimmedPath() string {
+// if withClassFunction is set to true, this will append the caller class
+// and function name.
+func (ec EntryCaller) TrimmedPath(withClassFunction ...bool) string {
 	if !ec.Defined {
 		return "undefined"
 	}
@@ -115,14 +132,18 @@ func (ec EntryCaller) TrimmedPath() string {
 	//
 	// Find the last separator.
 	//
+	classFunction := ""
+	if len(withClassFunction) > 0 && withClassFunction[0] == true {
+		classFunction = " " + ec.CallerClassFunction
+	}
 	idx := strings.LastIndexByte(ec.File, '/')
 	if idx == -1 {
-		return ec.FullPath()
+		return ec.FullPath() + classFunction
 	}
 	// Find the penultimate separator.
 	idx = strings.LastIndexByte(ec.File[:idx], '/')
 	if idx == -1 {
-		return ec.FullPath()
+		return ec.FullPath() + classFunction
 	}
 	buf := bufferpool.Get()
 	// Keep everything after the penultimate separator.
@@ -131,7 +152,7 @@ func (ec EntryCaller) TrimmedPath() string {
 	buf.AppendInt(int64(ec.Line))
 	caller := buf.String()
 	buf.Free()
-	return caller
+	return caller + classFunction
 }
 
 // An Entry represents a complete log message. The entry's structured context

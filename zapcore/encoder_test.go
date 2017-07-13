@@ -38,7 +38,7 @@ var (
 		Message:    `hello`,
 		Time:       _epoch,
 		Stack:      "fake-stack",
-		Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42},
+		Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42, CallerClassFunction: "(*.foo).bar"},
 	}
 )
 
@@ -428,6 +428,24 @@ func TestEncoderConfiguration(t *testing.T) {
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}` + DefaultLineEnding,
 			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\nfake-stack" + DefaultLineEnding,
 		},
+		{
+			desc: "use custom line separator  ==== ClassFunction",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      "C",
+				StacktraceKey:  "S",
+				LineEnding:     "\r\n",
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   ShortCallerWithClassFunctionEncoder,
+			},
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42 (*.foo).bar","M":"hello","S":"fake-stack"}` + "\r\n",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42 (*.foo).bar\thello\nfake-stack\r\n",
+		},
 	}
 
 	for i, tt := range tests {
@@ -536,7 +554,7 @@ func TestDurationEncoders(t *testing.T) {
 }
 
 func TestCallerEncoders(t *testing.T) {
-	caller := EntryCaller{Defined: true, File: "/home/jack/src/github.com/foo/foo.go", Line: 42}
+	caller := EntryCaller{Defined: true, File: "/home/jack/src/github.com/foo/foo.go", Line: 42, CallerClassFunction: "(*fake).fake"}
 	tests := []struct {
 		name     string
 		expected interface{} // output of serializing caller
@@ -545,6 +563,7 @@ func TestCallerEncoders(t *testing.T) {
 		{"something-random", "foo/foo.go:42"},
 		{"short", "foo/foo.go:42"},
 		{"full", "/home/jack/src/github.com/foo/foo.go:42"},
+		{"withclassfunction", "foo/foo.go:42 (*fake).fake"},
 	}
 
 	for _, tt := range tests {
