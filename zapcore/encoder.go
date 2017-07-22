@@ -196,6 +196,27 @@ func (e *CallerEncoder) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// A NameEncoder serializes a period-separated logger name to a primitive
+// type.
+type NameEncoder func(string, PrimitiveArrayEncoder)
+
+// FullNameEncoder serializes the logger name as-is.
+func FullNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
+	enc.AppendString(loggerName)
+}
+
+// UnmarshalText unmarshals text to a NameEncoder. Currently, everything is
+// unmarshaled to FullNameEncoder.
+func (e *NameEncoder) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "full":
+		*e = FullNameEncoder
+	default:
+		*e = FullNameEncoder
+	}
+	return nil
+}
+
 // An EncoderConfig allows users to configure the concrete encoders supplied by
 // zapcore.
 type EncoderConfig struct {
@@ -215,6 +236,9 @@ type EncoderConfig struct {
 	EncodeTime     TimeEncoder     `json:"timeEncoder" yaml:"timeEncoder"`
 	EncodeDuration DurationEncoder `json:"durationEncoder" yaml:"durationEncoder"`
 	EncodeCaller   CallerEncoder   `json:"callerEncoder" yaml:"callerEncoder"`
+	// Unlike the other primitive type encoders, EncodeName is optional. The
+	// zero value falls back to FullNameEncoder.
+	EncodeName NameEncoder `json:"nameEncoder" yaml:"nameEncoder"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a

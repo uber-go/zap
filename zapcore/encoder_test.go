@@ -21,6 +21,7 @@
 package zapcore_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -72,6 +73,10 @@ func withJSONEncoder(f func(Encoder)) {
 
 func withConsoleEncoder(f func(Encoder)) {
 	f(NewConsoleEncoder(humanEncoderConfig()))
+}
+
+func capitalNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
+	enc.AppendString(strings.ToUpper(loggerName))
 }
 
 func TestEncoderConfiguration(t *testing.T) {
@@ -294,6 +299,25 @@ func TestEncoderConfiguration(t *testing.T) {
 			expectedConsole: "0\tINFO\tmain\tfoo.go:42\thello\nfake-stack\n",
 		},
 		{
+			desc: "use the supplied EncodeName",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      "C",
+				StacktraceKey:  "S",
+				LineEnding:     base.LineEnding,
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
+				EncodeName:     capitalNameEncoder,
+			},
+			expectedJSON:    `{"L":"info","T":0,"N":"MAIN","C":"foo.go:42","M":"hello","S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tMAIN\tfoo.go:42\thello\nfake-stack\n",
+		},
+		{
 			desc: "close all open namespaces",
 			cfg: EncoderConfig{
 				LevelKey:       "L",
@@ -392,6 +416,25 @@ func TestEncoderConfiguration(t *testing.T) {
 			},
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}` + "\n",
 			expectedConsole: "0\tinfo\tmain\thello\nfake-stack\n",
+		},
+		{
+			desc: "handle no-op EncodeName",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      "C",
+				StacktraceKey:  "S",
+				LineEnding:     base.LineEnding,
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
+				EncodeName:     func(string, PrimitiveArrayEncoder) {},
+			},
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tfoo.go:42\thello\nfake-stack\n",
 		},
 		{
 			desc: "use custom line separator",
@@ -555,6 +598,28 @@ func TestCallerEncoders(t *testing.T) {
 			tt.expected,
 			func(arr ArrayEncoder) { ce(caller, arr) },
 			"Unexpected output serializing file name as %v with %q.", tt.expected, tt.name,
+		)
+	}
+}
+
+func TestNameEncoders(t *testing.T) {
+	tests := []struct {
+		name     string
+		expected interface{} // output of encoding InfoLevel
+	}{
+		{"", "main"},
+		{"full", "main"},
+		{"something-random", "main"},
+	}
+
+	for _, tt := range tests {
+		var ne NameEncoder
+		require.NoError(t, ne.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+		assertAppended(
+			t,
+			tt.expected,
+			func(arr ArrayEncoder) { ne("main", arr) },
+			"Unexpected output serializing logger name with %q.", tt.name,
 		)
 	}
 }

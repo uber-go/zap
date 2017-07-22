@@ -80,7 +80,14 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 		c.EncodeLevel(ent.Level, arr)
 	}
 	if ent.LoggerName != "" && c.NameKey != "" {
-		arr.AppendString(ent.LoggerName)
+		nameEncoder := c.EncodeName
+
+		if nameEncoder == nil {
+			// Fall back to FullNameEncoder for backward compatibility.
+			nameEncoder = FullNameEncoder
+		}
+
+		nameEncoder(ent.LoggerName, arr)
 	}
 	if ent.Caller.Defined && c.CallerKey != "" && c.EncodeCaller != nil {
 		c.EncodeCaller(ent.Caller, arr)

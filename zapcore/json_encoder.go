@@ -302,7 +302,21 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	}
 	if ent.LoggerName != "" && final.NameKey != "" {
 		final.addKey(final.NameKey)
-		final.AppendString(ent.LoggerName)
+		cur := final.buf.Len()
+		nameEncoder := final.EncodeName
+
+		// if no name encoder provided, fall back to FullNameEncoder for backwards
+		// compatibility
+		if nameEncoder == nil {
+			nameEncoder = FullNameEncoder
+		}
+
+		nameEncoder(ent.LoggerName, final)
+		if cur == final.buf.Len() {
+			// User-supplied EncodeName was a no-op. Fall back to strings to
+			// keep output JSON valid.
+			final.AppendString(ent.LoggerName)
+		}
 	}
 	if ent.Caller.Defined && final.CallerKey != "" {
 		final.addKey(final.CallerKey)
