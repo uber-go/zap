@@ -90,6 +90,14 @@ func AddCaller() Option {
 	})
 }
 
+// AddClassFunction configures the Logger to annotate each message with
+// the caller class and function name.
+func AddClassFunction() Option {
+	return optionFunc(func(log *Logger) {
+		log.addClassFunction = true
+	})
+}
+
 // AddCallerSkip increases the number of callers skipped by caller annotation
 // (as enabled by the AddCaller option). When building wrappers around the
 // Logger and SugaredLogger, supplying this Option prevents zap from always

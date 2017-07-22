@@ -400,6 +400,34 @@ func TestLoggerAddStacktrace(t *testing.T) {
 	})
 }
 
+func TestLoggerAddClassFunction(t *testing.T) {
+	tests := []struct {
+		options []Option
+		pat     string
+	}{
+		{opts(AddClassFunction()), `.+/logger_test.go:[\d]+$`},
+		{opts(AddClassFunction(), AddCallerSkip(1), AddCallerSkip(-1)), `.+/zap/logger_test.go:[\d]+$`},
+		{opts(AddClassFunction(), AddCallerSkip(1)), `.+/zap/common_test.go:[\d]+$`},
+		{opts(AddClassFunction(), AddCallerSkip(1), AddCallerSkip(3)), `.+/src/runtime/.*:[\d]+$`},
+	}
+	for _, tt := range tests {
+		withLogger(t, DebugLevel, tt.options, func(logger *Logger, logs *observer.ObservedLogs) {
+			// Make sure that sugaring and desugaring resets caller skip properly.
+			logger = logger.Sugar().Desugar()
+
+			logger.Info("")
+			output := logs.AllUntimed()
+			assert.Equal(t, 1, len(output), "Unexpected number of logs written out.")
+			assert.Regexp(
+				t,
+				tt.pat,
+				output[0].Entry.Caller,
+				"Expected to find package name and file name in output.",
+			)
+		})
+	}
+}
+
 func TestLoggerReplaceCore(t *testing.T) {
 	replace := WrapCore(func(zapcore.Core) zapcore.Core {
 		return zapcore.NewNopCore()

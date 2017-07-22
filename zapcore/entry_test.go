@@ -21,6 +21,7 @@
 package zapcore
 
 import (
+	"runtime"
 	"sync"
 	"testing"
 
@@ -59,24 +60,28 @@ func TestPutNilEntry(t *testing.T) {
 
 func TestEntryCaller(t *testing.T) {
 	tests := []struct {
-		caller EntryCaller
-		full   string
-		short  string
+		caller    EntryCaller
+		full      string
+		short     string
+		classfunc string
 	}{
 		{
-			caller: NewEntryCaller(100, "/path/to/foo.go", 42, false),
-			full:   "undefined",
-			short:  "undefined",
+			caller:    NewEntryCaller(100, "/path/to/foo.go", 42, false),
+			full:      "undefined",
+			short:     "undefined",
+			classfunc: "undefined",
 		},
 		{
-			caller: NewEntryCaller(100, "/path/to/foo.go", 42, true),
-			full:   "/path/to/foo.go:42",
-			short:  "to/foo.go:42",
+			caller:    NewEntryCaller(100, "/path/to/foo.go", 42, true),
+			full:      "/path/to/foo.go:42",
+			short:     "to/foo.go:42",
+			classfunc: "to/foo.go:42 unknown",
 		},
 		{
-			caller: NewEntryCaller(100, "to/foo.go", 42, true),
-			full:   "to/foo.go:42",
-			short:  "to/foo.go:42",
+			caller:    NewEntryCaller(100, "to/foo.go", 42, true),
+			full:      "to/foo.go:42",
+			short:     "to/foo.go:42",
+			classfunc: "to/foo.go:42 unknown",
 		},
 	}
 
@@ -84,7 +89,22 @@ func TestEntryCaller(t *testing.T) {
 		assert.Equal(t, tt.full, tt.caller.String(), "Unexpected string from EntryCaller.")
 		assert.Equal(t, tt.full, tt.caller.FullPath(), "Unexpected FullPath from EntryCaller.")
 		assert.Equal(t, tt.short, tt.caller.TrimmedPath(), "Unexpected TrimmedPath from EntryCaller.")
+		assert.Equal(t, tt.classfunc, tt.caller.TrimmedPath(true), "Unexpected TrimmedPath withClassFunction from EntryCaller.")
 	}
+}
+
+type fakeClass struct {
+}
+
+func (f *fakeClass) test() EntryCaller {
+	pc, path, line, ok := runtime.Caller(0)
+	return NewEntryCaller(pc, path, line, ok)
+}
+
+func TestNewEntryCaller(t *testing.T) {
+	f := fakeClass{}
+	entry := f.test()
+	assert.Equal(t, "(*fakeClass).test", entry.CallerClassFunction, "Unexpected CallerClassFunction from NewEntryCaller.")
 }
 
 func TestCheckedEntryWrite(t *testing.T) {
