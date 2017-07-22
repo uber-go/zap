@@ -82,9 +82,8 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	if ent.LoggerName != "" && c.NameKey != "" {
 		nameEncoder := c.EncodeName
 
-		// if no name encoder provided, fall back to FullNameEncoder for backwards
-		// compatibility
 		if nameEncoder == nil {
+			// Fall back to FullNameEncoder for backward compatibility.
 			nameEncoder = FullNameEncoder
 		}
 

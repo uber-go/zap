@@ -196,18 +196,21 @@ func (e *CallerEncoder) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// A NameEncoder serializes a LoggerName to a primitive type.
+// A NameEncoder serializes a period-separated logger name to a primitive
+// type.
 type NameEncoder func(string, PrimitiveArrayEncoder)
 
-// FullNameEncoder serializes a logger name as is
+// FullNameEncoder serializes the logger name as-is.
 func FullNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
 	enc.AppendString(loggerName)
 }
 
-// UnmarshalText unmarshals text to a NameEncoder. everything is unmarshaled to
-// FullNameEncoder.
+// UnmarshalText unmarshals text to a NameEncoder. Currently, everything is
+// unmarshaled to FullNameEncoder.
 func (e *NameEncoder) UnmarshalText(text []byte) error {
 	switch string(text) {
+	case "full":
+		*e = FullNameEncoder
 	default:
 		*e = FullNameEncoder
 	}
@@ -228,14 +231,14 @@ type EncoderConfig struct {
 	LineEnding    string `json:"lineEnding" yaml:"lineEnding"`
 	// Configure the primitive representations of common complex types. For
 	// example, some users may want all time.Times serialized as floating-point
-	// seconds since epoch, while others may prefer ISO8601 strings. EncodeName
-	// is optional - initializing it to nil will fall back to printing the logger
-	// name as is (using FullNameEncoder)
+	// seconds since epoch, while others may prefer ISO8601 strings.
 	EncodeLevel    LevelEncoder    `json:"levelEncoder" yaml:"levelEncoder"`
 	EncodeTime     TimeEncoder     `json:"timeEncoder" yaml:"timeEncoder"`
 	EncodeDuration DurationEncoder `json:"durationEncoder" yaml:"durationEncoder"`
 	EncodeCaller   CallerEncoder   `json:"callerEncoder" yaml:"callerEncoder"`
-	EncodeName     NameEncoder     `json:"nameEncoder" yaml:"nameEncoder"`
+	// Unlike the other primitive type encoders, EncodeName is optional. The
+	// zero value falls back to FullNameEncoder.
+	EncodeName NameEncoder `json:"nameEncoder" yaml:"nameEncoder"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a
