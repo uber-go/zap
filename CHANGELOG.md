@@ -1,6 +1,19 @@
 # Changelog
 
-## v1.4.1 (08 June 2017)
+## v1.5.0 (22 Jul 2017)
+
+Enhancements:
+
+* [#460][] and [#470][]: Support errors produced by `go.uber.org/multierr`.
+* [#465][]: Support user-supplied encoders for logger names.
+
+Bugfixes:
+
+* [#477][]: Fix a bug that incorrectly truncated deep stacktraces.
+
+Thanks to @richard-tunein and @pavius for their contributions to this release.
+
+## v1.4.1 (08 Jun 2017)
 
 This release fixes two bugs.
 
@@ -226,3 +239,7 @@ upgrade to the upcoming stable release.
 [#431]: https://github.com/uber-go/zap/pull/431
 [#435]: https://github.com/uber-go/zap/pull/435
 [#444]: https://github.com/uber-go/zap/pull/444
+[#477]: https://github.com/uber-go/zap/pull/477
+[#465]: https://github.com/uber-go/zap/pull/465
+[#460]: https://github.com/uber-go/zap/pull/460
+[#470]: https://github.com/uber-go/zap/pull/470
