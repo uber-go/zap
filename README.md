@@ -64,40 +64,40 @@ id="anchor-versions">[1](#footnote-versions)</sup>
 
 Log a message and 10 fields:
 
-| Package | Time | Bytes Allocated | Objects Allocated |
-| :--- | :---: | :---: | :---: |
-| :zap: zap | 1692 ns/op | 705 B/op | 2 allocs/op |
-| :zap: zap (sugared) | 2507 ns/op | 1610 B/op | 20 allocs/op |
-| go-kit | 6327 ns/op | 2895 B/op | 66 allocs/op |
-| lion | 8036 ns/op | 5807 B/op | 63 allocs/op |
-| logrus | 8970 ns/op | 6092 B/op | 78 allocs/op |
-| apex/log | 17101 ns/op | 3832 B/op | 65 allocs/op |
-| log15 | 21398 ns/op | 5632 B/op | 93 allocs/op |
+| Package | Time | Objects Allocated |
+| :--- | :---: | :---: |
+| :zap: zap | 3243 ns/op | 5 allocs/op |
+| :zap: zap (sugared) | 4232 ns/op | 21 allocs/op |
+| go-kit | 16652 ns/op | 126 allocs/op |
+| lion | 16753 ns/op | 111 allocs/op |
+| logrus | 22492 ns/op | 142 allocs/op |
+| log15 | 36261 ns/op | 149 allocs/op |
+| apex/log | 40263 ns/op | 126 allocs/op |
 
 Log a message with a logger that already has 10 fields of context:
 
-| Package | Time | Bytes Allocated | Objects Allocated |
-| :--- | :---: | :---: | :---: |
-| :zap: zap | 467 ns/op | 0 B/op | 0 allocs/op |
-| :zap: zap (sugared) | 597 ns/op | 80 B/op | 2 allocs/op |
-| lion | 5172 ns/op | 4074 B/op | 38 allocs/op |
-| go-kit | 6892 ns/op | 3078 B/op | 53 allocs/op |
-| logrus | 8102 ns/op | 4564 B/op | 63 allocs/op |
-| apex/log | 15332 ns/op | 2897 B/op | 51 allocs/op |
-| log15 | 16905 ns/op | 2642 B/op | 44 allocs/op |
+| Package | Time | Objects Allocated |
+| :--- | :---: | :---: |
+| :zap: zap | 405 ns/op | 0 allocs/op |
+| :zap: zap (sugared) | 547 ns/op | 2 allocs/op |
+| lion | 6462 ns/op | 39 allocs/op |
+| go-kit | 19563 ns/op | 115 allocs/op |
+| logrus | 23127 ns/op | 130 allocs/op |
+| log15 | 27495 ns/op | 79 allocs/op |
+| apex/log | 38938 ns/op | 115 allocs/op |
 
 Log a static string, without any context or `printf`-style templating:
 
-| Package | Time | Bytes Allocated | Objects Allocated |
-| :--- | :---: | :---: | :---: |
-| :zap: zap | 465 ns/op | 0 B/op | 0 allocs/op |
-| standard library | 602 ns/op | 80 B/op | 2 allocs/op |
-| :zap: zap (sugared) | 647 ns/op | 80 B/op | 2 allocs/op |
-| go-kit | 994 ns/op | 656 B/op | 13 allocs/op |
-| lion | 1402 ns/op | 1224 B/op | 10 allocs/op |
-| logrus | 2299 ns/op | 1505 B/op | 27 allocs/op |
-| apex/log | 3148 ns/op | 584 B/op | 11 allocs/op |
-| log15 | 6329 ns/op | 1592 B/op | 26 allocs/op |
+| Package | Time | Objects Allocated |
+| :--- | :---: | :---: |
+| :zap: zap | 429 ns/op | 0 allocs/op |
+| :zap: zap (sugared) | 549 ns/op | 2 allocs/op |
+| standard library | 585 ns/op | 2 allocs/op |
+| go-kit | 909 ns/op | 13 allocs/op |
+| lion | 1420 ns/op | 10 allocs/op |
+| logrus | 2404 ns/op | 27 allocs/op |
+| apex/log | 3457 ns/op | 11 allocs/op |
+| log15 | 6313 ns/op | 26 allocs/op |
 
 ## Development Status: Stable
 

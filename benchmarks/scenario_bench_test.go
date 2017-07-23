@@ -74,7 +74,7 @@ func BenchmarkDisabledWithoutFields(b *testing.B) {
 					time.Unix(0, 0),
 					errExample,
 					time.Second,
-					_jane,
+					_oneUser,
 					"done!",
 				)
 			}
@@ -145,7 +145,7 @@ func BenchmarkDisabledAccumulatedContext(b *testing.B) {
 					time.Unix(0, 0),
 					errExample,
 					time.Second,
-					_jane,
+					_oneUser,
 					"done!",
 				)
 			}
@@ -280,7 +280,7 @@ func BenchmarkWithoutFields(b *testing.B) {
 					time.Unix(0, 0),
 					errExample,
 					time.Second,
-					_jane,
+					_oneUser,
 					"done!",
 				)
 			}
@@ -354,7 +354,7 @@ func BenchmarkWithoutFields(b *testing.B) {
 					time.Unix(0, 0),
 					errExample,
 					time.Second,
-					_jane,
+					_oneUser,
 					"done!",
 				)
 			}
@@ -420,7 +420,7 @@ func BenchmarkAccumulatedContext(b *testing.B) {
 					time.Unix(0, 0),
 					errExample,
 					time.Second,
-					_jane,
+					_oneUser,
 					"done!",
 				)
 			}

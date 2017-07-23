@@ -22,7 +22,6 @@ package benchmarks
 
 import (
 	"io/ioutil"
-	"time"
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/json"
@@ -44,15 +43,15 @@ func newApexLog() *log.Logger {
 
 func fakeApexFields() log.Fields {
 	return log.Fields{
-		"int":               1,
-		"int64":             int64(1),
-		"float":             3.0,
-		"string":            "four!",
-		"bool":              true,
-		"time":              time.Unix(0, 0),
-		"error":             errExample.Error(),
-		"duration":          time.Second,
-		"user-defined type": _jane,
-		"another string":    "done!",
+		"int":     _tenInts[0],
+		"ints":    _tenInts,
+		"string":  _tenStrings[0],
+		"strings": _tenStrings,
+		"time":    _tenTimes[0],
+		"times":   _tenTimes,
+		"user1":   _oneUser,
+		"user2":   _oneUser,
+		"users":   _tenUsers,
+		"error":   errExample,
 	}
 }
