@@ -66,38 +66,41 @@ Log a message and 10 fields:
 
 | Package | Time | Objects Allocated |
 | :--- | :---: | :---: |
-| :zap: zap | 3243 ns/op | 5 allocs/op |
-| :zap: zap (sugared) | 4232 ns/op | 21 allocs/op |
-| go-kit | 16652 ns/op | 126 allocs/op |
-| lion | 16753 ns/op | 111 allocs/op |
-| logrus | 22492 ns/op | 142 allocs/op |
-| log15 | 36261 ns/op | 149 allocs/op |
-| apex/log | 40263 ns/op | 126 allocs/op |
+| :zap: zap | 3174 ns/op | 5 allocs/op |
+| :zap: zap (sugared) | 3929 ns/op | 21 allocs/op |
+| go-kit | 16475 ns/op | 126 allocs/op |
+| zerolog | 17013 ns/op | 90 allocs/op |
+| lion | 17119 ns/op | 111 allocs/op |
+| logrus | 23344 ns/op | 142 allocs/op |
+| log15 | 34996 ns/op | 149 allocs/op |
+| apex/log | 39062 ns/op | 126 allocs/op |
 
 Log a message with a logger that already has 10 fields of context:
 
 | Package | Time | Objects Allocated |
 | :--- | :---: | :---: |
-| :zap: zap | 405 ns/op | 0 allocs/op |
-| :zap: zap (sugared) | 547 ns/op | 2 allocs/op |
-| lion | 6462 ns/op | 39 allocs/op |
-| go-kit | 19563 ns/op | 115 allocs/op |
-| logrus | 23127 ns/op | 130 allocs/op |
-| log15 | 27495 ns/op | 79 allocs/op |
-| apex/log | 38938 ns/op | 115 allocs/op |
+| :zap: zap | 381 ns/op | 0 allocs/op |
+| :zap: zap (sugared) | 546 ns/op | 2 allocs/op |
+| zerolog | 316 ns/op | 0 allocs/op |
+| lion | 6215 ns/op | 39 allocs/op |
+| go-kit | 19241 ns/op | 115 allocs/op |
+| logrus | 21331 ns/op | 130 allocs/op |
+| log15 | 26071 ns/op | 79 allocs/op |
+| apex/log | 37891 ns/op | 115 allocs/op |
 
 Log a static string, without any context or `printf`-style templating:
 
 | Package | Time | Objects Allocated |
 | :--- | :---: | :---: |
-| :zap: zap | 429 ns/op | 0 allocs/op |
+| :zap: zap | 338 ns/op | 0 allocs/op |
 | :zap: zap (sugared) | 549 ns/op | 2 allocs/op |
-| standard library | 585 ns/op | 2 allocs/op |
-| go-kit | 909 ns/op | 13 allocs/op |
-| lion | 1420 ns/op | 10 allocs/op |
-| logrus | 2404 ns/op | 27 allocs/op |
-| apex/log | 3457 ns/op | 11 allocs/op |
-| log15 | 6313 ns/op | 26 allocs/op |
+| zerolog | 303 ns/op | 0 allocs/op |
+| standard library | 586 ns/op | 2 allocs/op |
+| go-kit | 958 ns/op | 13 allocs/op |
+| lion | 1452 ns/op | 10 allocs/op |
+| logrus | 2367 ns/op | 27 allocs/op |
+| apex/log | 3383 ns/op | 11 allocs/op |
+| log15 | 6481 ns/op | 26 allocs/op |
 
 ## Development Status: Stable
 

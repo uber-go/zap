@@ -44,6 +44,7 @@ var (
 		"inconshreveable/log15": "log15",
 		"apex/log":              "apex/log",
 		"go.pedge.io/lion":      "lion",
+		"rs/zerolog":            "zerolog",
 	}
 )
 

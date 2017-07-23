@@ -98,6 +98,15 @@ func BenchmarkDisabledWithoutFields(b *testing.B) {
 			}
 		})
 	})
+	b.Run("rs/zerolog", func(b *testing.B) {
+		logger := newDisabledZerolog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info().Msg(getMessage(0))
+			}
+		})
+	})
 }
 
 func BenchmarkDisabledAccumulatedContext(b *testing.B) {
@@ -169,6 +178,15 @@ func BenchmarkDisabledAccumulatedContext(b *testing.B) {
 			}
 		})
 	})
+	b.Run("rs/zerolog", func(b *testing.B) {
+		logger := fakeZerologContext(newDisabledZerolog().With()).Logger()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info().Msg(getMessage(0))
+			}
+		})
+	})
 }
 
 func BenchmarkDisabledAddingFields(b *testing.B) {
@@ -217,6 +235,15 @@ func BenchmarkDisabledAddingFields(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				logger.WithFields(fakeLogrusFields()).Info(getMessage(0))
+			}
+		})
+	})
+	b.Run("rs/zerolog", func(b *testing.B) {
+		logger := newDisabledZerolog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				fakeZerologFields(logger.Info()).Msg(getMessage(0))
 			}
 		})
 	})
@@ -360,6 +387,46 @@ func BenchmarkWithoutFields(b *testing.B) {
 			}
 		})
 	})
+	b.Run("rs/zerolog", func(b *testing.B) {
+		logger := newZerolog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info().Msg(getMessage(0))
+			}
+		})
+	})
+	b.Run("rs/zerolog.Formatting", func(b *testing.B) {
+		logger := newZerolog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info().Msgf("%v %v %v %s %v %v %v %v %v %s\n",
+					1,
+					int64(1),
+					3.0,
+					"four!",
+					true,
+					time.Unix(0, 0),
+					errExample,
+					time.Second,
+					_oneUser,
+					"done!",
+				)
+			}
+		})
+	})
+	b.Run("rs/zerolog.Check", func(b *testing.B) {
+		logger := newZerolog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				if e := logger.Info(); e.Enabled() {
+					e.Msg(getMessage(0))
+				}
+			}
+		})
+	})
 }
 
 func BenchmarkAccumulatedContext(b *testing.B) {
@@ -471,6 +538,46 @@ func BenchmarkAccumulatedContext(b *testing.B) {
 			}
 		})
 	})
+	b.Run("rs/zerolog", func(b *testing.B) {
+		logger := fakeZerologContext(newZerolog().With()).Logger()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info().Msg(getMessage(0))
+			}
+		})
+	})
+	b.Run("rs/zerolog.Check", func(b *testing.B) {
+		logger := fakeZerologContext(newZerolog().With()).Logger()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				if e := logger.Info(); e.Enabled() {
+					e.Msg(getMessage(0))
+				}
+			}
+		})
+	})
+	b.Run("rs/zerolog.Formatting", func(b *testing.B) {
+		logger := fakeZerologContext(newZerolog().With()).Logger()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info().Msgf("%v %v %v %s %v %v %v %v %v %s\n",
+					1,
+					int64(1),
+					3.0,
+					"four!",
+					true,
+					time.Unix(0, 0),
+					errExample,
+					time.Second,
+					_oneUser,
+					"done!",
+				)
+			}
+		})
+	})
 }
 
 func BenchmarkAddingFields(b *testing.B) {
@@ -559,6 +666,26 @@ func BenchmarkAddingFields(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				logger.WithFields(fakeLogrusFields()).Infof(getMessage(0))
+			}
+		})
+	})
+	b.Run("rs/zerolog", func(b *testing.B) {
+		logger := newZerolog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				fakeZerologFields(logger.Info()).Msg(getMessage(0))
+			}
+		})
+	})
+	b.Run("rs/zerolog.Check", func(b *testing.B) {
+		logger := newZerolog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				if e := logger.Info(); e.Enabled() {
+					fakeZerologFields(e).Msg(getMessage(0))
+				}
 			}
 		})
 	})
