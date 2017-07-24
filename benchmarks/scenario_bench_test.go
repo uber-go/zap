@@ -24,7 +24,6 @@ import (
 	"io/ioutil"
 	"log"
 	"testing"
-	"time"
 
 	"go.uber.org/zap"
 )
@@ -65,18 +64,7 @@ func BenchmarkDisabledWithoutFields(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Infof("%v %v %v %s %v %v %v %v %v %s\n",
-					1,
-					int64(1),
-					3.0,
-					"four!",
-					true,
-					time.Unix(0, 0),
-					errExample,
-					time.Second,
-					_oneUser,
-					"done!",
-				)
+				logger.Infof("%v %v %v %s %v %v %v %v %v %s\n", fakeFmtArgs()...)
 			}
 		})
 	})
@@ -145,18 +133,7 @@ func BenchmarkDisabledAccumulatedContext(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Infof("%v %v %v %s %v %v %v %v %v %s\n",
-					1,
-					int64(1),
-					3.0,
-					"four!",
-					true,
-					time.Unix(0, 0),
-					errExample,
-					time.Second,
-					_oneUser,
-					"done!",
-				)
+				logger.Infof("%v %v %v %s %v %v %v %v %v %s\n", fakeFmtArgs()...)
 			}
 		})
 	})
@@ -298,18 +275,7 @@ func BenchmarkWithoutFields(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Infof("%v %v %v %s %v %v %v %v %v %s\n",
-					1,
-					int64(1),
-					3.0,
-					"four!",
-					true,
-					time.Unix(0, 0),
-					errExample,
-					time.Second,
-					_oneUser,
-					"done!",
-				)
+				logger.Infof("%v %v %v %s %v %v %v %v %v %s\n", fakeFmtArgs()...)
 			}
 		})
 	})
@@ -372,18 +338,7 @@ func BenchmarkWithoutFields(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Printf("%v %v %v %s %v %v %v %v %v %s\n",
-					1,
-					int64(1),
-					3.0,
-					"four!",
-					true,
-					time.Unix(0, 0),
-					errExample,
-					time.Second,
-					_oneUser,
-					"done!",
-				)
+				logger.Printf("%v %v %v %s %v %v %v %v %v %s\n", fakeFmtArgs()...)
 			}
 		})
 	})
@@ -401,18 +356,7 @@ func BenchmarkWithoutFields(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Info().Msgf("%v %v %v %s %v %v %v %v %v %s\n",
-					1,
-					int64(1),
-					3.0,
-					"four!",
-					true,
-					time.Unix(0, 0),
-					errExample,
-					time.Second,
-					_oneUser,
-					"done!",
-				)
+				logger.Info().Msgf("%v %v %v %s %v %v %v %v %v %s\n", fakeFmtArgs()...)
 			}
 		})
 	})
@@ -478,18 +422,7 @@ func BenchmarkAccumulatedContext(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Infof("%v %v %v %s %v %v %v %v %v %s\n",
-					1,
-					int64(1),
-					3.0,
-					"four!",
-					true,
-					time.Unix(0, 0),
-					errExample,
-					time.Second,
-					_oneUser,
-					"done!",
-				)
+				logger.Infof("%v %v %v %s %v %v %v %v %v %s\n", fakeFmtArgs()...)
 			}
 		})
 	})
@@ -563,18 +496,7 @@ func BenchmarkAccumulatedContext(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Info().Msgf("%v %v %v %s %v %v %v %v %v %s\n",
-					1,
-					int64(1),
-					3.0,
-					"four!",
-					true,
-					time.Unix(0, 0),
-					errExample,
-					time.Second,
-					_oneUser,
-					"done!",
-				)
+				logger.Info().Msgf("%v %v %v %s %v %v %v %v %v %s\n", fakeFmtArgs()...)
 			}
 		})
 	})
