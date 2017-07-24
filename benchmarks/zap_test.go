@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
@@ -33,7 +34,38 @@ import (
 var (
 	errExample = errors.New("fail")
 
-	_messages = fakeMessages(1000)
+	_messages   = fakeMessages(1000)
+	_tenInts    = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+	_tenStrings = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
+	_tenTimes   = []time.Time{
+		time.Unix(0, 0),
+		time.Unix(1, 0),
+		time.Unix(2, 0),
+		time.Unix(3, 0),
+		time.Unix(4, 0),
+		time.Unix(5, 0),
+		time.Unix(6, 0),
+		time.Unix(7, 0),
+		time.Unix(8, 0),
+		time.Unix(9, 0),
+	}
+	_oneUser = &user{
+		Name:      "Jane Doe",
+		Email:     "jane@test.com",
+		CreatedAt: time.Date(1980, 1, 1, 12, 0, 0, 0, time.UTC),
+	}
+	_tenUsers = users{
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+		_oneUser,
+	}
 )
 
 func fakeMessages(n int) []string {
@@ -48,28 +80,34 @@ func getMessage(iter int) string {
 	return _messages[iter%1000]
 }
 
+type users []*user
+
+func (uu users) MarshalLogArray(arr zapcore.ArrayEncoder) error {
+	var err error
+	for i := range uu {
+		err = multierr.Append(err, arr.AppendObject(uu[i]))
+	}
+	return err
+}
+
 type user struct {
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func (u user) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+func (u *user) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("name", u.Name)
 	enc.AddString("email", u.Email)
-	enc.AddInt64("created_at", u.CreatedAt.UnixNano())
+	enc.AddInt64("createdAt", u.CreatedAt.UnixNano())
 	return nil
 }
 
-var _jane = user{
-	Name:      "Jane Doe",
-	Email:     "jane@test.com",
-	CreatedAt: time.Date(1980, 1, 1, 12, 0, 0, 0, time.UTC),
-}
-
 func newZapLogger(lvl zapcore.Level) *zap.Logger {
-	// use the canned production encoder configuration
-	enc := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
+	ec := zap.NewProductionEncoderConfig()
+	ec.EncodeDuration = zapcore.NanosDurationEncoder
+	ec.EncodeTime = zapcore.EpochNanosTimeEncoder
+	enc := zapcore.NewJSONEncoder(ec)
 	return zap.New(zapcore.NewCore(
 		enc,
 		&zaptest.Discarder{},
@@ -88,30 +126,30 @@ func newSampledLogger(lvl zapcore.Level) *zap.Logger {
 
 func fakeFields() []zapcore.Field {
 	return []zapcore.Field{
-		zap.Int("int", 1),
-		zap.Int64("int64", 2),
-		zap.Float64("float", 3.0),
-		zap.String("string", "four!"),
-		zap.Bool("bool", true),
-		zap.Time("time", time.Unix(0, 0)),
+		zap.Int("int", _tenInts[0]),
+		zap.Ints("ints", _tenInts),
+		zap.String("string", _tenStrings[0]),
+		zap.Strings("strings", _tenStrings),
+		zap.Time("time", _tenTimes[0]),
+		zap.Times("times", _tenTimes),
+		zap.Object("user1", _oneUser),
+		zap.Object("user2", _oneUser),
+		zap.Array("users", _tenUsers),
 		zap.Error(errExample),
-		zap.Duration("duration", time.Second),
-		zap.Object("user-defined type", _jane),
-		zap.String("another string", "done!"),
 	}
 }
 
 func fakeSugarFields() []interface{} {
 	return []interface{}{
-		"int", 1,
-		"int64", 2,
-		"float", 3.0,
-		"string", "four!",
-		"bool", true,
-		"time", time.Unix(0, 0),
+		"int", _tenInts[0],
+		"ints", _tenInts,
+		"string", _tenStrings[0],
+		"strings", _tenStrings,
+		"time", _tenTimes[0],
+		"times", _tenTimes,
+		"user1", _oneUser,
+		"user2", _oneUser,
+		"users", _tenUsers,
 		"error", errExample,
-		"duration", time.Second,
-		"user-defined type", _jane,
-		"another string", "done!",
 	}
 }
