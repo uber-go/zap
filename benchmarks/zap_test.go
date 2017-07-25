@@ -153,3 +153,20 @@ func fakeSugarFields() []interface{} {
 		"error", errExample,
 	}
 }
+
+func fakeFmtArgs() []interface{} {
+	// Need to keep this a function instead of a package-global var so that we
+	// pay the cast-to-interface{} penalty on each call.
+	return []interface{}{
+		_tenInts[0],
+		_tenInts,
+		_tenStrings[0],
+		_tenStrings,
+		_tenTimes[0],
+		_tenTimes,
+		_oneUser,
+		_oneUser,
+		_tenUsers,
+		errExample,
+	}
+}
