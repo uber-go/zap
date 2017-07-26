@@ -26,6 +26,24 @@ import (
 	"github.com/rs/zerolog"
 )
 
+func init() {
+	// Align defaults with zap's
+	zerolog.TimeFieldFormat = ""
+	zerolog.DurationFieldInteger = true
+}
+
+func (u *user) MarshalZerologObject(e *zerolog.Event) {
+	e.Str("name", u.Name).
+		Str("email", u.Email).
+		Int64("createdAt", u.CreatedAt.UnixNano())
+}
+
+func (uu users) MarshalZerologArray(a *zerolog.Array) {
+	for _, u := range uu {
+		a.Object(u)
+	}
+}
+
 func newZerolog() zerolog.Logger {
 	return zerolog.New(ioutil.Discard).With().Timestamp().Logger()
 }
@@ -37,27 +55,41 @@ func newDisabledZerolog() zerolog.Logger {
 func fakeZerologFields(e *zerolog.Event) *zerolog.Event {
 	return e.
 		Int("int", _tenInts[0]).
-		Interface("ints", _tenInts).
+		Ints("ints", _tenInts).
 		Str("string", _tenStrings[0]).
-		Interface("strings", _tenStrings).
+		Strs("strings", _tenStrings).
 		Time("time", _tenTimes[0]).
-		Interface("times", _tenTimes).
-		Interface("user1", _oneUser).
-		Interface("user2", _oneUser).
-		Interface("users", _tenUsers).
+		Times("times", _tenTimes).
+		Object("user1", _oneUser).
+		Object("user2", _oneUser).
+		Array("users", _tenUsers).
+		Err(errExample)
+}
+
+func fakeZerologPrimitiveFields(e *zerolog.Event) *zerolog.Event {
+	return e.
+		Bool("bool", true).
+		Int("int", _tenInts[0]).
+		Ints("ints", _tenInts).
+		Float32("float", _tenFloats[0]).
+		Floats32("floats", _tenFloats).
+		Str("string", _tenStrings[0]).
+		Strs("strings", _tenStrings).
+		Time("time", _tenTimes[0]).
+		Times("times", _tenTimes).
 		Err(errExample)
 }
 
 func fakeZerologContext(c zerolog.Context) zerolog.Context {
 	return c.
 		Int("int", _tenInts[0]).
-		Interface("ints", _tenInts).
+		Ints("ints", _tenInts).
 		Str("string", _tenStrings[0]).
-		Interface("strings", _tenStrings).
+		Strs("strings", _tenStrings).
 		Time("time", _tenTimes[0]).
-		Interface("times", _tenTimes).
-		Interface("user1", _oneUser).
-		Interface("user2", _oneUser).
-		Interface("users", _tenUsers).
+		Times("times", _tenTimes).
+		Object("user1", _oneUser).
+		Object("user2", _oneUser).
+		Array("users", _tenUsers).
 		Err(errExample)
 }
