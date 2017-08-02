@@ -4,7 +4,9 @@ We'd love your help making zap the very best structured logging library in Go!
 
 If you'd like to add new exported APIs, please [open an issue][open-issue]
 describing your proposal &mdash; discussing API changes ahead of time makes
-pull request review much smoother.
+pull request review much smoother. In your issue, pull request, and any other
+communications, please remember to treat your fellow contributors with
+respect! We take our [code of conduct](CODE_OF_CONDUCT.md) seriously.
 
 Note that you'll need to sign [Uber's Contributor License Agreement][cla]
 before we can accept any of your contributions. If necessary, a bot will remind
