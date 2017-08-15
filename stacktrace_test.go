@@ -35,7 +35,13 @@ func TestTakeStacktrace(t *testing.T) {
 	assert.Contains(
 		t,
 		lines[0],
-		"TestTakeStacktrace",
-		"Expected stacktrace to start with this test function, but top frame is %s.", lines[0],
+		"testing.",
+		"Expected stacktrace to start with the test runner (zap frames are filtered out) %s.", lines[0],
 	)
+}
+
+func BenchmarkTakeStacktrace(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		takeStacktrace()
+	}
 }
