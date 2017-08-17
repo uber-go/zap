@@ -35,7 +35,41 @@ func TestTakeStacktrace(t *testing.T) {
 	assert.Contains(
 		t,
 		lines[0],
-		"TestTakeStacktrace",
-		"Expected stacktrace to start with this test function, but top frame is %s.", lines[0],
+		"testing.",
+		"Expected stacktrace to start with the test runner (zap frames are filtered out) %s.", lines[0],
 	)
+}
+
+func TestIsZapFrame(t *testing.T) {
+	zapFrames := []string{
+		"go.uber.org/zap.Stack",
+		"go.uber.org/zap.(*SugaredLogger).log",
+		"go.uber.org/zap/zapcore.(ArrayMarshalerFunc).MarshalLogArray",
+		"github.com/uber/tchannel-go/vendor/go.uber.org/zap.Stack",
+		"github.com/uber/tchannel-go/vendor/go.uber.org/zap.(*SugaredLogger).log",
+		"github.com/uber/tchannel-go/vendor/go.uber.org/zap/zapcore.(ArrayMarshalerFunc).MarshalLogArray",
+	}
+	nonZapFrames := []string{
+		"github.com/uber/tchannel-go.NewChannel",
+		"go.uber.org/not-zap.New",
+		"go.uber.org/zapext.ctx",
+		"go.uber.org/zap_ext/ctx.New",
+	}
+
+	t.Run("zap frames", func(t *testing.T) {
+		for _, f := range zapFrames {
+			require.True(t, isZapFrame(f), f)
+		}
+	})
+	t.Run("non-zap frames", func(t *testing.T) {
+		for _, f := range nonZapFrames {
+			require.False(t, isZapFrame(f), f)
+		}
+	})
+}
+
+func BenchmarkTakeStacktrace(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		takeStacktrace()
+	}
 }

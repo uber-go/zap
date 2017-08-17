@@ -154,6 +154,6 @@ func TestStackField(t *testing.T) {
 	f := Stack("stacktrace")
 	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
-	assert.Contains(t, f.String, "zap.TestStackField", "Expected stacktrace to contain caller.")
+	assert.Equal(t, takeStacktrace(), f.String, "Unexpected stack trace")
 	assertCanBeReused(t, f)
 }
