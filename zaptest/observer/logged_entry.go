@@ -20,67 +20,20 @@
 
 package observer
 
-import (
-	"testing"
+import "go.uber.org/zap/zapcore"
 
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+// An LoggedEntry is an encoding-agnostic representation of a log message.
+// Field availability is context dependant.
+type LoggedEntry struct {
+	zapcore.Entry
+	Context []zapcore.Field
+}
 
-	"github.com/stretchr/testify/assert"
-)
-
-func TestFieldsMap(t *testing.T) {
-	tests := []struct {
-		msg    string
-		fields []zapcore.Field
-		want   map[string]interface{}
-	}{
-		{
-			msg:    "no fields",
-			fields: nil,
-			want:   map[string]interface{}{},
-		},
-		{
-			msg: "simple",
-			fields: []zapcore.Field{
-				zap.String("k1", "v"),
-				zap.Int64("k2", 10),
-			},
-			want: map[string]interface{}{
-				"k1": "v",
-				"k2": int64(10),
-			},
-		},
-		{
-			msg: "overwrite",
-			fields: []zapcore.Field{
-				zap.String("k1", "v1"),
-				zap.String("k1", "v2"),
-			},
-			want: map[string]interface{}{
-				"k1": "v2",
-			},
-		},
-		{
-			msg: "nested",
-			fields: []zapcore.Field{
-				zap.String("k1", "v1"),
-				zap.Namespace("nested"),
-				zap.String("k2", "v2"),
-			},
-			want: map[string]interface{}{
-				"k1": "v1",
-				"nested": map[string]interface{}{
-					"k2": "v2",
-				},
-			},
-		},
+// ContextMap returns a map for all fields in Context.
+func (e LoggedEntry) ContextMap() map[string]interface{} {
+	encoder := zapcore.NewMapObjectEncoder()
+	for _, f := range e.Context {
+		f.AddTo(encoder)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.msg, func(t *testing.T) {
-			assert.Equal(t, tt.want, FieldsMap(tt.fields))
-
-		})
-	}
+	return encoder.Fields
 }
