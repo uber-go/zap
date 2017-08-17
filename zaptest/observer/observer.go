@@ -32,13 +32,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// An LoggedEntry is an encoding-agnostic representation of a log message.
-// Field availability is context dependant.
-type LoggedEntry struct {
-	zapcore.Entry
-	Context []zapcore.Field
-}
-
 // ObservedLogs is a concurrency-safe, ordered collection of observed logs.
 type ObservedLogs struct {
 	mu   sync.RWMutex
