@@ -31,10 +31,6 @@ import (
 const _zapPackage = "go.uber.org/zap"
 
 var (
-	_stacktraceIgnorePrefixes = []string{
-		"runtime.goexit",
-		"runtime.main",
-	}
 	_stacktracePool = sync.Pool{
 		New: func() interface{} {
 			return newProgramCounters(64)
@@ -69,10 +65,11 @@ func takeStacktrace() string {
 	i := 0
 	skipZapFrames := true // skip all consecutive zap frames at the beginning.
 	frames := runtime.CallersFrames(programCounters.pcs[:numFrames])
+
+	// Note: On the last iteration, frames.Next() returns false, with a valid
+	// frame, but we ignore this frame. The last frame is a a runtime frame which
+	// adds noise, since it's only either runtime.main or runtime.goexit.
 	for frame, more := frames.Next(); more; frame, more = frames.Next() {
-		if shouldIgnoreStacktraceFunction(frame.Function) {
-			continue
-		}
 		if skipZapFrames && isZapFrame(frame.Function) {
 			continue
 		} else {
@@ -109,15 +106,6 @@ func isZapFrame(function string) bool {
 		}
 	}
 
-	return false
-}
-
-func shouldIgnoreStacktraceFunction(function string) bool {
-	for _, prefix := range _stacktraceIgnorePrefixes {
-		if strings.HasPrefix(function, prefix) {
-			return true
-		}
-	}
 	return false
 }
 
