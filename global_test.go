@@ -102,24 +102,37 @@ func TestNewStdLog(t *testing.T) {
 	})
 }
 
-func TestNewStdLogAt_Regular(t *testing.T) {
+func TestNewStdLogAt(t *testing.T) {
 	// include DPanicLevel here, but do not include Development in options
 	levels := []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel}
 	for _, level := range levels {
 		withLogger(t, DebugLevel, []Option{AddCaller()}, func(l *Logger, logs *observer.ObservedLogs) {
 			std, err := NewStdLogAt(l, level)
-			require.Nil(t, err, "Unexpected error.")
+			require.NoError(t, err, "Unexpected error.")
 			std.Print("redirected")
 			checkStdLogMessage(t, "redirected", logs)
 		})
 	}
 }
 
-func TestNewStdLogAt_Fatal(t *testing.T) {
+func TestNewStdLogAtPanics(t *testing.T) {
+	// include DPanicLevel here and enable Development in options
+	levels := []zapcore.Level{DPanicLevel, PanicLevel}
+	for _, level := range levels {
+		withLogger(t, DebugLevel, []Option{AddCaller(), Development()}, func(l *Logger, logs *observer.ObservedLogs) {
+			std, err := NewStdLogAt(l, level)
+			require.NoError(t, err, "Unexpected error")
+			assert.Panics(t, func() { std.Print("redirected") }, "Expected log to panic.")
+			checkStdLogMessage(t, "redirected", logs)
+		})
+	}
+}
+
+func TestNewStdLogAtFatal(t *testing.T) {
 	withLogger(t, DebugLevel, []Option{AddCaller()}, func(l *Logger, logs *observer.ObservedLogs) {
 		stub := exit.WithStub(func() {
 			std, err := NewStdLogAt(l, FatalLevel)
-			require.Nil(t, err, "Unexpected error.")
+			require.NoError(t, err, "Unexpected error.")
 			std.Print("redirected")
 			checkStdLogMessage(t, "redirected", logs)
 		})
@@ -128,22 +141,9 @@ func TestNewStdLogAt_Fatal(t *testing.T) {
 	})
 }
 
-func TestNewStdLogAt_Panics(t *testing.T) {
-	// include DPanicLevel here and enable Development in options
-	levels := []zapcore.Level{DPanicLevel, PanicLevel}
-	for _, level := range levels {
-		withLogger(t, DebugLevel, []Option{AddCaller(), Development()}, func(l *Logger, logs *observer.ObservedLogs) {
-			std, err := NewStdLogAt(l, level)
-			require.Nil(t, err, "Unexpected error")
-			assert.Panics(t, func() { std.Print("redirected") }, "Expected log to panic.")
-			checkStdLogMessage(t, "redirected", logs)
-		})
-	}
-}
-
-func TestNewStdLog_InvalidLevel(t *testing.T) {
+func TestNewStdLogAtInvalid(t *testing.T) {
 	_, err := NewStdLogAt(NewNop(), zapcore.Level(99))
-	assert.NotNil(t, err, "Expected to get error.")
+	assert.Error(t, err, "Expected to get error.")
 	assert.Contains(t, err.Error(), "99", "Expected level code in error message")
 }
 
