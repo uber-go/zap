@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.7.0 (21 Sep 2017)
+
+Enhancements:
+
+* [#439][]: Add `NewStdLogAt`, which extends `NewStdLog` by allowing the user
+  to specify the level of the logged messages.
+
 ## v1.6.0 (30 Aug 2017)
 
 Enhancements:
@@ -253,3 +260,4 @@ upgrade to the upcoming stable release.
 [#470]: https://github.com/uber-go/zap/pull/470
 [#490]: https://github.com/uber-go/zap/pull/490
 [#491]: https://github.com/uber-go/zap/pull/491
+[#491]: https://github.com/uber-go/zap/pull/439
