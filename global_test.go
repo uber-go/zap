@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/zap/internal/exit"
+
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
@@ -96,18 +98,53 @@ func TestNewStdLog(t *testing.T) {
 	withLogger(t, DebugLevel, []Option{AddCaller()}, func(l *Logger, logs *observer.ObservedLogs) {
 		std := NewStdLog(l)
 		std.Print("redirected")
-
-		require.Equal(t, 1, logs.Len(), "Expected exactly one entry to be logged.")
-		entry := logs.AllUntimed()[0]
-		assert.Equal(t, []zapcore.Field{}, entry.Context, "Unexpected entry context.")
-		assert.Equal(t, "redirected", entry.Entry.Message, "Unexpected entry message.")
-		assert.Regexp(
-			t,
-			`go.uber.org/zap/global_test.go:\d+$`,
-			entry.Entry.Caller.String(),
-			"Unexpected caller annotation.",
-		)
+		checkStdLogMessage(t, "redirected", logs)
 	})
+}
+
+func TestNewStdLogAt(t *testing.T) {
+	// include DPanicLevel here, but do not include Development in options
+	levels := []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel}
+	for _, level := range levels {
+		withLogger(t, DebugLevel, []Option{AddCaller()}, func(l *Logger, logs *observer.ObservedLogs) {
+			std, err := NewStdLogAt(l, level)
+			require.NoError(t, err, "Unexpected error.")
+			std.Print("redirected")
+			checkStdLogMessage(t, "redirected", logs)
+		})
+	}
+}
+
+func TestNewStdLogAtPanics(t *testing.T) {
+	// include DPanicLevel here and enable Development in options
+	levels := []zapcore.Level{DPanicLevel, PanicLevel}
+	for _, level := range levels {
+		withLogger(t, DebugLevel, []Option{AddCaller(), Development()}, func(l *Logger, logs *observer.ObservedLogs) {
+			std, err := NewStdLogAt(l, level)
+			require.NoError(t, err, "Unexpected error")
+			assert.Panics(t, func() { std.Print("redirected") }, "Expected log to panic.")
+			checkStdLogMessage(t, "redirected", logs)
+		})
+	}
+}
+
+func TestNewStdLogAtFatal(t *testing.T) {
+	withLogger(t, DebugLevel, []Option{AddCaller()}, func(l *Logger, logs *observer.ObservedLogs) {
+		stub := exit.WithStub(func() {
+			std, err := NewStdLogAt(l, FatalLevel)
+			require.NoError(t, err, "Unexpected error.")
+			std.Print("redirected")
+			checkStdLogMessage(t, "redirected", logs)
+		})
+		assert.True(t, true, stub.Exited, "Expected Fatal logger call to terminate process.")
+		stub.Unstub()
+	})
+}
+
+func TestNewStdLogAtInvalid(t *testing.T) {
+	_, err := NewStdLogAt(NewNop(), zapcore.Level(99))
+	assert.Error(t, err, "Expected to get error.")
+	assert.Contains(t, err.Error(), "99", "Expected level code in error message")
 }
 
 func TestRedirectStdLog(t *testing.T) {
@@ -136,4 +173,17 @@ func TestRedirectStdLogCaller(t *testing.T) {
 		require.Len(t, entries, 1, "Unexpected number of logs.")
 		assert.Contains(t, entries[0].Entry.Caller.File, "global_test.go", "Unexpected caller annotation.")
 	})
+}
+
+func checkStdLogMessage(t *testing.T, msg string, logs *observer.ObservedLogs) {
+	require.Equal(t, 1, logs.Len(), "Expected exactly one entry to be logged")
+	entry := logs.AllUntimed()[0]
+	assert.Equal(t, []zapcore.Field{}, entry.Context, "Unexpected entry context.")
+	assert.Equal(t, "redirected", entry.Entry.Message, "Unexpected entry message.")
+	assert.Regexp(
+		t,
+		`go.uber.org/zap/global_test.go:\d+$`,
+		entry.Entry.Caller.String(),
+		"Unexpected caller annotation.",
+	)
 }

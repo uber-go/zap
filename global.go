@@ -22,14 +22,17 @@ package zap
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"sync"
+
+	"go.uber.org/zap/zapcore"
 )
 
 const (
 	_stdLogDefaultDepth = 2
-	_loggerWriterDepth  = 1
+	_loggerWriterDepth  = 2
 )
 
 var (
@@ -71,9 +74,35 @@ func ReplaceGlobals(logger *Logger) func() {
 // InfoLevel. To redirect the standard library's package-global logging
 // functions, use RedirectStdLog instead.
 func NewStdLog(l *Logger) *log.Logger {
-	return log.New(&loggerWriter{l.WithOptions(
-		AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth),
-	)}, "" /* prefix */, 0 /* flags */)
+	logger := l.WithOptions(AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth))
+	f := logger.Info
+	return log.New(&loggerWriter{f}, "" /* prefix */, 0 /* flags */)
+}
+
+// NewStdLogAt returns *log.Logger which writes to supplied zap logger at
+// required level.
+func NewStdLogAt(l *Logger, level zapcore.Level) (*log.Logger, error) {
+	logger := l.WithOptions(AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth))
+	var logFunc func(string, ...zapcore.Field)
+	switch level {
+	case DebugLevel:
+		logFunc = logger.Debug
+	case InfoLevel:
+		logFunc = logger.Info
+	case WarnLevel:
+		logFunc = logger.Warn
+	case ErrorLevel:
+		logFunc = logger.Error
+	case DPanicLevel:
+		logFunc = logger.DPanic
+	case PanicLevel:
+		logFunc = logger.Panic
+	case FatalLevel:
+		logFunc = logger.Fatal
+	default:
+		return nil, fmt.Errorf("unrecognized level: %q", level)
+	}
+	return log.New(&loggerWriter{logFunc}, "" /* prefix */, 0 /* flags */), nil
 }
 
 // RedirectStdLog redirects output from the standard library's package-global
@@ -88,9 +117,10 @@ func RedirectStdLog(l *Logger) func() {
 	prefix := log.Prefix()
 	log.SetFlags(0)
 	log.SetPrefix("")
-	log.SetOutput(&loggerWriter{l.WithOptions(
+	logFunc := l.WithOptions(
 		AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth),
-	)})
+	).Info
+	log.SetOutput(&loggerWriter{logFunc})
 	return func() {
 		log.SetFlags(flags)
 		log.SetPrefix(prefix)
@@ -99,11 +129,11 @@ func RedirectStdLog(l *Logger) func() {
 }
 
 type loggerWriter struct {
-	logger *Logger
+	logFunc func(msg string, fields ...zapcore.Field)
 }
 
 func (l *loggerWriter) Write(p []byte) (int, error) {
 	p = bytes.TrimSpace(p)
-	l.logger.Info(string(p))
+	l.logFunc(string(p))
 	return len(p), nil
 }
