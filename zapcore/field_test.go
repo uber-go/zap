@@ -95,7 +95,7 @@ func TestFields(t *testing.T) {
 		{t: ObjectMarshalerType, iface: users(2), want: map[string]interface{}{"users": 2}},
 		{t: BinaryType, iface: []byte("foo"), want: []byte("foo")},
 		{t: BoolType, i: 0, want: false},
-		{t: ByteStringType, iface: []byte("foo"), want: []byte("foo")},
+		{t: ByteStringType, iface: []byte("foo"), want: "foo"},
 		{t: Complex128Type, iface: 1 + 2i, want: 1 + 2i},
 		{t: Complex64Type, iface: complex64(1 + 2i), want: complex64(1 + 2i)},
 		{t: DurationType, i: 1000, want: time.Microsecond},
