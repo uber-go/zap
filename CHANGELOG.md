@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.1 (25 Sep 2017)
+
+Bugfixes:
+* [#504][]: Store strings when using AddByteString with the map encoder.
+
 ## v1.7.0 (21 Sep 2017)
 
 Enhancements:
@@ -261,3 +266,4 @@ upgrade to the upcoming stable release.
 [#490]: https://github.com/uber-go/zap/pull/490
 [#491]: https://github.com/uber-go/zap/pull/491
 [#491]: https://github.com/uber-go/zap/pull/439
+[#504]: https://github.com/uber-go/zap/pull/504
