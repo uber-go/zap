@@ -101,7 +101,10 @@ func TestStacktraceFiltersVendorZap(t *testing.T) {
 		// Set up symlinks for zap, and for any test dependencies.
 		setupSymlink(t, curDir, filepath.Join(vendorDir, "go.uber.org/zap"))
 		for _, testDep := range []string{"github.com/stretchr/testify"} {
-			setupSymlink(t, filepath.Join(curDir, "vendor", testDep), filepath.Join(vendorDir, testDep))
+			target := filepath.Join(curDir, "vendor", testDep)
+			_, err := os.Stat(target)
+			require.NoError(t, err, "Required dependency (%v) not installed in vendor", target)
+			setupSymlink(t, target, filepath.Join(vendorDir, testDep))
 		}
 
 		// Now run the above test which ensures we filter out zap stacktraces, but this time
