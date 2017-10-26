@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zaptest
+package tlogger
 
 import (
 	"errors"
@@ -34,7 +34,7 @@ import (
 
 func TestTestLoggerIncludesDebug(t *testing.T) {
 	ts := newTestLogSpy(t)
-	log := zap.New(NewTestLogger(ts))
+	log := zap.New(New(ts))
 	log.Debug("calculating")
 	log.Info("finished calculating", zap.Int("answer", 42))
 
@@ -46,7 +46,7 @@ func TestTestLoggerIncludesDebug(t *testing.T) {
 
 func TestTestLoggerAt(t *testing.T) {
 	ts := newTestLogSpy(t)
-	log := zap.New(NewTestLoggerAt(ts, zap.WarnLevel))
+	log := zap.New(NewAt(ts, zap.WarnLevel))
 
 	log.Info("received work order")
 	log.Debug("starting work")
