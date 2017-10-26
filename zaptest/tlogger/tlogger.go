@@ -18,49 +18,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zaptest
+// Package tlogger provides a zapcore.Core that is capable of writing log
+// messages to a *testing.T and *testing.B. It may be used from Go tests or
+// benchmarks to have log messages printed only if a test failed, or if the
+// `-v` flag was passed to `go test`.
+package tlogger // import "go.uber.org/zap/zaptest/tlogger"
 
 import (
 	"testing"
 
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-// NewTestLogger builds a new Core that logs all messages to the given
-// testing.TB.
+// New builds a new Core that logs all messages to the given testing.TB.
 //
 // Use this with a *testing.T or *testing.B to get logs which get printed only
 // if a test fails or if you ran go test -v.
 //
-//   logger := zap.New(NewTestLogger(t))
-func NewTestLogger(t testing.TB) zapcore.Core {
-	return NewTestLoggerAt(t, zapcore.DebugLevel)
+//   logger := zap.New(tlogger.New(t))
+func New(t testing.TB) zapcore.Core {
+	return NewAt(t, zapcore.DebugLevel)
 }
 
-// NewTestLoggerAt builds a new Core that logs messages to the given
-// testing.TB if the given LevelEnabler allows it.
+// NewAt builds a new Core that logs messages to the given testing.TB if the
+// given LevelEnabler allows it.
 //
 // Use this with a *testing.T or *testing.B to get logs which get printed only
 // if a test fails or if you ran go test -v.
 //
-//   logger := zap.New(NewTestLoggerAt(t, zap.InfoLevel))
-func NewTestLoggerAt(t testing.TB, enab zapcore.LevelEnabler) zapcore.Core {
+//   logger := zap.New(tlogger.NewAt(t, zap.InfoLevel))
+func NewAt(t testing.TB, enab zapcore.LevelEnabler) zapcore.Core {
 	return zapcore.NewCore(
-		zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-			// EncoderConfig copied from zap.NewDevelopmentEncoderConfig.
-			// Can't use it directly because that would cause a cyclic import.
-			TimeKey:        "T",
-			LevelKey:       "L",
-			NameKey:        "N",
-			CallerKey:      "C",
-			MessageKey:     "M",
-			StacktraceKey:  "S",
-			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    zapcore.CapitalLevelEncoder,
-			EncodeTime:     zapcore.ISO8601TimeEncoder,
-			EncodeDuration: zapcore.StringDurationEncoder,
-			EncodeCaller:   zapcore.ShortCallerEncoder,
-		}),
+		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
 		testingWriter{t},
 		enab,
 	)
