@@ -68,10 +68,7 @@ func do() error {
 	if err != nil {
 		return err
 	}
-	if err := t.Execute(os.Stdout, tmplData); err != nil {
-		return err
-	}
-	return nil
+	return t.Execute(os.Stdout, tmplData)
 }
 
 func getTmplData() (*tmplData, error) {
