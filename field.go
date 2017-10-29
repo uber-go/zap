@@ -210,7 +210,7 @@ func Object(key string, val zapcore.ObjectMarshaler) zapcore.Field {
 // necessary.
 //
 // Since byte/uint8 and rune/int32 are aliases, Any can't differentiate between
-// them. To minimize suprise, []byte values are treated as binary blobs, byte
+// them. To minimize surprises, []byte values are treated as binary blobs, byte
 // values are treated as uint8, and runes are always treated as integers.
 func Any(key string, value interface{}) zapcore.Field {
 	switch val := value.(type) {
