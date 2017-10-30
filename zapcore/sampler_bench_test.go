@@ -25,8 +25,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/zap/internal/ztest"
 	. "go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 )
 
 var counterTestCases = [][]string{
@@ -206,7 +206,7 @@ func BenchmarkSampler_Check(b *testing.B) {
 			fac := NewSampler(
 				NewCore(
 					NewJSONEncoder(testEncoderConfig()),
-					&zaptest.Discarder{},
+					&ztest.Discarder{},
 					DebugLevel,
 				),
 				time.Millisecond, 1, 1000)
