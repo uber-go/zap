@@ -117,15 +117,54 @@ func RedirectStdLog(l *Logger) func() {
 	prefix := log.Prefix()
 	log.SetFlags(0)
 	log.SetPrefix("")
-	logFunc := l.WithOptions(
-		AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth),
-	).Info
+	logger := l.WithOptions(AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth))
+	logFunc := logger.Info
 	log.SetOutput(&loggerWriter{logFunc})
 	return func() {
 		log.SetFlags(flags)
 		log.SetPrefix(prefix)
 		log.SetOutput(os.Stderr)
 	}
+}
+
+// RedirectStdLogAt redirects output from the standard library's package-global
+// logger to the supplied logger at required level. Since zap already handles
+// caller annotations, timestamps, etc., it automatically disables the standard
+// library's annotations and prefixing.
+//
+// It returns a function to restore the original prefix and flags and reset the
+// standard library's output to os.Stdout.
+func RedirectStdLogAt(l *Logger, level zapcore.Level) (func(), error) {
+	flags := log.Flags()
+	prefix := log.Prefix()
+	log.SetFlags(0)
+	log.SetPrefix("")
+	logger := l.WithOptions(AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth))
+	var logFunc func(string, ...zapcore.Field)
+	switch level {
+	case DebugLevel:
+		logFunc = logger.Debug
+	case InfoLevel:
+		logFunc = logger.Info
+	case WarnLevel:
+		logFunc = logger.Warn
+	case ErrorLevel:
+		logFunc = logger.Error
+	case DPanicLevel:
+		logFunc = logger.DPanic
+	case PanicLevel:
+		logFunc = logger.Panic
+	case FatalLevel:
+		logFunc = logger.Fatal
+	default:
+		return nil, fmt.Errorf("unrecognized level: %q", level)
+	}
+	log.SetOutput(&loggerWriter{logFunc})
+	return func() {
+		log.SetFlags(flags)
+		log.SetPrefix(prefix)
+		log.SetOutput(os.Stderr)
+	}, nil
 }
 
 type loggerWriter struct {
