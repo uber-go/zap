@@ -23,14 +23,14 @@ package zapcore
 import (
 	"testing"
 
-	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/internal/ztest"
 )
 
 func BenchmarkMultiWriteSyncer(b *testing.B) {
 	b.Run("2", func(b *testing.B) {
 		w := NewMultiWriteSyncer(
-			&zaptest.Discarder{},
-			&zaptest.Discarder{},
+			&ztest.Discarder{},
+			&ztest.Discarder{},
 		)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
@@ -41,10 +41,10 @@ func BenchmarkMultiWriteSyncer(b *testing.B) {
 	})
 	b.Run("4", func(b *testing.B) {
 		w := NewMultiWriteSyncer(
-			&zaptest.Discarder{},
-			&zaptest.Discarder{},
-			&zaptest.Discarder{},
-			&zaptest.Discarder{},
+			&ztest.Discarder{},
+			&ztest.Discarder{},
+			&ztest.Discarder{},
+			&ztest.Discarder{},
 		)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {

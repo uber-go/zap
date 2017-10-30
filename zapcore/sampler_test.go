@@ -27,8 +27,8 @@ import (
 	"time"
 
 	"go.uber.org/atomic"
+	"go.uber.org/zap/internal/ztest"
 	. "go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/stretchr/testify/assert"
@@ -105,7 +105,7 @@ func TestSamplerTicking(t *testing.T) {
 		for i := 1; i <= 5; i++ {
 			writeSequence(sampler, i, InfoLevel)
 		}
-		zaptest.Sleep(15 * time.Millisecond)
+		ztest.Sleep(15 * time.Millisecond)
 	}
 	assertSequence(
 		t,
@@ -121,7 +121,7 @@ func TestSamplerTicking(t *testing.T) {
 		for i := 1; i < 18; i++ {
 			writeSequence(sampler, i, InfoLevel)
 		}
-		zaptest.Sleep(10 * time.Millisecond)
+		ztest.Sleep(10 * time.Millisecond)
 	}
 
 	assertSequence(
@@ -160,7 +160,7 @@ func TestSamplerConcurrent(t *testing.T) {
 		expectedCount = numMessages * logsPerTick * numTicks
 	)
 
-	tick := zaptest.Timeout(10 * time.Millisecond)
+	tick := ztest.Timeout(10 * time.Millisecond)
 	cc := &countingCore{}
 	sampler := NewSampler(cc, tick, logsPerTick, 100000)
 
