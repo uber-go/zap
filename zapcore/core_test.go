@@ -27,8 +27,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/zap/internal/ztest"
 	. "go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -106,7 +106,7 @@ func TestIOCore(t *testing.T) {
 }
 
 func TestIOCoreSyncFail(t *testing.T) {
-	sink := &zaptest.Discarder{}
+	sink := &ztest.Discarder{}
 	err := errors.New("failed")
 	sink.SetError(err)
 
@@ -139,7 +139,7 @@ func TestIOCoreSyncsOutput(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		sink := &zaptest.Discarder{}
+		sink := &ztest.Discarder{}
 		core := NewCore(
 			NewJSONEncoder(testEncoderConfig()),
 			sink,
@@ -154,7 +154,7 @@ func TestIOCoreSyncsOutput(t *testing.T) {
 func TestIOCoreWriteFailure(t *testing.T) {
 	core := NewCore(
 		NewJSONEncoder(testEncoderConfig()),
-		Lock(&zaptest.FailWriter{}),
+		Lock(&ztest.FailWriter{}),
 		DebugLevel,
 	)
 	err := core.Write(Entry{}, nil)

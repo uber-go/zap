@@ -23,14 +23,14 @@ package zapcore_test
 import (
 	"testing"
 
+	"go.uber.org/zap/internal/ztest"
 	. "go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 )
 
 func withBenchedTee(b *testing.B, f func(Core)) {
 	fac := NewTee(
-		NewCore(NewJSONEncoder(testEncoderConfig()), &zaptest.Discarder{}, DebugLevel),
-		NewCore(NewJSONEncoder(testEncoderConfig()), &zaptest.Discarder{}, InfoLevel),
+		NewCore(NewJSONEncoder(testEncoderConfig()), &ztest.Discarder{}, DebugLevel),
+		NewCore(NewJSONEncoder(testEncoderConfig()), &ztest.Discarder{}, InfoLevel),
 	)
 	b.ResetTimer()
 	f(fac)
