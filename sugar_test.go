@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"go.uber.org/zap/internal/exit"
+	"go.uber.org/zap/internal/ztest"
 	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/stretchr/testify/assert"
@@ -356,7 +356,7 @@ func TestSugarAddCaller(t *testing.T) {
 }
 
 func TestSugarAddCallerFail(t *testing.T) {
-	errBuf := &zaptest.Buffer{}
+	errBuf := &ztest.Buffer{}
 	withSugar(t, DebugLevel, opts(AddCaller(), AddCallerSkip(1e3), ErrorOutput(errBuf)), func(log *SugaredLogger, logs *observer.ObservedLogs) {
 		log.Info("Failure.")
 		assert.Regexp(

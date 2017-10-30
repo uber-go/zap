@@ -25,8 +25,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/zap/internal/ztest"
 	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 )
 
 type user struct {
@@ -52,7 +52,7 @@ func withBenchedLogger(b *testing.B, f func(*Logger)) {
 	logger := New(
 		zapcore.NewCore(
 			zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
-			&zaptest.Discarder{},
+			&ztest.Discarder{},
 			DebugLevel,
 		))
 	b.ResetTimer()
@@ -166,7 +166,7 @@ func BenchmarkAddCallerHook(b *testing.B) {
 	logger := New(
 		zapcore.NewCore(
 			zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
-			&zaptest.Discarder{},
+			&ztest.Discarder{},
 			InfoLevel,
 		),
 		AddCaller(),
@@ -200,7 +200,7 @@ func Benchmark100Fields(b *testing.B) {
 	const batchSize = 50
 	logger := New(zapcore.NewCore(
 		zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
-		&zaptest.Discarder{},
+		&ztest.Discarder{},
 		DebugLevel,
 	))
 
