@@ -21,31 +21,25 @@
 package zaptest
 
 import (
-	"log"
-	"os"
-	"strconv"
 	"time"
+
+	"go.uber.org/zap/internal/ztest"
 )
 
-var _timeoutScale = 1.0
-
 // Timeout scales the provided duration by $TEST_TIMEOUT_SCALE.
+//
+// Deprecated: This function is intended for internal testing and shouldn't be
+// used outside zap itself. It was introduced before Go supported internal
+// packages.
 func Timeout(base time.Duration) time.Duration {
-	return time.Duration(float64(base) * _timeoutScale)
+	return ztest.Timeout(base)
 }
 
 // Sleep scales the sleep duration by $TEST_TIMEOUT_SCALE.
+//
+// Deprecated: This function is intended for internal testing and shouldn't be
+// used outside zap itself. It was introduced before Go supported internal
+// packages.
 func Sleep(base time.Duration) {
-	time.Sleep(Timeout(base))
-}
-
-func init() {
-	if v := os.Getenv("TEST_TIMEOUT_SCALE"); v != "" {
-		fv, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			panic(err)
-		}
-		_timeoutScale = fv
-		log.Printf("Scaling timeouts by %vx.\n", _timeoutScale)
-	}
+	ztest.Sleep(base)
 }

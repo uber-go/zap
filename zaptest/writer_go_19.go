@@ -18,5 +18,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package zaptest provides a variety of helpers for testing log output.
-package zaptest // import "go.uber.org/zap/zaptest"
+// Type aliases are available only in Go 1.9 and later.
+// +build go1.9
+
+package zaptest
+
+import "go.uber.org/zap/internal/ztest"
+
+type (
+	// A Syncer is a spy for the Sync portion of zapcore.WriteSyncer.
+	Syncer = ztest.Syncer
+
+	// A Discarder sends all writes to ioutil.Discard.
+	Discarder = ztest.Discarder
+
+	// FailWriter is a WriteSyncer that always returns an error on writes.
+	FailWriter = ztest.FailWriter
+
+	// ShortWriter is a WriteSyncer whose write method never fails, but
+	// nevertheless fails to the last byte of the input.
+	ShortWriter = ztest.ShortWriter
+
+	// Buffer is an implementation of zapcore.WriteSyncer that sends all writes to
+	// a bytes.Buffer. It has convenience methods to split the accumulated buffer
+	// on newlines.
+	Buffer = ztest.Buffer
+)
