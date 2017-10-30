@@ -27,8 +27,8 @@ import (
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/internal/ztest"
 	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 )
 
 var (
@@ -110,7 +110,7 @@ func newZapLogger(lvl zapcore.Level) *zap.Logger {
 	enc := zapcore.NewJSONEncoder(ec)
 	return zap.New(zapcore.NewCore(
 		enc,
-		&zaptest.Discarder{},
+		&ztest.Discarder{},
 		lvl,
 	))
 }
