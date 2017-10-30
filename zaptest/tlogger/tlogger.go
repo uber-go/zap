@@ -21,7 +21,7 @@
 // Package tlogger provides a zapcore.Core that is capable of writing log
 // messages to a *testing.T and *testing.B. It may be used from Go tests or
 // benchmarks to have log messages printed only if a test failed, or if the
-// `-v` flag was passed to `go test`.
+// -v flag was passed to go test.
 package tlogger // import "go.uber.org/zap/zaptest/tlogger"
 
 import (
