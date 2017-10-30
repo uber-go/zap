@@ -31,8 +31,10 @@ import (
 )
 
 const (
-	_stdLogDefaultDepth = 2
-	_loggerWriterDepth  = 2
+	_stdLogDefaultDepth      = 2
+	_loggerWriterDepth       = 2
+	_programmerErrorTemplate = "You've found a bug in zap! Please file a bug at " +
+		"https://github.com/uber-go/zap/issues/new and reference this error: %v"
 )
 
 var (
@@ -83,24 +85,9 @@ func NewStdLog(l *Logger) *log.Logger {
 // required level.
 func NewStdLogAt(l *Logger, level zapcore.Level) (*log.Logger, error) {
 	logger := l.WithOptions(AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth))
-	var logFunc func(string, ...zapcore.Field)
-	switch level {
-	case DebugLevel:
-		logFunc = logger.Debug
-	case InfoLevel:
-		logFunc = logger.Info
-	case WarnLevel:
-		logFunc = logger.Warn
-	case ErrorLevel:
-		logFunc = logger.Error
-	case DPanicLevel:
-		logFunc = logger.DPanic
-	case PanicLevel:
-		logFunc = logger.Panic
-	case FatalLevel:
-		logFunc = logger.Fatal
-	default:
-		return nil, fmt.Errorf("unrecognized level: %q", level)
+	logFunc, err := levelToFunc(logger, level)
+	if err != nil {
+		return nil, err
 	}
 	return log.New(&loggerWriter{logFunc}, "" /* prefix */, 0 /* flags */), nil
 }
@@ -113,51 +100,35 @@ func NewStdLogAt(l *Logger, level zapcore.Level) (*log.Logger, error) {
 // It returns a function to restore the original prefix and flags and reset the
 // standard library's output to os.Stdout.
 func RedirectStdLog(l *Logger) func() {
-	flags := log.Flags()
-	prefix := log.Prefix()
-	log.SetFlags(0)
-	log.SetPrefix("")
-	logger := l.WithOptions(AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth))
-	logFunc := logger.Info
-	log.SetOutput(&loggerWriter{logFunc})
-	return func() {
-		log.SetFlags(flags)
-		log.SetPrefix(prefix)
-		log.SetOutput(os.Stderr)
+	f, err := redirectStdLogAt(l, InfoLevel)
+	if err != nil {
+		// Can't get here, since passing InfoLevel to redirectStdLogAt always
+		// works.
+		panic(fmt.Sprintf(_programmerErrorTemplate, err))
 	}
+	return f
 }
 
 // RedirectStdLogAt redirects output from the standard library's package-global
-// logger to the supplied logger at required level. Since zap already handles
-// caller annotations, timestamps, etc., it automatically disables the standard
-// library's annotations and prefixing.
+// logger to the supplied logger at the specified level. Since zap already
+// handles caller annotations, timestamps, etc., it automatically disables the
+// standard library's annotations and prefixing.
 //
 // It returns a function to restore the original prefix and flags and reset the
 // standard library's output to os.Stdout.
 func RedirectStdLogAt(l *Logger, level zapcore.Level) (func(), error) {
+	return redirectStdLogAt(l, level)
+}
+
+func redirectStdLogAt(l *Logger, level zapcore.Level) (func(), error) {
 	flags := log.Flags()
 	prefix := log.Prefix()
 	log.SetFlags(0)
 	log.SetPrefix("")
 	logger := l.WithOptions(AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth))
-	var logFunc func(string, ...zapcore.Field)
-	switch level {
-	case DebugLevel:
-		logFunc = logger.Debug
-	case InfoLevel:
-		logFunc = logger.Info
-	case WarnLevel:
-		logFunc = logger.Warn
-	case ErrorLevel:
-		logFunc = logger.Error
-	case DPanicLevel:
-		logFunc = logger.DPanic
-	case PanicLevel:
-		logFunc = logger.Panic
-	case FatalLevel:
-		logFunc = logger.Fatal
-	default:
-		return nil, fmt.Errorf("unrecognized level: %q", level)
+	logFunc, err := levelToFunc(logger, level)
+	if err != nil {
+		return nil, err
 	}
 	log.SetOutput(&loggerWriter{logFunc})
 	return func() {
@@ -165,6 +136,26 @@ func RedirectStdLogAt(l *Logger, level zapcore.Level) (func(), error) {
 		log.SetPrefix(prefix)
 		log.SetOutput(os.Stderr)
 	}, nil
+}
+
+func levelToFunc(logger *Logger, lvl zapcore.Level) (func(string, ...zapcore.Field), error) {
+	switch lvl {
+	case DebugLevel:
+		return logger.Debug, nil
+	case InfoLevel:
+		return logger.Info, nil
+	case WarnLevel:
+		return logger.Warn, nil
+	case ErrorLevel:
+		return logger.Error, nil
+	case DPanicLevel:
+		return logger.DPanic, nil
+	case PanicLevel:
+		return logger.Panic, nil
+	case FatalLevel:
+		return logger.Fatal, nil
+	}
+	return nil, fmt.Errorf("unrecognized level: %q", lvl)
 }
 
 type loggerWriter struct {
