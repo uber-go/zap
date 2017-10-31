@@ -111,7 +111,7 @@ func NewStdLogAt(l *Logger, level zapcore.Level) (*log.Logger, error) {
 // library's annotations and prefixing.
 //
 // It returns a function to restore the original prefix and flags and reset the
-// standard library's output to os.Stdout.
+// standard library's output to os.Stderr.
 func RedirectStdLog(l *Logger) func() {
 	flags := log.Flags()
 	prefix := log.Prefix()
@@ -133,7 +133,7 @@ func RedirectStdLog(l *Logger) func() {
 // library's annotations and prefixing.
 //
 // It returns a function to restore the original prefix and flags and reset the
-// standard library's output to os.Stdout.
+// standard library's output to os.Stderr.
 func RedirectStdLogAt(l *Logger, level zapcore.Level) (func(), error) {
 	flags := log.Flags()
 	prefix := log.Prefix()
