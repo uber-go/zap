@@ -23,29 +23,26 @@ package zaptest
 import (
 	"testing"
 
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-// NewTestLogger builds a new Core that logs all messages to the given
+// NewLogger builds a new Logger that logs all messages to the given
 // testing.TB.
 //
 // Use this with a *testing.T or *testing.B to get logs which get printed only
 // if a test fails or if you ran go test -v.
-//
-//   logger := zap.New(NewTestLogger(t))
-func NewTestLogger(t testing.TB) zapcore.Core {
-	return NewTestLoggerAt(t, zapcore.DebugLevel)
+func NewLogger(t testing.TB) *zap.Logger {
+	return NewLoggerAt(t, zapcore.DebugLevel)
 }
 
-// NewTestLoggerAt builds a new Core that logs messages to the given
-// testing.TB if the given LevelEnabler allows it.
+// NewLoggerAt builds a new Logger that logs messages to the given testing.TB
+// if the given LevelEnabler allows it.
 //
 // Use this with a *testing.T or *testing.B to get logs which get printed only
 // if a test fails or if you ran go test -v.
-//
-//   logger := zap.New(NewTestLoggerAt(t, zap.InfoLevel))
-func NewTestLoggerAt(t testing.TB, enab zapcore.LevelEnabler) zapcore.Core {
-	return zapcore.NewCore(
+func NewLoggerAt(t testing.TB, enab zapcore.LevelEnabler) *zap.Logger {
+	return zap.New(zapcore.NewCore(
 		zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
 			// EncoderConfig copied from zap.NewDevelopmentEncoderConfig.
 			// Can't use it directly because that would cause a cyclic import.
@@ -63,7 +60,7 @@ func NewTestLoggerAt(t testing.TB, enab zapcore.LevelEnabler) zapcore.Core {
 		}),
 		testingWriter{t},
 		enab,
-	)
+	))
 }
 
 // testingWriter is a WriteSyncer that writes to the given testing.TB.

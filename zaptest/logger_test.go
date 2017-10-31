@@ -34,7 +34,7 @@ import (
 
 func TestTestLoggerIncludesDebug(t *testing.T) {
 	ts := newTestLogSpy(t)
-	log := zap.New(NewTestLogger(ts))
+	log := NewLogger(ts)
 	log.Debug("calculating")
 	log.Info("finished calculating", zap.Int("answer", 42))
 
@@ -46,7 +46,7 @@ func TestTestLoggerIncludesDebug(t *testing.T) {
 
 func TestTestLoggerAt(t *testing.T) {
 	ts := newTestLogSpy(t)
-	log := zap.New(NewTestLoggerAt(ts, zap.WarnLevel))
+	log := NewLoggerAt(ts, zap.WarnLevel)
 
 	log.Info("received work order")
 	log.Debug("starting work")
