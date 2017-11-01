@@ -21,8 +21,6 @@
 package zaptest
 
 import (
-	"testing"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -32,7 +30,7 @@ import (
 //
 // Use this with a *testing.T or *testing.B to get logs which get printed only
 // if a test fails or if you ran go test -v.
-func NewLogger(t testing.TB) *zap.Logger {
+func NewLogger(t TestingT) *zap.Logger {
 	return NewLoggerAt(t, zapcore.DebugLevel)
 }
 
@@ -41,7 +39,7 @@ func NewLogger(t testing.TB) *zap.Logger {
 //
 // Use this with a *testing.T or *testing.B to get logs which get printed only
 // if a test fails or if you ran go test -v.
-func NewLoggerAt(t testing.TB, enab zapcore.LevelEnabler) *zap.Logger {
+func NewLoggerAt(t TestingT, enab zapcore.LevelEnabler) *zap.Logger {
 	return zap.New(zapcore.NewCore(
 		zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
 			// EncoderConfig copied from zap.NewDevelopmentEncoderConfig.
@@ -64,7 +62,7 @@ func NewLoggerAt(t testing.TB, enab zapcore.LevelEnabler) *zap.Logger {
 }
 
 // testingWriter is a WriteSyncer that writes to the given testing.TB.
-type testingWriter struct{ t testing.TB }
+type testingWriter struct{ t TestingT }
 
 func (w testingWriter) Write(p []byte) (n int, err error) {
 	s := string(p)
@@ -75,7 +73,7 @@ func (w testingWriter) Write(p []byte) (n int, err error) {
 	}
 
 	// Note: t.Log is safe for concurrent use.
-	w.t.Log(s)
+	w.t.Logf("%s", s)
 	return len(p), nil
 }
 
