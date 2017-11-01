@@ -76,14 +76,14 @@ func newTestLogSpy(t testing.TB) *testLogSpy {
 	return &testLogSpy{TB: t}
 }
 
-func (t *testLogSpy) Log(args ...interface{}) {
+func (t *testLogSpy) Logf(format string, args ...interface{}) {
 	// Log messages are in the format,
 	//
 	//   2017-10-27T13:03:01.000-0700	DEBUG	your message here	{data here}
 	//
 	// We strip the first part of these messages because we can't really test
 	// for the timestamp from these tests.
-	m := fmt.Sprint(args...)
+	m := fmt.Sprintf(format, args...)
 	m = m[strings.IndexByte(m, '\t')+1:]
 
 	// t.Log should be thread-safe.
