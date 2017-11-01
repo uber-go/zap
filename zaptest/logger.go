@@ -40,25 +40,13 @@ func NewLogger(t TestingT) *zap.Logger {
 // Use this with a *testing.T or *testing.B to get logs which get printed only
 // if a test fails or if you ran go test -v.
 func NewLoggerAt(t TestingT, enab zapcore.LevelEnabler) *zap.Logger {
-	return zap.New(zapcore.NewCore(
-		zapcore.NewConsoleEncoder(zapcore.EncoderConfig{
-			// EncoderConfig copied from zap.NewDevelopmentEncoderConfig.
-			// Can't use it directly because that would cause a cyclic import.
-			TimeKey:        "T",
-			LevelKey:       "L",
-			NameKey:        "N",
-			CallerKey:      "C",
-			MessageKey:     "M",
-			StacktraceKey:  "S",
-			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    zapcore.CapitalLevelEncoder,
-			EncodeTime:     zapcore.ISO8601TimeEncoder,
-			EncodeDuration: zapcore.StringDurationEncoder,
-			EncodeCaller:   zapcore.ShortCallerEncoder,
-		}),
-		testingWriter{t},
-		enab,
-	))
+	return zap.New(
+		zapcore.NewCore(
+			zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
+			testingWriter{t},
+			enab,
+		),
+	)
 }
 
 // testingWriter is a WriteSyncer that writes to the given testing.TB.
