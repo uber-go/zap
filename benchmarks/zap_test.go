@@ -36,6 +36,7 @@ var (
 
 	_messages   = fakeMessages(1000)
 	_tenInts    = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+	_tenFloats  = []float32{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
 	_tenStrings = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
 	_tenTimes   = []time.Time{
 		time.Unix(0, 0),
@@ -139,6 +140,21 @@ func fakeFields() []zapcore.Field {
 	}
 }
 
+func fakePrimitiveFields() []zapcore.Field {
+	return []zapcore.Field{
+		zap.Bool("bool", true),
+		zap.Int("int", _tenInts[0]),
+		zap.Ints("ints", _tenInts),
+		zap.Float32("float", _tenFloats[0]),
+		zap.Float32s("floats", _tenFloats),
+		zap.String("string", _tenStrings[0]),
+		zap.Strings("strings", _tenStrings),
+		zap.Time("time", _tenTimes[0]),
+		zap.Times("times", _tenTimes),
+		zap.Error(errExample),
+	}
+}
+
 func fakeSugarFields() []interface{} {
 	return []interface{}{
 		"int", _tenInts[0],
@@ -150,6 +166,21 @@ func fakeSugarFields() []interface{} {
 		"user1", _oneUser,
 		"user2", _oneUser,
 		"users", _tenUsers,
+		"error", errExample,
+	}
+}
+
+func fakeSugarPrimitiveFields() []interface{} {
+	return []interface{}{
+		"bool", true,
+		"int", _tenInts[0],
+		"ints", _tenInts,
+		"float", _tenFloats[0],
+		"floats", _tenFloats,
+		"string", _tenStrings[0],
+		"strings", _tenStrings,
+		"time", _tenTimes[0],
+		"times", _tenTimes,
 		"error", errExample,
 	}
 }

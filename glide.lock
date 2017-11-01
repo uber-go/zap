@@ -1,5 +1,5 @@
-hash: f073ba522c06c88ea3075bde32a8aaf0969a840a66cab6318a0897d141ffee92
-updated: 2017-07-22T18:06:49.598185334-07:00
+hash: 7647f56cfb7ec0f8b4154475307fb834237867e9bad7893ac4d0b8cd75b216e2
+updated: 2017-07-26T00:37:25.819922999-07:00
 imports:
 - name: go.uber.org/atomic
   version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
@@ -49,7 +49,9 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/rs/zerolog
-  version: eed4c2b94d945e0b2456ad6aa518a443986b5f22
+  version: 614d88bbf80cc89bd536db659d9e93d0f40c3813
+  subpackages:
+  - internal/json
 - name: github.com/satori/go.uuid
   version: 5bf94b69c6b68ee1b541973bb8e1144db23a194b
 - name: github.com/sirupsen/logrus

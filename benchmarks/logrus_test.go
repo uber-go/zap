@@ -55,3 +55,18 @@ func fakeLogrusFields() logrus.Fields {
 		"error":   errExample,
 	}
 }
+
+func fakeLogrusPrimitiveFields() logrus.Fields {
+	return logrus.Fields{
+		"bool":    true,
+		"int":     _tenInts[0],
+		"ints":    _tenInts,
+		"float":   _tenFloats[0],
+		"floats":  _tenFloats,
+		"string":  _tenStrings[0],
+		"strings": _tenStrings,
+		"time":    _tenTimes[0],
+		"times":   _tenTimes,
+		"error":   errExample,
+	}
+}

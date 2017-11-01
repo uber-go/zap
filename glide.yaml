@@ -24,6 +24,7 @@ testImport:
 - package: github.com/pkg/errors
 - package: go.pedge.io/lion
 - package: github.com/rs/zerolog
+  version: ^1
 - package: golang.org/x/tools
   subpackages:
   - cover
