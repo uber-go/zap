@@ -155,6 +155,11 @@ func (l *Level) Get() interface{} {
 	return *l
 }
 
+// Type gets the type for the pflag.Value interface
+func (l *Level) Type() string {
+	return "level"
+}
+
 // Enabled returns true if the given level is at or above this level.
 func (l Level) Enabled(lvl Level) bool {
 	return lvl >= l

@@ -163,6 +163,7 @@ func TestLevelAsFlagValue(t *testing.T) {
 		assert.NoError(t, fs.Parse([]string{"-level", expected.String()}))
 		assert.Equal(t, expected, lvl, "Unexpected level after parsing flag.")
 		assert.Equal(t, expected, lvl.Get(), "Unexpected output using flag.Getter API.")
+		assert.Equal(t, "level", lvl.Type(), "Unexpected output using level.Type() API")
 		assert.Empty(t, buf.String(), "Unexpected error output parsing level flag.")
 		buf.Reset()
 	}
