@@ -65,8 +65,8 @@ func TestFieldConstructors(t *testing.T) {
 	ints := []int{5, 6}
 
 	// For Stringer() test
-	var nUrl *url.URL
-	nUrl = nil
+	var nURL *url.URL
+	nURL = nil
 
 	tests := []struct {
 		name   string
@@ -146,7 +146,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:Duration", Any("k", time.Second), Duration("k", time.Second)},
 		{"Any:Durations", Any("k", []time.Duration{time.Second}), Durations("k", []time.Duration{time.Second})},
 		{"Any:Fallback", Any("k", struct{}{}), Reflect("k", struct{}{})},
-		{"Any:Stringer", Any("k", nUrl), Skip()},
+		{"Any:Stringer", Any("k", nURL), Skip()},
 		{"Namespace", Namespace("k"), zapcore.Field{Key: "k", Type: zapcore.NamespaceType}},
 	}
 
