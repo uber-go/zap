@@ -97,6 +97,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Uintptr", zapcore.Field{Key: "k", Type: zapcore.UintptrType, Integer: 10}, Uintptr("k", 0xa)},
 		{"Reflect", zapcore.Field{Key: "k", Type: zapcore.ReflectType, Interface: ints}, Reflect("k", ints)},
 		{"Stringer", zapcore.Field{Key: "k", Type: zapcore.StringerType, Interface: addr}, Stringer("k", addr)},
+		{"Stringer", zapcore.Field{Key: "k", Type: zapcore.StringerType, Interface: InfoLevel}, Stringer("k", InfoLevel)},
 		{"Stringer", zapcore.Field{Type: zapcore.SkipType}, Stringer("k", nil)},
 		{"Object", zapcore.Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: name}, Object("k", name)},
 		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
