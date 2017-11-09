@@ -23,6 +23,7 @@ package zap
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"time"
 
 	"go.uber.org/zap/zapcore"
@@ -170,6 +171,9 @@ func Namespace(key string) zapcore.Field {
 // Stringer constructs a field with the given key and the output of the value's
 // String method. The Stringer's String method is called lazily.
 func Stringer(key string, val fmt.Stringer) zapcore.Field {
+	if val == nil || reflect.ValueOf(val).IsNil() {
+		return Skip()
+	}
 	return zapcore.Field{Key: key, Type: zapcore.StringerType, Interface: val}
 }
 

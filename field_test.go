@@ -22,6 +22,7 @@ package zap
 
 import (
 	"net"
+	"net/url"
 	"sync"
 	"testing"
 	"time"
@@ -63,6 +64,10 @@ func TestFieldConstructors(t *testing.T) {
 	name := username("phil")
 	ints := []int{5, 6}
 
+	// For Stringer() test
+	var nUrl *url.URL
+	nUrl = nil
+
 	tests := []struct {
 		name   string
 		field  zapcore.Field
@@ -92,6 +97,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Uintptr", zapcore.Field{Key: "k", Type: zapcore.UintptrType, Integer: 10}, Uintptr("k", 0xa)},
 		{"Reflect", zapcore.Field{Key: "k", Type: zapcore.ReflectType, Interface: ints}, Reflect("k", ints)},
 		{"Stringer", zapcore.Field{Key: "k", Type: zapcore.StringerType, Interface: addr}, Stringer("k", addr)},
+		{"Stringer", zapcore.Field{Type: zapcore.SkipType}, Stringer("k", nil)},
 		{"Object", zapcore.Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: name}, Object("k", name)},
 		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
 		{"Any:ArrayMarshaler", Any("k", bools([]bool{true})), Array("k", bools([]bool{true}))},
@@ -139,6 +145,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:Duration", Any("k", time.Second), Duration("k", time.Second)},
 		{"Any:Durations", Any("k", []time.Duration{time.Second}), Durations("k", []time.Duration{time.Second})},
 		{"Any:Fallback", Any("k", struct{}{}), Reflect("k", struct{}{})},
+		{"Any:Stringer", Any("k", nUrl), Skip()},
 		{"Namespace", Namespace("k"), zapcore.Field{Key: "k", Type: zapcore.NamespaceType}},
 	}
 
