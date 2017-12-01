@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 
 	"github.com/rs/zerolog"
+	"time"
 )
 
 func newZerolog() zerolog.Logger {
@@ -32,6 +33,13 @@ func newZerolog() zerolog.Logger {
 
 func newDisabledZerolog() zerolog.Logger {
 	return newZerolog().Level(zerolog.Disabled)
+}
+
+func newSampledZerolog() zerolog.Logger {
+	return newZerolog().Sample(&zerolog.BurstSampler{
+		Burst:  10,
+		Period: 100 * time.Millisecond,
+	})
 }
 
 func fakeZerologFields(e *zerolog.Event) *zerolog.Event {
