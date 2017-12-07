@@ -164,7 +164,7 @@ func NewDevelopmentConfig() Config {
 
 // Build constructs a logger from the Config and Options.
 func (cfg Config) Build(opts ...Option) (*Logger, error) {
-	enc, err := cfg.buildEncoder()
+	enc, err := cfg.BuildEncoder()
 	if err != nil {
 		return nil, err
 	}
@@ -238,6 +238,7 @@ func (cfg Config) openSinks() (zapcore.WriteSyncer, zapcore.WriteSyncer, error) 
 	return sink, errSink, nil
 }
 
-func (cfg Config) buildEncoder() (zapcore.Encoder, error) {
+// BuildEncoder constructs an encoder from the Config.
+func (cfg Config) BuildEncoder() (zapcore.Encoder, error) {
 	return newEncoder(cfg.Encoding, cfg.EncoderConfig)
 }
