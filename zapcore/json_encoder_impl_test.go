@@ -223,7 +223,9 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		assertOutput(t, tt.desc, tt.expected, tt.f)
+		t.Run(tt.desc, func(t *testing.T) {
+			assertOutput(t, tt.desc, tt.expected, tt.f)
+		})
 	}
 }
 
@@ -314,16 +316,18 @@ func TestJSONEncoderArrays(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		f := func(enc Encoder) error {
-			return enc.AddArray("array", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
-				tt.f(arr)
-				tt.f(arr)
-				return nil
-			}))
-		}
-		assertOutput(t, tt.desc, `"array":`+tt.expected, func(enc Encoder) {
-			err := f(enc)
-			assert.NoError(t, err, "Unexpected error adding array to JSON encoder.")
+		t.Run(tt.desc, func(t *testing.T) {
+			f := func(enc Encoder) error {
+				return enc.AddArray("array", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
+					tt.f(arr)
+					tt.f(arr)
+					return nil
+				}))
+			}
+			assertOutput(t, tt.desc, `"array":`+tt.expected, func(enc Encoder) {
+				err := f(enc)
+				assert.NoError(t, err, "Unexpected error adding array to JSON encoder.")
+			})
 		})
 	}
 }
