@@ -224,7 +224,7 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			assertOutput(t, tt.desc, tt.expected, tt.f)
+			assertOutput(t, tt.expected, tt.f)
 		})
 	}
 }
@@ -324,7 +324,7 @@ func TestJSONEncoderArrays(t *testing.T) {
 					return nil
 				}))
 			}
-			assertOutput(t, tt.desc, `"array":`+tt.expected, func(enc Encoder) {
+			assertOutput(t, `"array":`+tt.expected, func(enc Encoder) {
 				err := f(enc)
 				assert.NoError(t, err, "Unexpected error adding array to JSON encoder.")
 			})
@@ -336,13 +336,13 @@ func assertJSON(t *testing.T, expected string, enc *jsonEncoder) {
 	assert.Equal(t, expected, enc.buf.String(), "Encoded JSON didn't match expectations.")
 }
 
-func assertOutput(t testing.TB, desc string, expected string, f func(Encoder)) {
+func assertOutput(t testing.TB, expected string, f func(Encoder)) {
 	enc := &jsonEncoder{buf: bufferpool.Get(), EncoderConfig: &EncoderConfig{
 		EncodeTime:     EpochTimeEncoder,
 		EncodeDuration: SecondsDurationEncoder,
 	}}
 	f(enc)
-	assert.Equal(t, expected, enc.buf.String(), "Unexpected encoder output after adding a %s.", desc)
+	assert.Equal(t, expected, enc.buf.String(), "Unexpected encoder output after adding.")
 
 	enc.truncate()
 	enc.AddString("foo", "bar")
@@ -353,7 +353,7 @@ func assertOutput(t testing.TB, desc string, expected string, f func(Encoder)) {
 		// field.
 		expectedPrefix += ","
 	}
-	assert.Equal(t, expectedPrefix+expected, enc.buf.String(), "Unexpected encoder output after adding a %s as a second field.", desc)
+	assert.Equal(t, expectedPrefix+expected, enc.buf.String(), "Unexpected encoder output after adding as a second field.")
 }
 
 // Nested Array- and ObjectMarshalers.
