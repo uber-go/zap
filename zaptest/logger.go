@@ -25,26 +25,49 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// LoggerOption configures the test logger built by NewLogger.
+type LoggerOption interface {
+	applyLoggerOption(*loggerOptions)
+}
+
+type loggerOptions struct {
+	Level zapcore.LevelEnabler
+}
+
+type loggerOptionFunc func(*loggerOptions)
+
+func (f loggerOptionFunc) applyLoggerOption(opts *loggerOptions) {
+	f(opts)
+}
+
+// Level controls which messages are logged by a test Logger built by
+// NewLogger.
+func Level(enab zapcore.LevelEnabler) LoggerOption {
+	return loggerOptionFunc(func(opts *loggerOptions) {
+		opts.Level = enab
+	})
+}
+
 // NewLogger builds a new Logger that logs all messages to the given
 // testing.TB.
 //
-// Use this with a *testing.T or *testing.B to get logs which get printed only
-// if a test fails or if you ran go test -v.
-func NewLogger(t TestingT) *zap.Logger {
-	return NewLoggerAt(t, zapcore.DebugLevel)
-}
-
-// NewLoggerAt builds a new Logger that logs messages to the given testing.TB
-// if the given LevelEnabler allows it.
+//   logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 //
 // Use this with a *testing.T or *testing.B to get logs which get printed only
 // if a test fails or if you ran go test -v.
-func NewLoggerAt(t TestingT, enab zapcore.LevelEnabler) *zap.Logger {
+func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
+	cfg := loggerOptions{
+		Level: zapcore.DebugLevel,
+	}
+	for _, o := range opts {
+		o.applyLoggerOption(&cfg)
+	}
+
 	return zap.New(
 		zapcore.NewCore(
 			zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
 			testingWriter{t},
-			enab,
+			cfg.Level,
 		),
 	)
 }

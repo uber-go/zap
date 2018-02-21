@@ -46,7 +46,7 @@ func TestTestLoggerIncludesDebug(t *testing.T) {
 
 func TestTestLoggerAt(t *testing.T) {
 	ts := newTestLogSpy(t)
-	log := NewLoggerAt(ts, zap.WarnLevel)
+	log := NewLogger(ts, Level(zap.WarnLevel))
 
 	log.Info("received work order")
 	log.Debug("starting work")
