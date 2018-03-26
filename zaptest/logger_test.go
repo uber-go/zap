@@ -23,6 +23,7 @@ package zaptest
 import (
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"testing"
@@ -72,6 +73,15 @@ func TestTestLoggerSupportsLevels(t *testing.T) {
 		`ERROR	work failed	{"error": "great sadness"}`,
 		"PANIC	failed to do work",
 	)
+}
+
+func TestTestingWriter(t *testing.T) {
+	ts := newTestLogSpy(t)
+	w := testingWriter{ts}
+
+	n, err := io.WriteString(w, "hello\n\n")
+	assert.NoError(t, err, "WriteString must not fail")
+	assert.Equal(t, 7, n)
 }
 
 // testLogSpy is a testing.TB that captures logged messages.

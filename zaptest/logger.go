@@ -78,12 +78,14 @@ func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 type testingWriter struct{ t TestingT }
 
 func (w testingWriter) Write(p []byte) (n int, err error) {
+	n = len(p)
+
 	// Strip trailing newline because t.Log always adds one.
 	p = bytes.TrimRight(p, "\n")
 
 	// Note: t.Log is safe for concurrent use.
 	w.t.Logf("%s", p)
-	return len(p), nil
+	return n, nil
 }
 
 func (w testingWriter) Sync() error {
