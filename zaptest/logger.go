@@ -65,17 +65,39 @@ func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 		o.applyLoggerOption(&cfg)
 	}
 
+	writer := newTestingWriter(t)
 	return zap.New(
 		zapcore.NewCore(
 			zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
-			testingWriter{t},
+			writer,
 			cfg.Level,
 		),
+
+		// Send zap errors to the same writer and mark the test as failed if
+		// that happens.
+		zap.ErrorOutput(writer.WithMarkFailed(true)),
 	)
 }
 
 // testingWriter is a WriteSyncer that writes to the given testing.TB.
-type testingWriter struct{ t TestingT }
+type testingWriter struct {
+	t TestingT
+
+	// If true, the test will be marked as failed if this testingWriter is
+	// ever used.
+	markFailed bool
+}
+
+func newTestingWriter(t TestingT) testingWriter {
+	return testingWriter{t: t}
+}
+
+// WithMarkFailed returns a copy of this testingWriter with markFailed set to
+// the provided value.
+func (w testingWriter) WithMarkFailed(v bool) testingWriter {
+	w.markFailed = v
+	return w
+}
 
 func (w testingWriter) Write(p []byte) (n int, err error) {
 	n = len(p)
@@ -85,6 +107,10 @@ func (w testingWriter) Write(p []byte) (n int, err error) {
 
 	// Note: t.Log is safe for concurrent use.
 	w.t.Logf("%s", p)
+	if w.markFailed {
+		w.t.Fail()
+	}
+
 	return n, nil
 }
 
