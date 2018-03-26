@@ -29,6 +29,15 @@ type TestingT interface {
 	// Logs the given message and marks the test as failed.
 	Errorf(string, ...interface{})
 
+	// Marks the test as failed.
+	Fail()
+
+	// Returns true if the test has been marked as failed.
+	Failed() bool
+
+	// Returns the name of the test.
+	Name() string
+
 	// Marks the test as failed and stops execution of that test.
 	FailNow()
 }
