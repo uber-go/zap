@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 	"testing"
 
 	"go.uber.org/zap"
@@ -119,7 +118,6 @@ func TestTestLoggerErrorOutput(t *testing.T) {
 type testLogSpy struct {
 	testing.TB
 
-	mu       sync.RWMutex
 	failed   bool
 	Messages []string
 }
@@ -129,16 +127,11 @@ func newTestLogSpy(t testing.TB) *testLogSpy {
 }
 
 func (t *testLogSpy) Fail() {
-	t.mu.Lock()
 	t.failed = true
-	t.mu.Unlock()
 }
 
 func (t *testLogSpy) Failed() bool {
-	t.mu.RLock()
-	failed := t.failed
-	t.mu.RUnlock()
-	return failed
+	return t.failed
 }
 
 func (t *testLogSpy) FailNow() {
@@ -155,11 +148,7 @@ func (t *testLogSpy) Logf(format string, args ...interface{}) {
 	// for the timestamp from these tests.
 	m := fmt.Sprintf(format, args...)
 	m = m[strings.IndexByte(m, '\t')+1:]
-
-	t.mu.Lock()
 	t.Messages = append(t.Messages, m)
-	t.mu.Unlock()
-
 	t.TB.Log(m)
 }
 
