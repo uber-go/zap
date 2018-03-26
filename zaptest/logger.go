@@ -21,6 +21,8 @@
 package zaptest
 
 import (
+	"bytes"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -76,15 +78,11 @@ func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 type testingWriter struct{ t TestingT }
 
 func (w testingWriter) Write(p []byte) (n int, err error) {
-	s := string(p)
-
 	// Strip trailing newline because t.Log always adds one.
-	if s[len(s)-1] == '\n' {
-		s = s[:len(s)-1]
-	}
+	p = bytes.TrimRight(p, "\n")
 
 	// Note: t.Log is safe for concurrent use.
-	w.t.Logf("%s", s)
+	w.t.Logf("%s", p)
 	return len(p), nil
 }
 
