@@ -32,19 +32,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTestLoggerIncludesDebug(t *testing.T) {
+func TestTestLogger(t *testing.T) {
 	ts := newTestLogSpy(t)
 	log := NewLogger(ts)
-	log.Debug("calculating")
-	log.Info("finished calculating", zap.Int("answer", 42))
+
+	log.Info("received work order")
+	log.Debug("starting work")
+	log.Warn("work may fail")
+	log.Error("work failed", zap.Error(errors.New("great sadness")))
+
+	assert.Panics(t, func() {
+		log.Panic("failed to do work")
+	}, "log.Panic should panic")
 
 	ts.AssertMessages(
-		"DEBUG	calculating",
-		`INFO	finished calculating	{"answer": 42}`,
+		"INFO	received work order",
+		"DEBUG	starting work",
+		"WARN	work may fail",
+		`ERROR	work failed	{"error": "great sadness"}`,
+		"PANIC	failed to do work",
 	)
 }
 
-func TestTestLoggerAt(t *testing.T) {
+func TestTestLoggerSupportsLevels(t *testing.T) {
 	ts := newTestLogSpy(t)
 	log := NewLogger(ts, Level(zap.WarnLevel))
 
