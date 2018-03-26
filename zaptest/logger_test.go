@@ -101,7 +101,7 @@ func (t *testLogSpy) Logf(format string, args ...interface{}) {
 	t.Messages = append(t.Messages, m)
 	t.mu.Unlock()
 
-	t.TB.Log(args...)
+	t.TB.Log(m)
 }
 
 func (t *testLogSpy) AssertMessages(msgs ...string) {
