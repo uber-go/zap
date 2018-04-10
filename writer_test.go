@@ -65,7 +65,7 @@ func TestOpen(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		wss, cleanup, err := open(tt.paths)
+		wss, cleanup, err := open(DefaultSinkFactory(), tt.paths)
 		if err == nil {
 			defer cleanup()
 		}
