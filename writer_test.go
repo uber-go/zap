@@ -31,7 +31,7 @@ import (
 )
 
 func TestOpenNoPaths(t *testing.T) {
-	ws, cleanup, err := Open()
+	ws, cleanup, err := Open(DefaultSinkFactories())
 	defer cleanup()
 
 	assert.NoError(t, err, "Expected opening no paths to succeed.")
@@ -65,7 +65,7 @@ func TestOpen(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		wss, cleanup, err := open(tt.paths)
+		wss, cleanup, err := open(DefaultSinkFactories(), tt.paths)
 		if err == nil {
 			defer cleanup()
 		}
@@ -98,7 +98,7 @@ func TestOpenFails(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		_, cleanup, err := Open(tt.paths...)
+		_, cleanup, err := Open(DefaultSinkFactories(), tt.paths...)
 		require.Nil(t, cleanup, "Cleanup function should never be nil")
 		assert.Error(t, err, "Open with non-existent directory should fail")
 	}

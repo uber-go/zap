@@ -21,6 +21,9 @@
 package zap
 
 import (
+	"io"
+	"io/ioutil"
+	"os"
 	"sort"
 	"time"
 
@@ -164,12 +167,19 @@ func NewDevelopmentConfig() Config {
 
 // Build constructs a logger from the Config and Options.
 func (cfg Config) Build(opts ...Option) (*Logger, error) {
+	return cfg.BuildWithSinks(DefaultSinkFactories(), opts...)
+}
+
+// BuildWithSinks uses the map of sink factories to constrct a logger from the
+// passed options. For example, the option "stdout" will construct a logger
+// that routes output to the stdout sink.
+func (cfg Config) BuildWithSinks(sf map[string]SinkFactory, opts ...Option) (*Logger, error) {
 	enc, err := cfg.buildEncoder()
 	if err != nil {
 		return nil, err
 	}
 
-	sink, errSink, err := cfg.openSinks()
+	sink, errSink, err := cfg.openSinks(sf)
 	if err != nil {
 		return nil, err
 	}
@@ -225,12 +235,12 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 	return opts
 }
 
-func (cfg Config) openSinks() (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
-	sink, closeOut, err := Open(cfg.OutputPaths...)
+func (cfg Config) openSinks(sf map[string]SinkFactory) (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
+	sink, closeOut, err := Open(sf, cfg.OutputPaths...)
 	if err != nil {
 		return nil, nil, err
 	}
-	errSink, _, err := Open(cfg.ErrorOutputPaths...)
+	errSink, _, err := Open(sf, cfg.ErrorOutputPaths...)
 	if err != nil {
 		closeOut()
 		return nil, nil, err
@@ -240,4 +250,28 @@ func (cfg Config) openSinks() (zapcore.WriteSyncer, zapcore.WriteSyncer, error) 
 
 func (cfg Config) buildEncoder() (zapcore.Encoder, error) {
 	return newEncoder(cfg.Encoding, cfg.EncoderConfig)
+}
+
+// SinkFactory defines the Create() method used to create sink writers and
+// closers.
+type SinkFactory interface {
+	Create() (zapcore.WriteSyncer, io.Closer)
+}
+
+// DefaultSinkFactories generates a map of regularly used sink factories,
+// like stdout and stderr.
+func DefaultSinkFactories() map[string]SinkFactory {
+	return map[string]SinkFactory{
+		"stdout": stdFactory{os.Stdout},
+		"stderr": stdFactory{os.Stderr},
+	}
+}
+
+type stdFactory struct {
+	io *os.File
+}
+
+// Create returns the wrapped io and a no-op closer.
+func (s stdFactory) Create() (zapcore.WriteSyncer, io.Closer) {
+	return s.io, ioutil.NopCloser(s.io)
 }
