@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 
@@ -29,6 +30,10 @@ import (
 	"go.uber.org/multierr"
 )
 
+func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
+	return OpenWithSinks(DefaultSinkFactory(), paths...)
+}
+
 // Open is a high-level wrapper that takes a variadic number of paths, opens or
 // creates each of the specified files, and combines them into a locked
 // WriteSyncer. It also returns any error encountered and a function to close
@@ -36,8 +41,8 @@ import (
 //
 // Passing no paths returns a no-op WriteSyncer. The special paths "stdout" and
 // "stderr" are interpreted as os.Stdout and os.Stderr, respectively.
-func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
-	writers, close, err := open(paths)
+func OpenWithSinks(sf map[string]SinkFactory, paths ...string) (zapcore.WriteSyncer, func(), error) {
+	writers, close, err := open(sf, paths)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -46,31 +51,28 @@ func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
 	return writer, close, nil
 }
 
-func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
+func open(sf map[string]SinkFactory, paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	var openErr error
 	writers := make([]zapcore.WriteSyncer, 0, len(paths))
-	files := make([]*os.File, 0, len(paths))
+	closers := make([]io.Closer, 0, len(paths))
 	close := func() {
-		for _, f := range files {
-			f.Close()
+		for _, c := range closers {
+			c.Close()
 		}
 	}
 	for _, path := range paths {
-		switch path {
-		case "stdout":
-			writers = append(writers, os.Stdout)
-			// Don't close standard out.
-			continue
-		case "stderr":
-			writers = append(writers, os.Stderr)
-			// Don't close standard error.
+		factory, ok := sf[path]
+		if ok {
+			writer, closer := factory.Create()
+			writers = append(writers, writer)
+			closers = append(closers, closer)
 			continue
 		}
 		f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		openErr = multierr.Append(openErr, err)
 		if err == nil {
 			writers = append(writers, f)
-			files = append(files, f)
+			closers = append(closers, f)
 		}
 	}
 
