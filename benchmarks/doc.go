@@ -20,4 +20,4 @@
 
 // Package benchmarks contains only benchmarks comparing zap to other
 // structured logging libraries.
-package benchmarks
+package benchmarks // import "go.uber.org/zap/benchmarks"

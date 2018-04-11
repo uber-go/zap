@@ -20,7 +20,7 @@
 
 // Package exit provides stubs so that unit tests can exercise code that calls
 // os.Exit(1).
-package exit
+package exit // import "go.uber.org/zap/internal/exit"
 
 import "os"
 

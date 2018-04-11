@@ -20,7 +20,7 @@
 
 // Package bufferpool houses zap's shared internal buffer pool. Third-party
 // packages can recreate the same functionality with buffers.NewPool.
-package bufferpool
+package bufferpool // import "go.uber.org/zap/internal/bufferpool"
 
 import "go.uber.org/zap/buffer"
 
