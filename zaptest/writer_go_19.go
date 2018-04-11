@@ -35,8 +35,9 @@ type (
 	// FailWriter is a WriteSyncer that always returns an error on writes.
 	FailWriter = ztest.FailWriter
 
-	// ShortWriter is a WriteSyncer whose write method never fails, but
-	// nevertheless fails to the last byte of the input.
+	// ShortWriter is a WriteSyncer whose write method never returns an error,
+	// but always reports that it wrote one byte less than the input slice's
+	// length (thus, a "short write").
 	ShortWriter = ztest.ShortWriter
 
 	// Buffer is an implementation of zapcore.WriteSyncer that sends all writes to
