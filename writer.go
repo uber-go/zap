@@ -61,7 +61,7 @@ func open(sf map[string]SinkFactory, paths []string) ([]zapcore.WriteSyncer, fun
 	for _, path := range paths {
 		factory, ok := sf[path]
 		if ok {
-			writer, closer := factory.Create()
+			writer, closer := factory.Writer, factory.Closer
 			writers = append(writers, writer)
 			closers = append(closers, closer)
 			continue

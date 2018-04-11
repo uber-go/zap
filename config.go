@@ -254,24 +254,16 @@ func (cfg Config) buildEncoder() (zapcore.Encoder, error) {
 
 // SinkFactory defines the Create() method used to create sink writers and
 // closers.
-type SinkFactory interface {
-	Create() (zapcore.WriteSyncer, io.Closer)
+type SinkFactory struct {
+	Writer zapcore.WriteSyncer
+	Closer io.Closer
 }
 
 // DefaultSinkFactories generates a map of regularly used sink factories,
 // like stdout and stderr.
 func DefaultSinkFactories() map[string]SinkFactory {
 	return map[string]SinkFactory{
-		"stdout": stdFactory{os.Stdout},
-		"stderr": stdFactory{os.Stderr},
+		"stdout": SinkFactory{os.Stdout, ioutil.NopCloser(os.Stdout)},
+		"stderr": SinkFactory{os.Stderr, ioutil.NopCloser(os.Stderr)},
 	}
-}
-
-type stdFactory struct {
-	io *os.File
-}
-
-// Create returns the wrapped io and a no-op closer.
-func (s stdFactory) Create() (zapcore.WriteSyncer, io.Closer) {
-	return s.io, ioutil.NopCloser(s.io)
 }
