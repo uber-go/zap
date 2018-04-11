@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMapObjectEncoderAdd(t *testing.T) {
@@ -204,9 +205,11 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		enc := NewMapObjectEncoder()
-		tt.f(enc)
-		assert.Equal(t, tt.expected, enc.Fields["k"], "Unexpected encoder output.")
+		t.Run(tt.desc, func(t *testing.T) {
+			enc := NewMapObjectEncoder()
+			tt.f(enc)
+			assert.Equal(t, tt.expected, enc.Fields["k"], "Unexpected encoder output.")
+		})
 	}
 }
 func TestSliceArrayEncoderAppend(t *testing.T) {
@@ -255,19 +258,18 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		enc := NewMapObjectEncoder()
-		assert.NoError(t, enc.AddArray("k", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
-			tt.f(arr)
-			tt.f(arr)
-			return nil
-		})), "Expected AddArray to succeed.")
+		t.Run(tt.desc, func(t *testing.T) {
+			enc := NewMapObjectEncoder()
+			assert.NoError(t, enc.AddArray("k", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
+				tt.f(arr)
+				tt.f(arr)
+				return nil
+			})), "Expected AddArray to succeed.")
 
-		arr, ok := enc.Fields["k"].([]interface{})
-		if !ok {
-			t.Errorf("Test case %s didn't encode an array.", tt.desc)
-			continue
-		}
-		assert.Equal(t, []interface{}{tt.expected, tt.expected}, arr, "Unexpected encoder output.")
+			arr, ok := enc.Fields["k"].([]interface{})
+			require.True(t, ok, "Test case %s didn't encode an array.", tt.desc)
+			assert.Equal(t, []interface{}{tt.expected, tt.expected}, arr, "Unexpected encoder output.")
+		})
 	}
 }
 
