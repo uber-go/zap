@@ -22,6 +22,7 @@ package zap
 
 import (
 	"net"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -151,9 +152,28 @@ func TestFieldConstructors(t *testing.T) {
 }
 
 func TestStackField(t *testing.T) {
+	fn := func(st string) string {
+		return strings.Split(st, "\n")[0]
+	}
+
 	f := Stack("stacktrace")
 	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
-	assert.Equal(t, takeStacktrace(), f.String, "Unexpected stack trace")
+	assert.Equal(t, fn(takeStacktrace(0)), fn(f.String), "Unexpected stack trace")
+	assert.Equal(t, fn(stackField("", 0).String), fn(f.String), "Expected equivelance to StackSkip")
+
 	assertCanBeReused(t, f)
+}
+
+func TestStackSkipField(t *testing.T) {
+	fn := func(f zapcore.Field) string {
+		return strings.Split(f.String, "\n")[0]
+	}
+
+	stack := Stack("")
+	assert.Equal(t, fn(stack), fn(stackField("", 0)))
+
+	func() {
+		assert.Equal(t, fn(stack), fn(stackField("", 1)))
+	}()
 }

@@ -22,11 +22,6 @@ package zap_test
 
 import (
 	"bytes"
-	"io/ioutil"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -37,26 +32,70 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// _zapPackages are packages that we search for in the logging output to match a
-// zap stack frame. It is different from _zapStacktracePrefixes which  is only
-// intended to match on the function name, while this is on the full output
-// which includes filenames.
-var _zapPackages = []string{
-	"go.uber.org/zap.",
-	"go.uber.org/zap/zapcore.",
-}
-
-func TestStacktraceFiltersZapLog(t *testing.T) {
+func TestStacktraceBeginsAtLogCallSite(t *testing.T) {
 	withLogger(t, func(logger *zap.Logger, out *bytes.Buffer) {
 		logger.Error("test log")
 		logger.Sugar().Error("sugar test log")
 
-		require.Contains(t, out.String(), "TestStacktraceFiltersZapLog", "Should not strip out non-zap import")
-		verifyNoZap(t, out.String())
+		frames := strings.Split(out.String(), "\n")
+
+		// stack from logger.Error() call
+		stack := []string{
+			"go.uber.org/zap_test.TestStacktraceBeginsAtLogCallSite.func1",
+			"go.uber.org/zap_test.withLogger",
+			"go.uber.org/zap_test.TestStacktraceBeginsAtLogCallSite",
+			"testing.tRunner",
+		}
+
+		require.True(t, len(frames) > len(stack)*2+1)
+
+		for idx, fn := range stack {
+			assert.Equalf(t, fn, frames[1+2*idx], "frame %v unexpected", idx)
+		}
+
+		// stack from logger.Sugar().Error() call
+		frames = frames[2*len(stack)+1:]
+
+		stack = []string{
+			"go.uber.org/zap_test.TestStacktraceBeginsAtLogCallSite.func1",
+			"go.uber.org/zap_test.withLogger",
+			"go.uber.org/zap_test.TestStacktraceBeginsAtLogCallSite",
+			"testing.tRunner",
+		}
+
+		require.True(t, len(frames) > len(stack)*2)
+
+		for idx, fn := range stack {
+			assert.Equalf(t, fn, frames[1+2*idx], "sugared frame %v unexpected", idx)
+		}
 	})
 }
 
-func TestStacktraceFiltersZapMarshal(t *testing.T) {
+func TestStacktraceHonorsCallerSkip(t *testing.T) {
+	withLogger(t, func(logger *zap.Logger, out *bytes.Buffer) {
+		func() {
+			logger.Error("test log")
+		}()
+
+		frames := strings.Split(out.String(), "\n")
+
+		// stack from logger.Error() call not including enclosing func
+		stack := []string{
+			"go.uber.org/zap_test.TestStacktraceHonorsCallerSkip.func1",
+			"go.uber.org/zap_test.withLogger",
+			"go.uber.org/zap_test.TestStacktraceHonorsCallerSkip",
+			"testing.tRunner",
+		}
+
+		require.True(t, len(frames) > len(stack)*2)
+
+		for idx, fn := range stack {
+			assert.Equalf(t, fn, frames[1+2*idx], "frame %v unexpected", idx)
+		}
+	}, zap.AddCallerSkip(1))
+}
+
+func TestStacktraceIncludesZapFramesAfterCallSite(t *testing.T) {
 	withLogger(t, func(logger *zap.Logger, out *bytes.Buffer) {
 		marshal := func(enc zapcore.ObjectEncoder) error {
 			logger.Warn("marshal caused warn")
@@ -66,99 +105,43 @@ func TestStacktraceFiltersZapMarshal(t *testing.T) {
 		logger.Error("test log", zap.Object("obj", zapcore.ObjectMarshalerFunc(marshal)))
 
 		logs := out.String()
+		frames := strings.Split(logs, "\n")
 
-		// The marshal function (which will be under the test function) should not be stripped.
-		const marshalFnPrefix = "TestStacktraceFiltersZapMarshal."
-		require.Contains(t, logs, marshalFnPrefix, "Should not strip out marshal call")
-
-		// There should be no zap stack traces before that point.
-		marshalIndex := strings.Index(logs, marshalFnPrefix)
-		verifyNoZap(t, logs[:marshalIndex])
-
-		// After that point, there should be zap stack traces - we don't want to strip out
-		// the Marshal caller information.
-		for _, fnPrefix := range _zapPackages {
-			require.Contains(t, logs[marshalIndex:], fnPrefix, "Missing zap caller stack for Marshal")
-		}
-	})
-}
-
-func TestStacktraceFiltersVendorZap(t *testing.T) {
-	// We need to simulate a zap as a vendor library, so we're going to create a fake GOPATH
-	// and run the above test which will contain zap in the vendor directory.
-	withGoPath(t, func(goPath string) {
-		curDir, err := os.Getwd()
-		require.NoError(t, err, "Failed to get current directory")
-
-		testDir := filepath.Join(goPath, "src/go.uber.org/zap_test/")
-		vendorDir := filepath.Join(testDir, "vendor")
-		require.NoError(t, os.MkdirAll(testDir, 0777), "Failed to create source director")
-
-		curFile := getSelfFilename(t)
-		//copyFile(t, curFile, filepath.Join(testDir, curFile))
-		setupSymlink(t, curFile, filepath.Join(testDir, curFile))
-
-		// Set up symlinks for zap, and for any test dependencies.
-		setupSymlink(t, curDir, filepath.Join(vendorDir, "go.uber.org/zap"))
-		for _, testDep := range []string{"github.com/stretchr/testify"} {
-			target := filepath.Join(curDir, "vendor", testDep)
-			_, err := os.Stat(target)
-			require.NoError(t, err, "Required dependency (%v) not installed in vendor", target)
-			setupSymlink(t, target, filepath.Join(vendorDir, testDep))
+		stack := []string{
+			"go.uber.org/zap_test.TestStacktraceIncludesZapFramesAfterCallSite.func1.1",
+			"go.uber.org/zap/zapcore.ObjectMarshalerFunc.MarshalLogObject",
+			"go.uber.org/zap/zapcore.(*jsonEncoder).AppendObject",
+			"go.uber.org/zap/zapcore.(*jsonEncoder).AddObject",
+			"go.uber.org/zap/zapcore.Field.AddTo",
+			"go.uber.org/zap/zapcore.addFields",
+			"go.uber.org/zap/zapcore.consoleEncoder.writeContext",
+			"go.uber.org/zap/zapcore.consoleEncoder.EncodeEntry",
+			"go.uber.org/zap/zapcore.(*ioCore).Write",
+			"go.uber.org/zap/zapcore.(*CheckedEntry).Write",
+			"go.uber.org/zap.(*Logger).Error",
+			"go.uber.org/zap_test.TestStacktraceIncludesZapFramesAfterCallSite.func1",
+			"go.uber.org/zap_test.withLogger",
+			"go.uber.org/zap_test.TestStacktraceIncludesZapFramesAfterCallSite",
+			"testing.tRunner",
 		}
 
-		// Now run the above test which ensures we filter out zap stacktraces, but this time
-		// zap is in a vendor
-		cmd := exec.Command("go", "test", "-v", "-run", "TestStacktraceFiltersZap")
-		cmd.Dir = testDir
-		out, err := cmd.CombinedOutput()
-		require.NoError(t, err, "Failed to run test in vendor directory, output: %s", out)
-		assert.Contains(t, string(out), "PASS")
+		require.True(t, len(frames) > len(stack)*2)
+
+		for idx, fn := range stack {
+			assert.Equalf(t, fn, frames[1+2*idx], "frame %v unexpected", idx)
+		}
 	})
 }
 
 // withLogger sets up a logger with a real encoder set up, so that any marshal functions are called.
 // The inbuilt observer does not call Marshal for objects/arrays, which we need for some tests.
-func withLogger(t *testing.T, fn func(logger *zap.Logger, out *bytes.Buffer)) {
+func withLogger(t *testing.T, fn func(logger *zap.Logger, out *bytes.Buffer), opts ...zap.Option) {
 	buf := &bytes.Buffer{}
 	encoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 	core := zapcore.NewCore(encoder, zapcore.AddSync(buf), zapcore.DebugLevel)
-	logger := zap.New(core, zap.AddStacktrace(zap.DebugLevel))
+
+	opts = append([]zap.Option{zap.AddStacktrace(zap.DebugLevel)}, opts...)
+	logger := zap.New(core, opts...)
+
 	fn(logger, buf)
-}
-
-func verifyNoZap(t *testing.T, logs string) {
-	for _, fnPrefix := range _zapPackages {
-		require.NotContains(t, logs, fnPrefix, "Should not strip out marshal call")
-	}
-}
-
-func withGoPath(t *testing.T, f func(goPath string)) {
-	goPath, err := ioutil.TempDir("", "gopath")
-	require.NoError(t, err, "Failed to create temporary directory for GOPATH")
-	//defer os.RemoveAll(goPath)
-
-	os.Setenv("GOPATH", goPath)
-	defer os.Setenv("GOPATH", os.Getenv("GOPATH"))
-
-	f(goPath)
-}
-
-func getSelfFilename(t *testing.T) string {
-	_, file, _, ok := runtime.Caller(0)
-	require.True(t, ok, "Failed to get caller information to identify local file")
-
-	return filepath.Base(file)
-}
-
-func setupSymlink(t *testing.T, src, dst string) {
-	// Make sure the destination directory exists.
-	os.MkdirAll(filepath.Dir(dst), 0777)
-
-	// Get absolute path of the source for the symlink, otherwise we can create a symlink
-	// that uses relative paths.
-	srcAbs, err := filepath.Abs(src)
-	require.NoError(t, err, "Failed to get absolute path")
-
-	require.NoError(t, os.Symlink(srcAbs, dst), "Failed to set up symlink")
 }

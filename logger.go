@@ -256,7 +256,7 @@ func (log *Logger) clone() *Logger {
 func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	// check must always be called directly by a method in the Logger interface
 	// (e.g., Check, Info, Fatal).
-	const callerSkipOffset = 2
+	callerSkipOffset := 2 + log.callerSkip
 
 	// Create basic checked entry thru the core; this will be non-nil if the
 	// log message will actually be written somewhere.
@@ -291,14 +291,14 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	// Thread the error output through to the CheckedEntry.
 	ce.ErrorOutput = log.errorOutput
 	if log.addCaller {
-		ce.Entry.Caller = zapcore.NewEntryCaller(runtime.Caller(log.callerSkip + callerSkipOffset))
+		ce.Entry.Caller = zapcore.NewEntryCaller(runtime.Caller(callerSkipOffset))
 		if !ce.Entry.Caller.Defined {
 			fmt.Fprintf(log.errorOutput, "%v Logger.check error: failed to get caller\n", time.Now().UTC())
 			log.errorOutput.Sync()
 		}
 	}
 	if log.addStack.Enabled(ce.Entry.Level) {
-		ce.Entry.Stack = Stack("").String
+		ce.Entry.Stack = stackField("", callerSkipOffset).String
 	}
 
 	return ce
