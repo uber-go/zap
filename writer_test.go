@@ -31,7 +31,7 @@ import (
 )
 
 func TestOpenNoPaths(t *testing.T) {
-	ws, cleanup, err := Open(DefaultSinkFactories())
+	ws, cleanup, err := Open()
 	defer cleanup()
 
 	assert.NoError(t, err, "Expected opening no paths to succeed.")
@@ -49,23 +49,21 @@ func TestOpen(t *testing.T) {
 	defer os.Remove(temp.Name())
 
 	tests := []struct {
-		paths     []string
-		filenames []string
-		error     string
+		paths []string
+		error string
 	}{
-		{[]string{"stdout"}, []string{os.Stdout.Name()}, ""},
-		{[]string{"stderr"}, []string{os.Stderr.Name()}, ""},
-		{[]string{temp.Name()}, []string{temp.Name()}, ""},
-		{[]string{"/foo/bar/baz"}, []string{}, "open /foo/bar/baz: no such file or directory"},
+		{[]string{"stdout"}, ""},
+		{[]string{"stderr"}, ""},
+		{[]string{temp.Name()}, ""},
+		{[]string{"/foo/bar/baz"}, "open /foo/bar/baz: no such file or directory"},
 		{
-			paths:     []string{"stdout", "/foo/bar/baz", temp.Name(), "/baz/quux"},
-			filenames: []string{os.Stdout.Name(), temp.Name()},
-			error:     "open /foo/bar/baz: no such file or directory; open /baz/quux: no such file or directory",
+			paths: []string{"stdout", "/foo/bar/baz", temp.Name(), "/baz/quux"},
+			error: "open /foo/bar/baz: no such file or directory; open /baz/quux: no such file or directory",
 		},
 	}
 
 	for _, tt := range tests {
-		wss, cleanup, err := open(DefaultSinkFactories(), tt.paths)
+		_, cleanup, err := Open(tt.paths...)
 		if err == nil {
 			defer cleanup()
 		}
@@ -75,13 +73,6 @@ func TestOpen(t *testing.T) {
 		} else {
 			assert.Equal(t, tt.error, err.Error(), "Unexpected error opening paths %v.", tt.paths)
 		}
-		names := make([]string, len(wss))
-		for i, ws := range wss {
-			f, ok := ws.(*os.File)
-			require.True(t, ok, "Expected all WriteSyncers returned from open() to be files.")
-			names[i] = f.Name()
-		}
-		assert.Equal(t, tt.filenames, names, "Opened unexpected files given paths %v.", tt.paths)
 	}
 }
 
@@ -98,7 +89,7 @@ func TestOpenFails(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		_, cleanup, err := Open(DefaultSinkFactories(), tt.paths...)
+		_, cleanup, err := Open(tt.paths...)
 		require.Nil(t, cleanup, "Cleanup function should never be nil")
 		assert.Error(t, err, "Open with non-existent directory should fail")
 	}
@@ -116,6 +107,15 @@ func (w *testWriter) Write(actual []byte) (int, error) {
 
 func (w *testWriter) Sync() error {
 	return nil
+}
+
+func TestOpenWithSinksCustomSink(t *testing.T) {
+	tw := &testWriter{"test", t}
+	sinks := map[string]Sink{"customsink": NopCloserSink{tw}}
+	w, cleanup, err := OpenWithSinks(sinks, "customsink")
+	assert.Nil(t, err)
+	defer cleanup()
+	w.Write([]byte("test"))
 }
 
 func TestCombineWriteSyncers(t *testing.T) {

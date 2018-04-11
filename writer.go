@@ -30,17 +30,28 @@ import (
 	"go.uber.org/multierr"
 )
 
-// Open is a high-level wrapper that takes a map of sink factories and a
-// variadic number of paths. The map of sink factories customize how to open
-// and close a particular path, with the default being the creation of a file
-// at said path.
-// It then combines all of the writers into a locked WriteSyncer. It also
+// Open is a high-level wrapper that takes a variadic number of paths, opens or
+// creates each of the specified files, and combines them into a locked
+// WriteSyncer. It also returns any error encountered and a function to close
+// any opened files.
+//
+// Passing no paths returns a no-op WriteSyncer. The special paths "stdout" and
+// "stderr" are interpreted as os.Stdout and os.Stderr, respectively.
+func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
+	return OpenWithSinks(DefaultSinks(), paths...)
+}
+
+// OpenWithSinks is a high-level wrapper that takes a map of sinks and a
+// variadic number of paths. The map customizes how to open and close a
+// particular path, with the default being the creation of a file
+// at said path. e.g. "stdout", "/file/destination".
+// It then combines all of the writers into a locked WriteSyncer and
 // returns any error encountered and a function to close any opened files.
 //
 // Passing no paths returns a no-op WriteSyncer. The special paths "stdout" and
 // "stderr" are interpreted as os.Stdout and os.Stderr, respectively.
-func Open(sf map[string]SinkFactory, paths ...string) (zapcore.WriteSyncer, func(), error) {
-	writers, close, err := open(sf, paths)
+func OpenWithSinks(sm map[string]Sink, paths ...string) (zapcore.WriteSyncer, func(), error) {
+	writers, close, err := open(sm, paths)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -49,7 +60,7 @@ func Open(sf map[string]SinkFactory, paths ...string) (zapcore.WriteSyncer, func
 	return writer, close, nil
 }
 
-func open(sf map[string]SinkFactory, paths []string) ([]zapcore.WriteSyncer, func(), error) {
+func open(sm map[string]Sink, paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	var openErr error
 	writers := make([]zapcore.WriteSyncer, 0, len(paths))
 	closers := make([]io.Closer, 0, len(paths))
@@ -59,11 +70,9 @@ func open(sf map[string]SinkFactory, paths []string) ([]zapcore.WriteSyncer, fun
 		}
 	}
 	for _, path := range paths {
-		factory, ok := sf[path]
-		if ok {
-			writer, closer := factory.Writer, factory.Closer
-			writers = append(writers, writer)
-			closers = append(closers, closer)
+		if sink, ok := sm[path]; ok {
+			writers = append(writers, sink)
+			closers = append(closers, sink)
 			continue
 		}
 		f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)

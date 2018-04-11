@@ -22,7 +22,6 @@ package zap
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"sort"
 	"time"
@@ -167,19 +166,20 @@ func NewDevelopmentConfig() Config {
 
 // Build constructs a logger from the Config and Options.
 func (cfg Config) Build(opts ...Option) (*Logger, error) {
-	return cfg.BuildWithSinks(DefaultSinkFactories(), opts...)
+	return cfg.BuildWithSinks(DefaultSinks(), opts...)
 }
 
-// BuildWithSinks uses the map of sink factories to constrct a logger from the
+// BuildWithSinks uses the map of sinks to construct a logger from the
 // passed options. For example, the option "stdout" will construct a logger
-// that routes output to the stdout sink.
-func (cfg Config) BuildWithSinks(sf map[string]SinkFactory, opts ...Option) (*Logger, error) {
+// that routes output to the stdout sink, but "/filepath" will fallback
+// to writing to file.
+func (cfg Config) BuildWithSinks(sm map[string]Sink, opts ...Option) (*Logger, error) {
 	enc, err := cfg.buildEncoder()
 	if err != nil {
 		return nil, err
 	}
 
-	sink, errSink, err := cfg.openSinks(sf)
+	sink, errSink, err := cfg.openSinks(sm)
 	if err != nil {
 		return nil, err
 	}
@@ -235,12 +235,12 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 	return opts
 }
 
-func (cfg Config) openSinks(sf map[string]SinkFactory) (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
-	sink, closeOut, err := Open(sf, cfg.OutputPaths...)
+func (cfg Config) openSinks(sm map[string]Sink) (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
+	sink, closeOut, err := OpenWithSinks(sm, cfg.OutputPaths...)
 	if err != nil {
 		return nil, nil, err
 	}
-	errSink, _, err := Open(sf, cfg.ErrorOutputPaths...)
+	errSink, _, err := OpenWithSinks(sm, cfg.ErrorOutputPaths...)
 	if err != nil {
 		closeOut()
 		return nil, nil, err
@@ -252,18 +252,23 @@ func (cfg Config) buildEncoder() (zapcore.Encoder, error) {
 	return newEncoder(cfg.Encoding, cfg.EncoderConfig)
 }
 
-// SinkFactory defines the Create() method used to create sink writers and
-// closers.
-type SinkFactory struct {
-	Writer zapcore.WriteSyncer
-	Closer io.Closer
+// Sink defines the interface to write to and close logger destinations.
+type Sink interface {
+	zapcore.WriteSyncer
+	io.Closer
 }
 
-// DefaultSinkFactories generates a map of regularly used sink factories,
-// like stdout and stderr.
-func DefaultSinkFactories() map[string]SinkFactory {
-	return map[string]SinkFactory{
-		"stdout": SinkFactory{os.Stdout, ioutil.NopCloser(os.Stdout)},
-		"stderr": SinkFactory{os.Stderr, ioutil.NopCloser(os.Stderr)},
+// DefaultSinks generates a map of regularly used writeSyncers, coupled
+// with the appropriate Closer.
+func DefaultSinks() map[string]Sink {
+	return map[string]Sink{
+		"stdout": NopCloserSink{os.Stdout},
+		"stderr": NopCloserSink{os.Stderr},
 	}
 }
+
+// NopCloserSink wraps a WriteSyncer with a no-op Close() method.
+type NopCloserSink struct{ zapcore.WriteSyncer }
+
+// Close does nothing (no-op).
+func (NopCloserSink) Close() error { return nil }
