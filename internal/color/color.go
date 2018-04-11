@@ -19,7 +19,7 @@
 // THE SOFTWARE.
 
 // Package color adds coloring functionality for TTY output.
-package color
+package color // import "go.uber.org/zap/internal/color"
 
 import "fmt"
 
