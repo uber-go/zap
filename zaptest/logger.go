@@ -53,10 +53,15 @@ func Level(enab zapcore.LevelEnabler) LoggerOption {
 // NewLogger builds a new Logger that logs all messages to the given
 // testing.TB.
 //
-//   logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+//   logger := zaptest.NewLogger(t)
 //
 // Use this with a *testing.T or *testing.B to get logs which get printed only
 // if a test fails or if you ran go test -v.
+//
+// The returned logger defaults to logging debug level messages and above.
+// This may be changd by passing a zaptest.Level during construction.
+//
+//   logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 	cfg := loggerOptions{
 		Level: zapcore.DebugLevel,
