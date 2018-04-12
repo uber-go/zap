@@ -21,8 +21,11 @@
 package zap
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,9 +47,8 @@ func TestOpenNoPaths(t *testing.T) {
 }
 
 func TestOpen(t *testing.T) {
-	temp, err := ioutil.TempFile("", "zap-open-test")
-	require.NoError(t, err, "Couldn't create a temporary file for test.")
-	defer os.Remove(temp.Name())
+	tempName := tempFileName("", "zap-open-test")
+	assert.False(t, fileExists(tempName))
 
 	tests := []struct {
 		paths []string
@@ -54,10 +56,10 @@ func TestOpen(t *testing.T) {
 	}{
 		{[]string{"stdout"}, ""},
 		{[]string{"stderr"}, ""},
-		{[]string{temp.Name()}, ""},
+		{[]string{tempName}, ""},
 		{[]string{"/foo/bar/baz"}, "open /foo/bar/baz: no such file or directory"},
 		{
-			paths: []string{"stdout", "/foo/bar/baz", temp.Name(), "/baz/quux"},
+			paths: []string{"stdout", "/foo/bar/baz", tempName, "/baz/quux"},
 			error: "open /foo/bar/baz: no such file or directory; open /baz/quux: no such file or directory",
 		},
 	}
@@ -74,6 +76,9 @@ func TestOpen(t *testing.T) {
 			assert.Equal(t, tt.error, err.Error(), "Unexpected error opening paths %v.", tt.paths)
 		}
 	}
+
+	assert.True(t, fileExists(tempName))
+	os.Remove(tempName)
 }
 
 func TestOpenFails(t *testing.T) {
@@ -122,4 +127,17 @@ func TestCombineWriteSyncers(t *testing.T) {
 	tw := &testWriter{"test", t}
 	w := CombineWriteSyncers(tw)
 	w.Write([]byte("test"))
+}
+
+func tempFileName(prefix, suffix string) string {
+	randBytes := make([]byte, 16)
+	rand.Read(randBytes)
+	return filepath.Join(os.TempDir(), prefix+hex.EncodeToString(randBytes)+suffix)
+}
+
+func fileExists(name string) bool {
+	if _, err := os.Stat(name); os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
