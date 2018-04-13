@@ -135,6 +135,20 @@ core := zapcore.NewCore(
 logger := zap.New(core)
 ```
 
+## Extensions
+
+We'd love to support every logging need within zap itself, but we're only
+familiar with a handful of log ingestion systems, flag-parsing packages, and
+the like. Rather than merging code that we can't effectively debug and
+support, we'd rather grow an ecosystem of zap extensions.
+
+We're aware of the following extensions, but haven't used them ourselves:
+
+| Package | Integration |
+| --- | --- |
+| `github.com/tchap/zapext` | Sentry, syslog |
+| `github.com/fgrosse/zaptest` | Ginkgo |
+
 [go-proverbs]: https://go-proverbs.github.io/
 [import-path]: https://golang.org/cmd/go/#hdr-Remote_import_paths
 [lumberjack]: https://godoc.org/gopkg.in/natefinch/lumberjack.v2
