@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.8.0 (13 Apr 2018)
+
+Enhancements:
+* [#508][]: Make log level configurable when redirecting the standard
+  library's logger.
+* [#518][]: Add a logger that writes to a `*testing.TB`.
+* [#577][]: Add a top-level alias for `zapcore.Field` to clean up GoDoc.
+
+Bugfixes:
+* [#574][]: Add a missing import comment to `go.uber.org/zap/buffer`.
+
+Thanks to @DiSiqueira and @djui for their contributions to this release.
+
 ## v1.7.1 (25 Sep 2017)
 
 Bugfixes:
@@ -266,5 +279,8 @@ upgrade to the upcoming stable release.
 [#487]: https://github.com/uber-go/zap/pull/487
 [#490]: https://github.com/uber-go/zap/pull/490
 [#491]: https://github.com/uber-go/zap/pull/491
-[#491]: https://github.com/uber-go/zap/pull/439
 [#504]: https://github.com/uber-go/zap/pull/504
+[#508]: https://github.com/uber-go/zap/pull/508
+[#518]: https://github.com/uber-go/zap/pull/518
+[#577]: https://github.com/uber-go/zap/pull/577
+[#574]: https://github.com/uber-go/zap/pull/574
