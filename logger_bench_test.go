@@ -207,8 +207,8 @@ func Benchmark100Fields(b *testing.B) {
 	// Don't include allocating these helper slices in the benchmark. Since
 	// access to them isn't synchronized, we can't run the benchmark in
 	// parallel.
-	first := make([]zapcore.Field, batchSize)
-	second := make([]zapcore.Field, batchSize)
+	first := make([]Field, batchSize)
+	second := make([]Field, batchSize)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {

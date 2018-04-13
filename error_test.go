@@ -36,13 +36,13 @@ func TestErrorConstructors(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		field  zapcore.Field
-		expect zapcore.Field
+		field  Field
+		expect Field
 	}{
 		{"Error", Skip(), Error(nil)},
-		{"Error", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: fail}, Error(fail)},
+		{"Error", Field{Key: "error", Type: zapcore.ErrorType, Interface: fail}, Error(fail)},
 		{"NamedError", Skip(), NamedError("foo", nil)},
-		{"NamedError", zapcore.Field{Key: "foo", Type: zapcore.ErrorType, Interface: fail}, NamedError("foo", fail)},
+		{"NamedError", Field{Key: "foo", Type: zapcore.ErrorType, Interface: fail}, NamedError("foo", fail)},
 		{"Any:Error", Any("k", errors.New("v")), NamedError("k", errors.New("v"))},
 		{"Any:Errors", Any("k", []error{errors.New("v")}), Errors("k", []error{errors.New("v")})},
 	}
@@ -58,7 +58,7 @@ func TestErrorConstructors(t *testing.T) {
 func TestErrorArrayConstructor(t *testing.T) {
 	tests := []struct {
 		desc     string
-		field    zapcore.Field
+		field    Field
 		expected []interface{}
 	}{
 		{"empty errors", Errors("", []error{}), []interface{}(nil)},

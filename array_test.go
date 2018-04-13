@@ -52,7 +52,7 @@ func BenchmarkBoolsReflect(b *testing.B) {
 func TestArrayWrappers(t *testing.T) {
 	tests := []struct {
 		desc     string
-		field    zapcore.Field
+		field    Field
 		expected []interface{}
 	}{
 		{"empty bools", Bools("", []bool{}), []interface{}(nil)},
