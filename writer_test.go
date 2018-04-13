@@ -21,12 +21,15 @@
 package zap
 
 import (
+	"fmt"
 	"io/ioutil"
+	"log/syslog"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -122,4 +125,21 @@ func TestCombineWriteSyncers(t *testing.T) {
 	tw := &testWriter{"test", t}
 	w := CombineWriteSyncers(tw)
 	w.Write([]byte("test"))
+}
+
+func TestSyslogConnection(t *testing.T) {
+	sysLog, err := syslog.Dial("udp", "127.0.0.1:514", syslog.LOG_LOCAL5, "testtag")
+	if err != nil {
+		fmt.Println(err)
+	}
+	sysLog.Write([]byte("test"))
+}
+
+func TestSyslog(t *testing.T) {
+	// needs to be tested with env
+	config := zap.NewProductionConfig()
+	config.OutputPaths = "syslog"
+	logger, _ := config.Build()
+	defer logger.Sync()
+	logger.Info("msg")
 }

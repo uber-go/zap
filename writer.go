@@ -22,7 +22,9 @@ package zap
 
 import (
 	"io/ioutil"
+	"log/syslog"
 	"os"
+	p "path"
 
 	"go.uber.org/zap/zapcore"
 
@@ -64,6 +66,28 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 		case "stderr":
 			writers = append(writers, os.Stderr)
 			// Don't close standard error.
+			continue
+		case "syslog":
+			// returns address for syslog to write on
+			syslogAddress, ok := os.LookupEnv("SYSLOG")
+			if !ok || (syslogAddress == "0") || (syslogAddress == "false") {
+				continue
+			}
+
+			// returns name of application that called logger to be used as value of tag in syslog connection
+			// or uses specific tag from env
+			syslogTag := p.Base(os.Args[0])
+			if tag, ok := os.LookupEnv("SYSLOG_TAG"); ok {
+				syslogTag = tag
+			}
+
+			// establishes connection via udp to specific address and returns writer
+			sys, err := syslog.Dial("udp", syslogAddress, syslog.LOG_LOCAL5, syslogTag)
+			if err != nil {
+				continue
+			}
+
+			writers = append(writers, AddSync(sys))
 			continue
 		}
 		f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
