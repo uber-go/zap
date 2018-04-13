@@ -124,8 +124,8 @@ func newSampledLogger(lvl zapcore.Level) *zap.Logger {
 	))
 }
 
-func fakeFields() []zapcore.Field {
-	return []zapcore.Field{
+func fakeFields() []zap.Field {
+	return []zap.Field{
 		zap.Int("int", _tenInts[0]),
 		zap.Ints("ints", _tenInts),
 		zap.String("string", _tenStrings[0]),
