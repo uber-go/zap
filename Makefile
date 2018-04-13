@@ -9,7 +9,7 @@ PKG_FILES ?= *.go zapcore benchmarks buffer zapgrpc zaptest zaptest/observer int
 # stable release.
 GO_VERSION := $(shell go version | cut -d " " -f 3)
 GO_MINOR_VERSION := $(word 2,$(subst ., ,$(GO_VERSION)))
-LINTABLE_MINOR_VERSIONS := 9
+LINTABLE_MINOR_VERSIONS := 10
 ifneq ($(filter $(LINTABLE_MINOR_VERSIONS),$(GO_MINOR_VERSION)),)
 SHOULD_LINT := true
 endif
