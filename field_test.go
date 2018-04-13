@@ -37,7 +37,7 @@ func (n username) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-func assertCanBeReused(t testing.TB, field zapcore.Field) {
+func assertCanBeReused(t testing.TB, field Field) {
 	var wg sync.WaitGroup
 
 	for i := 0; i < 100; i++ {
@@ -65,34 +65,34 @@ func TestFieldConstructors(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		field  zapcore.Field
-		expect zapcore.Field
+		field  Field
+		expect Field
 	}{
-		{"Skip", zapcore.Field{Type: zapcore.SkipType}, Skip()},
-		{"Binary", zapcore.Field{Key: "k", Type: zapcore.BinaryType, Interface: []byte("ab12")}, Binary("k", []byte("ab12"))},
-		{"Bool", zapcore.Field{Key: "k", Type: zapcore.BoolType, Integer: 1}, Bool("k", true)},
-		{"Bool", zapcore.Field{Key: "k", Type: zapcore.BoolType, Integer: 1}, Bool("k", true)},
-		{"ByteString", zapcore.Field{Key: "k", Type: zapcore.ByteStringType, Interface: []byte("ab12")}, ByteString("k", []byte("ab12"))},
-		{"Complex128", zapcore.Field{Key: "k", Type: zapcore.Complex128Type, Interface: 1 + 2i}, Complex128("k", 1+2i)},
-		{"Complex64", zapcore.Field{Key: "k", Type: zapcore.Complex64Type, Interface: complex64(1 + 2i)}, Complex64("k", 1+2i)},
-		{"Duration", zapcore.Field{Key: "k", Type: zapcore.DurationType, Integer: 1}, Duration("k", 1)},
-		{"Int", zapcore.Field{Key: "k", Type: zapcore.Int64Type, Integer: 1}, Int("k", 1)},
-		{"Int64", zapcore.Field{Key: "k", Type: zapcore.Int64Type, Integer: 1}, Int64("k", 1)},
-		{"Int32", zapcore.Field{Key: "k", Type: zapcore.Int32Type, Integer: 1}, Int32("k", 1)},
-		{"Int16", zapcore.Field{Key: "k", Type: zapcore.Int16Type, Integer: 1}, Int16("k", 1)},
-		{"Int8", zapcore.Field{Key: "k", Type: zapcore.Int8Type, Integer: 1}, Int8("k", 1)},
-		{"String", zapcore.Field{Key: "k", Type: zapcore.StringType, String: "foo"}, String("k", "foo")},
-		{"Time", zapcore.Field{Key: "k", Type: zapcore.TimeType, Integer: 0, Interface: time.UTC}, Time("k", time.Unix(0, 0).In(time.UTC))},
-		{"Time", zapcore.Field{Key: "k", Type: zapcore.TimeType, Integer: 1000, Interface: time.UTC}, Time("k", time.Unix(0, 1000).In(time.UTC))},
-		{"Uint", zapcore.Field{Key: "k", Type: zapcore.Uint64Type, Integer: 1}, Uint("k", 1)},
-		{"Uint64", zapcore.Field{Key: "k", Type: zapcore.Uint64Type, Integer: 1}, Uint64("k", 1)},
-		{"Uint32", zapcore.Field{Key: "k", Type: zapcore.Uint32Type, Integer: 1}, Uint32("k", 1)},
-		{"Uint16", zapcore.Field{Key: "k", Type: zapcore.Uint16Type, Integer: 1}, Uint16("k", 1)},
-		{"Uint8", zapcore.Field{Key: "k", Type: zapcore.Uint8Type, Integer: 1}, Uint8("k", 1)},
-		{"Uintptr", zapcore.Field{Key: "k", Type: zapcore.UintptrType, Integer: 10}, Uintptr("k", 0xa)},
-		{"Reflect", zapcore.Field{Key: "k", Type: zapcore.ReflectType, Interface: ints}, Reflect("k", ints)},
-		{"Stringer", zapcore.Field{Key: "k", Type: zapcore.StringerType, Interface: addr}, Stringer("k", addr)},
-		{"Object", zapcore.Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: name}, Object("k", name)},
+		{"Skip", Field{Type: zapcore.SkipType}, Skip()},
+		{"Binary", Field{Key: "k", Type: zapcore.BinaryType, Interface: []byte("ab12")}, Binary("k", []byte("ab12"))},
+		{"Bool", Field{Key: "k", Type: zapcore.BoolType, Integer: 1}, Bool("k", true)},
+		{"Bool", Field{Key: "k", Type: zapcore.BoolType, Integer: 1}, Bool("k", true)},
+		{"ByteString", Field{Key: "k", Type: zapcore.ByteStringType, Interface: []byte("ab12")}, ByteString("k", []byte("ab12"))},
+		{"Complex128", Field{Key: "k", Type: zapcore.Complex128Type, Interface: 1 + 2i}, Complex128("k", 1+2i)},
+		{"Complex64", Field{Key: "k", Type: zapcore.Complex64Type, Interface: complex64(1 + 2i)}, Complex64("k", 1+2i)},
+		{"Duration", Field{Key: "k", Type: zapcore.DurationType, Integer: 1}, Duration("k", 1)},
+		{"Int", Field{Key: "k", Type: zapcore.Int64Type, Integer: 1}, Int("k", 1)},
+		{"Int64", Field{Key: "k", Type: zapcore.Int64Type, Integer: 1}, Int64("k", 1)},
+		{"Int32", Field{Key: "k", Type: zapcore.Int32Type, Integer: 1}, Int32("k", 1)},
+		{"Int16", Field{Key: "k", Type: zapcore.Int16Type, Integer: 1}, Int16("k", 1)},
+		{"Int8", Field{Key: "k", Type: zapcore.Int8Type, Integer: 1}, Int8("k", 1)},
+		{"String", Field{Key: "k", Type: zapcore.StringType, String: "foo"}, String("k", "foo")},
+		{"Time", Field{Key: "k", Type: zapcore.TimeType, Integer: 0, Interface: time.UTC}, Time("k", time.Unix(0, 0).In(time.UTC))},
+		{"Time", Field{Key: "k", Type: zapcore.TimeType, Integer: 1000, Interface: time.UTC}, Time("k", time.Unix(0, 1000).In(time.UTC))},
+		{"Uint", Field{Key: "k", Type: zapcore.Uint64Type, Integer: 1}, Uint("k", 1)},
+		{"Uint64", Field{Key: "k", Type: zapcore.Uint64Type, Integer: 1}, Uint64("k", 1)},
+		{"Uint32", Field{Key: "k", Type: zapcore.Uint32Type, Integer: 1}, Uint32("k", 1)},
+		{"Uint16", Field{Key: "k", Type: zapcore.Uint16Type, Integer: 1}, Uint16("k", 1)},
+		{"Uint8", Field{Key: "k", Type: zapcore.Uint8Type, Integer: 1}, Uint8("k", 1)},
+		{"Uintptr", Field{Key: "k", Type: zapcore.UintptrType, Integer: 10}, Uintptr("k", 0xa)},
+		{"Reflect", Field{Key: "k", Type: zapcore.ReflectType, Interface: ints}, Reflect("k", ints)},
+		{"Stringer", Field{Key: "k", Type: zapcore.StringerType, Interface: addr}, Stringer("k", addr)},
+		{"Object", Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: name}, Object("k", name)},
 		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
 		{"Any:ArrayMarshaler", Any("k", bools([]bool{true})), Array("k", bools([]bool{true}))},
 		{"Any:Stringer", Any("k", addr), Stringer("k", addr)},
@@ -139,7 +139,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:Duration", Any("k", time.Second), Duration("k", time.Second)},
 		{"Any:Durations", Any("k", []time.Duration{time.Second}), Durations("k", []time.Duration{time.Second})},
 		{"Any:Fallback", Any("k", struct{}{}), Reflect("k", struct{}{})},
-		{"Namespace", Namespace("k"), zapcore.Field{Key: "k", Type: zapcore.NamespaceType}},
+		{"Namespace", Namespace("k"), Field{Key: "k", Type: zapcore.NamespaceType}},
 	}
 
 	for _, tt := range tests {

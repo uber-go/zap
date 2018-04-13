@@ -52,7 +52,7 @@ func TestReplaceGlobals(t *testing.T) {
 		S().Info("captured")
 		expected := observer.LoggedEntry{
 			Entry:   zapcore.Entry{Message: "captured"},
-			Context: []zapcore.Field{},
+			Context: []Field{},
 		}
 		assert.Equal(
 			t,
@@ -157,7 +157,7 @@ func TestRedirectStdLog(t *testing.T) {
 
 		assert.Equal(t, []observer.LoggedEntry{{
 			Entry:   zapcore.Entry{Message: "redirected"},
-			Context: []zapcore.Field{},
+			Context: []Field{},
 		}}, logs.AllUntimed(), "Unexpected global log output.")
 	})
 
@@ -190,7 +190,7 @@ func TestRedirectStdLogAt(t *testing.T) {
 
 			assert.Equal(t, []observer.LoggedEntry{{
 				Entry:   zapcore.Entry{Level: level, Message: "redirected"},
-				Context: []zapcore.Field{},
+				Context: []Field{},
 			}}, logs.AllUntimed(), "Unexpected global log output.")
 		})
 	}
@@ -269,7 +269,7 @@ func TestRedirectStdLogAtInvalid(t *testing.T) {
 func checkStdLogMessage(t *testing.T, msg string, logs *observer.ObservedLogs) {
 	require.Equal(t, 1, logs.Len(), "Expected exactly one entry to be logged")
 	entry := logs.AllUntimed()[0]
-	assert.Equal(t, []zapcore.Field{}, entry.Context, "Unexpected entry context.")
+	assert.Equal(t, []Field{}, entry.Context, "Unexpected entry context.")
 	assert.Equal(t, "redirected", entry.Entry.Message, "Unexpected entry message.")
 	assert.Regexp(
 		t,

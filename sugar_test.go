@@ -37,86 +37,86 @@ func TestSugarWith(t *testing.T) {
 	ignored := func(msg interface{}) observer.LoggedEntry {
 		return observer.LoggedEntry{
 			Entry:   zapcore.Entry{Level: DPanicLevel, Message: _oddNumberErrMsg},
-			Context: []zapcore.Field{Any("ignored", msg)},
+			Context: []Field{Any("ignored", msg)},
 		}
 	}
 	nonString := func(pairs ...invalidPair) observer.LoggedEntry {
 		return observer.LoggedEntry{
 			Entry:   zapcore.Entry{Level: DPanicLevel, Message: _nonStringKeyErrMsg},
-			Context: []zapcore.Field{Array("invalid", invalidPairs(pairs))},
+			Context: []Field{Array("invalid", invalidPairs(pairs))},
 		}
 	}
 
 	tests := []struct {
 		desc     string
 		args     []interface{}
-		expected []zapcore.Field
+		expected []Field
 		errLogs  []observer.LoggedEntry
 	}{
 		{
 			desc:     "nil args",
 			args:     nil,
-			expected: []zapcore.Field{},
+			expected: []Field{},
 			errLogs:  nil,
 		},
 		{
 			desc:     "empty slice of args",
 			args:     []interface{}{},
-			expected: []zapcore.Field{},
+			expected: []Field{},
 			errLogs:  nil,
 		},
 		{
 			desc:     "just a dangling key",
 			args:     []interface{}{"should ignore"},
-			expected: []zapcore.Field{},
+			expected: []Field{},
 			errLogs:  []observer.LoggedEntry{ignored("should ignore")},
 		},
 		{
 			desc:     "well-formed key-value pairs",
 			args:     []interface{}{"foo", 42, "true", "bar"},
-			expected: []zapcore.Field{Int("foo", 42), String("true", "bar")},
+			expected: []Field{Int("foo", 42), String("true", "bar")},
 			errLogs:  nil,
 		},
 		{
 			desc:     "just a structured field",
 			args:     []interface{}{Int("foo", 42)},
-			expected: []zapcore.Field{Int("foo", 42)},
+			expected: []Field{Int("foo", 42)},
 			errLogs:  nil,
 		},
 		{
 			desc:     "structured field and a dangling key",
 			args:     []interface{}{Int("foo", 42), "dangling"},
-			expected: []zapcore.Field{Int("foo", 42)},
+			expected: []Field{Int("foo", 42)},
 			errLogs:  []observer.LoggedEntry{ignored("dangling")},
 		},
 		{
 			desc:     "structured field and a dangling non-string key",
 			args:     []interface{}{Int("foo", 42), 13},
-			expected: []zapcore.Field{Int("foo", 42)},
+			expected: []Field{Int("foo", 42)},
 			errLogs:  []observer.LoggedEntry{ignored(13)},
 		},
 		{
 			desc:     "key-value pair and a dangling key",
 			args:     []interface{}{"foo", 42, "dangling"},
-			expected: []zapcore.Field{Int("foo", 42)},
+			expected: []Field{Int("foo", 42)},
 			errLogs:  []observer.LoggedEntry{ignored("dangling")},
 		},
 		{
 			desc:     "pairs, a structured field, and a dangling key",
 			args:     []interface{}{"first", "field", Int("foo", 42), "baz", "quux", "dangling"},
-			expected: []zapcore.Field{String("first", "field"), Int("foo", 42), String("baz", "quux")},
+			expected: []Field{String("first", "field"), Int("foo", 42), String("baz", "quux")},
 			errLogs:  []observer.LoggedEntry{ignored("dangling")},
 		},
 		{
 			desc:     "one non-string key",
 			args:     []interface{}{"foo", 42, true, "bar"},
-			expected: []zapcore.Field{Int("foo", 42)},
+			expected: []Field{Int("foo", 42)},
 			errLogs:  []observer.LoggedEntry{nonString(invalidPair{2, true, "bar"})},
 		},
 		{
 			desc:     "pairs, structured fields, non-string keys, and a dangling key",
 			args:     []interface{}{"foo", 42, true, "bar", Int("structure", 11), 42, "reversed", "baz", "quux", "dangling"},
-			expected: []zapcore.Field{Int("foo", 42), Int("structure", 11), String("baz", "quux")},
+			expected: []Field{Int("foo", 42), Int("structure", 11), String("baz", "quux")},
 			errLogs: []observer.LoggedEntry{
 				ignored("dangling"),
 				nonString(invalidPair{2, true, "bar"}, invalidPair{5, 42, "reversed"}),
@@ -146,7 +146,7 @@ func TestSugarFieldsInvalidPairs(t *testing.T) {
 
 		// Double-check that the actual message was logged.
 		require.Equal(t, 2, len(output), "Unexpected number of entries logged.")
-		require.Equal(t, observer.LoggedEntry{Context: []zapcore.Field{}}, output[1], "Unexpected non-error log entry.")
+		require.Equal(t, observer.LoggedEntry{Context: []Field{}}, output[1], "Unexpected non-error log entry.")
 
 		// Assert that the error message's structured fields serialize properly.
 		require.Equal(t, 1, len(output[0].Context), "Expected one field in error entry context.")
@@ -175,7 +175,7 @@ func TestSugarStructuredLogging(t *testing.T) {
 	// Common to all test cases.
 	context := []interface{}{"foo", "bar"}
 	extra := []interface{}{"baz", false}
-	expectedFields := []zapcore.Field{String("foo", "bar"), Bool("baz", false)}
+	expectedFields := []Field{String("foo", "bar"), Bool("baz", false)}
 
 	for _, tt := range tests {
 		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
@@ -207,7 +207,7 @@ func TestSugarConcatenatingLogging(t *testing.T) {
 
 	// Common to all test cases.
 	context := []interface{}{"foo", "bar"}
-	expectedFields := []zapcore.Field{String("foo", "bar")}
+	expectedFields := []Field{String("foo", "bar")}
 
 	for _, tt := range tests {
 		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
@@ -243,7 +243,7 @@ func TestSugarTemplatedLogging(t *testing.T) {
 
 	// Common to all test cases.
 	context := []interface{}{"foo", "bar"}
-	expectedFields := []zapcore.Field{String("foo", "bar")}
+	expectedFields := []Field{String("foo", "bar")}
 
 	for _, tt := range tests {
 		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
@@ -287,7 +287,7 @@ func TestSugarPanicLogging(t *testing.T) {
 			assert.Panics(t, func() { tt.f(sugar) }, "Expected panic-level logger calls to panic.")
 			if tt.expectedMsg != "" {
 				assert.Equal(t, []observer.LoggedEntry{{
-					Context: []zapcore.Field{},
+					Context: []Field{},
 					Entry:   zapcore.Entry{Message: tt.expectedMsg, Level: PanicLevel},
 				}}, logs.AllUntimed(), "Unexpected log output.")
 			} else {
@@ -320,7 +320,7 @@ func TestSugarFatalLogging(t *testing.T) {
 			assert.True(t, stub.Exited, "Expected all calls to fatal logger methods to exit process.")
 			if tt.expectedMsg != "" {
 				assert.Equal(t, []observer.LoggedEntry{{
-					Context: []zapcore.Field{},
+					Context: []Field{},
 					Entry:   zapcore.Entry{Message: tt.expectedMsg, Level: FatalLevel},
 				}}, logs.AllUntimed(), "Unexpected log output.")
 			} else {
