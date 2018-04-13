@@ -21,51 +21,11 @@
 package zaptest
 
 import (
-	"bufio"
 	"errors"
-	"os"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
-
-func readCode(t testing.TB, fname string) []string {
-	f, err := os.Open(fname)
-	require.NoError(t, err, "Failed to read %s.", fname)
-	defer func() {
-		require.NoError(t, f.Close(), "Error closing file %s.", fname)
-	}()
-
-	var lines []string
-	s := bufio.NewScanner(f)
-	for s.Scan() {
-		l := s.Text()
-		if len(l) == 0 {
-			continue
-		}
-		if strings.HasPrefix(l, "//") {
-			continue
-		}
-		if strings.HasPrefix(l, "package ") {
-			continue
-		}
-		lines = append(lines, l)
-	}
-	return lines
-}
-
-func TestCopiedCodeInSync(t *testing.T) {
-	// Until we drop Go 1.8 support, we need to keep a near-exact copy of the
-	// ztest package's WriteSyncer test spies in zaptest. This test ensures that
-	// the two files stay in sync.
-	assert.Equal(t,
-		readCode(t, "../internal/ztest/writer.go"),
-		readCode(t, "writer.go"),
-		"Writer spy implementations in zaptest and internal/ztest should be identical.",
-	)
-}
 
 func TestSyncer(t *testing.T) {
 	err := errors.New("sentinel")
