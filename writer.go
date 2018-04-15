@@ -38,20 +38,7 @@ import (
 // Passing no paths returns a no-op WriteSyncer. The special paths "stdout" and
 // "stderr" are interpreted as os.Stdout and os.Stderr, respectively.
 func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
-	return OpenWithSinks(DefaultSinks(), paths...)
-}
-
-// OpenWithSinks is a high-level wrapper that takes a map of sinks and a
-// variadic number of paths. The map customizes how to open and close a
-// particular path, with the default being the creation of a file
-// at said path. e.g. "stdout", "/file/destination".
-// It then combines all of the writers into a locked WriteSyncer and
-// returns any error encountered and a function to close any opened files.
-//
-// Passing no paths returns a no-op WriteSyncer. The special paths "stdout" and
-// "stderr" are interpreted as os.Stdout and os.Stderr, respectively.
-func OpenWithSinks(sm map[string]Sink, paths ...string) (zapcore.WriteSyncer, func(), error) {
-	writers, close, err := open(sm, paths)
+	writers, close, err := open(paths)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -60,7 +47,7 @@ func OpenWithSinks(sm map[string]Sink, paths ...string) (zapcore.WriteSyncer, fu
 	return writer, close, nil
 }
 
-func open(sm map[string]Sink, paths []string) ([]zapcore.WriteSyncer, func(), error) {
+func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	var openErr error
 	writers := make([]zapcore.WriteSyncer, 0, len(paths))
 	closers := make([]io.Closer, 0, len(paths))
@@ -70,16 +57,19 @@ func open(sm map[string]Sink, paths []string) ([]zapcore.WriteSyncer, func(), er
 		}
 	}
 	for _, path := range paths {
-		if sink, ok := sm[path]; ok {
+		if sink, err := newSink(path); err == nil {
 			writers = append(writers, sink)
 			closers = append(closers, sink)
 			continue
-		}
-		f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-		openErr = multierr.Append(openErr, err)
-		if err == nil {
-			writers = append(writers, f)
-			closers = append(closers, f)
+		} else if err == errSinkNotFound {
+			f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+			openErr = multierr.Append(openErr, err)
+			if err == nil {
+				writers = append(writers, f)
+				closers = append(closers, f)
+			}
+		} else {
+			openErr = multierr.Append(openErr, err)
 		}
 	}
 

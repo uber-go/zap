@@ -114,10 +114,11 @@ func (w *testWriter) Sync() error {
 	return nil
 }
 
-func TestOpenWithSinksCustomSink(t *testing.T) {
+func TestOpenWithCustomSink(t *testing.T) {
 	tw := &testWriter{"test", t}
-	sinks := map[string]Sink{"customsink": NopCloserSink{tw}}
-	w, cleanup, err := OpenWithSinks(sinks, "customsink")
+	ctr := func() (Sink, error) { return NopCloserSink{tw}, nil }
+	assert.Nil(t, RegisterSink("customsink", ctr))
+	w, cleanup, err := Open("customsink")
 	assert.Nil(t, err)
 	defer cleanup()
 	w.Write([]byte("test"))

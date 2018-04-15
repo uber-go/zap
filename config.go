@@ -21,8 +21,6 @@
 package zap
 
 import (
-	"io"
-	"os"
 	"sort"
 	"time"
 
@@ -166,20 +164,12 @@ func NewDevelopmentConfig() Config {
 
 // Build constructs a logger from the Config and Options.
 func (cfg Config) Build(opts ...Option) (*Logger, error) {
-	return cfg.BuildWithSinks(DefaultSinks(), opts...)
-}
-
-// BuildWithSinks uses the map of sinks to construct a logger from the
-// passed options. For example, the option "stdout" will construct a logger
-// that routes output to the stdout sink, but "/filepath" will fallback
-// to writing to file.
-func (cfg Config) BuildWithSinks(sm map[string]Sink, opts ...Option) (*Logger, error) {
 	enc, err := cfg.buildEncoder()
 	if err != nil {
 		return nil, err
 	}
 
-	sink, errSink, err := cfg.openSinks(sm)
+	sink, errSink, err := cfg.openSinks()
 	if err != nil {
 		return nil, err
 	}
@@ -235,12 +225,12 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 	return opts
 }
 
-func (cfg Config) openSinks(sm map[string]Sink) (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
-	sink, closeOut, err := OpenWithSinks(sm, cfg.OutputPaths...)
+func (cfg Config) openSinks() (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
+	sink, closeOut, err := Open(cfg.OutputPaths...)
 	if err != nil {
 		return nil, nil, err
 	}
-	errSink, _, err := OpenWithSinks(sm, cfg.ErrorOutputPaths...)
+	errSink, _, err := Open(cfg.ErrorOutputPaths...)
 	if err != nil {
 		closeOut()
 		return nil, nil, err
@@ -251,24 +241,3 @@ func (cfg Config) openSinks(sm map[string]Sink) (zapcore.WriteSyncer, zapcore.Wr
 func (cfg Config) buildEncoder() (zapcore.Encoder, error) {
 	return newEncoder(cfg.Encoding, cfg.EncoderConfig)
 }
-
-// Sink defines the interface to write to and close logger destinations.
-type Sink interface {
-	zapcore.WriteSyncer
-	io.Closer
-}
-
-// DefaultSinks generates a map of regularly used writeSyncers, coupled
-// with the appropriate Closer.
-func DefaultSinks() map[string]Sink {
-	return map[string]Sink{
-		"stdout": NopCloserSink{os.Stdout},
-		"stderr": NopCloserSink{os.Stderr},
-	}
-}
-
-// NopCloserSink wraps a WriteSyncer with a no-op Close() method.
-type NopCloserSink struct{ zapcore.WriteSyncer }
-
-// Close does nothing (no-op).
-func (NopCloserSink) Close() error { return nil }
