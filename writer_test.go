@@ -23,6 +23,7 @@ package zap
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -117,11 +118,19 @@ func (w *testWriter) Sync() error {
 func TestOpenWithCustomSink(t *testing.T) {
 	tw := &testWriter{"test", t}
 	ctr := func() (Sink, error) { return NopCloserSink{tw}, nil }
-	assert.Nil(t, RegisterSink("customsink", ctr))
-	w, cleanup, err := Open("customsink")
+	assert.Nil(t, RegisterSink("TestOpenWithCustomSink", ctr))
+	w, cleanup, err := Open("TestOpenWithCustomSink")
 	assert.Nil(t, err)
 	defer cleanup()
 	w.Write([]byte("test"))
+}
+
+func TestOpenWithErroringSinkFactory(t *testing.T) {
+	expectedErr := errors.New("expected factory error")
+	ctr := func() (Sink, error) { return nil, expectedErr }
+	assert.Nil(t, RegisterSink("TestOpenWithErroringSinkFactory", ctr))
+	_, _, err := Open("TestOpenWithErroringSinkFactory")
+	assert.Equal(t, expectedErr, err)
 }
 
 func TestCombineWriteSyncers(t *testing.T) {
