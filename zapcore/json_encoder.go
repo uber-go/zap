@@ -178,23 +178,23 @@ func (enc *jsonEncoder) AppendBool(val bool) {
 
 func (enc *jsonEncoder) AppendByteString(val []byte) {
 	enc.addElementSeparator()
-	enc.buf.AppendByte('"')
+	enc.addQuote()
 	enc.safeAddByteString(val)
-	enc.buf.AppendByte('"')
+	enc.addQuote()
 }
 
 func (enc *jsonEncoder) AppendComplex128(val complex128) {
 	enc.addElementSeparator()
 	// Cast to a platform-independent, fixed-size type.
 	r, i := float64(real(val)), float64(imag(val))
-	enc.buf.AppendByte('"')
+	enc.addQuote()
 	// Because we're always in a quoted string, we can use strconv without
 	// special-casing NaN and +/-Inf.
 	enc.buf.AppendFloat(r, 64)
 	enc.buf.AppendByte('+')
 	enc.buf.AppendFloat(i, 64)
 	enc.buf.AppendByte('i')
-	enc.buf.AppendByte('"')
+	enc.addQuote()
 }
 
 func (enc *jsonEncoder) AppendDuration(val time.Duration) {
@@ -224,9 +224,9 @@ func (enc *jsonEncoder) AppendReflected(val interface{}) error {
 
 func (enc *jsonEncoder) AppendString(val string) {
 	enc.addElementSeparator()
-	enc.buf.AppendByte('"')
+	enc.addQuote()
 	enc.safeAddString(val)
-	enc.buf.AppendByte('"')
+	enc.addQuote()
 }
 
 func (enc *jsonEncoder) AppendTime(val time.Time) {
@@ -363,11 +363,15 @@ func (enc *jsonEncoder) closeOpenNamespaces() {
 	}
 }
 
+func (enc *jsonEncoder) addQuote() {
+	enc.buf.AppendByte('"')
+}
+
 func (enc *jsonEncoder) addKey(key string) {
 	enc.addElementSeparator()
-	enc.buf.AppendByte('"')
+	enc.addQuote()
 	enc.safeAddString(key)
-	enc.buf.AppendByte('"')
+	enc.addQuote()
 	enc.buf.AppendByte(':')
 	if enc.spaced {
 		enc.buf.AppendByte(' ')
