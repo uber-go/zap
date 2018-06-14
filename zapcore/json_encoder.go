@@ -363,6 +363,11 @@ func (enc *jsonEncoder) closeOpenNamespaces() {
 	}
 }
 
+func (enc *jsonEncoder) addEscape(seq ...byte) {
+	enc.buf.AppendByte('\\')
+	enc.buf.Write(seq)
+}
+
 func (enc *jsonEncoder) addQuote() {
 	enc.buf.AppendByte('"')
 }
@@ -455,29 +460,23 @@ func (enc *jsonEncoder) tryAddRuneSelf(b byte) bool {
 	}
 	switch b {
 	case '\\', '"':
-		enc.buf.AppendByte('\\')
-		enc.buf.AppendByte(b)
+		enc.addEscape(b)
 	case '\n':
-		enc.buf.AppendByte('\\')
-		enc.buf.AppendByte('n')
+		enc.addEscape('n')
 	case '\r':
-		enc.buf.AppendByte('\\')
-		enc.buf.AppendByte('r')
+		enc.addEscape('r')
 	case '\t':
-		enc.buf.AppendByte('\\')
-		enc.buf.AppendByte('t')
+		enc.addEscape('t')
 	default:
 		// Encode bytes < 0x20, except for the escape sequences above.
-		enc.buf.AppendString(`\u00`)
-		enc.buf.AppendByte(_hex[b>>4])
-		enc.buf.AppendByte(_hex[b&0xF])
+		enc.addEscape('u', '0', '0', _hex[b>>4], _hex[b&0xF])
 	}
 	return true
 }
 
 func (enc *jsonEncoder) tryAddRuneError(r rune, size int) bool {
 	if r == utf8.RuneError && size == 1 {
-		enc.buf.AppendString(`\ufffd`)
+		enc.addEscape('u', 'f', 'f', 'f', 'd')
 		return true
 	}
 	return false
