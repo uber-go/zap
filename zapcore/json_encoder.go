@@ -58,6 +58,11 @@ type jsonEncoder struct {
 	spaced         bool // include spaces after colons and commas
 	openNamespaces int
 	quoteLevel     int
+
+	// TODO hack to skip separator before quoted objects; probably better if we
+	// flip this as "needsep", and refactor so that the encoder only truthifies
+	// it after encoding value.
+	skipsep bool
 }
 
 // NewJSONEncoder creates a fast, low-allocation JSON encoder. The encoder
@@ -284,6 +289,22 @@ func (enc *jsonEncoder) AppendUint16(v uint16)              { enc.AppendUint64(u
 func (enc *jsonEncoder) AppendUint8(v uint8)                { enc.AppendUint64(uint64(v)) }
 func (enc *jsonEncoder) AppendUintptr(v uintptr)            { enc.AppendUint64(uint64(v)) }
 
+func (enc *jsonEncoder) AddQuoted(key string, with func(ArrayEncoder) error) error {
+	enc.addKey(key)
+	return enc.AppendQuoted(with)
+}
+
+func (enc *jsonEncoder) AppendQuoted(with func(ArrayEncoder) error) error {
+	enc.addQuote()
+	enc.quoteLevel++
+	enc.skipsep = true
+	err := with(enc)
+	enc.skipsep = false
+	enc.quoteLevel--
+	enc.addQuote()
+	return err
+}
+
 func (enc *jsonEncoder) Clone() Encoder {
 	clone := enc.clone()
 	clone.buf.Write(enc.buf.Bytes())
@@ -415,6 +436,10 @@ func (enc *jsonEncoder) addKey(key string) {
 }
 
 func (enc *jsonEncoder) addElementSeparator() {
+	if enc.skipsep {
+		enc.skipsep = false
+		return
+	}
 	last := enc.buf.Len() - 1
 	if last < 0 {
 		return

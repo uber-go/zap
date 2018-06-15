@@ -59,10 +59,32 @@ func Example_presets() {
 		zap.Int("attempt", 3),
 		zap.Duration("backoff", time.Second),
 	)
+
+	dat := struct {
+		Foo string            `json:"foo"`
+		Bar float64           `json:"bar"`
+		Baz map[string]string `json:"baz"`
+	}{
+		Foo: "now is the time for string-\"ception\"!",
+		Bar: 3.14,
+		Baz: map[string]string{
+			"such": "octopus 🐙", // TODO why doesn't this encode as \u0001f419
+		},
+	}
+
+	logger.Info("can your logger do this?",
+		zap.Quoted(zap.Object("inception", zapcore.ObjectMarshalerFunc(func(enc zapcore.ObjectEncoder) error {
+			enc.AddString("foo", dat.Foo)
+			enc.AddFloat64("bar", dat.Bar)
+			enc.AddReflected("baz", dat.Baz)
+			return nil
+		}))),
+	)
 	// Output:
 	// {"level":"info","msg":"Failed to fetch URL.","url":"http://example.com","attempt":3,"backoff":"1s"}
 	// {"level":"info","msg":"Failed to fetch URL: http://example.com"}
 	// {"level":"info","msg":"Failed to fetch URL.","url":"http://example.com","attempt":3,"backoff":"1s"}
+	// {"level":"info","msg":"can your logger do this?","inception":"{\"foo\":\"now is the time for string-\\\"ception\\\"!\",\"bar\":3.14,\"baz\":{\"such\":\"octopus 🐙\"}}"}
 }
 
 func Example_basicConfiguration() {
