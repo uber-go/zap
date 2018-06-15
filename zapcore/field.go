@@ -175,6 +175,71 @@ func (f Field) addTo(enc ObjectEncoder) error {
 	return nil
 }
 
+func (f Field) appendTo(enc ArrayEncoder) error {
+	switch f.Type {
+	case ArrayMarshalerType:
+		return enc.AppendArray(f.Interface.(ArrayMarshaler))
+	case ObjectMarshalerType:
+		return enc.AppendObject(f.Interface.(ObjectMarshaler))
+	case BoolType:
+		enc.AppendBool(f.Integer == 1)
+	case ByteStringType:
+		enc.AppendByteString(f.Interface.([]byte))
+	case Complex128Type:
+		enc.AppendComplex128(f.Interface.(complex128))
+	case Complex64Type:
+		enc.AppendComplex64(f.Interface.(complex64))
+	case DurationType:
+		enc.AppendDuration(time.Duration(f.Integer))
+	case Float64Type:
+		enc.AppendFloat64(math.Float64frombits(uint64(f.Integer)))
+	case Float32Type:
+		enc.AppendFloat32(math.Float32frombits(uint32(f.Integer)))
+	case Int64Type:
+		enc.AppendInt64(f.Integer)
+	case Int32Type:
+		enc.AppendInt32(int32(f.Integer))
+	case Int16Type:
+		enc.AppendInt16(int16(f.Integer))
+	case Int8Type:
+		enc.AppendInt8(int8(f.Integer))
+	case StringType:
+		enc.AppendString(f.String)
+	case TimeType:
+		if f.Interface != nil {
+			enc.AppendTime(time.Unix(0, f.Integer).In(f.Interface.(*time.Location)))
+		} else {
+			// Fall back to UTC if location is nil.
+			enc.AppendTime(time.Unix(0, f.Integer))
+		}
+	case Uint64Type:
+		enc.AppendUint64(uint64(f.Integer))
+	case Uint32Type:
+		enc.AppendUint32(uint32(f.Integer))
+	case Uint16Type:
+		enc.AppendUint16(uint16(f.Integer))
+	case Uint8Type:
+		enc.AppendUint8(uint8(f.Integer))
+	case UintptrType:
+		enc.AppendUintptr(uintptr(f.Integer))
+	case ReflectType:
+		return enc.AppendReflected(f.Interface)
+	case StringerType:
+		enc.AppendString(f.Interface.(fmt.Stringer).String())
+	case SkipType:
+		break
+	case ErrorType:
+		panic("invalid error field in an array")
+	case BinaryType:
+		panic("invalid binary field in an array")
+	case NamespaceType:
+		panic("invalid namespace in an array")
+	default:
+		panic(fmt.Sprintf("unknown field type: %v", f))
+	}
+	return nil
+}
+
 // Equals returns whether two fields are equal. For non-primitive types such as
 // errors, marshalers, or reflect types, it uses reflect.DeepEqual.
 func (f Field) Equals(other Field) bool {
