@@ -302,6 +302,20 @@ type ArrayEncoder interface {
 	AppendReflected(value interface{}) error
 }
 
+type QuotingObjectEncoder interface {
+	ObjectEncoder
+
+	// pity we don't have a "ValueEncoder" used by both object and array paths...
+	AddQuoted(key string, with func(ArrayEncoder) error) error
+}
+
+type QuotingArrayEncoder interface {
+	ArrayEncoder
+
+	// pity we don't have a "ValueEncoder" used by both object and array paths...
+	AppendQuoted(with func(ArrayEncoder) error) error
+}
+
 // PrimitiveArrayEncoder is the subset of the ArrayEncoder interface that deals
 // only in Go's built-in types. It's included only so that Duration- and
 // TimeEncoders cannot trigger infinite recursion.

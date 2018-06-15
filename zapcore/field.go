@@ -89,6 +89,9 @@ const (
 	ErrorType
 	// SkipType indicates that the field is a no-op.
 	SkipType
+	// QuotedTypeBit indicates that the field's value should be wrapped in an
+	// additional level of (encoding specific) quoting.
+	QuotedTypeBit FieldType = 0x80
 )
 
 // A Field is a marshaling operation used to add a key-value pair to a logger's
@@ -111,6 +114,15 @@ func (f Field) AddTo(enc ObjectEncoder) {
 }
 
 func (f Field) addTo(enc ObjectEncoder) error {
+	if f.Type&QuotedTypeBit != 0 {
+		f.Type &= ^QuotedTypeBit
+		if qe, ok := enc.(QuotingObjectEncoder); ok {
+			return qe.AddQuoted(f.Key, f.appendTo)
+		}
+		// TODO fallback to a json encoded string?
+		return fmt.Errorf("quoted encoding not supported by %T", enc)
+	}
+
 	switch f.Type {
 	case ArrayMarshalerType:
 		return enc.AddArray(f.Key, f.Interface.(ArrayMarshaler))
@@ -176,6 +188,14 @@ func (f Field) addTo(enc ObjectEncoder) error {
 }
 
 func (f Field) appendTo(enc ArrayEncoder) error {
+	if f.Type&QuotedTypeBit != 0 {
+		f.Type &= ^QuotedTypeBit
+		if qe, ok := enc.(QuotingArrayEncoder); ok {
+			return qe.AppendQuoted(f.appendTo)
+		}
+		// TODO fallback to a json encoded string?
+		return fmt.Errorf("quoted encoding not supported by %T", enc)
+	}
 	switch f.Type {
 	case ArrayMarshalerType:
 		return enc.AppendArray(f.Interface.(ArrayMarshaler))
