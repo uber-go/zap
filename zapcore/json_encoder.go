@@ -44,7 +44,9 @@ func getJSONEncoder() *jsonEncoder {
 }
 
 func putJSONEncoder(enc *jsonEncoder) {
-	enc.reflectBuf.Free()
+	if enc.reflectBuf != nil {
+		enc.reflectBuf.Free()
+	}
 	enc.EncoderConfig = nil
 	enc.buf = nil
 	enc.spaced = false

@@ -111,7 +111,5 @@ func (b *Buffer) TrimNewline() {
 //
 // Callers must not retain references to the Buffer after calling Free.
 func (b *Buffer) Free() {
-	if b != nil {
-		b.pool.put(b)
-	}
+	b.pool.put(b)
 }
