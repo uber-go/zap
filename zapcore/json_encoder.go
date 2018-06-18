@@ -32,8 +32,9 @@ import (
 	"go.uber.org/zap/internal/bufferpool"
 )
 
-// For JSON-escaping; see jsonEncoder.safeAddString below.
+// For JSON-escaping; see jsonEncoder.{safeAddString and addEscape} below.
 const _hex = "0123456789abcdef"
+const _esc = `\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\`
 
 var _jsonPool = sync.Pool{New: func() interface{} {
 	return &jsonEncoder{}
@@ -56,6 +57,12 @@ type jsonEncoder struct {
 	buf            *buffer.Buffer
 	spaced         bool // include spaces after colons and commas
 	openNamespaces int
+	quoteLevel     int
+
+	// TODO hack to skip separator before quoted objects; probably better if we
+	// flip this as "needsep", and refactor so that the encoder only truthifies
+	// it after encoding value.
+	skipsep bool
 }
 
 // NewJSONEncoder creates a fast, low-allocation JSON encoder. The encoder
@@ -130,7 +137,11 @@ func (enc *jsonEncoder) AddReflected(key string, obj interface{}) error {
 		return err
 	}
 	enc.addKey(key)
-	_, err = enc.buf.Write(marshaled)
+	if enc.quoteLevel > 0 {
+		enc.safeAddByteString(marshaled)
+	} else {
+		_, err = enc.buf.Write(marshaled)
+	}
 	return err
 }
 
@@ -178,23 +189,27 @@ func (enc *jsonEncoder) AppendBool(val bool) {
 
 func (enc *jsonEncoder) AppendByteString(val []byte) {
 	enc.addElementSeparator()
-	enc.buf.AppendByte('"')
+	enc.addQuote()
+	enc.quoteLevel++
 	enc.safeAddByteString(val)
-	enc.buf.AppendByte('"')
+	enc.quoteLevel--
+	enc.addQuote()
 }
 
 func (enc *jsonEncoder) AppendComplex128(val complex128) {
 	enc.addElementSeparator()
 	// Cast to a platform-independent, fixed-size type.
 	r, i := float64(real(val)), float64(imag(val))
-	enc.buf.AppendByte('"')
+	enc.addQuote()
+	enc.quoteLevel++
 	// Because we're always in a quoted string, we can use strconv without
 	// special-casing NaN and +/-Inf.
 	enc.buf.AppendFloat(r, 64)
 	enc.buf.AppendByte('+')
 	enc.buf.AppendFloat(i, 64)
 	enc.buf.AppendByte('i')
-	enc.buf.AppendByte('"')
+	enc.quoteLevel--
+	enc.addQuote()
 }
 
 func (enc *jsonEncoder) AppendDuration(val time.Duration) {
@@ -218,15 +233,21 @@ func (enc *jsonEncoder) AppendReflected(val interface{}) error {
 		return err
 	}
 	enc.addElementSeparator()
-	_, err = enc.buf.Write(marshaled)
+	if enc.quoteLevel > 0 {
+		enc.safeAddByteString(marshaled)
+	} else {
+		_, err = enc.buf.Write(marshaled)
+	}
 	return err
 }
 
 func (enc *jsonEncoder) AppendString(val string) {
 	enc.addElementSeparator()
-	enc.buf.AppendByte('"')
+	enc.addQuote()
+	enc.quoteLevel++
 	enc.safeAddString(val)
-	enc.buf.AppendByte('"')
+	enc.quoteLevel--
+	enc.addQuote()
 }
 
 func (enc *jsonEncoder) AppendTime(val time.Time) {
@@ -267,6 +288,22 @@ func (enc *jsonEncoder) AppendUint32(v uint32)              { enc.AppendUint64(u
 func (enc *jsonEncoder) AppendUint16(v uint16)              { enc.AppendUint64(uint64(v)) }
 func (enc *jsonEncoder) AppendUint8(v uint8)                { enc.AppendUint64(uint64(v)) }
 func (enc *jsonEncoder) AppendUintptr(v uintptr)            { enc.AppendUint64(uint64(v)) }
+
+func (enc *jsonEncoder) AddQuoted(key string, with func(ArrayEncoder) error) error {
+	enc.addKey(key)
+	return enc.AppendQuoted(with)
+}
+
+func (enc *jsonEncoder) AppendQuoted(with func(ArrayEncoder) error) error {
+	enc.addQuote()
+	enc.quoteLevel++
+	enc.skipsep = true
+	err := with(enc)
+	enc.skipsep = false
+	enc.quoteLevel--
+	enc.addQuote()
+	return err
+}
 
 func (enc *jsonEncoder) Clone() Encoder {
 	clone := enc.clone()
@@ -363,11 +400,35 @@ func (enc *jsonEncoder) closeOpenNamespaces() {
 	}
 }
 
+func (enc *jsonEncoder) addEscape(seq ...byte) {
+	n := 1
+	for level := 1; level < enc.quoteLevel; level++ {
+		n *= 2
+	}
+	if n > 1 {
+		n++
+	}
+	if n > len(_esc) {
+		// TODO should pass this back as an encoding error
+		panic("quoting depth limit exceeded (only support up to 8 levels)")
+	}
+	enc.buf.AppendString(_esc[:n])
+	enc.buf.Write(seq)
+}
+
+func (enc *jsonEncoder) addQuote() {
+	if enc.quoteLevel > 0 {
+		enc.addEscape('"')
+	} else {
+		enc.buf.AppendByte('"')
+	}
+}
+
 func (enc *jsonEncoder) addKey(key string) {
 	enc.addElementSeparator()
-	enc.buf.AppendByte('"')
+	enc.addQuote()
 	enc.safeAddString(key)
-	enc.buf.AppendByte('"')
+	enc.addQuote()
 	enc.buf.AppendByte(':')
 	if enc.spaced {
 		enc.buf.AppendByte(' ')
@@ -375,6 +436,10 @@ func (enc *jsonEncoder) addKey(key string) {
 }
 
 func (enc *jsonEncoder) addElementSeparator() {
+	if enc.skipsep {
+		enc.skipsep = false
+		return
+	}
 	last := enc.buf.Len() - 1
 	if last < 0 {
 		return
@@ -451,29 +516,23 @@ func (enc *jsonEncoder) tryAddRuneSelf(b byte) bool {
 	}
 	switch b {
 	case '\\', '"':
-		enc.buf.AppendByte('\\')
-		enc.buf.AppendByte(b)
+		enc.addEscape(b)
 	case '\n':
-		enc.buf.AppendByte('\\')
-		enc.buf.AppendByte('n')
+		enc.addEscape('n')
 	case '\r':
-		enc.buf.AppendByte('\\')
-		enc.buf.AppendByte('r')
+		enc.addEscape('r')
 	case '\t':
-		enc.buf.AppendByte('\\')
-		enc.buf.AppendByte('t')
+		enc.addEscape('t')
 	default:
 		// Encode bytes < 0x20, except for the escape sequences above.
-		enc.buf.AppendString(`\u00`)
-		enc.buf.AppendByte(_hex[b>>4])
-		enc.buf.AppendByte(_hex[b&0xF])
+		enc.addEscape('u', '0', '0', _hex[b>>4], _hex[b&0xF])
 	}
 	return true
 }
 
 func (enc *jsonEncoder) tryAddRuneError(r rune, size int) bool {
 	if r == utf8.RuneError && size == 1 {
-		enc.buf.AppendString(`\ufffd`)
+		enc.addEscape('u', 'f', 'f', 'f', 'd')
 		return true
 	}
 	return false

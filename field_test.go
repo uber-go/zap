@@ -140,6 +140,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:Durations", Any("k", []time.Duration{time.Second}), Durations("k", []time.Duration{time.Second})},
 		{"Any:Fallback", Any("k", struct{}{}), Reflect("k", struct{}{})},
 		{"Namespace", Namespace("k"), Field{Key: "k", Type: zapcore.NamespaceType}},
+		// TODO quoted fields
 	}
 
 	for _, tt := range tests {

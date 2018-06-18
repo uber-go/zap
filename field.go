@@ -201,6 +201,11 @@ func Duration(key string, val time.Duration) Field {
 	return Field{Key: key, Type: zapcore.DurationType, Integer: int64(val)}
 }
 
+func Quoted(val Field) Field {
+	val.Type |= zapcore.QuotedTypeBit
+	return val
+}
+
 // Object constructs a field with the given key and ObjectMarshaler. It
 // provides a flexible, but still type-safe and efficient, way to add map- or
 // struct-like user-defined types to the logging context. The struct's

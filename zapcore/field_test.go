@@ -117,6 +117,7 @@ func TestFields(t *testing.T) {
 		{t: NamespaceType, want: map[string]interface{}{}},
 		{t: StringerType, iface: users(2), want: "2 users"},
 		{t: SkipType, want: interface{}(nil)},
+		// TODO quoted fields
 	}
 
 	for _, tt := range tests {

@@ -36,6 +36,8 @@ import (
 	"go.uber.org/multierr"
 )
 
+// TODO quoting cases
+
 func TestJSONClone(t *testing.T) {
 	// The parent encoder is created with plenty of excess capacity.
 	parent := &jsonEncoder{buf: bufferpool.Get()}

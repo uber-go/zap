@@ -89,6 +89,9 @@ const (
 	ErrorType
 	// SkipType indicates that the field is a no-op.
 	SkipType
+	// QuotedTypeBit indicates that the field's value should be wrapped in an
+	// additional level of (encoding specific) quoting.
+	QuotedTypeBit FieldType = 0x80
 )
 
 // A Field is a marshaling operation used to add a key-value pair to a logger's
@@ -105,13 +108,26 @@ type Field struct {
 // AddTo exports a field through the ObjectEncoder interface. It's primarily
 // useful to library authors, and shouldn't be necessary in most applications.
 func (f Field) AddTo(enc ObjectEncoder) {
-	var err error
+	if err := f.addTo(enc); err != nil {
+		enc.AddString(fmt.Sprintf("%sError", f.Key), err.Error())
+	}
+}
+
+func (f Field) addTo(enc ObjectEncoder) error {
+	if f.Type&QuotedTypeBit != 0 {
+		f.Type &= ^QuotedTypeBit
+		if qe, ok := enc.(QuotingObjectEncoder); ok {
+			return qe.AddQuoted(f.Key, f.appendTo)
+		}
+		// TODO fallback to a json encoded string?
+		return fmt.Errorf("quoted encoding not supported by %T", enc)
+	}
 
 	switch f.Type {
 	case ArrayMarshalerType:
-		err = enc.AddArray(f.Key, f.Interface.(ArrayMarshaler))
+		return enc.AddArray(f.Key, f.Interface.(ArrayMarshaler))
 	case ObjectMarshalerType:
-		err = enc.AddObject(f.Key, f.Interface.(ObjectMarshaler))
+		return enc.AddObject(f.Key, f.Interface.(ObjectMarshaler))
 	case BinaryType:
 		enc.AddBinary(f.Key, f.Interface.([]byte))
 	case BoolType:
@@ -156,7 +172,7 @@ func (f Field) AddTo(enc ObjectEncoder) {
 	case UintptrType:
 		enc.AddUintptr(f.Key, uintptr(f.Integer))
 	case ReflectType:
-		err = enc.AddReflected(f.Key, f.Interface)
+		return enc.AddReflected(f.Key, f.Interface)
 	case NamespaceType:
 		enc.OpenNamespace(f.Key)
 	case StringerType:
@@ -168,10 +184,80 @@ func (f Field) AddTo(enc ObjectEncoder) {
 	default:
 		panic(fmt.Sprintf("unknown field type: %v", f))
 	}
+	return nil
+}
 
-	if err != nil {
-		enc.AddString(fmt.Sprintf("%sError", f.Key), err.Error())
+func (f Field) appendTo(enc ArrayEncoder) error {
+	if f.Type&QuotedTypeBit != 0 {
+		f.Type &= ^QuotedTypeBit
+		if qe, ok := enc.(QuotingArrayEncoder); ok {
+			return qe.AppendQuoted(f.appendTo)
+		}
+		// TODO fallback to a json encoded string?
+		return fmt.Errorf("quoted encoding not supported by %T", enc)
 	}
+	switch f.Type {
+	case ArrayMarshalerType:
+		return enc.AppendArray(f.Interface.(ArrayMarshaler))
+	case ObjectMarshalerType:
+		return enc.AppendObject(f.Interface.(ObjectMarshaler))
+	case BoolType:
+		enc.AppendBool(f.Integer == 1)
+	case ByteStringType:
+		enc.AppendByteString(f.Interface.([]byte))
+	case Complex128Type:
+		enc.AppendComplex128(f.Interface.(complex128))
+	case Complex64Type:
+		enc.AppendComplex64(f.Interface.(complex64))
+	case DurationType:
+		enc.AppendDuration(time.Duration(f.Integer))
+	case Float64Type:
+		enc.AppendFloat64(math.Float64frombits(uint64(f.Integer)))
+	case Float32Type:
+		enc.AppendFloat32(math.Float32frombits(uint32(f.Integer)))
+	case Int64Type:
+		enc.AppendInt64(f.Integer)
+	case Int32Type:
+		enc.AppendInt32(int32(f.Integer))
+	case Int16Type:
+		enc.AppendInt16(int16(f.Integer))
+	case Int8Type:
+		enc.AppendInt8(int8(f.Integer))
+	case StringType:
+		enc.AppendString(f.String)
+	case TimeType:
+		if f.Interface != nil {
+			enc.AppendTime(time.Unix(0, f.Integer).In(f.Interface.(*time.Location)))
+		} else {
+			// Fall back to UTC if location is nil.
+			enc.AppendTime(time.Unix(0, f.Integer))
+		}
+	case Uint64Type:
+		enc.AppendUint64(uint64(f.Integer))
+	case Uint32Type:
+		enc.AppendUint32(uint32(f.Integer))
+	case Uint16Type:
+		enc.AppendUint16(uint16(f.Integer))
+	case Uint8Type:
+		enc.AppendUint8(uint8(f.Integer))
+	case UintptrType:
+		enc.AppendUintptr(uintptr(f.Integer))
+	case ReflectType:
+		return enc.AppendReflected(f.Interface)
+	case StringerType:
+		enc.AppendString(f.Interface.(fmt.Stringer).String())
+	case SkipType:
+		break
+	case ErrorType:
+		panic("invalid error field in an array")
+	case BinaryType:
+		panic("invalid binary field in an array")
+	case NamespaceType:
+		panic("invalid namespace in an array")
+	default:
+		panic(fmt.Sprintf("unknown field type: %v", f))
+	}
+	return nil
 }
 
 // Equals returns whether two fields are equal. For non-primitive types such as
