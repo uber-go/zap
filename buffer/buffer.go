@@ -102,5 +102,7 @@ func (b *Buffer) Write(bs []byte) (int, error) {
 //
 // Callers must not retain references to the Buffer after calling Free.
 func (b *Buffer) Free() {
-	b.pool.put(b)
+	if b != nil {
+		b.pool.put(b)
+	}
 }
