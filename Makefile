@@ -1,5 +1,3 @@
-export GO15VENDOREXPERIMENT=1
-
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 PKGS ?= $(shell glide novendor)
 # Many Go tools take file globs or directories as arguments instead of packages.
@@ -11,7 +9,7 @@ GO_VERSION := $(shell go version | cut -d " " -f 3)
 GO_MINOR_VERSION := $(word 2,$(subst ., ,$(GO_VERSION)))
 LINTABLE_MINOR_VERSIONS := 10
 ifneq ($(filter $(LINTABLE_MINOR_VERSIONS),$(GO_MINOR_VERSION)),)
-SHOULD_LINT := true
+SHOULD_LINT_AND_COVER := true
 endif
 
 
@@ -26,7 +24,7 @@ dependencies:
 	@echo "Installing test dependencies..."
 	go install ./vendor/github.com/axw/gocov/gocov
 	go install ./vendor/github.com/mattn/goveralls
-ifdef SHOULD_LINT
+ifdef SHOULD_LINT_AND_COVER
 	@echo "Installing golint..."
 	go install ./vendor/github.com/golang/lint/golint
 else
@@ -38,7 +36,7 @@ VET_RULES := -printf=false
 
 .PHONY: lint
 lint:
-ifdef SHOULD_LINT
+ifdef SHOULD_LINT_AND_COVER
 	@rm -rf lint.log
 	@echo "Checking formatting..."
 	@gofmt -d -s $(PKG_FILES) 2>&1 | tee lint.log
@@ -63,7 +61,11 @@ test:
 
 .PHONY: cover
 cover:
-	./scripts/cover.sh $(PKGS)
+ifdef SHOULD_LINT_AND_COVER
+	go test -coverprofile=cover.out -coverpkg=all $(PKGS)
+else
+	@echo "Skipping coverage on" $(GO_VERSION)
+endif
 
 .PHONY: bench
 BENCH ?= .
