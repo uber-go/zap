@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 
@@ -49,29 +50,32 @@ func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
 func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	var openErr error
 	writers := make([]zapcore.WriteSyncer, 0, len(paths))
-	files := make([]*os.File, 0, len(paths))
+	closers := make([]io.Closer, 0, len(paths))
 	close := func() {
-		for _, f := range files {
-			f.Close()
+		for _, c := range closers {
+			c.Close()
 		}
 	}
 	for _, path := range paths {
-		switch path {
-		case "stdout":
-			writers = append(writers, os.Stdout)
-			// Don't close standard out.
-			continue
-		case "stderr":
-			writers = append(writers, os.Stderr)
-			// Don't close standard error.
-			continue
-		}
-		f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-		openErr = multierr.Append(openErr, err)
+		sink, err := newSink(path)
 		if err == nil {
-			writers = append(writers, f)
-			files = append(files, f)
+			// Using a registered sink constructor.
+			writers = append(writers, sink)
+			closers = append(closers, sink)
+			continue
 		}
+		if _, ok := err.(*errSinkNotFound); ok {
+			// No named sink constructor, use key as path to log file.
+			f, e := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+			openErr = multierr.Append(openErr, e)
+			if e == nil {
+				writers = append(writers, f)
+				closers = append(closers, f)
+			}
+			continue
+		}
+		// Sink constructor failed.
+		openErr = multierr.Append(openErr, err)
 	}
 
 	if openErr != nil {

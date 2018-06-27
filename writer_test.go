@@ -21,8 +21,12 @@
 package zap
 
 import (
+	"encoding/hex"
+	"errors"
 	"io/ioutil"
+	"math/rand"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,28 +48,25 @@ func TestOpenNoPaths(t *testing.T) {
 }
 
 func TestOpen(t *testing.T) {
-	temp, err := ioutil.TempFile("", "zap-open-test")
-	require.NoError(t, err, "Couldn't create a temporary file for test.")
-	defer os.Remove(temp.Name())
+	tempName := tempFileName("", "zap-open-test")
+	assert.False(t, fileExists(tempName))
 
 	tests := []struct {
-		paths     []string
-		filenames []string
-		error     string
+		paths []string
+		error string
 	}{
-		{[]string{"stdout"}, []string{os.Stdout.Name()}, ""},
-		{[]string{"stderr"}, []string{os.Stderr.Name()}, ""},
-		{[]string{temp.Name()}, []string{temp.Name()}, ""},
-		{[]string{"/foo/bar/baz"}, []string{}, "open /foo/bar/baz: no such file or directory"},
+		{[]string{"stdout"}, ""},
+		{[]string{"stderr"}, ""},
+		{[]string{tempName}, ""},
+		{[]string{"/foo/bar/baz"}, "open /foo/bar/baz: no such file or directory"},
 		{
-			paths:     []string{"stdout", "/foo/bar/baz", temp.Name(), "/baz/quux"},
-			filenames: []string{os.Stdout.Name(), temp.Name()},
-			error:     "open /foo/bar/baz: no such file or directory; open /baz/quux: no such file or directory",
+			paths: []string{"stdout", "/foo/bar/baz", tempName, "/baz/quux"},
+			error: "open /foo/bar/baz: no such file or directory; open /baz/quux: no such file or directory",
 		},
 	}
 
 	for _, tt := range tests {
-		wss, cleanup, err := open(tt.paths)
+		_, cleanup, err := Open(tt.paths...)
 		if err == nil {
 			defer cleanup()
 		}
@@ -75,14 +76,10 @@ func TestOpen(t *testing.T) {
 		} else {
 			assert.Equal(t, tt.error, err.Error(), "Unexpected error opening paths %v.", tt.paths)
 		}
-		names := make([]string, len(wss))
-		for i, ws := range wss {
-			f, ok := ws.(*os.File)
-			require.True(t, ok, "Expected all WriteSyncers returned from open() to be files.")
-			names[i] = f.Name()
-		}
-		assert.Equal(t, tt.filenames, names, "Opened unexpected files given paths %v.", tt.paths)
 	}
+
+	assert.True(t, fileExists(tempName))
+	os.Remove(tempName)
 }
 
 func TestOpenFails(t *testing.T) {
@@ -118,8 +115,41 @@ func (w *testWriter) Sync() error {
 	return nil
 }
 
+func TestOpenWithCustomSink(t *testing.T) {
+	defer resetSinkRegistry()
+	tw := &testWriter{"test", t}
+	ctr := func() (Sink, error) { return nopCloserSink{tw}, nil }
+	assert.Nil(t, RegisterSink("TestOpenWithCustomSink", ctr))
+	w, cleanup, err := Open("TestOpenWithCustomSink")
+	assert.Nil(t, err)
+	defer cleanup()
+	w.Write([]byte("test"))
+}
+
+func TestOpenWithErroringSinkFactory(t *testing.T) {
+	defer resetSinkRegistry()
+	expectedErr := errors.New("expected factory error")
+	ctr := func() (Sink, error) { return nil, expectedErr }
+	assert.Nil(t, RegisterSink("TestOpenWithErroringSinkFactory", ctr))
+	_, _, err := Open("TestOpenWithErroringSinkFactory")
+	assert.Equal(t, expectedErr, err)
+}
+
 func TestCombineWriteSyncers(t *testing.T) {
 	tw := &testWriter{"test", t}
 	w := CombineWriteSyncers(tw)
 	w.Write([]byte("test"))
+}
+
+func tempFileName(prefix, suffix string) string {
+	randBytes := make([]byte, 16)
+	rand.Read(randBytes)
+	return filepath.Join(os.TempDir(), prefix+hex.EncodeToString(randBytes)+suffix)
+}
+
+func fileExists(name string) bool {
+	if _, err := os.Stat(name); os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
