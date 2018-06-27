@@ -57,20 +57,25 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 		}
 	}
 	for _, path := range paths {
-		if sink, err := newSink(path); err == nil {
+		sink, err := newSink(path)
+		if err == nil {
+			// Using a registered sink constructor.
 			writers = append(writers, sink)
 			closers = append(closers, sink)
 			continue
-		} else if err == errSinkNotFound {
-			f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-			openErr = multierr.Append(openErr, err)
-			if err == nil {
+		}
+		if _, ok := err.(*errSinkNotFound); ok {
+			// No named sink constructor, use key as path to log file.
+			f, e := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+			openErr = multierr.Append(openErr, e)
+			if e == nil {
 				writers = append(writers, f)
 				closers = append(closers, f)
 			}
-		} else {
-			openErr = multierr.Append(openErr, err)
+			continue
 		}
+		// Sink constructor failed.
+		openErr = multierr.Append(openErr, err)
 	}
 
 	if openErr != nil {

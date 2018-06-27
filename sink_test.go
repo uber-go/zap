@@ -35,9 +35,9 @@ func TestRegisterSink(t *testing.T) {
 		factory   func() (Sink, error)
 		wantError bool
 	}{
-		{"valid", "valid", func() (Sink, error) { return NopCloserSink{os.Stdout}, nil }, false},
-		{"empty", "", func() (Sink, error) { return NopCloserSink{os.Stdout}, nil }, true},
-		{"stdout", "stdout", func() (Sink, error) { return NopCloserSink{os.Stdout}, nil }, true},
+		{"valid", "valid", func() (Sink, error) { return nopCloserSink{os.Stdout}, nil }, false},
+		{"empty", "", func() (Sink, error) { return nopCloserSink{os.Stdout}, nil }, true},
+		{"stdout", "stdout", func() (Sink, error) { return nopCloserSink{os.Stdout}, nil }, true},
 	}
 
 	for _, tt := range tests {
@@ -54,6 +54,7 @@ func TestRegisterSink(t *testing.T) {
 }
 
 func TestNewSink(t *testing.T) {
+	defer resetSinkRegistry()
 	errTestSink := errors.New("test erroring")
 	err := RegisterSink("errors", func() (Sink, error) { return nil, errTestSink })
 	assert.Nil(t, err)
@@ -63,7 +64,7 @@ func TestNewSink(t *testing.T) {
 	}{
 		{"stdout", nil},
 		{"errors", errTestSink},
-		{"nonexistent", errSinkNotFound},
+		{"nonexistent", &errSinkNotFound{"nonexistent"}},
 	}
 
 	for _, tt := range tests {

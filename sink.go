@@ -31,13 +31,30 @@ import (
 )
 
 var (
-	_sinkMutex      sync.RWMutex
-	errSinkNotFound = errors.New("sink for the given key not found")
-	_sinkFactories  = map[string]func() (Sink, error){
-		"stdout": func() (Sink, error) { return NopCloserSink{os.Stdout}, nil },
-		"stderr": func() (Sink, error) { return NopCloserSink{os.Stderr}, nil },
-	}
+	_sinkMutex     sync.RWMutex
+	_sinkFactories map[string]func() (Sink, error)
 )
+
+func init() {
+	resetSinkRegistry()
+}
+
+func resetSinkRegistry() {
+	_sinkMutex.Lock()
+	defer _sinkMutex.Unlock()
+	_sinkFactories = map[string]func() (Sink, error){
+		"stdout": func() (Sink, error) { return nopCloserSink{os.Stdout}, nil },
+		"stderr": func() (Sink, error) { return nopCloserSink{os.Stderr}, nil },
+	}
+}
+
+type errSinkNotFound struct {
+	key string
+}
+
+func (e *errSinkNotFound) Error() string {
+	return fmt.Sprintf("no sink found for %q", e.key)
+}
 
 // Sink defines the interface to write to and close logger destinations.
 type Sink interface {
@@ -67,13 +84,11 @@ func newSink(key string) (Sink, error) {
 	defer _sinkMutex.RUnlock()
 	sinkFactory, ok := _sinkFactories[key]
 	if !ok {
-		return nil, errSinkNotFound
+		return nil, &errSinkNotFound{key}
 	}
 	return sinkFactory()
 }
 
-// NopCloserSink wraps a WriteSyncer with a no-op Close() method.
-type NopCloserSink struct{ zapcore.WriteSyncer }
+type nopCloserSink struct{ zapcore.WriteSyncer }
 
-// Close does nothing (no-op).
-func (NopCloserSink) Close() error { return nil }
+func (nopCloserSink) Close() error { return nil }

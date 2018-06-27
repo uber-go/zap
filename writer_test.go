@@ -21,10 +21,10 @@
 package zap
 
 import (
-	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
@@ -116,8 +116,9 @@ func (w *testWriter) Sync() error {
 }
 
 func TestOpenWithCustomSink(t *testing.T) {
+	defer resetSinkRegistry()
 	tw := &testWriter{"test", t}
-	ctr := func() (Sink, error) { return NopCloserSink{tw}, nil }
+	ctr := func() (Sink, error) { return nopCloserSink{tw}, nil }
 	assert.Nil(t, RegisterSink("TestOpenWithCustomSink", ctr))
 	w, cleanup, err := Open("TestOpenWithCustomSink")
 	assert.Nil(t, err)
@@ -126,6 +127,7 @@ func TestOpenWithCustomSink(t *testing.T) {
 }
 
 func TestOpenWithErroringSinkFactory(t *testing.T) {
+	defer resetSinkRegistry()
 	expectedErr := errors.New("expected factory error")
 	ctr := func() (Sink, error) { return nil, expectedErr }
 	assert.Nil(t, RegisterSink("TestOpenWithErroringSinkFactory", ctr))
