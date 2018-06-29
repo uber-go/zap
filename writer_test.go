@@ -25,6 +25,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"math/rand"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -53,15 +54,18 @@ func TestOpen(t *testing.T) {
 
 	tests := []struct {
 		paths []string
-		error string
+		errs  []string
 	}{
-		{[]string{"stdout"}, ""},
-		{[]string{"stderr"}, ""},
-		{[]string{tempName}, ""},
-		{[]string{"/foo/bar/baz"}, "open /foo/bar/baz: no such file or directory"},
+		{[]string{"stdout"}, nil},
+		{[]string{"stderr"}, nil},
+		{[]string{tempName}, nil},
+		{[]string{"/foo/bar/baz"}, []string{"open /foo/bar/baz: no such file or directory"}},
 		{
 			paths: []string{"stdout", "/foo/bar/baz", tempName, "/baz/quux"},
-			error: "open /foo/bar/baz: no such file or directory; open /baz/quux: no such file or directory",
+			errs: []string{
+				"open /foo/bar/baz: no such file or directory",
+				"open /baz/quux: no such file or directory",
+			},
 		},
 	}
 
@@ -71,10 +75,13 @@ func TestOpen(t *testing.T) {
 			defer cleanup()
 		}
 
-		if tt.error == "" {
+		if len(tt.errs) == 0 {
 			assert.NoError(t, err, "Unexpected error opening paths %v.", tt.paths)
 		} else {
-			assert.Equal(t, tt.error, err.Error(), "Unexpected error opening paths %v.", tt.paths)
+			msg := err.Error()
+			for _, expect := range tt.errs {
+				assert.Contains(t, msg, expect, "Unexpected error opening paths %v.", tt.paths)
+			}
 		}
 	}
 
@@ -86,18 +93,16 @@ func TestOpenFails(t *testing.T) {
 	tests := []struct {
 		paths []string
 	}{
-		{
-			paths: []string{"./non-existent-dir/file"},
-		},
-		{
-			paths: []string{"stdout", "./non-existent-dir/file"},
-		},
+		{paths: []string{"./non-existent-dir/file"}},           // directory doesn't exist
+		{paths: []string{"stdout", "./non-existent-dir/file"}}, // directory doesn't exist
+		{paths: []string{"://foo.log"}},                        // invalid URL, scheme can't begin with colon
+		{paths: []string{"mem://somewhere"}},                   // scheme not registered
 	}
 
 	for _, tt := range tests {
 		_, cleanup, err := Open(tt.paths...)
 		require.Nil(t, cleanup, "Cleanup function should never be nil")
-		assert.Error(t, err, "Open with non-existent directory should fail")
+		assert.Error(t, err, "Open with invalid URL should fail.")
 	}
 }
 
@@ -115,26 +120,17 @@ func (w *testWriter) Sync() error {
 	return nil
 }
 
-func TestOpenWithCustomSink(t *testing.T) {
-	defer resetSinkRegistry()
-
-	tw := &testWriter{"test", t}
-	ctr := func() (Sink, error) { return nopCloserSink{tw}, nil }
-	assert.Nil(t, RegisterSink("TestOpenWithCustomSink", ctr))
-	w, cleanup, err := Open("TestOpenWithCustomSink")
-	assert.Nil(t, err)
-	defer cleanup()
-	w.Write([]byte("test"))
-}
-
 func TestOpenWithErroringSinkFactory(t *testing.T) {
 	defer resetSinkRegistry()
 
-	expectedErr := errors.New("expected factory error")
-	ctr := func() (Sink, error) { return nil, expectedErr }
-	assert.Nil(t, RegisterSink("TestOpenWithErroringSinkFactory", ctr))
-	_, _, err := Open("TestOpenWithErroringSinkFactory")
-	assert.Equal(t, expectedErr, err)
+	msg := "expected factory error"
+	factory := func(_ *url.URL) (Sink, error) {
+		return nil, errors.New(msg)
+	}
+
+	assert.NoError(t, RegisterSink("test", factory), "Failed to register sink factory.")
+	_, _, err := Open("test://some/path")
+	assert.Contains(t, err.Error(), msg, "Unexpected error.")
 }
 
 func TestCombineWriteSyncers(t *testing.T) {
