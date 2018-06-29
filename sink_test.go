@@ -29,6 +29,8 @@ import (
 )
 
 func TestRegisterSink(t *testing.T) {
+	defer resetSinkRegistry()
+
 	tests := []struct {
 		name      string
 		key       string
@@ -55,6 +57,7 @@ func TestRegisterSink(t *testing.T) {
 
 func TestNewSink(t *testing.T) {
 	defer resetSinkRegistry()
+
 	errTestSink := errors.New("test erroring")
 	err := RegisterSink("errors", func() (Sink, error) { return nil, errTestSink })
 	assert.Nil(t, err)

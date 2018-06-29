@@ -117,6 +117,7 @@ func (w *testWriter) Sync() error {
 
 func TestOpenWithCustomSink(t *testing.T) {
 	defer resetSinkRegistry()
+
 	tw := &testWriter{"test", t}
 	ctr := func() (Sink, error) { return nopCloserSink{tw}, nil }
 	assert.Nil(t, RegisterSink("TestOpenWithCustomSink", ctr))
@@ -128,6 +129,7 @@ func TestOpenWithCustomSink(t *testing.T) {
 
 func TestOpenWithErroringSinkFactory(t *testing.T) {
 	defer resetSinkRegistry()
+
 	expectedErr := errors.New("expected factory error")
 	ctr := func() (Sink, error) { return nil, expectedErr }
 	assert.Nil(t, RegisterSink("TestOpenWithErroringSinkFactory", ctr))

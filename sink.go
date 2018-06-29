@@ -42,6 +42,7 @@ func init() {
 func resetSinkRegistry() {
 	_sinkMutex.Lock()
 	defer _sinkMutex.Unlock()
+
 	_sinkFactories = map[string]func() (Sink, error){
 		"stdout": func() (Sink, error) { return nopCloserSink{os.Stdout}, nil },
 		"stderr": func() (Sink, error) { return nopCloserSink{os.Stderr}, nil },
@@ -67,6 +68,7 @@ type Sink interface {
 func RegisterSink(key string, sinkFactory func() (Sink, error)) error {
 	_sinkMutex.Lock()
 	defer _sinkMutex.Unlock()
+
 	if key == "" {
 		return errors.New("sink key cannot be blank")
 	}
@@ -82,6 +84,7 @@ func RegisterSink(key string, sinkFactory func() (Sink, error)) error {
 func newSink(key string) (Sink, error) {
 	_sinkMutex.RLock()
 	defer _sinkMutex.RUnlock()
+
 	sinkFactory, ok := _sinkFactories[key]
 	if !ok {
 		return nil, &errSinkNotFound{key}
