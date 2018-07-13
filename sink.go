@@ -145,9 +145,6 @@ func normalizeScheme(s string) (string, error) {
 	if first := s[0]; 'a' > first || 'z' < first {
 		return "", errors.New("must start with a letter")
 	}
-	if len(s) < 2 {
-		return s, nil
-	}
 	for i := 1; i < len(s); i++ { // iterate over bytes, not runes
 		c := s[i]
 		switch {
@@ -158,7 +155,7 @@ func normalizeScheme(s string) (string, error) {
 		case c == '.' || c == '+' || c == '-':
 			continue
 		}
-		return "", fmt.Errorf("may not contain %q", string(c))
+		return "", fmt.Errorf("may not contain %q", c)
 	}
 	return s, nil
 }
