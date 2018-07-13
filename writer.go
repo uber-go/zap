@@ -35,13 +35,19 @@ import (
 // WriteSyncer. It also returns any error encountered and a function to close
 // any opened files.
 //
-// Passing no URLs returns a no-op WriteSyncer. URLs without a scheme (e.g.,
-// "/var/log/foo.log") are treated as though they had the "file" scheme. With
-// no scheme or the explicit "file" scheme, the special paths "stdout" and
-// "stderr" are interpreted as os.Stdout and os.Stderr, respectively.
+// Passing no URLs returns a no-op WriteSyncer. Zap handles URLs without a
+// scheme and URLs with the "file" scheme. Third-party code may register
+// factories for other schemes using RegisterSink.
 //
-// Users and third-party packages may register factories for other schemes
-// using RegisterSink.
+// URLs with the "file" scheme must use absolute paths on the local
+// filesystem. No user, password, port, fragments, or query parameters are
+// allowed, and the hostname must be empty or "localhost".
+//
+// Since it's common to write logs to the local filesystem, URLs without a
+// scheme (e.g., "/var/log/foo.log") are treated as local file paths. Without
+// a scheme, the special paths "stdout" and "stderr" are interpreted as
+// os.Stdout and os.Stderr. When specified without a scheme, relative file
+// paths also work.
 func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
 	writers, close, err := open(paths)
 	if err != nil {

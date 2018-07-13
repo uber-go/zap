@@ -105,9 +105,8 @@ func newSink(rawURL string) (Sink, error) {
 	}
 
 	_sinkMutex.RLock()
-	defer _sinkMutex.RUnlock()
-
 	factory, ok := _sinkFactories[u.Scheme]
+	_sinkMutex.RUnlock()
 	if !ok {
 		return nil, &errSinkNotFound{u.Scheme}
 	}
@@ -115,6 +114,22 @@ func newSink(rawURL string) (Sink, error) {
 }
 
 func newFileSink(u *url.URL) (Sink, error) {
+	if u.User != nil {
+		return nil, fmt.Errorf("user and password not allowed with file URLs: got %v", u)
+	}
+	if u.Fragment != "" {
+		return nil, fmt.Errorf("fragments not allowed with file URLs: got %v", u)
+	}
+	if u.RawQuery != "" {
+		return nil, fmt.Errorf("query parameters not allowed with file URLs: got %v", u)
+	}
+	// Error messages are better if we check hostname and port separately.
+	if u.Port() != "" {
+		return nil, fmt.Errorf("ports not allowed with file URLs: got %v", u)
+	}
+	if hn := u.Hostname(); hn != "" && hn != "localhost" {
+		return nil, fmt.Errorf("file URLs must leave host empty or use localhost: got %v", u)
+	}
 	switch u.Path {
 	case "stdout":
 		return nopCloserSink{os.Stdout}, nil
