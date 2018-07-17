@@ -33,7 +33,8 @@ type LoggerOption interface {
 }
 
 type loggerOptions struct {
-	Level zapcore.LevelEnabler
+	Level     zapcore.LevelEnabler
+	AddCaller bool
 }
 
 type loggerOptionFunc func(*loggerOptions)
@@ -50,6 +51,13 @@ func Level(enab zapcore.LevelEnabler) LoggerOption {
 	})
 }
 
+// AddCaller ensures caller is logged by a test Logger built by NewLogger.
+func AddCaller() LoggerOption {
+	return loggerOptionFunc(func(opts *loggerOptions) {
+		opts.AddCaller = true
+	})
+}
+
 // NewLogger builds a new Logger that logs all messages to the given
 // testing.TB.
 //
@@ -59,9 +67,14 @@ func Level(enab zapcore.LevelEnabler) LoggerOption {
 // if a test fails or if you ran go test -v.
 //
 // The returned logger defaults to logging debug level messages and above.
-// This may be changd by passing a zaptest.Level during construction.
+// This may be changed by passing a zaptest.Level during construction.
 //
 //   logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+//
+// The returned logger doesn't log caller.
+// This may be changed by passing a zaptest.AddCaller during construction.
+//
+//   logger := zaptest.NewLogger(t, zaptest.AddCaller())
 func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 	cfg := loggerOptions{
 		Level: zapcore.DebugLevel,
@@ -71,16 +84,22 @@ func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 	}
 
 	writer := newTestingWriter(t)
+	zapOptions := []zap.Option{
+		// Send zap errors to the same writer and mark the test as failed if
+		// that happens.
+		zap.ErrorOutput(writer.WithMarkFailed(true)),
+	}
+	if cfg.AddCaller {
+		zapOptions = append(zapOptions, zap.AddCaller())
+	}
+
 	return zap.New(
 		zapcore.NewCore(
 			zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
 			writer,
 			cfg.Level,
 		),
-
-		// Send zap errors to the same writer and mark the test as failed if
-		// that happens.
-		zap.ErrorOutput(writer.WithMarkFailed(true)),
+		zapOptions...,
 	)
 }
 

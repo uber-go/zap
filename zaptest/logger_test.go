@@ -80,6 +80,30 @@ func TestTestLoggerSupportsLevels(t *testing.T) {
 	)
 }
 
+func TestTestLoggerSupportsAddCaller(t *testing.T) {
+	ts := newTestLogSpy(t)
+	defer ts.AssertPassed()
+
+	log := NewLogger(ts, AddCaller())
+
+	log.Info("received work order")
+	log.Debug("starting work")
+	log.Warn("work may fail")
+	log.Error("work failed", zap.Error(errors.New("great sadness")))
+
+	assert.Panics(t, func() {
+		log.Panic("failed to do work")
+	}, "log.Panic should panic")
+
+	ts.AssertMessages(
+		"INFO	zaptest/logger_test.go:89	received work order",
+		"DEBUG	zaptest/logger_test.go:90	starting work",
+		"WARN	zaptest/logger_test.go:91	work may fail",
+		`ERROR	zaptest/logger_test.go:92	work failed	{"error": "great sadness"}`,
+		"PANIC	zaptest/logger_test.go:95	failed to do work",
+	)
+}
+
 func TestTestingWriter(t *testing.T) {
 	ts := newTestLogSpy(t)
 	w := newTestingWriter(ts)
