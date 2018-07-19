@@ -6,7 +6,7 @@ Enhancements:
 * [#602][]: Reduce number of allocations when logging with reflection.
 * [#572][], [#606][]: Expose a registry for third-party logging sinks.
 
-Thanks to @nfarah86, @AlekSi, @JeanMertz, @phillippgille, @etsangsplk, and
+Thanks to @nfarah86, @AlekSi, @JeanMertz, @philippgille, @etsangsplk, and
 @dimroc for their contributions to this release.
 
 ## v1.8.0 (13 Apr 2018)
