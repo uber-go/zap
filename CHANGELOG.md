@@ -1,10 +1,10 @@
 # Changelog
 
-## v1.9.0 (28 Jun 2018)
+## v1.9.0 (19 Jul 2018)
 
 Enhancements:
 * [#602][]: Reduce number of allocations when logging with reflection.
-* [#572][]: Expose a registry for third-party logging sinks.
+* [#572][], [#606][]: Expose a registry for third-party logging sinks.
 
 Thanks to @nfarah86, @AlekSi, @JeanMertz, @phillippgille, @etsangsplk, and
 @dimroc for their contributions to this release.
@@ -295,3 +295,4 @@ upgrade to the upcoming stable release.
 [#574]: https://github.com/uber-go/zap/pull/574
 [#602]: https://github.com/uber-go/zap/pull/602
 [#572]: https://github.com/uber-go/zap/pull/572
+[#606]: https://github.com/uber-go/zap/pull/606
