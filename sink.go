@@ -74,9 +74,9 @@ func (e *errSinkNotFound) Error() string {
 // particular scheme.
 //
 // All schemes must be ASCII, valid under section 3.1 of RFC 3986
-// (https://tools.ietf.org/html/rfc3986#section-3.1), and may not already have
-// a factory registered. Zap automatically registers a factory for the "file"
-// scheme.
+// (https://tools.ietf.org/html/rfc3986#section-3.1), and must not already
+// have a factory registered. Zap automatically registers a factory for the
+// "file" scheme.
 func RegisterSink(scheme string, factory func(*url.URL) (Sink, error)) error {
 	_sinkMutex.Lock()
 	defer _sinkMutex.Unlock()
