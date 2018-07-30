@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+Bugfixes:
+* [#614][]: MapObjectEncoder should not ignore empty slices.
+
 ## v1.9.0 (19 Jul 2018)
 
 Enhancements:
@@ -296,3 +301,4 @@ upgrade to the upcoming stable release.
 [#602]: https://github.com/uber-go/zap/pull/602
 [#572]: https://github.com/uber-go/zap/pull/572
 [#606]: https://github.com/uber-go/zap/pull/606
+[#614]: https://github.com/uber-go/zap/pull/614
