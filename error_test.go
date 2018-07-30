@@ -61,7 +61,7 @@ func TestErrorArrayConstructor(t *testing.T) {
 		field    Field
 		expected []interface{}
 	}{
-		{"empty errors", Errors("", []error{}), []interface{}(nil)},
+		{"empty errors", Errors("", []error{}), []interface{}{}},
 		{
 			"errors",
 			Errors("", []error{nil, errors.New("foo"), nil, errors.New("bar")}),

@@ -45,6 +45,9 @@ func NewMapObjectEncoder() *MapObjectEncoder {
 func (m *MapObjectEncoder) AddArray(key string, v ArrayMarshaler) error {
 	arr := &sliceArrayEncoder{}
 	err := v.MarshalLogArray(arr)
+	if arr.elems == nil {
+		arr.elems = []interface{}{}
+	}
 	m.cur[key] = arr.elems
 	return err
 }
