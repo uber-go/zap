@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## v1.9.1 (06 Aug 2018)
 
 Bugfixes:
+
 * [#614][]: MapObjectEncoder should not ignore empty slices.
 
 ## v1.9.0 (19 Jul 2018)
