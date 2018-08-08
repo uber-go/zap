@@ -33,8 +33,8 @@ type LoggerOption interface {
 }
 
 type loggerOptions struct {
-	Level     zapcore.LevelEnabler
-	AddCaller bool
+	Level      zapcore.LevelEnabler
+	zapOptions []zap.Option
 }
 
 type loggerOptionFunc func(*loggerOptions)
@@ -51,10 +51,10 @@ func Level(enab zapcore.LevelEnabler) LoggerOption {
 	})
 }
 
-// AddCaller ensures caller is logged by a test Logger built by NewLogger.
-func AddCaller() LoggerOption {
+// WrapOptions adds zap.Option's to a test Logger built by NewLogger.
+func WrapOptions(zapOpts ...zap.Option) LoggerOption {
 	return loggerOptionFunc(func(opts *loggerOptions) {
-		opts.AddCaller = true
+		opts.zapOptions = zapOpts
 	})
 }
 
@@ -71,10 +71,9 @@ func AddCaller() LoggerOption {
 //
 //   logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 //
-// The returned logger doesn't log caller.
-// This may be changed by passing a zaptest.AddCaller during construction.
+// You may also pass zap.Option's to customize test logger.
 //
-//   logger := zaptest.NewLogger(t, zaptest.AddCaller())
+//   logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
 func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 	cfg := loggerOptions{
 		Level: zapcore.DebugLevel,
@@ -89,9 +88,7 @@ func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 		// that happens.
 		zap.ErrorOutput(writer.WithMarkFailed(true)),
 	}
-	if cfg.AddCaller {
-		zapOptions = append(zapOptions, zap.AddCaller())
-	}
+	zapOptions = append(zapOptions, cfg.zapOptions...)
 
 	return zap.New(
 		zapcore.NewCore(
