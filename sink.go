@@ -26,6 +26,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -135,6 +136,9 @@ func newFileSink(u *url.URL) (Sink, error) {
 		return nopCloserSink{os.Stdout}, nil
 	case "stderr":
 		return nopCloserSink{os.Stderr}, nil
+	}
+	if runtime.GOOS == "windows" && u.Path[0] == '/' && u.Path[2] == ':' {
+		return os.OpenFile(u.Path[1:], os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 	}
 	return os.OpenFile(u.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 }
