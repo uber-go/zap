@@ -79,9 +79,9 @@ Log a message with a logger that already has 10 fields of context:
 
 | Package | Time | Objects Allocated |
 | :--- | :---: | :---: |
+| zerolog | 321 ns/op | 0 allocs/op |
 | :zap: zap | 380 ns/op | 0 allocs/op |
 | :zap: zap (sugared) | 564 ns/op | 2 allocs/op |
-| zerolog | 321 ns/op | 0 allocs/op |
 | lion | 7092 ns/op | 39 allocs/op |
 | go-kit | 20226 ns/op | 115 allocs/op |
 | logrus | 22312 ns/op | 130 allocs/op |
@@ -92,9 +92,9 @@ Log a static string, without any context or `printf`-style templating:
 
 | Package | Time | Objects Allocated |
 | :--- | :---: | :---: |
+| zerolog | 323 ns/op | 0 allocs/op |
 | :zap: zap | 361 ns/op | 0 allocs/op |
 | :zap: zap (sugared) | 534 ns/op | 2 allocs/op |
-| zerolog | 323 ns/op | 0 allocs/op |
 | standard library | 575 ns/op | 2 allocs/op |
 | go-kit | 922 ns/op | 13 allocs/op |
 | lion | 1413 ns/op | 10 allocs/op |
