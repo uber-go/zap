@@ -21,6 +21,7 @@
 package zapcore
 
 import (
+	"strings"
 	"time"
 
 	"go.uber.org/zap/buffer"
@@ -115,17 +116,29 @@ func ISO8601TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 	enc.AppendString(t.Format("2006-01-02T15:04:05.000Z0700"))
 }
 
+// TimeEncoderOfFormat returns TimeEncoder which serializes a time.Time using
+// given format.
+func TimeEncoderOfFormat(format string) TimeEncoder {
+	return func(t time.Time, enc PrimitiveArrayEncoder) {
+		enc.AppendString(t.Format(format))
+	}
+}
+
 // UnmarshalText unmarshals text to a TimeEncoder. "iso8601" and "ISO8601" are
 // unmarshaled to ISO8601TimeEncoder, "millis" is unmarshaled to
-// EpochMillisTimeEncoder, and anything else is unmarshaled to EpochTimeEncoder.
+// EpochMillisTimeEncoder, "format=*" is unmarshaled to TimeEncoder with given
+// format, and anything else is unmarshaled to EpochTimeEncoder.
 func (e *TimeEncoder) UnmarshalText(text []byte) error {
-	switch string(text) {
+	vals := strings.SplitAfterN(string(text), "=", 2)
+	switch vals[0] {
 	case "iso8601", "ISO8601":
 		*e = ISO8601TimeEncoder
 	case "millis":
 		*e = EpochMillisTimeEncoder
 	case "nanos":
 		*e = EpochNanosTimeEncoder
+	case "format=":
+		*e = TimeEncoderOfFormat(vals[1])
 	default:
 		*e = EpochTimeEncoder
 	}
