@@ -127,7 +127,7 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 
 	counter := s.counts.get(ent.Level, ent.Message)
 	n := counter.IncCheckReset(ent.Time, s.tick)
-	if n > s.first && (n-s.first)%s.thereafter != 0 {
+	if n > s.first && (s.thereafter == 0 || (n-s.first)%s.thereafter != 0) {
 		return ce
 	}
 	return s.Core.Check(ent, ce)
