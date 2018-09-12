@@ -184,6 +184,8 @@ func TestSugarStructuredLogging(t *testing.T) {
 			logger.With(context...).Warnw(tt.msg, extra...)
 			logger.With(context...).Errorw(tt.msg, extra...)
 			logger.With(context...).DPanicw(tt.msg, extra...)
+			logError := logger.With(context...).Log(extra...)
+			assert.Nil(t, logError, "Unexpected error from Log")
 
 			expected := make([]observer.LoggedEntry, 5)
 			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
@@ -192,6 +194,10 @@ func TestSugarStructuredLogging(t *testing.T) {
 					Context: expectedFields,
 				}
 			}
+			expected = append(expected, observer.LoggedEntry{
+				Entry:   zapcore.Entry{Message: "", Level: InfoLevel},
+				Context: expectedFields,
+			})
 			assert.Equal(t, expected, logs.AllUntimed(), "Unexpected log output.")
 		})
 	}
