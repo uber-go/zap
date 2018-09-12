@@ -92,6 +92,14 @@ func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
 	return &SugaredLogger{base: s.base.With(s.sweetenFields(args)...)}
 }
 
+// Log implements the gokit/log.Logger interface.
+// Log acts almost identically to Infow, except the first argument is _not_ a message.
+// Log will always return nil, as there is no error condition to check currently
+func (s *SugaredLogger) Log(keysAndValues ...interface{}) error {
+	s.log(InfoLevel, "", nil, keysAndValues)
+	return nil
+}
+
 // Debug uses fmt.Sprint to construct and log a message.
 func (s *SugaredLogger) Debug(args ...interface{}) {
 	s.log(DebugLevel, "", args, nil)
