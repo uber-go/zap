@@ -23,7 +23,6 @@ package zapgrpc // import "go.uber.org/zap/zapgrpc"
 
 import (
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // An Option overrides a Logger's default configuration.
@@ -43,6 +42,13 @@ func WithDebug() Option {
 	return optionFunc(func(logger *Logger) {
 		logger.print = (*zap.SugaredLogger).Debug
 		logger.printf = (*zap.SugaredLogger).Debugf
+	})
+}
+
+// WithVerbosity sets verbose level referred by V().
+func WithVerbosity(v int) Option {
+	return optionFunc(func(logger *Logger) {
+		logger.v = v
 	})
 }
 
@@ -71,6 +77,7 @@ func NewLogger(l *zap.Logger, options ...Option) *Logger {
 
 // Logger adapts zap's Logger to be compatible with grpclog.Logger and grpclog.LoggerV2.
 type Logger struct {
+	v        int
 	log      *zap.SugaredLogger
 	info     func(*zap.SugaredLogger, ...interface{})
 	infof    func(*zap.SugaredLogger, string, ...interface{})
@@ -161,5 +168,5 @@ func (l *Logger) Println(args ...interface{}) {
 
 // V implements grpclog.LoggerV2.
 func (l *Logger) V(lvl int) bool {
-	return l.log.Desugar().Core().Enabled(zapcore.Level(lvl))
+	return lvl <= l.v
 }

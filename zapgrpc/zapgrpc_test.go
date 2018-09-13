@@ -105,13 +105,13 @@ func TestLoggerFatalExpected(t *testing.T) {
 }
 
 func TestLoggerTrueExpected(t *testing.T) {
-	checkLevel(t, zapcore.FatalLevel, true, func(logger *Logger) bool {
+	checkLevel(t, zapcore.FatalLevel, false, func(logger *Logger) bool {
 		return logger.V(6)
 	})
 }
 
 func TestLoggerFalseExpected(t *testing.T) {
-	checkLevel(t, zapcore.FatalLevel, false, func(logger *Logger) bool {
+	checkLevel(t, zapcore.FatalLevel, true, func(logger *Logger) bool {
 		return logger.V(0)
 	})
 }
