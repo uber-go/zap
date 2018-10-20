@@ -437,6 +437,24 @@ func TestEncoderConfiguration(t *testing.T) {
 			expectedConsole: "0\tinfo\tfoo.go:42\thello\nfake-stack\n",
 		},
 		{
+			desc: "handle nil EncodeTime - skip timestamp if EncodeTime is nil ",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      "C",
+				StacktraceKey:  "S",
+				LineEnding:     base.LineEnding,
+				EncodeTime:     nil,
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
+			},
+			expectedJSON:    `{"L":"info","N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}` + "\n",
+			expectedConsole: "info\tmain\tfoo.go:42\thello\nfake-stack\n",
+		},
+		{
 			desc: "use custom line separator",
 			cfg: EncoderConfig{
 				LevelKey:       "L",
