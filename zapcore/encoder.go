@@ -21,6 +21,7 @@
 package zapcore
 
 import (
+	"context"
 	"time"
 
 	"go.uber.org/zap/buffer"
@@ -217,6 +218,9 @@ func (e *NameEncoder) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// A ContextEncoder serializes metadata from the context.
+type ContextEncoder func(context.Context, ObjectEncoder)
+
 // An EncoderConfig allows users to configure the concrete encoders supplied by
 // zapcore.
 type EncoderConfig struct {
@@ -239,6 +243,8 @@ type EncoderConfig struct {
 	// Unlike the other primitive type encoders, EncodeName is optional. The
 	// zero value falls back to FullNameEncoder.
 	EncodeName NameEncoder `json:"nameEncoder" yaml:"nameEncoder"`
+	// ContextEncoder is optional, for use with ContextLogger.
+	EncodeContext ContextEncoder
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a

@@ -21,6 +21,7 @@
 package zapcore
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -107,7 +108,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	}
 
 	// Add any structured context.
-	c.writeContext(line, fields)
+	c.writeContext(ent.Context, line, fields)
 
 	// If there's no stacktrace key, honor that; this allows users to force
 	// single-line output.
@@ -124,9 +125,14 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	return line, nil
 }
 
-func (c consoleEncoder) writeContext(line *buffer.Buffer, extra []Field) {
+func (c consoleEncoder) writeContext(ctx context.Context, line *buffer.Buffer, extra []Field) {
+	// TODO consider renaming "context" below to "enc"
 	context := c.jsonEncoder.Clone().(*jsonEncoder)
 	defer context.buf.Free()
+
+	if ctx != nil && c.EncodeContext != nil {
+		c.EncodeContext(ctx, context)
+	}
 
 	addFields(context, extra)
 	context.closeOpenNamespaces()

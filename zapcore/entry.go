@@ -21,6 +21,7 @@
 package zapcore
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -147,6 +148,7 @@ type Entry struct {
 	Message    string
 	Caller     EntryCaller
 	Stack      string
+	Context    context.Context
 }
 
 // CheckWriteAction indicates what action to take after a log entry is

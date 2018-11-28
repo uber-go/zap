@@ -358,6 +358,9 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 		final.addElementSeparator()
 		final.buf.Write(enc.buf.Bytes())
 	}
+	if ent.Context != nil && enc.EncodeContext != nil {
+		enc.EncodeContext(ent.Context, final)
+	}
 	addFields(final, fields)
 	final.closeOpenNamespaces()
 	if ent.Stack != "" && final.StacktraceKey != "" {
