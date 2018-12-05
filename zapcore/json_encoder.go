@@ -196,6 +196,10 @@ func (enc *jsonEncoder) AppendBool(val bool) {
 	enc.buf.AppendBool(val)
 }
 
+func (enc *jsonEncoder) AppendBinary(val []byte) {
+	enc.AppendString(base64.StdEncoding.EncodeToString(val))
+}
+
 func (enc *jsonEncoder) AppendByteString(val []byte) {
 	enc.addElementSeparator()
 	enc.buf.AppendByte('"')

@@ -236,6 +236,8 @@ func TestJSONEncoderArrays(t *testing.T) {
 		f        func(ArrayEncoder)
 	}{
 		{"bool", `[true,true]`, func(e ArrayEncoder) { e.AppendBool(true) }},
+		{"binary", `["aw==","aw=="]`, func(e ArrayEncoder) { e.AppendBinary([]byte("k")) }},
+		{"binary", `["a1w=","a1w="]`, func(e ArrayEncoder) { e.AppendBinary([]byte(`k\`)) }},
 		{"byteString", `["k","k"]`, func(e ArrayEncoder) { e.AppendByteString([]byte("k")) }},
 		{"byteString", `["k\\","k\\"]`, func(e ArrayEncoder) { e.AppendByteString([]byte(`k\`)) }},
 		{"complex128", `["1+2i","1+2i"]`, func(e ArrayEncoder) { e.AppendComplex128(1 + 2i) }},

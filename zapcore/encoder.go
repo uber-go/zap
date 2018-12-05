@@ -308,7 +308,8 @@ type ArrayEncoder interface {
 type PrimitiveArrayEncoder interface {
 	// Built-in types.
 	AppendBool(bool)
-	AppendByteString([]byte) // for UTF-8 encoded bytes
+	AppendBinary(value []byte) // for arbitrary bytes
+	AppendByteString([]byte)   // for UTF-8 encoded bytes
 	AppendComplex128(complex128)
 	AppendComplex64(complex64)
 	AppendFloat64(float64)
