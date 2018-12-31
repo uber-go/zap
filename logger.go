@@ -262,7 +262,6 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	// log message will actually be written somewhere.
 	ent := zapcore.Entry{
 		LoggerName: log.name,
-		Time:       time.Now(),
 		Level:      lvl,
 		Message:    msg,
 	}
@@ -287,6 +286,8 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	if !willWrite {
 		return ce
 	}
+
+	ent.Time = time.Now()
 
 	// Thread the error output through to the CheckedEntry.
 	ce.ErrorOutput = log.errorOutput
