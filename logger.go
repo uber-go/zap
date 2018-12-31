@@ -287,7 +287,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 		return ce
 	}
 
-	ent.Time = time.Now()
+	(*ce).Time = time.Now()
 
 	// Thread the error output through to the CheckedEntry.
 	ce.ErrorOutput = log.errorOutput
