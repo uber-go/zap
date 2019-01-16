@@ -30,7 +30,7 @@ import (
 
 // Field is an alias for Field. Aliasing this type dramatically
 // improves the navigability of this package's API documentation.
-type Field zapcore.Field
+type Field  zapcore.Field
 
 // Skip constructs a no-op field, which is often useful when handling invalid
 // inputs in other Field constructors.
