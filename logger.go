@@ -260,12 +260,20 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 
 	// Create basic checked entry thru the core; this will be non-nil if the
 	// log message will actually be written somewhere.
-	ent := zapcore.Entry{
-		LoggerName: log.name,
-		Time:       time.Now(),
-		Level:      lvl,
-		Message:    msg,
+	var ent zapcore.Entry
+	if log.core.Enabled(lvl) {
+		ent = zapcore.Entry{
+			LoggerName: log.name,
+			Time:       time.Now(),
+			Level:      lvl,
+			Message:    msg,
+		}
+	} else {
+		ent = zapcore.Entry{
+			Level: lvl,
+		}
 	}
+
 	ce := log.core.Check(ent, nil)
 	willWrite := ce != nil
 
