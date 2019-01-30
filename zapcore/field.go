@@ -160,7 +160,11 @@ func (f Field) AddTo(enc ObjectEncoder) {
 	case NamespaceType:
 		enc.OpenNamespace(f.Key)
 	case StringerType:
-		enc.AddString(f.Key, f.Interface.(fmt.Stringer).String())
+		if s, ok := f.Interface.(fmt.Stringer); ok {
+			enc.AddString(f.Key, s.String())
+		} else {
+			enc.AddString(f.Key, "")
+		}
 	case ErrorType:
 		encodeError(f.Key, f.Interface.(error), enc)
 	case SkipType:
