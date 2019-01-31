@@ -26,3 +26,4 @@ _testmain.go
 *.pprof
 *.out
 *.log
+.vscode/
