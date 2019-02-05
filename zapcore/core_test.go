@@ -161,3 +161,37 @@ func TestIOCoreWriteFailure(t *testing.T) {
 	// Should log the error.
 	assert.Error(t, err, "Expected writing Entry to fail.")
 }
+
+func TestIOCoreWriteWithLazyMessage(t *testing.T) {
+	tests := make([]struct {
+		entry   Entry
+		calling bool
+		called  bool
+	}, 2)
+
+	tests = []struct {
+		entry   Entry
+		calling bool
+		called  bool
+	}{
+		{Entry{Level: DebugLevel, LazyMessage: func() string {
+			tests[0].calling = true
+			return "foo"
+		}}, false, true},
+		{Entry{Level: DebugLevel, Message: "bar"}, false, false},
+	}
+
+	for i := 0; i < len(tests); i++ {
+		sink := &ztest.Discarder{}
+		core := NewCore(
+			NewJSONEncoder(testEncoderConfig()),
+			sink,
+			DebugLevel,
+		)
+
+		core.Write(tests[i].entry, nil)
+
+		assert.Equal(t, tests[i].calling, tests[i].called)
+
+	}
+}
