@@ -22,6 +22,7 @@ package zap
 
 import (
 	"fmt"
+	"reflect"
 
 	"go.uber.org/zap/zapcore"
 
@@ -52,7 +53,7 @@ type SugaredLogger struct {
 // of performance-sensitive code.
 func (s *SugaredLogger) Desugar() *Logger {
 	base := s.base.clone()
-	base.callerSkip -= 2
+	base.callerSkip -= 3
 	return base
 }
 
@@ -93,8 +94,9 @@ func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
 }
 
 // Debug uses fmt.Sprint to construct and log a message.
+// args may be of type LazyMessage
 func (s *SugaredLogger) Debug(args ...interface{}) {
-	s.log(DebugLevel, "", args, nil)
+	s.debug(nil, args, nil)
 }
 
 // Info uses fmt.Sprint to construct and log a message.
@@ -130,7 +132,12 @@ func (s *SugaredLogger) Fatal(args ...interface{}) {
 
 // Debugf uses fmt.Sprintf to log a templated message.
 func (s *SugaredLogger) Debugf(template string, args ...interface{}) {
-	s.log(DebugLevel, template, args, nil)
+	s.debug(template, args, nil)
+}
+
+// Debugfl uses fmt.Sprintf to log a templated message.
+func (s *SugaredLogger) Debugfl(templateFn zapcore.LazyMessage, args ...interface{}) {
+	s.debug(templateFn, args, nil)
 }
 
 // Infof uses fmt.Sprintf to log a templated message.
@@ -170,7 +177,16 @@ func (s *SugaredLogger) Fatalf(template string, args ...interface{}) {
 // When debug-level logging is disabled, this is much faster than
 //  s.With(keysAndValues).Debug(msg)
 func (s *SugaredLogger) Debugw(msg string, keysAndValues ...interface{}) {
-	s.log(DebugLevel, msg, nil, keysAndValues)
+	s.debug(msg, nil, keysAndValues)
+}
+
+// Debugwl logs a message with some additional context. The variadic key-value
+// pairs are treated as they are in With. The msgFn is a LazyMessage function which
+// will be evaluated only if debug-level logging is enabled. This is much faster
+// than s.Debugw() if the message has to be created in an expensive way, e.g., creating
+// a string from uint8 array or through stringer interface, etc.
+func (s *SugaredLogger) Debugwl(msgFn zapcore.LazyMessage, keysAndValues ...interface{}) {
+	s.debug(msgFn, nil, keysAndValues)
 }
 
 // Infow logs a message with some additional context. The variadic key-value
@@ -215,12 +231,73 @@ func (s *SugaredLogger) Sync() error {
 	return s.base.Sync()
 }
 
+// debug takes template of type LazyMessage or string, fmtArgs of type LazyMessage or other
+// printable objects.
+func (s *SugaredLogger) debug(template interface{}, fmtArgs []interface{}, context []interface{}) {
+	// If logging at this level is completely disabled, skip the overhead of
+	// string formatting.
+	if !s.base.Core().Enabled(DebugLevel) {
+		return
+	}
+
+	// check template type
+	var templateStr string
+	if template != nil {
+		switch reflect.TypeOf(template).Kind() {
+		case reflect.Func:
+			tfn, ok := template.(zapcore.LazyMessage)
+			if ok {
+				templateStr = tfn()
+			} // no else per implementation
+		case reflect.String:
+			templateStr = template.(string)
+		}
+		// no other cases per implementation in this file
+	}
+
+	// check fmtArgs
+	var evalFmtArgs []interface{}
+	if len(fmtArgs) > 0 {
+		// fmtArgs may also be LazyMessage function
+		// Using reflect may slow down the log writing a bit
+		// but it's for Debug level only.
+		// This code snippet enabled Debug(*) to take LazyMessage as arguments.
+		evalFmtArgs = make([]interface{}, len(fmtArgs))
+		for i, fa := range fmtArgs {
+			if fa == nil {
+				evalFmtArgs[i] = fa
+			} else {
+				switch reflect.TypeOf(fa).Kind() {
+				case reflect.Func:
+					fafn, ok := fa.(zapcore.LazyMessage)
+					if ok {
+						evalFmtArgs[i] = fafn()
+					} else {
+						evalFmtArgs[i] = fa
+					}
+				default:
+					evalFmtArgs[i] = fa
+				}
+			}
+		}
+	} else {
+		evalFmtArgs = fmtArgs
+	}
+
+	s.writeLog(DebugLevel, templateStr, evalFmtArgs, context)
+}
+
 func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interface{}, context []interface{}) {
 	// If logging at this level is completely disabled, skip the overhead of
 	// string formatting.
 	if lvl < DPanicLevel && !s.base.Core().Enabled(lvl) {
 		return
 	}
+
+	s.writeLog(lvl, template, fmtArgs, context)
+}
+
+func (s *SugaredLogger) writeLog(lvl zapcore.Level, template string, fmtArgs []interface{}, context []interface{}) {
 
 	// Format with Sprint, Sprintf, or neither.
 	msg := template

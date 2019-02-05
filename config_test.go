@@ -25,6 +25,8 @@ import (
 	"os"
 	"testing"
 
+	"go.uber.org/zap/zapcore"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -46,7 +48,7 @@ func TestConfig(t *testing.T) {
 		{
 			desc:    "development",
 			cfg:     NewDevelopmentConfig(),
-			expectN: 3 + 200, // 3 initial logs, all 200 subsequent logs
+			expectN: 4 + 200, // 3 initial logs, all 200 subsequent logs
 			expectRe: "DEBUG\tzap/config_test.go:" + `\d+` + "\tdebug\t" + `{"k": "v", "z": "zz"}` + "\n" +
 				"INFO\tzap/config_test.go:" + `\d+` + "\tinfo\t" + `{"k": "v", "z": "zz"}` + "\n" +
 				"WARN\tzap/config_test.go:" + `\d+` + "\twarn\t" + `{"k": "v", "z": "zz"}` + "\n" +
@@ -68,6 +70,7 @@ func TestConfig(t *testing.T) {
 			logger, err := tt.cfg.Build(Hooks(hook))
 			require.NoError(t, err, "Unexpected error constructing logger.")
 
+			logger.Debugl(zapcore.LazyMessage(func() string { return "debugl" }))
 			logger.Debug("debug")
 			logger.Info("info")
 			logger.Warn("warn")

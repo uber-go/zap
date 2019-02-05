@@ -385,6 +385,7 @@ func TestLoggerReplaceCore(t *testing.T) {
 		return zapcore.NewNopCore()
 	})
 	withLogger(t, DebugLevel, opts(replace), func(logger *Logger, logs *observer.ObservedLogs) {
+		logger.Debugl(zapcore.LazyMessage(func() string { return "" }))
 		logger.Debug("")
 		logger.Info("")
 		logger.Warn("")
@@ -395,10 +396,11 @@ func TestLoggerReplaceCore(t *testing.T) {
 func TestLoggerHooks(t *testing.T) {
 	hook, seen := makeCountingHook()
 	withLogger(t, DebugLevel, opts(Hooks(hook)), func(logger *Logger, logs *observer.ObservedLogs) {
+		logger.Debugl(zapcore.LazyMessage(func() string { return "" }))
 		logger.Debug("")
 		logger.Info("")
 	})
-	assert.Equal(t, int64(2), seen.Load(), "Hook saw an unexpected number of logs.")
+	assert.Equal(t, int64(3), seen.Load(), "Hook saw an unexpected number of logs.")
 }
 
 func TestLoggerConcurrent(t *testing.T) {

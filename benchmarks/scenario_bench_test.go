@@ -21,9 +21,12 @@
 package benchmarks
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"testing"
+
+	"go.uber.org/zap/zapcore"
 
 	"go.uber.org/zap"
 )
@@ -608,6 +611,81 @@ func BenchmarkAddingFields(b *testing.B) {
 				if e := logger.Info(); e.Enabled() {
 					fakeZerologFields(e).Msg(getMessage(0))
 				}
+			}
+		})
+	})
+}
+
+func BenchmarkDebuglWithoutFields(b *testing.B) {
+	b.Logf("Logging with Debug and Debugl using LazyMessage without any structured context.")
+	logger := newZapLogger(zap.InfoLevel)
+	sugarLogger := logger.Sugar()
+	b.Run("Zap.DebugOnInfo", func(b *testing.B) {
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for i := 0; pb.Next(); i++ {
+				logger.Debug(fmt.Sprintf("msg1=%s,msg2=%s,msg3=%s", getMessage(i+99), getMessage(i+199), getMessage(i+299)) + " additional complex string form")
+			}
+		})
+	})
+	b.Run("Zap.DebuglOnInfo", func(b *testing.B) {
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for i := 0; pb.Next(); i++ {
+				logger.Debugl(zapcore.LazyMessage(func() string {
+					return fmt.Sprintf("msg1=%s,msg2=%s,msg3=%s", getMessage(i+99), getMessage(i+199), getMessage(i+299)) + " additional complex string form"
+				}))
+			}
+		})
+	})
+	b.Run("Zap.DebugOnInfoWithBytesToString", func(b *testing.B) {
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for i := 0; pb.Next(); i++ {
+				logger.Debug(string(getMessageBytes(i)))
+			}
+		})
+	})
+	b.Run("Zap.DebuglOnInfoWithBytesToString", func(b *testing.B) {
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for i := 0; pb.Next(); i++ {
+				logger.Debugl(zapcore.LazyMessage(func() string { return string(getMessageBytes(i)) }))
+			}
+		})
+	})
+	b.Run("Zap.SugarDebugOnInfo", func(b *testing.B) {
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for i := 0; pb.Next(); i++ {
+				sugarLogger.Debug(fmt.Sprintf("msg1=%s,msg2=%s,msg3=%s", getMessage(i+99), getMessage(i+199), getMessage(i+299)) + " additional complex string form")
+			}
+		})
+	})
+	b.Run("Zap.SugarDebugflOnInfo", func(b *testing.B) {
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for i := 0; pb.Next(); i++ {
+				sugarLogger.Debugfl(zapcore.LazyMessage(func() string {
+					return fmt.Sprintf("msg1=%s,msg2=%s,msg3=%s", getMessage(i+99), getMessage(i+199), getMessage(i+299)) + " additional complex string form"
+				}))
+			}
+		})
+	})
+	b.Run("Zap.DebugOnInfoWithBytesToString", func(b *testing.B) {
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for i := 0; pb.Next(); i++ {
+				sugarLogger.Debug(string(getMessageBytes(i)))
+			}
+		})
+	})
+	b.Run("Zap.DebuglOnInfoWithBytesToString", func(b *testing.B) {
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for i := 0; pb.Next(); i++ {
+				// Without context or fields, Debugwl is equivalent to Debugfl
+				sugarLogger.Debugwl(zapcore.LazyMessage(func() string { return string(getMessageBytes(i)) }))
 			}
 		})
 	})

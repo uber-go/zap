@@ -34,10 +34,11 @@ import (
 var (
 	errExample = errors.New("fail")
 
-	_messages   = fakeMessages(1000)
-	_tenInts    = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
-	_tenStrings = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
-	_tenTimes   = []time.Time{
+	_messages     = fakeMessages(1000)
+	_messageBytes = fakeMessageBytes(1000)
+	_tenInts      = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+	_tenStrings   = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
+	_tenTimes     = []time.Time{
 		time.Unix(0, 0),
 		time.Unix(1, 0),
 		time.Unix(2, 0),
@@ -78,6 +79,23 @@ func fakeMessages(n int) []string {
 
 func getMessage(iter int) string {
 	return _messages[iter%1000]
+}
+
+func fakeMessageBytes(n int) [][]byte {
+	messageBytes := make([][]byte, n)
+	for i := range messageBytes {
+		messageBytes[i] = []byte(fmt.Sprintf(`
+Test logging, but use a somewhat realistic message length and convert to byte array. (#%v).
+Commonly in most requests a long entity body may be created and submitted to the target server. (#%v).
+And again I am making this message a bit longer than usual to be logged. (#%v).
+Thus, a more realistic situation may be simulated, yes ...... longer and longer, lenthier and lenthier, and done for now. (#%v).
+			`, i, i+1, i+2, i+3))
+	}
+	return messageBytes
+}
+
+func getMessageBytes(iter int) []byte {
+	return _messageBytes[iter%1000]
 }
 
 type users []*user

@@ -46,6 +46,7 @@ func TestObserver(t *testing.T) {
 	obs := zap.New(observer).With(zap.Int("i", 1))
 	obs.Info("foo")
 	obs.Debug("bar")
+	obs.Debugl(zapcore.LazyMessage(func() string { return "bar" + "l" }))
 	want := []LoggedEntry{{
 		Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "foo"},
 		Context: []zapcore.Field{zap.Int("i", 1)},

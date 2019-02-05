@@ -125,7 +125,7 @@ func NewExample(options ...Option) *Logger {
 // between them on the boundaries of performance-sensitive code.
 func (log *Logger) Sugar() *SugaredLogger {
 	core := log.clone()
-	core.callerSkip += 2
+	core.callerSkip += 3
 	return &SugaredLogger{core}
 }
 
@@ -176,6 +176,15 @@ func (log *Logger) Check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Debug(msg string, fields ...Field) {
 	if ce := log.check(DebugLevel, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+// Debugl takes lazyMsg as argument which can be evalulated when needed and log
+// the message at the DebugLevel. The message includes any fields passed
+// at the log site, as well as any fields accumulated on the logger.
+func (log *Logger) Debugl(lazyMsg zapcore.LazyMessage, fields ...Field) {
+	if ce := log.checkl(DebugLevel, lazyMsg); ce != nil {
 		ce.Write(fields...)
 	}
 }
@@ -253,31 +262,47 @@ func (log *Logger) clone() *Logger {
 	return &copy
 }
 
-func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
-	// check must always be called directly by a method in the Logger interface
-	// (e.g., Check, Info, Fatal).
-	const callerSkipOffset = 2
-
+func (log *Logger) checkl(lvl zapcore.Level, lazyMsg zapcore.LazyMessage) *zapcore.CheckedEntry {
 	// Create basic checked entry thru the core; this will be non-nil if the
 	// log message will actually be written somewhere.
-	ent := zapcore.Entry{
+	// Only MessageSupplier is set in Entry.
+	return log.checkEnt(lvl, &zapcore.Entry{
+		LoggerName:  log.name,
+		Time:        time.Now(),
+		Level:       lvl,
+		LazyMessage: lazyMsg,
+	})
+}
+
+func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
+	// Create basic checked entry thru the core; this will be non-nil if the
+	// log message will actually be written somewhere.
+	// Only Message is set in Entry.
+	return log.checkEnt(lvl, &zapcore.Entry{
 		LoggerName: log.name,
 		Time:       time.Now(),
 		Level:      lvl,
 		Message:    msg,
-	}
-	ce := log.core.Check(ent, nil)
+	})
+}
+
+func (log *Logger) checkEnt(lvl zapcore.Level, ent *zapcore.Entry) *zapcore.CheckedEntry {
+	// check must always be called directly by a method in the Logger interface
+	// (e.g., Check, Info, Fatal).
+	const callerSkipOffset = 3
+
+	ce := log.core.Check(*ent, nil)
 	willWrite := ce != nil
 
 	// Set up any required terminal behavior.
 	switch ent.Level {
 	case zapcore.PanicLevel:
-		ce = ce.Should(ent, zapcore.WriteThenPanic)
+		ce = ce.Should(*ent, zapcore.WriteThenPanic)
 	case zapcore.FatalLevel:
-		ce = ce.Should(ent, zapcore.WriteThenFatal)
+		ce = ce.Should(*ent, zapcore.WriteThenFatal)
 	case zapcore.DPanicLevel:
 		if log.development {
-			ce = ce.Should(ent, zapcore.WriteThenPanic)
+			ce = ce.Should(*ent, zapcore.WriteThenPanic)
 		}
 	}
 

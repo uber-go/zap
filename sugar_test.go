@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"fmt"
 	"testing"
 
 	"go.uber.org/zap/internal/exit"
@@ -180,13 +181,14 @@ func TestSugarStructuredLogging(t *testing.T) {
 	for _, tt := range tests {
 		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
 			logger.With(context...).Debugw(tt.msg, extra...)
+			logger.With(context...).Debugwl(func() string { return tt.msg }, extra...)
 			logger.With(context...).Infow(tt.msg, extra...)
 			logger.With(context...).Warnw(tt.msg, extra...)
 			logger.With(context...).Errorw(tt.msg, extra...)
 			logger.With(context...).DPanicw(tt.msg, extra...)
 
-			expected := make([]observer.LoggedEntry, 5)
-			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+			expected := make([]observer.LoggedEntry, 6)
+			for i, lvl := range []zapcore.Level{DebugLevel, DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
 				expected[i] = observer.LoggedEntry{
 					Entry:   zapcore.Entry{Message: tt.expectMsg, Level: lvl},
 					Context: expectedFields,
@@ -248,19 +250,107 @@ func TestSugarTemplatedLogging(t *testing.T) {
 	for _, tt := range tests {
 		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
 			logger.With(context...).Debugf(tt.format, tt.args...)
+			logger.With(context...).Debugfl(func() string { return tt.format }, tt.args...)
 			logger.With(context...).Infof(tt.format, tt.args...)
 			logger.With(context...).Warnf(tt.format, tt.args...)
 			logger.With(context...).Errorf(tt.format, tt.args...)
 			logger.With(context...).DPanicf(tt.format, tt.args...)
 
-			expected := make([]observer.LoggedEntry, 5)
-			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+			expected := make([]observer.LoggedEntry, 6)
+			for i, lvl := range []zapcore.Level{DebugLevel, DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
 				expected[i] = observer.LoggedEntry{
 					Entry:   zapcore.Entry{Message: tt.expect, Level: lvl},
 					Context: expectedFields,
 				}
 			}
 			assert.Equal(t, expected, logs.AllUntimed(), "Unexpected log output.")
+		})
+	}
+}
+
+func TestSugarDebugTemplatedLogging(t *testing.T) {
+	otherFunc := func() int { return 11 }
+	otherFuncVal := fmt.Sprintf("%v", interface{}(otherFunc))
+	tests := []struct {
+		logLevel zapcore.Level
+		logFunc  func(logger *SugaredLogger, context []interface{})
+		expect   string
+	}{
+		{
+			DebugLevel,
+			func(logger *SugaredLogger, context []interface{}) {
+				logger.With(context...).Debug("foo")
+			},
+			"foo",
+		},
+		{
+			DebugLevel,
+			func(logger *SugaredLogger, context []interface{}) {
+				logger.With(context...).Debugf("", "foo")
+			},
+			"foo",
+		},
+		{
+			DebugLevel,
+			func(logger *SugaredLogger, context []interface{}) {
+				logger.With(context...).Debugf("", otherFunc)
+			},
+			otherFuncVal,
+		},
+		{
+			DebugLevel,
+			func(logger *SugaredLogger, context []interface{}) {
+				logger.With(context...).Debugf("",
+					zapcore.LazyMessage(func() string { return "foo" }),
+				)
+			},
+			"foo",
+		},
+		{
+			DebugLevel,
+			func(logger *SugaredLogger, context []interface{}) {
+				logger.With(context...).Debugfl(
+					zapcore.LazyMessage(func() string { return "foo" }),
+				)
+			},
+			"foo",
+		},
+		{
+			DebugLevel,
+			func(logger *SugaredLogger, context []interface{}) {
+				logger.With(context...).Debug(
+					"", otherFunc,
+				)
+			},
+			otherFuncVal,
+		},
+		{
+			InfoLevel,
+			func(logger *SugaredLogger, context []interface{}) {
+				logger.With(context...).Debug("foo")
+			},
+			"",
+		},
+	}
+
+	// Common to all test cases.
+	context := []interface{}{"foo", "bar"}
+	expectedFields := []Field{String("foo", "bar")}
+
+	for _, tt := range tests {
+		withSugar(t, tt.logLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+			tt.logFunc(logger, context)
+
+			if tt.logLevel > DebugLevel {
+				// no log generated
+				assert.Equal(t, 0, logs.Len())
+			} else {
+				expected := observer.LoggedEntry{
+					Entry:   zapcore.Entry{Message: tt.expect, Level: DebugLevel},
+					Context: expectedFields,
+				}
+				assert.Equal(t, expected, logs.AllUntimed()[0], "Unexpected log output.")
+			}
 		})
 	}
 }

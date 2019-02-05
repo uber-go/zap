@@ -134,19 +134,29 @@ func (ec EntryCaller) TrimmedPath() string {
 	return caller
 }
 
+// LazyMessage defines a function that returns a string.
+// The function is passed to the logger in the Debugl method
+// and should be evaluated when the message is actually going to
+// be written to the core. The common practice is that this function
+// should only be called once.
+type LazyMessage func() string
+
 // An Entry represents a complete log message. The entry's structured context
 // is already serialized, but the log level, time, message, and call site
 // information are available for inspection and modification.
+// The LazyMessage field is added to handle LazyMessage passed to
+// Debugl method.
 //
 // Entries are pooled, so any functions that accept them MUST be careful not to
 // retain references to them.
 type Entry struct {
-	Level      Level
-	Time       time.Time
-	LoggerName string
-	Message    string
-	Caller     EntryCaller
-	Stack      string
+	Level       Level
+	Time        time.Time
+	LoggerName  string
+	Message     string
+	LazyMessage LazyMessage
+	Caller      EntryCaller
+	Stack       string
 }
 
 // CheckWriteAction indicates what action to take after a log entry is

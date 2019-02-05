@@ -83,6 +83,9 @@ func (c *ioCore) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 }
 
 func (c *ioCore) Write(ent Entry, fields []Field) error {
+	if len(ent.Message) == 0 && ent.LazyMessage != nil {
+		ent.Message = ent.LazyMessage()
+	}
 	buf, err := c.enc.EncodeEntry(ent, fields)
 	if err != nil {
 		return err
