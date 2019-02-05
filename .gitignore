@@ -27,3 +27,4 @@ _testmain.go
 *.out
 *.log
 .vscode/
+*.swp
