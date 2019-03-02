@@ -164,12 +164,16 @@ func NewDevelopmentConfig() Config {
 
 // Build constructs a logger from the Config and Options.
 func (cfg Config) Build(opts ...Option) (*Logger, error) {
-	enc, err := cfg.buildEncoder()
+	sink, errSink, err := cfg.openSinks()
 	if err != nil {
 		return nil, err
 	}
 
-	sink, errSink, err := cfg.openSinks()
+	return BuildForTest(cfg, sink, errSink, opts...)
+}
+
+func BuildForTest(cfg Config, sink, errSink zapcore.WriteSyncer, opts ...Option) (*Logger, error) {
+	enc, err := cfg.buildEncoder()
 	if err != nil {
 		return nil, err
 	}
