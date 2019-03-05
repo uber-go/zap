@@ -132,6 +132,13 @@ func (m *MapObjectEncoder) OpenNamespace(k string) {
 	m.cur = ns
 }
 
+// AddFields implements ObjectEncoder.
+func (m *MapObjectEncoder) AddFields(fields []Field) {
+	for _, field := range fields {
+		field.AddTo(m)
+	}
+}
+
 // sliceArrayEncoder is an ArrayEncoder backed by a simple []interface{}. Like
 // the MapObjectEncoder, it's not designed for production use.
 type sliceArrayEncoder struct {

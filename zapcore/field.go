@@ -193,9 +193,3 @@ func (f Field) Equals(other Field) bool {
 		return f == other
 	}
 }
-
-func addFields(enc ObjectEncoder, fields []Field) {
-	for i := range fields {
-		fields[i].AddTo(enc)
-	}
-}

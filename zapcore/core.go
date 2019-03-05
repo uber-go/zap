@@ -71,7 +71,7 @@ type ioCore struct {
 
 func (c *ioCore) With(fields []Field) Core {
 	clone := c.clone()
-	addFields(clone.enc, fields)
+	clone.enc.AddFields(fields)
 	return clone
 }
 

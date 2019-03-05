@@ -290,3 +290,12 @@ func TestMapObjectEncoderReflectionFailures(t *testing.T) {
 		"Expected encoder to use empty values on errors.",
 	)
 }
+
+func TestMapObjectEncoderAddaFields(t *testing.T) {
+	enc := NewMapObjectEncoder()
+	enc.AddFields([]Field{
+		{Key: "AddStr", Type: StringType, String: "StrVal"},
+		{Key: "AddInt", Type: Int64Type, Integer: int64(1)},
+	})
+	assert.Equal(t, 2, len(enc.Fields))
+}

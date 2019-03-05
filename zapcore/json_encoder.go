@@ -160,6 +160,12 @@ func (enc *jsonEncoder) OpenNamespace(key string) {
 	enc.openNamespaces++
 }
 
+func (enc *jsonEncoder) AddFields(fields []Field) {
+	for _, field := range fields {
+		field.AddTo(enc)
+	}
+}
+
 func (enc *jsonEncoder) AddString(key, val string) {
 	enc.addKey(key)
 	enc.AppendString(val)
@@ -358,7 +364,7 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 		final.addElementSeparator()
 		final.buf.Write(enc.buf.Bytes())
 	}
-	addFields(final, fields)
+	final.AddFields(fields)
 	final.closeOpenNamespaces()
 	if ent.Stack != "" && final.StacktraceKey != "" {
 		final.AddString(final.StacktraceKey, ent.Stack)

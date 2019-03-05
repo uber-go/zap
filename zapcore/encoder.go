@@ -279,6 +279,8 @@ type ObjectEncoder interface {
 	// be added. Applications can use namespaces to prevent key collisions when
 	// injecting loggers into sub-components or third-party libraries.
 	OpenNamespace(key string)
+	// AddFields adds more than multiple fields in once.
+	AddFields(fields []Field)
 }
 
 // ArrayEncoder is a strongly-typed, encoding-agnostic interface for adding

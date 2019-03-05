@@ -128,7 +128,7 @@ func (c consoleEncoder) writeContext(line *buffer.Buffer, extra []Field) {
 	context := c.jsonEncoder.Clone().(*jsonEncoder)
 	defer context.buf.Free()
 
-	addFields(context, extra)
+	context.AddFields(extra)
 	context.closeOpenNamespaces()
 	if context.buf.Len() == 0 {
 		return
