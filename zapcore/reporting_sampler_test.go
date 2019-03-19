@@ -22,12 +22,12 @@ package zapcore_test
 
 import (
 	"fmt"
+	"go.uber.org/atomic"
+	"go.uber.org/zap/internal/ztest"
 	"sync"
 	"testing"
 	"time"
 
-	"go.uber.org/atomic"
-	"go.uber.org/zap/internal/ztest"
 	. "go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -35,38 +35,58 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func fakeSampler(lvl LevelEnabler, tick time.Duration, first, thereafter int) (Core, *observer.ObservedLogs) {
+func fakeReportingSampler(lvl LevelEnabler, tick time.Duration, first, thereafter int) (Core, *observer.ObservedLogs) {
 	core, logs := observer.New(lvl)
-	core = NewSampler(core, tick, first, thereafter)
+	core = NewReportingSampler(core, tick, first, thereafter)
 	return core, logs
 }
 
-func assertSequence(t testing.TB, logs []observer.LoggedEntry, lvl Level, seq ...int64) {
-	seen := make([]int64, len(logs))
+func assertReportingSequence(t testing.TB, logs []observer.LoggedEntry, lvl Level, rep []int64, seq ...int64) {
+	var seenCount, reporteddCount int
+	seen := make([]int64, len(logs)-len(rep))
+	reported := make([]int64, len(rep))
 	for i, entry := range logs {
-		require.Equal(t, "", entry.Message, "Message wasn't created by writeSequence.")
-		require.Equal(t, 1, len(entry.Context), "Unexpected number of fields.")
-		require.Equal(t, lvl, entry.Level, "Unexpected level.")
-		f := entry.Context[0]
-		require.Equal(t, "iter", f.Key, "Unexpected field key.")
-		require.Equal(t, Int64Type, f.Type, "Unexpected field type.")
-		seen[i] = f.Integer
+		if entry.Message == ReportingMessage {
+			// When log entry is a sampling report.
+			require.Equal(t, 3, len(entry.Context), "Unexpected number of fields.")
+			require.Equal(t, ReportingLoggerName, entry.LoggerName, "Unexpected logger name.")
+			for _, f := range entry.Context {
+				switch f.Key {
+				// We already know that `entry.Message == ReportingMessage` and therefore is a string.
+				// So there is no need to test for that.
+				case "original_level":
+					require.Equal(t, StringType, f.Type, "Unexpected field type.")
+					require.Equal(t, InfoLevel.String(), f.String, "Unexpected level.")
+				case "count":
+					require.Equal(t, Int64Type, f.Type, "Unexpected field type.")
+					reported[i-seenCount] = f.Integer
+				}
+			}
+			reporteddCount++
+		} else {
+			// When log entry is a regular sequential entry.
+			require.Equal(t, "", entry.Message, "Message wasn't created by writeSequence.")
+			require.Equal(t, 1, len(entry.Context), "Unexpected number of fields.")
+			require.Equal(t, lvl, entry.Level, "Unexpected level.")
+			f := entry.Context[0]
+			require.Equal(t, "iter", f.Key, "Unexpected field key.")
+			require.Equal(t, Int64Type, f.Type, "Unexpected field type.")
+			seen[i-reporteddCount] = f.Integer
+			seenCount++
+		}
 	}
 	assert.Equal(t, seq, seen, "Unexpected sequence logged at level %v.", lvl)
+	assert.Equal(t, rep, reported, "Unexpected sampling report sequence.")
 }
 
-func writeSequence(core Core, n int, lvl Level) {
-	// All tests using writeSequence verify that counters are shared between
-	// parent and child cores.
-	core = core.With([]Field{makeInt64Field("iter", n)})
-	if ce := core.Check(Entry{Level: lvl, Time: time.Now()}, nil); ce != nil {
-		ce.Write()
+func TestReportingSampler(t *testing.T) {
+	for _, lvl := range []Level{WarnLevel, ErrorLevel, DPanicLevel, PanicLevel, FatalLevel} {
+		assert.Panics(t, func() {
+			fakeReportingSampler(lvl, time.Minute, 1, 1)
+		}, "Expected using a core with high logging level to panic.")
 	}
-}
-
-func TestSampler(t *testing.T) {
 	for _, lvl := range []Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel, PanicLevel, FatalLevel} {
-		sampler, logs := fakeSampler(DebugLevel, time.Minute, 2, 3)
+		sampler, logs := fakeReportingSampler(DebugLevel, time.Minute, 2, 3)
 
 		// Ensure that counts aren't shared between levels.
 		probeLevel := DebugLevel
@@ -82,22 +102,24 @@ func TestSampler(t *testing.T) {
 		for i := 1; i < 10; i++ {
 			writeSequence(sampler, i, lvl)
 		}
-		assertSequence(t, logs.TakeAll(), lvl, 1, 2, 5, 8)
+		rep := make([]int64, 0)
+		assertReportingSequence(t, logs.TakeAll(), lvl, rep, 1, 2, 5, 8)
 	}
 }
 
-func TestSamplerDisabledLevels(t *testing.T) {
-	sampler, logs := fakeSampler(InfoLevel, time.Minute, 1, 100)
+func TestReportingSamplerDisabledLevels(t *testing.T) {
+	sampler, logs := fakeReportingSampler(InfoLevel, time.Minute, 1, 100)
 
 	// Shouldn't be counted, because debug logging isn't enabled.
 	writeSequence(sampler, 1, DebugLevel)
 	writeSequence(sampler, 2, InfoLevel)
-	assertSequence(t, logs.TakeAll(), InfoLevel, 2)
+	rep := make([]int64, 0)
+	assertReportingSequence(t, logs.TakeAll(), InfoLevel, rep, 2)
 }
 
-func TestSamplerTicking(t *testing.T) {
+func TestReportingSamplerTicking(t *testing.T) {
 	// Ensure that we're resetting the sampler's counter every tick.
-	sampler, logs := fakeSampler(DebugLevel, 10*time.Millisecond, 5, 10)
+	sampler, logs := fakeReportingSampler(DebugLevel, 10*time.Millisecond, 5, 10)
 
 	// If we log five or fewer messages every tick, none of them should be
 	// dropped.
@@ -107,10 +129,12 @@ func TestSamplerTicking(t *testing.T) {
 		}
 		ztest.Sleep(15 * time.Millisecond)
 	}
-	assertSequence(
+	rep := make([]int64, 0)
+	assertReportingSequence(
 		t,
 		logs.TakeAll(),
 		InfoLevel,
+		rep,
 		1, 2, 3, 4, 5, // first tick
 		1, 2, 3, 4, 5, // second tick
 	)
@@ -118,51 +142,40 @@ func TestSamplerTicking(t *testing.T) {
 	// If we log quickly, we should drop some logs. The first five statements
 	// each tick should be logged, then every tenth.
 	for tick := 0; tick < 3; tick++ {
-		for i := 1; i < 18; i++ {
+		for i := 1; i < 19; i++ {
 			writeSequence(sampler, i, InfoLevel)
 		}
 		ztest.Sleep(10 * time.Millisecond)
 	}
 
-	assertSequence(
+	// 18 records logged, 6 of them written, 12 sampled.
+	// No report entry for the last tick.
+	// Report is only produced with the first entry of a new tick.
+	rep = []int64{12, 12}
+	assertReportingSequence(
 		t,
 		logs.TakeAll(),
 		InfoLevel,
+		rep,
 		1, 2, 3, 4, 5, 15, // first tick
 		1, 2, 3, 4, 5, 15, // second tick
 		1, 2, 3, 4, 5, 15, // third tick
 	)
 }
 
-type countingCore struct {
-	logs atomic.Uint32
-}
-
-func (c *countingCore) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
-	return ce.AddCore(ent, c)
-}
-
-func (c *countingCore) Write(Entry, []Field) error {
-	c.logs.Inc()
-	return nil
-}
-
-func (c *countingCore) With([]Field) Core { return c }
-func (*countingCore) Enabled(Level) bool  { return true }
-func (*countingCore) Sync() error         { return nil }
-
-func TestSamplerConcurrent(t *testing.T) {
+func TestReportingSamplerConcurrent(t *testing.T) {
 	const (
-		logsPerTick   = 10
-		numMessages   = 5
-		numTicks      = 25
-		numGoroutines = 10
-		expectedCount = numMessages * logsPerTick * numTicks
+		logsPerTick    = 10
+		reportsPerTick = 1
+		numMessages    = 5
+		numTicks       = 25
+		numGoroutines  = 10
+		expectedCount  = numMessages * (logsPerTick + reportsPerTick) * numTicks
 	)
 
 	tick := ztest.Timeout(10 * time.Millisecond)
 	cc := &countingCore{}
-	sampler := NewSampler(cc, tick, logsPerTick, 100000)
+	sampler := NewReportingSampler(cc, tick, logsPerTick, 100000)
 
 	var (
 		done atomic.Bool
@@ -203,8 +216,8 @@ func TestSamplerConcurrent(t *testing.T) {
 	)
 }
 
-func TestSamplerRaces(t *testing.T) {
-	sampler, _ := fakeSampler(DebugLevel, time.Minute, 1, 1000)
+func TestReportingSamplerRaces(t *testing.T) {
+	sampler, _ := fakeReportingSampler(DebugLevel, time.Minute, 1, 1000)
 
 	var wg sync.WaitGroup
 	start := make(chan struct{})
