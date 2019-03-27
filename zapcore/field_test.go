@@ -24,13 +24,12 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/url"
 	"testing"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/stretchr/testify/assert"
-
+	"go.uber.org/zap"
 	. "go.uber.org/zap/zapcore"
 )
 
@@ -58,6 +57,28 @@ func (u users) MarshalLogArray(enc ArrayEncoder) error {
 	return nil
 }
 
+type obj struct {
+	kind int
+}
+
+func (o *obj) String() string {
+	if o == nil {
+		return "nil obj"
+	}
+
+	if o.kind == 1 {
+		panic("panic with string")
+	} else if o.kind == 2 {
+		panic(errors.New("panic with error"))
+	} else if o.kind == 3 {
+		// panic with an arbitrary object that causes a panic itself
+		// when being converted to a string
+		panic((*url.URL)(nil))
+	}
+
+	return "obj"
+}
+
 func TestUnknownFieldType(t *testing.T) {
 	unknown := Field{Key: "k", String: "foo"}
 	assert.Equal(t, UnknownType, unknown.Type, "Expected zero value of FieldType to be UnknownType.")
@@ -67,19 +88,27 @@ func TestUnknownFieldType(t *testing.T) {
 }
 
 func TestFieldAddingError(t *testing.T) {
+	var empty interface{}
 	tests := []struct {
-		t    FieldType
-		want interface{}
+		t     FieldType
+		iface interface{}
+		want  interface{}
+		err   string
 	}{
-		{ArrayMarshalerType, []interface{}{}},
-		{ObjectMarshalerType, map[string]interface{}{}},
+		{t: ArrayMarshalerType, iface: users(-1), want: []interface{}{}, err: "too few users"},
+		{t: ObjectMarshalerType, iface: users(-1), want: map[string]interface{}{}, err: "too few users"},
+		{t: StringerType, iface: obj{}, want: empty, err: "PANIC=interface conversion: zapcore_test.obj is not fmt.Stringer: missing method String"},
+		{t: StringerType, iface: &obj{1}, want: empty, err: "PANIC=panic with string"},
+		{t: StringerType, iface: &obj{2}, want: empty, err: "PANIC=panic with error"},
+		{t: StringerType, iface: &obj{3}, want: empty, err: "PANIC=<nil>"},
+		{t: StringerType, iface: (*url.URL)(nil), want: empty, err: "PANIC=runtime error: invalid memory address or nil pointer dereference"},
 	}
 	for _, tt := range tests {
-		f := Field{Key: "k", Interface: users(-1), Type: tt.t}
+		f := Field{Key: "k", Interface: tt.iface, Type: tt.t}
 		enc := NewMapObjectEncoder()
 		assert.NotPanics(t, func() { f.AddTo(enc) }, "Unexpected panic when adding fields returns an error.")
 		assert.Equal(t, tt.want, enc.Fields["k"], "On error, expected zero value in field.Key.")
-		assert.Equal(t, "too few users", enc.Fields["kError"], "Expected error message in log context.")
+		assert.Equal(t, tt.err, enc.Fields["kError"], "Expected error message in log context.")
 	}
 }
 
@@ -116,6 +145,8 @@ func TestFields(t *testing.T) {
 		{t: ReflectType, iface: users(2), want: users(2)},
 		{t: NamespaceType, want: map[string]interface{}{}},
 		{t: StringerType, iface: users(2), want: "2 users"},
+		{t: StringerType, iface: &obj{}, want: "obj"},
+		{t: StringerType, iface: (*obj)(nil), want: "nil obj"},
 		{t: SkipType, want: interface{}(nil)},
 	}
 
