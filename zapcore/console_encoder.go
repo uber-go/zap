@@ -175,6 +175,6 @@ func GetElementDelimitor() string {
 	return v
 }
 
-func SetConsoleElementDelimitor(deli byte) {
+func SetConsoleElementDelimiter(deli byte) {
 	delimiter = deli
 }
