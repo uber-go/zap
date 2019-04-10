@@ -22,11 +22,32 @@ package zapcore
 
 import (
 	"fmt"
-	"sync"
-
 	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/internal/bufferpool"
+	"os"
+	"strings"
+	"sync"
 )
+
+const (
+	ZAP_CONSOLE_DELIMITER         = "ZAP_CONSOLE_DELIMITER"
+	ZAP_CONSOLE_DELIMITER_DEFAULT = "\t"
+)
+
+var delimiter byte
+
+func init() {
+	delimitorEnv := GetElementDelimitor()
+	if strings.EqualFold(delimitorEnv, ZAP_CONSOLE_DELIMITER_DEFAULT) {
+		delimiter = '\t'
+	} else if strings.EqualFold(delimitorEnv, " ") {
+		delimiter = ' '
+	} else {
+		//Just take first as delimitor
+		delimiter = []byte(delimitorEnv)[0]
+	}
+
+}
 
 var _sliceEncoderPool = sync.Pool{
 	New: func() interface{} {
@@ -94,7 +115,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	}
 	for i := range arr.elems {
 		if i > 0 {
-			line.AppendByte('\t')
+			line.AppendByte(delimiter)
 		}
 		fmt.Fprint(line, arr.elems[i])
 	}
@@ -102,7 +123,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 
 	// Add the message itself.
 	if c.MessageKey != "" {
-		c.addTabIfNecessary(line)
+		c.addDelimitorIfNecessary(line)
 		line.AppendString(ent.Message)
 	}
 
@@ -134,14 +155,26 @@ func (c consoleEncoder) writeContext(line *buffer.Buffer, extra []Field) {
 		return
 	}
 
-	c.addTabIfNecessary(line)
+	c.addDelimitorIfNecessary(line)
 	line.AppendByte('{')
 	line.Write(context.buf.Bytes())
 	line.AppendByte('}')
 }
 
-func (c consoleEncoder) addTabIfNecessary(line *buffer.Buffer) {
+func (c consoleEncoder) addDelimitorIfNecessary(line *buffer.Buffer) {
 	if line.Len() > 0 {
-		line.AppendByte('\t')
+		line.AppendByte(delimiter)
 	}
+}
+
+func GetElementDelimitor() string {
+	v, ok := os.LookupEnv("ZAP_CONSOLE_DELIMITER")
+	if !ok {
+		return ZAP_CONSOLE_DELIMITER_DEFAULT
+	}
+	return v
+}
+
+func SetConsoleElementDelimitor(deli byte) {
+	delimiter = deli
 }
