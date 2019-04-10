@@ -123,7 +123,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 
 	// Add the message itself.
 	if c.MessageKey != "" {
-		c.addDelimitorIfNecessary(line)
+		c.addDelimiterIfNecessary(line)
 		line.AppendString(ent.Message)
 	}
 
@@ -155,13 +155,13 @@ func (c consoleEncoder) writeContext(line *buffer.Buffer, extra []Field) {
 		return
 	}
 
-	c.addDelimitorIfNecessary(line)
+	c.addDelimiterIfNecessary(line)
 	line.AppendByte('{')
 	line.Write(context.buf.Bytes())
 	line.AppendByte('}')
 }
 
-func (c consoleEncoder) addDelimitorIfNecessary(line *buffer.Buffer) {
+func (c consoleEncoder) addDelimiterIfNecessary(line *buffer.Buffer) {
 	if line.Len() > 0 {
 		line.AppendByte(delimiter)
 	}
