@@ -21,6 +21,7 @@
 package zapcore
 
 import (
+	"fmt"
 	"time"
 
 	"go.uber.org/atomic"
@@ -62,31 +63,74 @@ func fnv32a(s string) uint32 {
 	return hash
 }
 
-func (c *counter) IncCheckReset(t time.Time, tick time.Duration) uint64 {
+func (c *counter) IncCheckReset(t time.Time, tick time.Duration) (currentVal, preResetVal uint64) {
 	tn := t.UnixNano()
 	resetAfter := c.resetAt.Load()
 	if resetAfter > tn {
-		return c.counter.Inc()
+		return c.counter.Inc(), 0
 	}
-
-	c.counter.Store(1)
 
 	newResetAfter := tn + tick.Nanoseconds()
 	if !c.resetAt.CAS(resetAfter, newResetAfter) {
-		// We raced with another goroutine trying to reset, and it also reset
-		// the counter to 1, so we need to reincrement the counter.
-		return c.counter.Inc()
+		// We raced with another goroutine trying to reset, and it reset the
+		// counter to 1, so we just increment.
+		return c.counter.Inc(), 0
 	}
+	preResetVal = c.counter.Load()
+	currentVal = 1
+	c.counter.Store(currentVal)
+	return
 
-	return 1
 }
 
 type sampler struct {
 	Core
 
+	*reporting
 	counts            *counters
 	tick              time.Duration
 	first, thereafter uint64
+}
+
+type reporting struct {
+	enabled    bool
+	core       Core
+	loggerName string
+	level      Level
+	message    string
+}
+
+// NewReportingSampler creates a Core that samples incoming entries, which caps
+// the CPU and I/O load of logging while attempting to preserve a representative
+// subset of your logs. The difference with the regular sampling core is that it
+// reports the number of sampled entries for the same logging level and message.
+// Reporting is in form of a separate log entry per every tick when there are
+// sampled entries. reportingLevel must be enabled on the core.
+func NewReportingSampler(
+	core Core,
+	tick time.Duration,
+	first, thereafter int,
+	reportingLevel Level,
+	reportingLoggerName, reportingMessage string,
+) Core {
+	if !core.Enabled(reportingLevel) {
+		panic("Core must have at least info logging level.")
+	}
+	reporting := &reporting{
+		enabled:    true,
+		core:       core,
+		loggerName: reportingLoggerName,
+		level:      reportingLevel,
+		message:    reportingMessage,
+	}
+	return &sampler{
+		Core:       core,
+		reporting:  reporting,
+		tick:       tick,
+		counts:     newCounters(),
+		first:      uint64(first),
+		thereafter: uint64(thereafter),
+	}
 }
 
 // NewSampler creates a Core that samples incoming entries, which caps the CPU
@@ -101,8 +145,13 @@ type sampler struct {
 // absolute precision; under load, each tick may be slightly over- or
 // under-sampled.
 func NewSampler(core Core, tick time.Duration, first, thereafter int) Core {
+	reporting := &reporting{
+		enabled: false,
+		core:    NewNopCore(),
+	}
 	return &sampler{
 		Core:       core,
+		reporting:  reporting,
 		tick:       tick,
 		counts:     newCounters(),
 		first:      uint64(first),
@@ -112,7 +161,10 @@ func NewSampler(core Core, tick time.Duration, first, thereafter int) Core {
 
 func (s *sampler) With(fields []Field) Core {
 	return &sampler{
-		Core:       s.Core.With(fields),
+		Core: s.Core.With(fields),
+		// reporting.core is only to be used for sampling activity reporting.
+		// No extra fields should be added to it.
+		reporting:  s.reporting,
 		tick:       s.tick,
 		counts:     s.counts,
 		first:      s.first,
@@ -126,9 +178,35 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	}
 
 	counter := s.counts.get(ent.Level, ent.Message)
-	n := counter.IncCheckReset(ent.Time, s.tick)
+	n, prevN := counter.IncCheckReset(ent.Time, s.tick)
 	if n > s.first && (n-s.first)%s.thereafter != 0 {
 		return ce
 	}
+	if s.reporting.enabled && prevN > 0 {
+		s.report(ent, prevN)
+	}
 	return s.Core.Check(ent, ce)
+}
+
+func (s *sampler) report(ent Entry, n uint64) {
+	sampleCount := n - s.first
+	sampleCount = sampleCount - sampleCount/s.thereafter
+	if sampleCount <= 0 {
+		return
+	}
+	entry := Entry{
+		LoggerName: s.reporting.loggerName,
+		Time:       time.Now(),
+		Level:      s.reporting.level,
+		Message:    s.reporting.message,
+	}
+	fields := []Field{
+		{Key: "original_level", Type: StringType, String: ent.Level.String()},
+		{Key: "original_message", Type: StringType, String: ent.Message},
+		{Key: "count", Type: Int64Type, Integer: int64(sampleCount)},
+	}
+	err := s.reporting.core.Write(entry, fields)
+	if err != nil {
+		fmt.Printf("%v write error: %v\n", time.Now(), err)
+	}
 }
