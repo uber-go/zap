@@ -220,16 +220,14 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 	if cfg.Sampling != nil {
 		opts = append(opts, WrapCore(func(core zapcore.Core) zapcore.Core {
 			if cfg.Sampling.Reporting != nil && cfg.Sampling.Reporting.Enabled {
-				loggerName := cfg.Sampling.Reporting.LoggerName
-				if loggerName == "" {
-					loggerName = "zapcore"
+				var level zapcore.Level
+				if cfg.Sampling.Reporting.Level.l != nil {
+					level = cfg.Sampling.Reporting.Level.Level()
 				}
-				level := cfg.Sampling.Reporting.Level.Level()
-				message := cfg.Sampling.Reporting.Message
-				if message == "" {
-					message = "Log entries were sampled"
-				}
-				return zapcore.NewReportingSampler(core, time.Second, int(cfg.Sampling.Initial), int(cfg.Sampling.Thereafter), level, loggerName, message)
+				return zapcore.NewReportingSampler(
+					core, time.Second, int(cfg.Sampling.Initial), int(cfg.Sampling.Thereafter),
+					level, cfg.Sampling.Reporting.LoggerName, cfg.Sampling.Reporting.Message,
+				)
 			}
 			return zapcore.NewSampler(core, time.Second, int(cfg.Sampling.Initial), int(cfg.Sampling.Thereafter))
 		}))

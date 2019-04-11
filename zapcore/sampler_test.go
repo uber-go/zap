@@ -35,12 +35,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	repLogName = "zaptet"
-	repLvl     = InfoLevel
-	repMsg     = "Log entries were sampled"
-)
-
 func fakeSampler(lvl LevelEnabler, tick time.Duration, first, thereafter int) (Core, *observer.ObservedLogs) {
 	core, logs := observer.New(lvl)
 	core = NewSampler(core, tick, first, thereafter)
@@ -78,10 +72,10 @@ func assertReportingSequence(t testing.TB, logs []observer.LoggedEntry, lvl, rep
 	seen := make([]int64, len(logs)-len(rep))
 	reported := make([]int64, len(rep))
 	for i, entry := range logs {
-		if entry.Message == repMsg {
+		if entry.Message == ReportingLogMessage {
 			// When log entry is a sampling report.
 			require.Equal(t, 3, len(entry.Context), "Unexpected number of fields.")
-			require.Equal(t, repLogName, entry.LoggerName, "Unexpected logger name.")
+			require.Equal(t, ReportingLoggerName, entry.LoggerName, "Unexpected logger name.")
 			for _, f := range entry.Context {
 				switch f.Key {
 				// We already know that `entry.Message == repMsg` and therefore is a string.
@@ -149,10 +143,10 @@ func TestReportingSampler(t *testing.T) {
 		for _, reportingLvl := range levels {
 			if coreLvl > reportingLvl {
 				assert.Panics(t, func() {
-					fakeReportingSampler(coreLvl, time.Minute, 1, 1, reportingLvl, repLogName, repMsg)
+					fakeReportingSampler(coreLvl, time.Minute, 1, 1, reportingLvl, "", "")
 				}, "Expected sampler with logging level above reporting level to panic.")
 			} else {
-				sampler, logs := fakeReportingSampler(coreLvl, time.Minute, 2, 3, reportingLvl, repLogName, repMsg)
+				sampler, logs := fakeReportingSampler(coreLvl, time.Minute, 2, 3, reportingLvl, "", "")
 
 				// Ensure that counts aren't shared between levels.
 				probeLevel := DebugLevel
@@ -181,7 +175,7 @@ func TestSamplersDisabledLevels(t *testing.T) {
 		logsArray    [2]*observer.ObservedLogs
 	)
 	samplerArray[0], logsArray[0] = fakeSampler(InfoLevel, time.Minute, 1, 100)
-	samplerArray[1], logsArray[1] = fakeReportingSampler(InfoLevel, time.Minute, 1, 100, repLvl, repLogName, repMsg)
+	samplerArray[1], logsArray[1] = fakeReportingSampler(InfoLevel, time.Minute, 1, 100, InfoLevel, "", "")
 	for i := 0; i < 2; i++ {
 		sampler, logs := samplerArray[i], logsArray[i]
 		// Shouldn't be counted, because debug logging isn't enabled.
@@ -232,7 +226,7 @@ func TestSamplerTicking(t *testing.T) {
 
 func TestReportingSamplerTicking(t *testing.T) {
 	// Ensure that we're resetting the sampler's counter every tick.
-	sampler, logs := fakeReportingSampler(DebugLevel, 10*time.Millisecond, 5, 10, repLvl, repLogName, repMsg)
+	sampler, logs := fakeReportingSampler(DebugLevel, 10*time.Millisecond, 5, 10, InfoLevel, "", "")
 
 	// If we log five or fewer messages every tick, none of them should be
 	// dropped.
@@ -247,7 +241,7 @@ func TestReportingSamplerTicking(t *testing.T) {
 		t,
 		logs.TakeAll(),
 		InfoLevel,
-		repLvl,
+		InfoLevel,
 		rep,
 		1, 2, 3, 4, 5, // first tick
 		1, 2, 3, 4, 5, // second tick
@@ -270,7 +264,7 @@ func TestReportingSamplerTicking(t *testing.T) {
 		t,
 		logs.TakeAll(),
 		InfoLevel,
-		repLvl,
+		InfoLevel,
 		rep,
 		1, 2, 3, 4, 5, 15, // first tick
 		1, 2, 3, 4, 5, 15, // second tick
@@ -312,7 +306,7 @@ func TestSamplersConcurrent(t *testing.T) {
 	cc := &countingCore{}
 	samplerArray[0] = NewSampler(cc, tick, logsPerTick, 100000)
 	expectedCountArray[0] = numMessages * logsPerTick * numTicks
-	samplerArray[1] = NewReportingSampler(cc, tick, logsPerTick, 100000, repLvl, repLogName, repMsg)
+	samplerArray[1] = NewReportingSampler(cc, tick, logsPerTick, 100000, InfoLevel, "", "")
 	expectedCountArray[1] = numMessages * (logsPerTick + reportsPerTick) * numTicks
 	for i := 0; i < 2; i++ {
 		sampler, expectedCount := samplerArray[i], expectedCountArray[i]
@@ -361,7 +355,7 @@ func TestSamplersConcurrent(t *testing.T) {
 func TestSamplersRace(t *testing.T) {
 	var samplerArray [2]Core
 	samplerArray[0], _ = fakeSampler(DebugLevel, time.Minute, 1, 1000)
-	samplerArray[1], _ = fakeReportingSampler(DebugLevel, time.Minute, 1, 1000, repLvl, repLogName, repMsg)
+	samplerArray[1], _ = fakeReportingSampler(DebugLevel, time.Minute, 1, 1000, InfoLevel, "", "")
 
 	for i := 0; i < 2; i++ {
 		sampler := samplerArray[i]

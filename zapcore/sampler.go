@@ -30,6 +30,12 @@ import (
 const (
 	_numLevels        = _maxLevel - _minLevel + 1
 	_countersPerLevel = 4096
+
+	// ReportingLoggerName is the default name of logger that generates sampling
+	// reports.
+	ReportingLoggerName = "zapcore"
+	// ReportingLogMessage is the default message of a sampling report entry.
+	ReportingLogMessage = "Log entries were sampled"
 )
 
 type counter struct {
@@ -114,7 +120,16 @@ func NewReportingSampler(
 	reportingLoggerName, reportingMessage string,
 ) Core {
 	if !core.Enabled(reportingLevel) {
-		panic("Core must have at least info logging level.")
+		panic(fmt.Sprintf(
+			"Core must have at least %s logging level.",
+			reportingLevel.String(),
+		))
+	}
+	if reportingLoggerName == "" {
+		reportingLoggerName = ReportingLoggerName
+	}
+	if reportingMessage == "" {
+		reportingMessage = ReportingLogMessage
 	}
 	reporting := &reporting{
 		enabled:    true,
@@ -188,11 +203,11 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	return s.Core.Check(ent, ce)
 }
 
-func (s *sampler) report(ent Entry, n uint64) {
+func (s *sampler) report(ent Entry, n uint64) error {
 	sampleCount := n - s.first
 	sampleCount = sampleCount - sampleCount/s.thereafter
 	if sampleCount <= 0 {
-		return
+		return nil
 	}
 	entry := Entry{
 		LoggerName: s.reporting.loggerName,
@@ -207,6 +222,7 @@ func (s *sampler) report(ent Entry, n uint64) {
 	}
 	err := s.reporting.core.Write(entry, fields)
 	if err != nil {
-		fmt.Printf("%v write error: %v\n", time.Now(), err)
+		return err
 	}
+	return nil
 }
