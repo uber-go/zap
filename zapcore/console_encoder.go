@@ -22,11 +22,34 @@ package zapcore
 
 import (
 	"fmt"
-	"sync"
-
 	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/internal/bufferpool"
+	"os"
+	"strings"
+	"sync"
 )
+
+const (
+	//ZapConsoleDelimiter  The key of console encoder element delimiter
+	ZapConsoleDelimiter = "ZAP_CONSOLE_DELIMITER"
+	//ZapConsoleDelimiterDefault Default value of console encoder
+	ZapConsoleDelimiterDefault = "\t"
+)
+
+var delimiter byte
+
+func init() {
+	delimitorEnv := getElementDelimitor()
+	if strings.EqualFold(delimitorEnv, ZapConsoleDelimiterDefault) {
+		delimiter = '\t'
+	} else if strings.EqualFold(delimitorEnv, " ") {
+		delimiter = ' '
+	} else {
+		//Just take first as delimitor
+		delimiter = []byte(delimitorEnv)[0]
+	}
+
+}
 
 var _sliceEncoderPool = sync.Pool{
 	New: func() interface{} {
@@ -94,7 +117,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	}
 	for i := range arr.elems {
 		if i > 0 {
-			line.AppendByte('\t')
+			line.AppendByte(delimiter)
 		}
 		fmt.Fprint(line, arr.elems[i])
 	}
@@ -102,7 +125,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 
 	// Add the message itself.
 	if c.MessageKey != "" {
-		c.addTabIfNecessary(line)
+		c.addDelimiterIfNecessary(line)
 		line.AppendString(ent.Message)
 	}
 
@@ -134,14 +157,27 @@ func (c consoleEncoder) writeContext(line *buffer.Buffer, extra []Field) {
 		return
 	}
 
-	c.addTabIfNecessary(line)
+	c.addDelimiterIfNecessary(line)
 	line.AppendByte('{')
 	line.Write(context.buf.Bytes())
 	line.AppendByte('}')
 }
 
-func (c consoleEncoder) addTabIfNecessary(line *buffer.Buffer) {
+func (c consoleEncoder) addDelimiterIfNecessary(line *buffer.Buffer) {
 	if line.Len() > 0 {
-		line.AppendByte('\t')
+		line.AppendByte(delimiter)
 	}
+}
+
+func getElementDelimitor() string {
+	v, ok := os.LookupEnv(ZapConsoleDelimiter)
+	if !ok {
+		return ZapConsoleDelimiterDefault
+	}
+	return v
+}
+
+//SetConsoleElementDelimiter Set delimiter of the console elements, default is '\t'
+func SetConsoleElementDelimiter(deli byte) {
+	delimiter = deli
 }
