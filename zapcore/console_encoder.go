@@ -30,7 +30,9 @@ import (
 )
 
 const (
-	ZapConsoleDelimiter        = "ZAP_CONSOLE_DELIMITER"
+	//ZapConsoleDelimiter  The key of console encoder element delimiter
+	ZapConsoleDelimiter = "ZAP_CONSOLE_DELIMITER"
+	//ZapConsoleDelimiterDefault Default value of console encoder
 	ZapConsoleDelimiterDefault = "\t"
 )
 
@@ -175,7 +177,7 @@ func getElementDelimitor() string {
 	return v
 }
 
-// Set delimiter of the console elements, default is '\t'
+//SetConsoleElementDelimiter Set delimiter of the console elements, default is '\t'
 func SetConsoleElementDelimiter(deli byte) {
 	delimiter = deli
 }
