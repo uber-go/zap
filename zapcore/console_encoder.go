@@ -30,15 +30,15 @@ import (
 )
 
 const (
-	ZAP_CONSOLE_DELIMITER         = "ZAP_CONSOLE_DELIMITER"
-	ZAP_CONSOLE_DELIMITER_DEFAULT = "\t"
+	ZapConsoleDelimiter        = "ZAP_CONSOLE_DELIMITER"
+	ZapConsoleDelimiterDefault = "\t"
 )
 
 var delimiter byte
 
 func init() {
-	delimitorEnv := GetElementDelimitor()
-	if strings.EqualFold(delimitorEnv, ZAP_CONSOLE_DELIMITER_DEFAULT) {
+	delimitorEnv := getElementDelimitor()
+	if strings.EqualFold(delimitorEnv, ZapConsoleDelimiterDefault) {
 		delimiter = '\t'
 	} else if strings.EqualFold(delimitorEnv, " ") {
 		delimiter = ' '
@@ -167,14 +167,15 @@ func (c consoleEncoder) addDelimiterIfNecessary(line *buffer.Buffer) {
 	}
 }
 
-func GetElementDelimitor() string {
-	v, ok := os.LookupEnv("ZAP_CONSOLE_DELIMITER")
+func getElementDelimitor() string {
+	v, ok := os.LookupEnv(ZapConsoleDelimiter)
 	if !ok {
-		return ZAP_CONSOLE_DELIMITER_DEFAULT
+		return ZapConsoleDelimiter
 	}
 	return v
 }
 
+// Set delimiter of the console elements, default is '\t'
 func SetConsoleElementDelimiter(deli byte) {
 	delimiter = deli
 }
