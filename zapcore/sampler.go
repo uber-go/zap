@@ -220,9 +220,5 @@ func (s *sampler) report(ent Entry, n uint64) error {
 		{Key: "original_message", Type: StringType, String: ent.Message},
 		{Key: "count", Type: Int64Type, Integer: int64(sampleCount)},
 	}
-	err := s.reporting.core.Write(entry, fields)
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.reporting.core.Write(entry, fields)
 }
