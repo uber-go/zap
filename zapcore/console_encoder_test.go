@@ -26,18 +26,31 @@ import (
 )
 
 func TestSetConsoleElementDelimiter(t *testing.T) {
-	SetConsoleElementDelimiter(' ')
-	enc := NewConsoleEncoder(humanEncoderConfig())
+	encodeConfig := humanEncoderConfig()
+	encodeConfig.ElementDelimiter = ' '
+	enc := NewConsoleEncoder(encodeConfig)
 	enc.AddString("str", "foo")
-	enc.AddInt64("int64-1", 1)
 
 	buf, _ := enc.EncodeEntry(Entry{
 		Message: "fake",
 		Level:   DebugLevel,
 	}, nil)
 
-	assert.Equal(t, `0001-01-01T00:00:00.000Z DEBUG fake {"str": "foo", "int64-1": 1}
+	assert.Equal(t, `0001-01-01T00:00:00.000Z DEBUG fake {"str": "foo"}
 `, buf.String())
 	buf.Free()
-	SetConsoleElementDelimiter('\t')
+
+	encodeConfig.ElementDelimiter = '-'
+	enc = NewConsoleEncoder(encodeConfig)
+	enc.AddString("str", "foo")
+
+	buf, _ = enc.EncodeEntry(Entry{
+		Message: "fake",
+		Level:   DebugLevel,
+	}, nil)
+
+	assert.Equal(t, `0001-01-01T00:00:00.000Z-DEBUG-fake-{"str": "foo"}
+`, buf.String())
+	buf.Free()
+
 }
