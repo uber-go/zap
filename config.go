@@ -27,17 +27,14 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// ReportingSamplingConfig offers way to configure reporting of sampling
+// SamplingReportingConfig offers way to configure reporting of sampling
 // events.
 //
-// With sampling there is always added ambiguity. A record is missing from the
-// logs because it was sampled or because it never took place? Sampling reports
-// intend to compensate for that. See zapcore.NewReportingSampler for details.
-type ReportingSamplingConfig struct {
-	Enabled    bool        `json:"enabled" yaml:"enabled"`
-	LoggerName string      `json:"loggerName" yaml:"loggerName"`
-	Level      AtomicLevel `json:"level" yaml:"level"`
-	Message    string      `json:"message" yaml:"message"`
+// This reduces the ambiguity of whether a record is missing because it was
+// sampled, or whether it never took place. See zapcore.NewReportingSampler
+// for details.
+type SamplingReportingConfig struct {
+	Enabled bool `json:"enabled" yaml:"enabled"`
 }
 
 // SamplingConfig sets a sampling strategy for the logger. Sampling caps the
@@ -48,7 +45,7 @@ type ReportingSamplingConfig struct {
 type SamplingConfig struct {
 	Initial    int                      `json:"initial" yaml:"initial"`
 	Thereafter int                      `json:"thereafter" yaml:"thereafter"`
-	Reporting  *ReportingSamplingConfig `json:"reporting" yaml:"reporting"`
+	Reporting  *SamplingReportingConfig `json:"reporting" yaml:"reporting"`
 }
 
 // Config offers a declarative way to construct a logger. It doesn't do
@@ -220,13 +217,9 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 	if cfg.Sampling != nil {
 		opts = append(opts, WrapCore(func(core zapcore.Core) zapcore.Core {
 			if cfg.Sampling.Reporting != nil && cfg.Sampling.Reporting.Enabled {
-				var level zapcore.Level
-				if cfg.Sampling.Reporting.Level.l != nil {
-					level = cfg.Sampling.Reporting.Level.Level()
-				}
 				return zapcore.NewReportingSampler(
 					core, time.Second, int(cfg.Sampling.Initial), int(cfg.Sampling.Thereafter),
-					level, cfg.Sampling.Reporting.LoggerName, cfg.Sampling.Reporting.Message,
+					zapcore.SamplingReport,
 				)
 			}
 			return zapcore.NewSampler(core, time.Second, int(cfg.Sampling.Initial), int(cfg.Sampling.Thereafter))

@@ -34,6 +34,8 @@ const (
 	// ReportingLoggerName is the default name of logger that generates sampling
 	// reports.
 	ReportingLoggerName = "zapcore"
+	// ReportingLogLevel is the default logging level for sampling reports.
+	ReportingLogLevel = InfoLevel
 	// ReportingLogMessage is the default message of a sampling report entry.
 	ReportingLogMessage = "Log entries were sampled"
 )
@@ -44,6 +46,37 @@ type counter struct {
 }
 
 type counters [_numLevels][_countersPerLevel]counter
+
+// Report defines a function that generates and writes sampling activity report
+// log entries.
+type Report func(core Core, ent Entry, n int64) error
+
+// SamplingReport is an example and the default implementation of Report type.
+// Refer to it when you want to customise reporting behaviour and message
+// composition.
+func SamplingReport(core Core, ent Entry, n int64) error {
+	if n <= 0 {
+		return nil
+	}
+	if !core.Enabled(ReportingLogLevel) {
+		return fmt.Errorf(
+			"reporting core must have at least %s logging level",
+			ReportingLogLevel.String(),
+		)
+	}
+	entry := Entry{
+		LoggerName: ReportingLoggerName,
+		Time:       time.Now(),
+		Level:      ReportingLogLevel,
+		Message:    ReportingLogMessage,
+	}
+	fields := []Field{
+		{Key: "original_level", Type: StringType, String: ent.Level.String()},
+		{Key: "original_message", Type: StringType, String: ent.Message},
+		{Key: "count", Type: Int64Type, Integer: n},
+	}
+	return core.Write(entry, fields)
+}
 
 func newCounters() *counters {
 	return &counters{}
@@ -76,15 +109,16 @@ func (c *counter) IncCheckReset(t time.Time, tick time.Duration) (currentVal, pr
 		return c.counter.Inc(), 0
 	}
 
-	newResetAfter := tn + tick.Nanoseconds()
-	if !c.resetAt.CAS(resetAfter, newResetAfter) {
-		// We raced with another goroutine trying to reset, and it reset the
-		// counter to 1, so we just increment.
-		return c.counter.Inc(), 0
-	}
 	preResetVal = c.counter.Load()
 	currentVal = 1
 	c.counter.Store(currentVal)
+
+	newResetAfter := tn + tick.Nanoseconds()
+	if !c.resetAt.CAS(resetAfter, newResetAfter) {
+		// We raced with another goroutine trying to reset, and it also reset
+		// the counter to 1, so we need to reincrement the counter.
+		return c.counter.Inc(), 0
+	}
 	return
 
 }
@@ -99,53 +133,9 @@ type sampler struct {
 }
 
 type reporting struct {
-	enabled    bool
-	core       Core
-	loggerName string
-	level      Level
-	message    string
-}
-
-// NewReportingSampler creates a Core that samples incoming entries, which caps
-// the CPU and I/O load of logging while attempting to preserve a representative
-// subset of your logs. The difference with the regular sampling core is that it
-// reports the number of sampled entries for the same logging level and message.
-// Reporting is in form of a separate log entry per every tick when there are
-// sampled entries. reportingLevel must be enabled on the core.
-func NewReportingSampler(
-	core Core,
-	tick time.Duration,
-	first, thereafter int,
-	reportingLevel Level,
-	reportingLoggerName, reportingMessage string,
-) Core {
-	if !core.Enabled(reportingLevel) {
-		panic(fmt.Sprintf(
-			"Core must have at least %s logging level.",
-			reportingLevel.String(),
-		))
-	}
-	if reportingLoggerName == "" {
-		reportingLoggerName = ReportingLoggerName
-	}
-	if reportingMessage == "" {
-		reportingMessage = ReportingLogMessage
-	}
-	reporting := &reporting{
-		enabled:    true,
-		core:       core,
-		loggerName: reportingLoggerName,
-		level:      reportingLevel,
-		message:    reportingMessage,
-	}
-	return &sampler{
-		Core:       core,
-		reporting:  reporting,
-		tick:       tick,
-		counts:     newCounters(),
-		first:      uint64(first),
-		thereafter: uint64(thereafter),
-	}
+	enabled bool
+	core    Core
+	report  Report
 }
 
 // NewSampler creates a Core that samples incoming entries, which caps the CPU
@@ -197,28 +187,43 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	if n > s.first && (n-s.first)%s.thereafter != 0 {
 		return ce
 	}
-	if s.reporting.enabled && prevN > 0 {
-		s.report(ent, prevN)
+	if s.reporting.enabled {
+		err := s.reporting.report(s.reporting.core, ent, s.getSampleCount(prevN))
+		if err != nil {
+			fmt.Printf("%v sampling report write error: %v\n", time.Now(), err)
+		}
 	}
 	return s.Core.Check(ent, ce)
 }
 
-func (s *sampler) report(ent Entry, n uint64) error {
+func (s *sampler) getSampleCount(n uint64) int64 {
+	if n <= 1 {
+		return 0
+	}
 	sampleCount := n - s.first
 	sampleCount = sampleCount - sampleCount/s.thereafter
-	if sampleCount <= 0 {
-		return nil
+	return int64(sampleCount)
+}
+
+// NewReportingSampler creates a Core that samples incoming entries, which caps
+// the CPU and I/O load of logging while attempting to preserve a representative
+// subset of your logs. The difference with the regular sampling core is that it
+// reports the number of sampled entries for the same logging level and message.
+//
+// Reporting is in form of a separate log entry for every tick when there were
+// sampled entries.
+func NewReportingSampler(core Core, tick time.Duration, first, thereafter int, report Report) Core {
+	reporting := &reporting{
+		enabled: true,
+		core:    core,
+		report:  report,
 	}
-	entry := Entry{
-		LoggerName: s.reporting.loggerName,
-		Time:       time.Now(),
-		Level:      s.reporting.level,
-		Message:    s.reporting.message,
+	return &sampler{
+		Core:       core,
+		reporting:  reporting,
+		tick:       tick,
+		counts:     newCounters(),
+		first:      uint64(first),
+		thereafter: uint64(thereafter),
 	}
-	fields := []Field{
-		{Key: "original_level", Type: StringType, String: ent.Level.String()},
-		{Key: "original_message", Type: StringType, String: ent.Message},
-		{Key: "count", Type: Int64Type, Integer: int64(sampleCount)},
-	}
-	return s.reporting.core.Write(entry, fields)
 }

@@ -21,7 +21,6 @@
 package zap
 
 import (
-	"go.uber.org/atomic"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -37,12 +36,7 @@ import (
 )
 
 func NewProdReportingConfig() Config {
-	reporting := &ReportingSamplingConfig{
-		Enabled:    true,
-		LoggerName: "t",
-		Level:      AtomicLevel{l: atomic.NewInt32(0)},
-		Message:    "t",
-	}
+	reporting := &SamplingReportingConfig{Enabled: true}
 	config := NewProductionConfig()
 	config.Sampling.Reporting = reporting
 	return config
@@ -74,7 +68,7 @@ func TestConfig(t *testing.T) {
 			expectRe: `{"level":"info","caller":"zap/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
 				`{"level":"warn","caller":"zap/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n",
 			expectSamplingN:  99,
-			expectSamplingRe: `{"level":"info","logger":"t","msg":"t","original_level":"info","original_message":"sampling","count":\d+}`,
+			expectSamplingRe: `{"level":"info","logger":"zapcore","msg":"Log entries were sampled","original_level":"info","original_message":"sampling","count":\d+}`,
 		},
 		{
 			desc:    "development",
@@ -93,7 +87,7 @@ func TestConfig(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			temp, err := ioutil.TempFile("", "zap-prod-config-test")
 			require.NoError(t, err, "Failed to create temp file.")
-			defer os.Remove(temp.Name())
+			defer func() { _ = os.Remove(temp.Name()) }()
 
 			tt.cfg.OutputPaths = []string{temp.Name()}
 			tt.cfg.EncoderConfig.TimeKey = "" // no timestamps in tests
