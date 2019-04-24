@@ -92,20 +92,20 @@ func (c *counter) IncCheckReset(t time.Time, tick time.Duration) (currentVal, pr
 
 }
 
-// Reporter defines report function that generates and writes sampling activity
+// Reporter defines Report() function that generates and writes sampling activity
 // report log entries.
 type Reporter interface {
-	report(ent Entry, n int64) error
+	Report(ent Entry, n int64) error
 }
 
 // samplingReporter is the default implementation of Reporter. Refer to this
-// when you want to customise reporter behaviour or message composition.
+// when you want to customise Reporter's behaviour or message composition.
 type samplingReporter struct {
 	enabled bool
 	core    Core
 }
 
-func (r samplingReporter) report(ent Entry, n int64) error {
+func (r samplingReporter) Report(ent Entry, n int64) error {
 	if !r.enabled {
 		return nil
 	}
@@ -167,7 +167,7 @@ func NewSampler(core Core, tick time.Duration, first, thereafter int) Core {
 func (s *sampler) With(fields []Field) Core {
 	return &sampler{
 		Core: s.Core.With(fields),
-		// Reporter.core is only to be used for logging sampling activity.
+		// reporter.core is only to be used for logging sampling activity.
 		// No extra fields should be added to it.
 		Reporter:   s.Reporter,
 		tick:       s.tick,
@@ -187,9 +187,10 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	if n > s.first && (n-s.first)%s.thereafter != 0 {
 		return ce
 	}
-	if err := s.Reporter.report(ent, s.getSampleCount(prevN)); err != nil {
+	if err := s.Reporter.Report(ent, s.getSampleCount(prevN)); err != nil {
 		if ce.ErrorOutput != nil {
 			fmt.Fprintf(ce.ErrorOutput, "%v sampling report write error: %v\n", time.Now(), err)
+			ce.ErrorOutput.Sync()
 		}
 	}
 	return s.Core.Check(ent, ce)
