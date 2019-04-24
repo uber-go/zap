@@ -218,9 +218,7 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 		opts = append(opts, WrapCore(func(core zapcore.Core) zapcore.Core {
 			if cfg.Sampling.Reporting != nil && cfg.Sampling.Reporting.Enabled {
 				return zapcore.NewReportingSampler(
-					core, time.Second, int(cfg.Sampling.Initial), int(cfg.Sampling.Thereafter),
-					zapcore.SamplingReport,
-				)
+					core, time.Second, int(cfg.Sampling.Initial), int(cfg.Sampling.Thereafter), nil)
 			}
 			return zapcore.NewSampler(core, time.Second, int(cfg.Sampling.Initial), int(cfg.Sampling.Thereafter))
 		}))

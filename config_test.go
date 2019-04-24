@@ -35,6 +35,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var numberPattern = regexp.MustCompile(`\d+`)
+
 func NewProdReportingConfig() Config {
 	reporting := &SamplingReportingConfig{Enabled: true}
 	config := NewProductionConfig()
@@ -120,8 +122,7 @@ func TestConfig(t *testing.T) {
 				logSlice := strings.Split(logs, "\n")
 				samplingRep := logSlice[len(logSlice)-3]
 				require.Regexpf(t, tt.expectSamplingRe, samplingRep, "Unexpected sampling report output.")
-				re := regexp.MustCompile(`[\d]+`)
-				samplingN, err := strconv.Atoi(re.FindString(samplingRep))
+				samplingN, err := strconv.Atoi(numberPattern.FindString(samplingRep))
 				require.NoError(t, err, "Couldn't read number of sampled logs from report.")
 				require.EqualValues(t, tt.expectSamplingN, samplingN)
 			}
