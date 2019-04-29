@@ -45,7 +45,7 @@ ifdef SHOULD_LINT
 	@echo "Installing test dependencies for vet..."
 	@go test -i $(PKGS)
 	@echo "Checking vet..."
-	@go vet $(VET_RULES) ./... 2>&1 | tee -a lint.log
+	@go vet $(VET_RULES) $(PKGS) 2>&1 | tee -a lint.log
 	@echo "Checking lint..."
 	@$(foreach dir,$(PKGS),golint $(dir) 2>&1 | tee -a lint.log;)
 	@echo "Checking for unresolved FIXMEs..."
