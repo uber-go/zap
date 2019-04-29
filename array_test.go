@@ -76,7 +76,7 @@ func TestArrayWrappers(t *testing.T) {
 		{"empty uint8s", Uint8s("", []uint8{}), []interface{}{}},
 		{"empty uintptrs", Uintptrs("", []uintptr{}), []interface{}{}},
 		{"bools", Bools("", []bool{true, false}), []interface{}{true, false}},
-		{"byte strings", ByteStrings("", [][]byte{{1, 2}, {3, 4}}), []interface{}{[]byte{1, 2}, []byte{3, 4}}},
+		{"byte strings", ByteStrings("", [][]byte{{1, 2}, {3, 4}}), []interface{}{"\x01\x02", "\x03\x04"}},
 		{"complex128s", Complex128s("", []complex128{1 + 2i, 3 + 4i}), []interface{}{1 + 2i, 3 + 4i}},
 		{"complex64s", Complex64s("", []complex64{1 + 2i, 3 + 4i}), []interface{}{complex64(1 + 2i), complex64(3 + 4i)}},
 		{"durations", Durations("", []time.Duration{1, 2}), []interface{}{time.Nanosecond, 2 * time.Nanosecond}},
