@@ -195,9 +195,9 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 		},
 		{
 			desc:     "reflect (success)",
-			expected: `"k":{"loggable":"yes"}`,
+			expected: `"k":{"escape":"<&>","loggable":"yes"}`,
 			f: func(e Encoder) {
-				assert.NoError(t, e.AddReflected("k", map[string]string{"loggable": "yes"}), "Unexpected error JSON-serializing a map.")
+				assert.NoError(t, e.AddReflected("k", map[string]string{"escape": "<&>", "loggable": "yes"}), "Unexpected error JSON-serializing a map.")
 			},
 		},
 		{
