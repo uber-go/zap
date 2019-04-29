@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.10.0 (29 Apr 2019)
+
+Bugfixes:
+* [#657][]: Fix `MapObjectEncoder.AppendByteString` not adding value as a
+  string.
+
+Enhancements:
+* [#610][]: Add `zaptest.WrapOptions` to wrap `zap.Option` for creating test
+  loggers.
+* [#657][]: Don't panic when encoding a String field.
+* [#704][]: Disable HTML escaping for JSON objects encoded using the
+  reflect-based encoder.
+
+Thanks to @iaroslav-ciupin, @lelenanam, @joa, @NWilson for their contributions
+to this release.
+
 ## v1.9.1 (06 Aug 2018)
 
 Bugfixes:
