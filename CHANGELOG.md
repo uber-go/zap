@@ -5,6 +5,7 @@
 Bugfixes:
 * [#657][]: Fix `MapObjectEncoder.AppendByteString` not adding value as a
   string.
+* [#706][]: Fix incorrect call depth to determine caller in Go 1.12.
 
 Enhancements:
 * [#610][]: Add `zaptest.WrapOptions` to wrap `zap.Option` for creating test
@@ -319,3 +320,8 @@ upgrade to the upcoming stable release.
 [#572]: https://github.com/uber-go/zap/pull/572
 [#606]: https://github.com/uber-go/zap/pull/606
 [#614]: https://github.com/uber-go/zap/pull/614
+[#657]: https://github.com/uber-go/zap/pull/657
+[#706]: https://github.com/uber-go/zap/pull/706
+[#610]: https://github.com/uber-go/zap/pull/610
+[#657]: https://github.com/uber-go/zap/pull/657
+[#704]: https://github.com/uber-go/zap/pull/704
