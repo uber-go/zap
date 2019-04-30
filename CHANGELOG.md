@@ -10,7 +10,7 @@ Bugfixes:
 Enhancements:
 * [#610][]: Add `zaptest.WrapOptions` to wrap `zap.Option` for creating test
   loggers.
-* [#657][]: Don't panic when encoding a String field.
+* [#675][]: Don't panic when encoding a String field.
 * [#704][]: Disable HTML escaping for JSON objects encoded using the
   reflect-based encoder.
 
@@ -323,5 +323,5 @@ upgrade to the upcoming stable release.
 [#657]: https://github.com/uber-go/zap/pull/657
 [#706]: https://github.com/uber-go/zap/pull/706
 [#610]: https://github.com/uber-go/zap/pull/610
-[#657]: https://github.com/uber-go/zap/pull/657
+[#675]: https://github.com/uber-go/zap/pull/675
 [#704]: https://github.com/uber-go/zap/pull/704
