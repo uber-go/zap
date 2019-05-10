@@ -88,6 +88,11 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 			expected: []byte("foo"),
 		},
 		{
+			desc:     "AddByteString",
+			f:        func(e ObjectEncoder) { e.AddByteString("k", []byte("foo")) },
+			expected: "foo",
+		},
+		{
 			desc:     "AddBool",
 			f:        func(e ObjectEncoder) { e.AddBool("k", true) },
 			expected: true,
@@ -228,6 +233,7 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 		// AppendObject and AppendArray are covered by the AddObject (nested) and
 		// AddArray (nested) cases above.
 		{"AppendBool", func(e ArrayEncoder) { e.AppendBool(true) }, true},
+		{"AppendByteString", func(e ArrayEncoder) { e.AppendByteString([]byte("foo")) }, "foo"},
 		{"AppendComplex128", func(e ArrayEncoder) { e.AppendComplex128(1 + 2i) }, 1 + 2i},
 		{"AppendComplex64", func(e ArrayEncoder) { e.AppendComplex64(1 + 2i) }, complex64(1 + 2i)},
 		{"AppendDuration", func(e ArrayEncoder) { e.AppendDuration(time.Second) }, time.Second},
