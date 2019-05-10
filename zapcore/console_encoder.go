@@ -22,9 +22,10 @@ package zapcore
 
 import (
 	"fmt"
+	"sync"
+
 	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/internal/bufferpool"
-	"sync"
 )
 
 var _sliceEncoderPool = sync.Pool{
@@ -55,8 +56,9 @@ type consoleEncoder struct {
 // encoder configuration, it will omit any element whose key is set to the empty
 // string.
 func NewConsoleEncoder(cfg EncoderConfig) Encoder {
-	if cfg.ElementDelimiter == 0 {
-		cfg.ElementDelimiter = '\t'
+	if cfg.ConsoleSeparator == 0 {
+		//Default delimiter '\t'
+		cfg.ConsoleSeparator = '\t'
 	}
 	return consoleEncoder{newJSONEncoder(cfg, true)}
 }
@@ -96,7 +98,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	}
 	for i := range arr.elems {
 		if i > 0 {
-			line.AppendByte(c.ElementDelimiter)
+			line.AppendByte(c.ConsoleSeparator)
 		}
 		fmt.Fprint(line, arr.elems[i])
 	}
@@ -104,7 +106,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 
 	// Add the message itself.
 	if c.MessageKey != "" {
-		c.addDelimiterIfNecessary(line)
+		c.addSeparatorIfNecessary(line)
 		line.AppendString(ent.Message)
 	}
 
@@ -136,14 +138,14 @@ func (c consoleEncoder) writeContext(line *buffer.Buffer, extra []Field) {
 		return
 	}
 
-	c.addDelimiterIfNecessary(line)
+	c.addSeparatorIfNecessary(line)
 	line.AppendByte('{')
 	line.Write(context.buf.Bytes())
 	line.AppendByte('}')
 }
 
-func (c consoleEncoder) addDelimiterIfNecessary(line *buffer.Buffer) {
+func (c consoleEncoder) addSeparatorIfNecessary(line *buffer.Buffer) {
 	if line.Len() > 0 {
-		line.AppendByte(c.ElementDelimiter)
+		line.AppendByte(c.ConsoleSeparator)
 	}
 }

@@ -239,8 +239,8 @@ type EncoderConfig struct {
 	// Unlike the other primitive type encoders, EncodeName is optional. The
 	// zero value falls back to FullNameEncoder.
 	EncodeName NameEncoder `json:"nameEncoder" yaml:"nameEncoder"`
-	//More on console, the delimiter of each element
-	ElementDelimiter byte `json:"elementDelimiter" yaml:"elementDelimiter"`
+	// Configures the field separator used by the console encoder.
+	ConsoleSeparator byte `json:"consoleSeparator" yaml:"consoleSeparator"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a

@@ -25,32 +25,63 @@ import (
 	"testing"
 )
 
-func TestSetConsoleElementDelimiter(t *testing.T) {
-	encodeConfig := humanEncoderConfig()
-	encodeConfig.ElementDelimiter = ' '
-	enc := NewConsoleEncoder(encodeConfig)
-	enc.AddString("str", "foo")
+var (
+	testEntry = Entry{
+		LoggerName: "main",
+		Level:      InfoLevel,
+		Message:    `hello`,
+		Time:       _epoch,
+		Stack:      "fake-stack",
+		Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42},
+	}
+)
 
-	buf, _ := enc.EncodeEntry(Entry{
-		Message: "fake",
-		Level:   DebugLevel,
-	}, nil)
+func TestConsoleSeparator(t *testing.T) {
 
-	assert.Equal(t, `0001-01-01T00:00:00.000Z DEBUG fake {"str": "foo"}
-`, buf.String())
-	buf.Free()
+	tests := []struct {
+		desc            string
+		cfg             EncoderConfig
+		expectedConsole string
+	}{
+		{
+			desc:            "space console separator",
+			cfg:             encoderTestEncoderConfig(' '),
+			expectedConsole: "0 info main foo.go:42 hello\nfake-stack\n",
+		},
+		{
+			desc:            "default console separator",
+			cfg:             testEncoderConfig(),
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\nfake-stack\n",
+		},
+		{
+			desc:            "default console separator",
+			cfg:             encoderTestEncoderConfig('\t'),
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\nfake-stack\n",
+		},
+		{
+			desc:            "dash console separator",
+			cfg:             encoderTestEncoderConfig('-'),
+			expectedConsole: "0-info-main-foo.go:42-hello\nfake-stack\n",
+		},
+	}
 
-	encodeConfig.ElementDelimiter = '-'
-	enc = NewConsoleEncoder(encodeConfig)
-	enc.AddString("str", "foo")
+	for i, tt := range tests {
+		console := NewConsoleEncoder(tt.cfg)
+		entry := testEntry
+		consoleOut, consoleErr := console.EncodeEntry(entry, nil)
+		if assert.NoError(t, consoleErr, "Unexpected error console-encoding entry in case #%d.", i) {
+			assert.Equal(
+				t,
+				tt.expectedConsole,
+				consoleOut.String(),
+				"Unexpected console output: expected to %v.", tt.desc,
+			)
+		}
+	}
+}
 
-	buf, _ = enc.EncodeEntry(Entry{
-		Message: "fake",
-		Level:   DebugLevel,
-	}, nil)
-
-	assert.Equal(t, `0001-01-01T00:00:00.000Z-DEBUG-fake-{"str": "foo"}
-`, buf.String())
-	buf.Free()
-
+func encoderTestEncoderConfig(separator byte) EncoderConfig {
+	testEncoder := testEncoderConfig()
+	testEncoder.ConsoleSeparator = separator
+	return testEncoder
 }
