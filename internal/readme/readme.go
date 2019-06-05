@@ -43,7 +43,6 @@ var (
 		"go-kit/kit/log":        "go-kit",
 		"inconshreveable/log15": "log15",
 		"apex/log":              "apex/log",
-		"go.pedge.io/lion":      "lion",
 		"rs/zerolog":            "zerolog",
 	}
 )
