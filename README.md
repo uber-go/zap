@@ -64,40 +64,40 @@ id="anchor-versions">[1](#footnote-versions)</sup>
 
 Log a message and 10 fields:
 
-| Package | Time | Objects Allocated |
-| :--- | :---: | :---: |
-| :zap: zap | 973 ns/op | 5 allocs/op |
-| :zap: zap (sugared) | 1360 ns/op | 11 allocs/op |
-| zerolog | 4482 ns/op | 76 allocs/op |
-| go-kit | 5305 ns/op | 105 allocs/op |
-| apex/log | 27875 ns/op | 115 allocs/op |
-| logrus | 29469 ns/op | 125 allocs/op |
-| log15 | 31421 ns/op | 122 allocs/op |
+| Package | Time | Time % to zap | Objects Allocated |
+| :------ | :--: | :-----------: | :---------------: |
+| :zap: zap | 862 ns/op | +0% | 5 allocs/op
+| :zap: zap (sugared) | 1250 ns/op | +45% | 11 allocs/op
+| zerolog | 4021 ns/op | +366% | 76 allocs/op
+| go-kit | 4542 ns/op | +427% | 105 allocs/op
+| apex/log | 26785 ns/op | +3007% | 115 allocs/op
+| logrus | 29501 ns/op | +3322% | 125 allocs/op
+| log15 | 29906 ns/op | +3369% | 122 allocs/op
 
 Log a message with a logger that already has 10 fields of context:
 
-| Package | Time | Objects Allocated |
-| :--- | :---: | :---: |
-| :zap: zap | 141 ns/op | 0 allocs/op |
-| :zap: zap (sugared) | 214 ns/op | 2 allocs/op |
-| zerolog | 97 ns/op | 0 allocs/op |
-| go-kit | 5555 ns/op | 103 allocs/op |
-| log15 | 20095 ns/op | 73 allocs/op |
-| logrus | 28089 ns/op | 113 allocs/op |
-| apex/log | 28280 ns/op | 104 allocs/op |
+| Package | Time | Time % to zap | Objects Allocated |
+| :------ | :--: | :-----------: | :---------------: |
+| :zap: zap | 126 ns/op | +0% | 0 allocs/op
+| :zap: zap (sugared) | 187 ns/op | +48% | 2 allocs/op
+| zerolog | 88 ns/op | -30% | 0 allocs/op
+| go-kit | 5087 ns/op | +3937% | 103 allocs/op
+| log15 | 18548 ns/op | +14621% | 73 allocs/op
+| apex/log | 26012 ns/op | +20544% | 104 allocs/op
+| logrus | 27236 ns/op | +21516% | 113 allocs/op
 
 Log a static string, without any context or `printf`-style templating:
 
-| Package | Time | Objects Allocated |
-| :--- | :---: | :---: |
-| :zap: zap | 129 ns/op | 0 allocs/op |
-| :zap: zap (sugared) | 213 ns/op | 2 allocs/op |
-| zerolog | 99 ns/op | 0 allocs/op |
-| go-kit | 300 ns/op | 11 allocs/op |
-| standard library | 538 ns/op | 2 allocs/op |
-| apex/log | 2232 ns/op | 10 allocs/op |
-| logrus | 3428 ns/op | 24 allocs/op |
-| log15 | 4013 ns/op | 23 allocs/op |
+| Package | Time | Time % to zap | Objects Allocated |
+| :------ | :--: | :-----------: | :---------------: |
+| :zap: zap | 118 ns/op | +0% | 0 allocs/op
+| :zap: zap (sugared) | 191 ns/op | +62% | 2 allocs/op
+| zerolog | 93 ns/op | -21% | 0 allocs/op
+| go-kit | 280 ns/op | +137% | 11 allocs/op
+| standard library | 499 ns/op | +323% | 2 allocs/op
+| apex/log | 1990 ns/op | +1586% | 10 allocs/op
+| logrus | 3129 ns/op | +2552% | 24 allocs/op
+| log15 | 3887 ns/op | +3194% | 23 allocs/op
 
 ## Development Status: Stable
 
@@ -131,3 +131,4 @@ pinned in zap's [glide.lock][] file. [↩](#anchor-versions)
 [cov]: https://codecov.io/gh/uber-go/zap
 [benchmarking suite]: https://github.com/uber-go/zap/tree/master/benchmarks
 [glide.lock]: https://github.com/uber-go/zap/blob/master/glide.lock
+
