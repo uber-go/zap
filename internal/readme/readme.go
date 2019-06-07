@@ -154,7 +154,6 @@ func getBenchmarkRow(
 	}
 	r := &benchmarkRow{
 		Name: libraryNameToMarkdownName[libraryName],
-
 		Time:             duration,
 		AllocatedBytes:   allocatedBytes,
 		AllocatedObjects: allocatedObjects,
