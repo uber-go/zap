@@ -315,15 +315,6 @@ func BenchmarkWithoutFields(b *testing.B) {
 			}
 		})
 	})
-	b.Run("go.pedge.io/lion", func(b *testing.B) {
-		logger := newLion()
-		b.ResetTimer()
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				logger.Printf(getMessage(0))
-			}
-		})
-	})
 	b.Run("stdlib.Println", func(b *testing.B) {
 		logger := log.New(ioutil.Discard, "", log.LstdFlags)
 		b.ResetTimer()
@@ -462,15 +453,6 @@ func BenchmarkAccumulatedContext(b *testing.B) {
 			}
 		})
 	})
-	b.Run("go.pedge.io/lion", func(b *testing.B) {
-		logger := newLion().WithFields(fakeLogrusFields())
-		b.ResetTimer()
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				logger.Infof(getMessage(0))
-			}
-		})
-	})
 	b.Run("rs/zerolog", func(b *testing.B) {
 		logger := fakeZerologContext(newZerolog().With()).Logger()
 		b.ResetTimer()
@@ -579,15 +561,6 @@ func BenchmarkAddingFields(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				logger.WithFields(fakeLogrusFields()).Info(getMessage(0))
-			}
-		})
-	})
-	b.Run("go.pedge.io/lion", func(b *testing.B) {
-		logger := newLion()
-		b.ResetTimer()
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				logger.WithFields(fakeLogrusFields()).Infof(getMessage(0))
 			}
 		})
 	})
