@@ -69,7 +69,6 @@ Log a message and 10 fields:
 | :zap: zap | 3131 ns/op | 5 allocs/op |
 | :zap: zap (sugared) | 4173 ns/op | 21 allocs/op |
 | zerolog | 16154 ns/op | 90 allocs/op |
-| lion | 16341 ns/op | 111 allocs/op |
 | go-kit | 17049 ns/op | 126 allocs/op |
 | logrus | 23662 ns/op | 142 allocs/op |
 | log15 | 36351 ns/op | 149 allocs/op |
@@ -82,7 +81,6 @@ Log a message with a logger that already has 10 fields of context:
 | :zap: zap | 380 ns/op | 0 allocs/op |
 | :zap: zap (sugared) | 564 ns/op | 2 allocs/op |
 | zerolog | 321 ns/op | 0 allocs/op |
-| lion | 7092 ns/op | 39 allocs/op |
 | go-kit | 20226 ns/op | 115 allocs/op |
 | logrus | 22312 ns/op | 130 allocs/op |
 | log15 | 28788 ns/op | 79 allocs/op |
@@ -97,7 +95,6 @@ Log a static string, without any context or `printf`-style templating:
 | zerolog | 323 ns/op | 0 allocs/op |
 | standard library | 575 ns/op | 2 allocs/op |
 | go-kit | 922 ns/op | 13 allocs/op |
-| lion | 1413 ns/op | 10 allocs/op |
 | logrus | 2291 ns/op | 27 allocs/op |
 | apex/log | 3690 ns/op | 11 allocs/op |
 | log15 | 5954 ns/op | 26 allocs/op |

@@ -1,8 +1,8 @@
-hash: f073ba522c06c88ea3075bde32a8aaf0969a840a66cab6318a0897d141ffee92
-updated: 2017-07-22T18:06:49.598185334-07:00
+hash: 6bbd1560b94e936e7e53662328d0bd1e05425678a64fd6648b06efdd1cb539fd
+updated: 2019-06-19T14:35:34.783916-04:00
 imports:
 - name: go.uber.org/atomic
-  version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
+  version: df976f2515e274675050de7b3f42545de80594fd
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 testImports:
@@ -18,8 +18,6 @@ testImports:
   version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
   - spew
-- name: github.com/fatih/color
-  version: 62e9147c64a1ed519147b62a56a14e83e2be02c1
 - name: github.com/go-kit/kit
   version: e10f5bf035be9af21fd5b2fb4469d5716c6ab07d
   subpackages:
@@ -59,8 +57,6 @@ testImports:
   subpackages:
   - assert
   - require
-- name: go.pedge.io/lion
-  version: 87958e8713f1fa138d993087133b97e976642159
 - name: golang.org/x/sys
   version: c4489faa6e5ab84c0ef40d6ee878f7a030281f0f
   subpackages:
