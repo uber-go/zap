@@ -31,6 +31,9 @@ import (
 // behavior.
 const DefaultLineEnding = "\n"
 
+// OmitKey defines the key to use when callers want to remove a key from log output.
+const OmitKey = ""
+
 // A LevelEncoder serializes a Level to a primitive type.
 type LevelEncoder func(Level, PrimitiveArrayEncoder)
 
