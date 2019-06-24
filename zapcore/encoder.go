@@ -343,6 +343,7 @@ type Encoder interface {
 	Clone() Encoder
 
 	// EncodeEntry encodes an entry and fields, along with any accumulated
-	// context, into a byte buffer and returns it.
+	// context, into a byte buffer and returns it. Any fields that are empty,
+	// including fields on the `Entry` type, should be omitted.
 	EncodeEntry(Entry, []Field) (*buffer.Buffer, error)
 }
