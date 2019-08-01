@@ -107,6 +107,7 @@ func TestJSONEncodeEntry(t *testing.T) {
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeDuration: zapcore.SecondsDurationEncoder,
+		EncodeBinary:   zapcore.Base64BinaryEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	})
 

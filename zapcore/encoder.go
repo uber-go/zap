@@ -21,6 +21,8 @@
 package zapcore
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"time"
 
 	"go.uber.org/zap/buffer"
@@ -170,6 +172,34 @@ func (e *DurationEncoder) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// A BinaryEncoder serializes a []byte to a primitive type.
+type BinaryEncoder func([]byte, PrimitiveArrayEncoder)
+
+// Base64BinaryEncoder serializes a []byte using base64 encoding.
+func Base64BinaryEncoder(b []byte, enc PrimitiveArrayEncoder) {
+	enc.AppendString(base64.StdEncoding.EncodeToString(b))
+}
+
+// HexBinaryEncoder serializes a []byte using hex encoding.
+func HexBinaryEncoder(b []byte, enc PrimitiveArrayEncoder) {
+	if len(b) == 0 {
+		return
+	}
+	enc.AppendString("0x" + hex.EncodeToString(b))
+}
+
+// UnmarshalText unmarshals text to a BinaryEncoder. "hex" is unmarshaled to HexBinaryEncoder,
+// and anything else to Base64BinaryEncoder.
+func (e *BinaryEncoder) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "hex":
+		*e = HexBinaryEncoder
+	default:
+		*e = Base64BinaryEncoder
+	}
+	return nil
+}
+
 // A CallerEncoder serializes an EntryCaller to a primitive type.
 type CallerEncoder func(EntryCaller, PrimitiveArrayEncoder)
 
@@ -238,6 +268,7 @@ type EncoderConfig struct {
 	EncodeLevel    LevelEncoder    `json:"levelEncoder" yaml:"levelEncoder"`
 	EncodeTime     TimeEncoder     `json:"timeEncoder" yaml:"timeEncoder"`
 	EncodeDuration DurationEncoder `json:"durationEncoder" yaml:"durationEncoder"`
+	EncodeBinary   BinaryEncoder   `json:"binaryEncoder" yaml:"binaryEncoder"`
 	EncodeCaller   CallerEncoder   `json:"callerEncoder" yaml:"callerEncoder"`
 	// Unlike the other primitive type encoders, EncodeName is optional. The
 	// zero value falls back to FullNameEncoder.
@@ -295,6 +326,9 @@ type ArrayEncoder interface {
 	// Time-related types.
 	AppendDuration(time.Duration)
 	AppendTime(time.Time)
+
+	// Binary-related types
+	AppendBinary([]byte)
 
 	// Logging-specific marshalers.
 	AppendArray(ArrayMarshaler) error
