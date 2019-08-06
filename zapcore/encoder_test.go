@@ -121,7 +121,7 @@ func TestEncoderConfiguration(t *testing.T) {
 		{
 			desc: "skip level if LevelKey is omitted",
 			cfg: EncoderConfig{
-				LevelKey:       "",
+				LevelKey:       OmitKey,
 				TimeKey:        "T",
 				MessageKey:     "M",
 				NameKey:        "N",
@@ -140,7 +140,7 @@ func TestEncoderConfiguration(t *testing.T) {
 			desc: "skip timestamp if TimeKey is omitted",
 			cfg: EncoderConfig{
 				LevelKey:       "L",
-				TimeKey:        "",
+				TimeKey:        OmitKey,
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
@@ -159,7 +159,7 @@ func TestEncoderConfiguration(t *testing.T) {
 			cfg: EncoderConfig{
 				LevelKey:       "L",
 				TimeKey:        "T",
-				MessageKey:     "",
+				MessageKey:     OmitKey,
 				NameKey:        "N",
 				CallerKey:      "C",
 				StacktraceKey:  "S",
@@ -178,7 +178,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LevelKey:       "L",
 				TimeKey:        "T",
 				MessageKey:     "M",
-				NameKey:        "",
+				NameKey:        OmitKey,
 				CallerKey:      "C",
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
@@ -197,7 +197,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				TimeKey:        "T",
 				MessageKey:     "M",
 				NameKey:        "N",
-				CallerKey:      "",
+				CallerKey:      OmitKey,
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
@@ -216,7 +216,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
-				StacktraceKey:  "",
+				StacktraceKey:  OmitKey,
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
