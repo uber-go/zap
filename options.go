@@ -107,3 +107,10 @@ func AddStacktrace(lvl zapcore.LevelEnabler) Option {
 		log.addStack = lvl
 	})
 }
+
+// SetLoggerName sets the logger default name
+func SetLoggerName(name string) Option {
+	return optionFunc(func(log *Logger) {
+		log.name = name
+	})
+}
