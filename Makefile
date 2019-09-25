@@ -51,7 +51,7 @@ ifdef SHOULD_LINT
 	@echo "Checking for unresolved FIXMEs..."
 	@git grep -i fixme | grep -v -e vendor -e Makefile | tee -a lint.log
 	@echo "Checking for license headers..."
-	@./check_license.sh | tee -a lint.log
+	@./checklicense.sh | tee -a lint.log
 	@[ ! -s lint.log ]
 else
 	@echo "Skipping linters on" $(GO_VERSION)
