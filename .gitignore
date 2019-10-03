@@ -26,3 +26,5 @@ _testmain.go
 *.pprof
 *.out
 *.log
+
+.idea

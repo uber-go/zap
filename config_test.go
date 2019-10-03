@@ -23,18 +23,35 @@ package zap
 import (
 	"io/ioutil"
 	"os"
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
+
+	"go.uber.org/zap/internal/ztest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+var numberPattern = regexp.MustCompile(`\d+`)
+
+func NewProdReportingConfig() Config {
+	reporting := &SamplingReportingConfig{Enabled: true}
+	config := NewProductionConfig()
+	config.Sampling.Reporting = reporting
+	return config
+}
+
 func TestConfig(t *testing.T) {
 	tests := []struct {
-		desc     string
-		cfg      Config
-		expectN  int64
-		expectRe string
+		desc             string
+		cfg              Config
+		expectN          int64
+		expectRe         string
+		expectSamplingN  int64
+		expectSamplingRe string
 	}{
 		{
 			desc:    "production",
@@ -42,6 +59,18 @@ func TestConfig(t *testing.T) {
 			expectN: 2 + 100 + 1, // 2 from initial logs, 100 initial sampled logs, 1 from off-by-one in sampler
 			expectRe: `{"level":"info","caller":"zap/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
 				`{"level":"warn","caller":"zap/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n",
+			expectSamplingN:  0,
+			expectSamplingRe: ``,
+		},
+		{
+			desc: "production_with_sampling_reporting",
+			cfg:  NewProdReportingConfig(),
+			// 2 from initial logs, 100 initial sampled logs, 1 from off-by-one in sampler, 1 for tick roll-over
+			expectN: 2 + 100 + 1 + 1,
+			expectRe: `{"level":"info","caller":"zap/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
+				`{"level":"warn","caller":"zap/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n",
+			expectSamplingN:  99,
+			expectSamplingRe: `{"level":"info","logger":"zapcore","msg":"Log entries were sampled","original_level":"info","original_message":"sampling","count":\d+}`,
 		},
 		{
 			desc:    "development",
@@ -51,6 +80,8 @@ func TestConfig(t *testing.T) {
 				"INFO\tzap/config_test.go:" + `\d+` + "\tinfo\t" + `{"k": "v", "z": "zz"}` + "\n" +
 				"WARN\tzap/config_test.go:" + `\d+` + "\twarn\t" + `{"k": "v", "z": "zz"}` + "\n" +
 				`testing.\w+`,
+			expectSamplingN:  0,
+			expectSamplingRe: ``,
 		},
 	}
 
@@ -58,7 +89,7 @@ func TestConfig(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			temp, err := ioutil.TempFile("", "zap-prod-config-test")
 			require.NoError(t, err, "Failed to create temp file.")
-			defer os.Remove(temp.Name())
+			defer func() { _ = os.Remove(temp.Name()) }()
 
 			tt.cfg.OutputPaths = []string{temp.Name()}
 			tt.cfg.EncoderConfig.TimeKey = "" // no timestamps in tests
@@ -80,6 +111,22 @@ func TestConfig(t *testing.T) {
 			for i := 0; i < 200; i++ {
 				logger.Info("sampling")
 			}
+
+			// Rolling over tick to produce sampling report.
+			if tt.expectSamplingN > 0 {
+				ztest.Sleep(time.Second)
+				logger.Info("sampling")
+				byteContents, err = ioutil.ReadAll(temp)
+				require.NoError(t, err, "Couldn't read log contents from temp file.")
+				logs = string(byteContents)
+				logSlice := strings.Split(logs, "\n")
+				samplingRep := logSlice[len(logSlice)-3]
+				require.Regexpf(t, tt.expectSamplingRe, samplingRep, "Unexpected sampling report output.")
+				samplingN, err := strconv.Atoi(numberPattern.FindString(samplingRep))
+				require.NoError(t, err, "Couldn't read number of sampled logs from report.")
+				require.EqualValues(t, tt.expectSamplingN, samplingN)
+			}
+
 			assert.Equal(t, tt.expectN, count.Load(), "Hook called an unexpected number of times.")
 		})
 	}
