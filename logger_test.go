@@ -57,6 +57,8 @@ func TestLoggerAtomicLevel(t *testing.T) {
 			testLevel zapcore.Level
 			enabled   bool
 		}{
+			{TraceLevel, TraceLevel, true},
+			{DebugLevel, TraceLevel, false},
 			{DebugLevel, DebugLevel, true},
 			{InfoLevel, DebugLevel, false},
 			{WarnLevel, PanicLevel, true},
