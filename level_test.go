@@ -35,6 +35,7 @@ func TestLevelEnablerFunc(t *testing.T) {
 		level   zapcore.Level
 		enabled bool
 	}{
+		{TraceLevel, false},
 		{DebugLevel, false},
 		{InfoLevel, true},
 		{WarnLevel, false},
@@ -81,6 +82,7 @@ func TestAtomicLevelText(t *testing.T) {
 		expect zapcore.Level
 		err    bool
 	}{
+		{"trace", TraceLevel, false},
 		{"debug", DebugLevel, false},
 		{"info", InfoLevel, false},
 		{"", InfoLevel, false},

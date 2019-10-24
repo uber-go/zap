@@ -26,6 +26,10 @@ import (
 )
 
 const (
+	// TraceLevel logs are especially granular log messages that are used in development and debugging
+	// situations in which tracing of function inputs at outputs are necessary. Almost always disabled in production
+	// due to performance hits associated with very voluminous logs.
+	TraceLevel = zapcore.TraceLevel
 	// DebugLevel logs are typically voluminous, and are usually disabled in
 	// production.
 	DebugLevel = zapcore.DebugLevel
