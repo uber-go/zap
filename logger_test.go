@@ -171,11 +171,12 @@ func TestLoggerLogFatal(t *testing.T) {
 }
 
 func TestLoggerLeveledMethods(t *testing.T) {
-	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
+	withLogger(t, TraceLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		tests := []struct {
 			method        func(string, ...Field)
 			expectedLevel zapcore.Level
 		}{
+			{logger.Trace, TraceLevel},
 			{logger.Debug, DebugLevel},
 			{logger.Info, InfoLevel},
 			{logger.Warn, WarnLevel},
