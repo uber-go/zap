@@ -153,7 +153,7 @@ func getBenchmarkRow(
 		return nil, err
 	}
 	r := &benchmarkRow{
-		Name: libraryNameToMarkdownName[libraryName],
+		Name:             libraryNameToMarkdownName[libraryName],
 		Time:             duration,
 		AllocatedBytes:   allocatedBytes,
 		AllocatedObjects: allocatedObjects,
@@ -182,13 +182,11 @@ func findUniqueSubstring(input []string, substring string) (string, error) {
 }
 
 func getBenchmarkOutput(benchmarkName string) ([]string, error) {
-	return getOutput("go", "test", fmt.Sprintf("-bench=%s", benchmarkName), "-benchmem", "./benchmarks")
-}
-
-func getOutput(name string, arg ...string) ([]string, error) {
-	output, err := exec.Command(name, arg...).CombinedOutput()
+	cmd := exec.Command("go", "test", fmt.Sprintf("-bench=%s", benchmarkName), "-benchmem")
+	cmd.Dir = "benchmarks"
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("error running %s %s: %v\n%s", name, strings.Join(arg, " "), err, string(output))
+		return nil, fmt.Errorf("error running 'go test -bench=%q': %v\n%s", benchmarkName, err, string(output))
 	}
 	return strings.Split(string(output), "\n"), nil
 }
