@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.0 (29 Oct 2019)
+
+Enhancements:
+* [#751][]: Migrate to Go modules.
+
 ## 1.11.0 (21 Oct 2019)
 
 Enhancements:
@@ -335,3 +340,4 @@ upgrade to the upcoming stable release.
 [#704]: https://github.com/uber-go/zap/pull/704
 [#725]: https://github.com/uber-go/zap/pull/725
 [#736]: https://github.com/uber-go/zap/pull/736
+[#751]: https://github.com/uber-go/zap/pull/751
