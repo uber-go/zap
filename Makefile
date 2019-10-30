@@ -13,22 +13,11 @@ GO_FILES := $(shell \
 	find . '(' -path '*/.*' -o -path './vendor' ')' -prune \
 	-o -name '*.go' -print | cut -b3-)
 
-# The linting tools evolve with each Go version, so run them only on the
-# latest stable release.
-GO_VERSION := $(shell go version | cut -d " " -f 3)
-GO_MINOR_VERSION := $(word 2,$(subst ., ,$(GO_VERSION)))
-LINTABLE_MINOR_VERSIONS := 13
-
-ifneq ($(filter $(LINTABLE_MINOR_VERSIONS),$(GO_MINOR_VERSION)),)
-SHOULD_LINT := true
-endif
-
 .PHONY: all
 all: lint test
 
 .PHONY: lint
 lint: $(GOLINT)
-ifdef SHOULD_LINT
 	@rm -rf lint.log
 	@echo "Checking formatting..."
 	@gofmt -d -s $(GO_FILES) 2>&1 | tee lint.log
@@ -41,9 +30,6 @@ ifdef SHOULD_LINT
 	@echo "Checking for license headers..."
 	@./checklicense.sh | tee -a lint.log
 	@[ ! -s lint.log ]
-else
-	@echo "Skipping linters on" $(GO_VERSION)
-endif
 
 $(GOLINT):
 	go install golang.org/x/lint/golint
