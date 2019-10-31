@@ -120,6 +120,7 @@ func TestLoggerLogPanic(t *testing.T) {
 		expected string
 	}{
 		{func(logger *Logger) { logger.Check(PanicLevel, "bar").Write() }, true, "bar"},
+		{func(logger *Logger) { logger.LogWithLevel(PanicLevel, "baz") }, true, "baz"},
 		{func(logger *Logger) { logger.Panic("baz") }, true, "baz"},
 	} {
 		withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
@@ -148,6 +149,7 @@ func TestLoggerLogFatal(t *testing.T) {
 		expected string
 	}{
 		{func(logger *Logger) { logger.Check(FatalLevel, "bar").Write() }, "bar"},
+		{func(logger *Logger) { logger.LogWithLevel(FatalLevel, "bar") }, "bar"},
 		{func(logger *Logger) { logger.Fatal("baz") }, "baz"},
 	} {
 		withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
@@ -190,6 +192,31 @@ func TestLoggerLeveledMethods(t *testing.T) {
 				zapcore.Entry{Level: tt.expectedLevel},
 				output[i].Entry,
 				"Unexpected output from %s-level logger method.", tt.expectedLevel)
+		}
+	})
+}
+
+func TestLoggerLogWithLevel(t *testing.T) {
+	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
+		tests := []struct {
+			level zapcore.Level
+		}{
+			{DebugLevel},
+			{InfoLevel},
+			{WarnLevel},
+			{ErrorLevel},
+			{DPanicLevel},
+		}
+		for i, tt := range tests {
+			logger.LogWithLevel(tt.level, "")
+			output := logs.AllUntimed()
+			assert.Equal(t, i+1, len(output), "Unexpected number of logs.")
+			assert.Equal(t, 0, len(output[i].Context), "Unexpected context on first log.")
+			assert.Equal(
+				t,
+				zapcore.Entry{Level: tt.level},
+				output[i].Entry,
+				"Unexpected output from %s-level logger method.", tt.level)
 		}
 	})
 }

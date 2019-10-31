@@ -237,6 +237,18 @@ func (log *Logger) Fatal(msg string, fields ...Field) {
 	}
 }
 
+// LogWithLevel logs a message at specified level. The message includes any
+// fields passed at the log site, as well as any fields accumulated on the
+// logger.
+//
+// The logger then might panic or call os.Exit(1) depending on the level
+// (see DPanic, Panic or Fatal for more details).
+func (log *Logger) LogWithLevel(lvl zapcore.Level, msg string, fields ...Field) {
+	if ce := log.check(lvl, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
 // Sync calls the underlying Core's Sync method, flushing any buffered log
 // entries. Applications should take care to call Sync before exiting.
 func (log *Logger) Sync() error {

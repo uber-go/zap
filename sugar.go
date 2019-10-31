@@ -128,6 +128,13 @@ func (s *SugaredLogger) Fatal(args ...interface{}) {
 	s.log(FatalLevel, "", args, nil)
 }
 
+// LogWithLevel uses fmt.Sprint to construct and log a message, then might
+// panic or call os.Exit(1) depending on the level; see DPanic, Panic or Fatal
+// for more details.
+func (s *SugaredLogger) LogWithLevel(lvl zapcore.Level, args ...interface{}) {
+	s.log(lvl, "", args, nil)
+}
+
 // Debugf uses fmt.Sprintf to log a templated message.
 func (s *SugaredLogger) Debugf(template string, args ...interface{}) {
 	s.log(DebugLevel, template, args, nil)
@@ -162,6 +169,13 @@ func (s *SugaredLogger) Panicf(template string, args ...interface{}) {
 // Fatalf uses fmt.Sprintf to log a templated message, then calls os.Exit.
 func (s *SugaredLogger) Fatalf(template string, args ...interface{}) {
 	s.log(FatalLevel, template, args, nil)
+}
+
+// LogWithLevelf uses fmt.Sprintf to log a templated message, then might panic
+// or call os.Exit(1) depending on the level (see DPanic, Panic or Fatal for
+// more details).
+func (s *SugaredLogger) LogWithLevelf(lvl zapcore.Level, template string, args ...interface{}) {
+	s.log(lvl, template, args, nil)
 }
 
 // Debugw logs a message with some additional context. The variadic key-value
@@ -208,6 +222,13 @@ func (s *SugaredLogger) Panicw(msg string, keysAndValues ...interface{}) {
 // variadic key-value pairs are treated as they are in With.
 func (s *SugaredLogger) Fatalw(msg string, keysAndValues ...interface{}) {
 	s.log(FatalLevel, msg, nil, keysAndValues)
+}
+
+// LogWithLevelw logs a message with some additional context, then might panic
+// or call os.Exit(1) depending on the level (see DPanic, Panic or Fatal for
+// more details). variadic key-value pairs are treated as they are in With.
+func (s *SugaredLogger) LogWithLevelw(lvl zapcore.Level, msg string, keysAndValues ...interface{}) {
+	s.log(lvl, msg, nil, keysAndValues)
 }
 
 // Sync flushes any buffered log entries.
