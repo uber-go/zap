@@ -147,10 +147,11 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:Duration", Any("k", time.Second), Duration("k", time.Second)},
 		{"Any:Durations", Any("k", []time.Duration{time.Second}), Durations("k", []time.Duration{time.Second})},
 		{"Any:Fallback", Any("k", struct{}{}), Reflect("k", struct{}{})},
-		{"Ptr:Bool", Boolp("k", nil), Reflect("k", nil)},
+		{"Ptr:Bool", Boolp("k", nil), nilField("k")},
 		{"Ptr:Bool", Boolp("k", &boolTrue), Bool("k", true)},
-		{"Any:PtrBool", Any("k", (*bool)(nil)), Reflect("k", nil)},
+		{"Any:PtrBool", Any("k", (*bool)(nil)), nilField("k")},
 		{"Any:PtrBool", Any("k", &boolTrue), Bool("k", true)},
+		// TODO(goldfish): rest of Ptr* for scalar types...
 		{"Namespace", Namespace("k"), Field{Key: "k", Type: zapcore.NamespaceType}},
 	}
 

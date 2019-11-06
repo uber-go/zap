@@ -38,8 +38,8 @@ func Skip() Field {
 	return Field{Type: zapcore.SkipType}
 }
 
-// nilField returns a field which will marshal explicitly as null. See original
-// motivation in https://github.com/uber-go/zap/issues/753 .
+// nilField returns a field which will marshal explicitly as nil. See motivation
+// in https://github.com/uber-go/zap/issues/753 .
 //
 // TODO: We might also consider a way to widen the overall APIs in this package,
 // ultimately exporting this function, by:
