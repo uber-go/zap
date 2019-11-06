@@ -64,6 +64,7 @@ func TestJSONEncodeEntry(t *testing.T) {
 				"so": "passes",
 				"answer": 42,
 				"common_pie": 3.14,
+				"null_value": null,
 				"such": {
 					"aee": "lol",
 					"bee": 123,
@@ -84,6 +85,7 @@ func TestJSONEncodeEntry(t *testing.T) {
 				zap.String("so", "passes"),
 				zap.Int("answer", 42),
 				zap.Float64("common_pie", 3.14),
+				zap.Reflect("null_value", nil),
 				zap.Reflect("such", foo{
 					A: "lol",
 					B: 123,

@@ -38,6 +38,25 @@ func Skip() Field {
 	return Field{Type: zapcore.SkipType}
 }
 
+// nilField returns a field which will marshal explicitly as null. See original
+// motivation in https://github.com/uber-go/zap/issues/753 .
+//
+// TODO: We might also consider a way to widen the overall APIs in this package,
+// ultimately exporting this function, by:
+//
+//	- Adding zapcore.NilType
+//
+//	- Adding zapcore.ObjectEncoder.AddNil()
+//
+// Doing so will provide encoder implementations a more efficient way to encode
+// nil (primary benefit), and would also help with debugging or maintaining the
+// implementation of zap itself (secondary benefit).
+//
+// But we avoid doing this until we are ready for a major version change, since
+// it would potentially break users of this package who switch on
+// zapcore.FieldType or which have implemented zapcore.ObjectEncoder.
+func nilField(key string) Field { return Reflect(key, nil) }
+
 // Binary constructs a field that carries an opaque binary blob.
 //
 // Binary data is serialized in an encoding-appropriate format. For example,
@@ -54,6 +73,15 @@ func Bool(key string, val bool) Field {
 		ival = 1
 	}
 	return Field{Key: key, Type: zapcore.BoolType, Integer: ival}
+}
+
+// Boolp constructs a field that carries a *bool. The returned Field will safely
+// and explicitly represent `nil` when appropriate.
+func Boolp(key string, val *bool) Field {
+	if val == nil {
+		return nilField(key)
+	}
+	return Bool(key, *val)
 }
 
 // ByteString constructs a field that carries UTF-8 encoded text as a []byte.
@@ -224,6 +252,8 @@ func Any(key string, value interface{}) Field {
 		return Array(key, val)
 	case bool:
 		return Bool(key, val)
+	case *bool:
+		return Boolp(key, val)
 	case []bool:
 		return Bools(key, val)
 	case complex128:

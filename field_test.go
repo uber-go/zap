@@ -63,6 +63,13 @@ func TestFieldConstructors(t *testing.T) {
 	name := username("phil")
 	ints := []int{5, 6}
 
+	// Helpful values for use in constructing pointers to primitives below.
+	var (
+		boolTrue = true
+		// TODO(goldfish): round out the rest of the primitive types for
+		// https://github.com/uber-go/zap/issues/753
+	)
+
 	tests := []struct {
 		name   string
 		field  Field
@@ -91,6 +98,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Uint8", Field{Key: "k", Type: zapcore.Uint8Type, Integer: 1}, Uint8("k", 1)},
 		{"Uintptr", Field{Key: "k", Type: zapcore.UintptrType, Integer: 10}, Uintptr("k", 0xa)},
 		{"Reflect", Field{Key: "k", Type: zapcore.ReflectType, Interface: ints}, Reflect("k", ints)},
+		{"Reflect", Field{Key: "k", Type: zapcore.ReflectType}, Reflect("k", nil)},
 		{"Stringer", Field{Key: "k", Type: zapcore.StringerType, Interface: addr}, Stringer("k", addr)},
 		{"Object", Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: name}, Object("k", name)},
 		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
@@ -139,6 +147,10 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:Duration", Any("k", time.Second), Duration("k", time.Second)},
 		{"Any:Durations", Any("k", []time.Duration{time.Second}), Durations("k", []time.Duration{time.Second})},
 		{"Any:Fallback", Any("k", struct{}{}), Reflect("k", struct{}{})},
+		{"Ptr:Bool", Boolp("k", nil), Reflect("k", nil)},
+		{"Ptr:Bool", Boolp("k", &boolTrue), Bool("k", true)},
+		{"Any:PtrBool", Any("k", (*bool)(nil)), Reflect("k", nil)},
+		{"Any:PtrBool", Any("k", &boolTrue), Bool("k", true)},
 		{"Namespace", Namespace("k"), Field{Key: "k", Type: zapcore.NamespaceType}},
 	}
 
