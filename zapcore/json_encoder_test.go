@@ -85,6 +85,7 @@ func TestJSONEncodeEntry(t *testing.T) {
 				zap.String("so", "passes"),
 				zap.Int("answer", 42),
 				zap.Float64("common_pie", 3.14),
+				// Test special-cased handling of nil in AddReflect()
 				zap.Reflect("null_value", nil),
 				zap.Reflect("such", foo{
 					A: "lol",

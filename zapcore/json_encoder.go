@@ -145,16 +145,28 @@ func (enc *jsonEncoder) resetReflectBuf() {
 	}
 }
 
+var nullLiteralBytes = []byte("null")
+
 func (enc *jsonEncoder) AddReflected(key string, obj interface{}) error {
-	enc.resetReflectBuf()
-	err := enc.reflectEnc.Encode(obj)
-	if err != nil {
-		return err
+	// Only invoke the standard JSON encoder if there is actually something to
+	// encode; otherwise write JSON null literal directly. For now, we only
+	// apply this optimization here, but not in AppendReflected. We could apply
+	// it there as well if needed (some discussion in
+	// https://github.com/uber-go/zap/issues/630 indicates that it could be
+	// valuable in some cases) but the primary known benefit at the moment is
+	// from primitive callers (see https://github.com/uber-go/zap/issues/753)
+	valueBytes := nullLiteralBytes
+	if obj != nil {
+		enc.resetReflectBuf()
+		if err := enc.reflectEnc.Encode(obj); err != nil {
+			return err
+		}
+		enc.reflectBuf.TrimNewline()
+		valueBytes = enc.reflectBuf.Bytes()
 	}
-	enc.reflectBuf.TrimNewline()
 	enc.addKey(key)
-	_, err = enc.buf.Write(enc.reflectBuf.Bytes())
-	return err
+	enc.buf.AppendBytes(valueBytes)
+	return nil
 }
 
 func (enc *jsonEncoder) OpenNamespace(key string) {
