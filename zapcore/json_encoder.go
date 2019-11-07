@@ -165,8 +165,8 @@ func (enc *jsonEncoder) AddReflected(key string, obj interface{}) error {
 		valueBytes = enc.reflectBuf.Bytes()
 	}
 	enc.addKey(key)
-	enc.buf.AppendBytes(valueBytes)
-	return nil
+	_, err := enc.buf.Write(valueBytes)
+	return err
 }
 
 func (enc *jsonEncoder) OpenNamespace(key string) {

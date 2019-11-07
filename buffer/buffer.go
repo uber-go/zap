@@ -44,11 +44,6 @@ func (b *Buffer) AppendString(s string) {
 	b.bs = append(b.bs, s...)
 }
 
-// AppendBytes appends a byte slice to the Buffer.
-func (b *Buffer) AppendBytes(bs []byte) {
-	b.bs = append(b.bs, bs...)
-}
-
 // AppendInt appends an integer to the underlying buffer (assuming base 10).
 func (b *Buffer) AppendInt(i int64) {
 	b.bs = strconv.AppendInt(b.bs, i, 10)
@@ -99,7 +94,7 @@ func (b *Buffer) Reset() {
 
 // Write implements io.Writer.
 func (b *Buffer) Write(bs []byte) (int, error) {
-	b.AppendBytes(bs)
+	b.bs = append(b.bs, bs...)
 	return len(bs), nil
 }
 
