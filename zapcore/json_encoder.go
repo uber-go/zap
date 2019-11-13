@@ -147,25 +147,27 @@ func (enc *jsonEncoder) resetReflectBuf() {
 
 var nullLiteralBytes = []byte("null")
 
+// Only invoke the standard JSON encoder if there is actually something to
+// encode; otherwise write JSON null literal directly.
+func (enc *jsonEncoder) encodeReflected(obj interface{}) ([]byte, error) {
+	if obj == nil {
+		return nullLiteralBytes, nil
+	}
+	enc.resetReflectBuf()
+	if err := enc.reflectEnc.Encode(obj); err != nil {
+		return nil, err
+	}
+	enc.reflectBuf.TrimNewline()
+	return enc.reflectBuf.Bytes(), nil
+}
+
 func (enc *jsonEncoder) AddReflected(key string, obj interface{}) error {
-	// Only invoke the standard JSON encoder if there is actually something to
-	// encode; otherwise write JSON null literal directly. For now, we only
-	// apply this optimization here, but not in AppendReflected. We could apply
-	// it there as well if needed (some discussion in
-	// https://github.com/uber-go/zap/issues/630 indicates that it could be
-	// valuable in some cases) but the primary known benefit at the moment is
-	// from primitive callers (see https://github.com/uber-go/zap/issues/753)
-	valueBytes := nullLiteralBytes
-	if obj != nil {
-		enc.resetReflectBuf()
-		if err := enc.reflectEnc.Encode(obj); err != nil {
-			return err
-		}
-		enc.reflectBuf.TrimNewline()
-		valueBytes = enc.reflectBuf.Bytes()
+	valueBytes, err := enc.encodeReflected(obj)
+	if err != nil {
+		return err
 	}
 	enc.addKey(key)
-	_, err := enc.buf.Write(valueBytes)
+	_, err = enc.buf.Write(valueBytes)
 	return err
 }
 
@@ -248,14 +250,12 @@ func (enc *jsonEncoder) AppendInt64(val int64) {
 }
 
 func (enc *jsonEncoder) AppendReflected(val interface{}) error {
-	enc.resetReflectBuf()
-	err := enc.reflectEnc.Encode(val)
+	valueBytes, err := enc.encodeReflected(val)
 	if err != nil {
 		return err
 	}
-	enc.reflectBuf.TrimNewline()
 	enc.addElementSeparator()
-	_, err = enc.buf.Write(enc.reflectBuf.Bytes())
+	_, err = enc.buf.Write(valueBytes)
 	return err
 }
 

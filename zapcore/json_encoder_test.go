@@ -65,6 +65,7 @@ func TestJSONEncodeEntry(t *testing.T) {
 				"answer": 42,
 				"common_pie": 3.14,
 				"null_value": null,
+				"array_with_null_elements": [{}, null, null, 2],
 				"such": {
 					"aee": "lol",
 					"bee": 123,
@@ -85,8 +86,13 @@ func TestJSONEncodeEntry(t *testing.T) {
 				zap.String("so", "passes"),
 				zap.Int("answer", 42),
 				zap.Float64("common_pie", 3.14),
-				// Test special-cased handling of nil in AddReflect()
+				// Cover special-cased handling of nil in AddReflect() and
+				// AppendReflect(). Note that for the latter, we explicitly test
+				// correct results for both the nil static interface{} value
+				// (`nil`), as well as the non-nil interface value with a
+				// dynamic type and nil value (`(*struct{})(nil)`).
 				zap.Reflect("null_value", nil),
+				zap.Reflect("array_with_null_elements", []interface{}{&struct{}{}, nil, (*struct{})(nil), 2}),
 				zap.Reflect("such", foo{
 					A: "lol",
 					B: 123,
