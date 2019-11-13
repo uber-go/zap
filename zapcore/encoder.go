@@ -294,8 +294,8 @@ type ObjectEncoder interface {
 	AddUint8(key string, value uint8)
 	AddUintptr(key string, value uintptr)
 
-	// AddReflected uses reflection to serialize arbitrary objects, so it's slow
-	// and allocation-heavy.
+	// AddReflected uses reflection to serialize arbitrary objects, so it can be
+	// slow and allocation-heavy.
 	AddReflected(key string, value interface{}) error
 	// OpenNamespace opens an isolated namespace where all subsequent fields will
 	// be added. Applications can use namespaces to prevent key collisions when
