@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.13.0 (13 Nov 2019)
+
+Enhancements:
+* [#758][]: Add `Intp`, `Stringp`, and other similar `*p` field constructors
+  to log pointers to primitives with support for `nil` values.
+
+Thanks to @jbizzle for their contributions to this release.
+
 ## 1.12.0 (29 Oct 2019)
 
 Enhancements:
@@ -341,3 +349,4 @@ upgrade to the upcoming stable release.
 [#725]: https://github.com/uber-go/zap/pull/725
 [#736]: https://github.com/uber-go/zap/pull/736
 [#751]: https://github.com/uber-go/zap/pull/751
+[#758]: https://github.com/uber-go/zap/pull/758
