@@ -176,7 +176,7 @@ func (cfg Config) Build(opts ...Option) (*Logger, error) {
 
 	log := New(
 		zapcore.NewCore(enc, sink, cfg.Level),
-		cfg.buildOptions(errSink)...,
+		cfg.BuildOptions(errSink)...,
 	)
 	if len(opts) > 0 {
 		log = log.WithOptions(opts...)
@@ -184,7 +184,8 @@ func (cfg Config) Build(opts ...Option) (*Logger, error) {
 	return log, nil
 }
 
-func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
+// BuildOptions for building options from cfg
+func (cfg Config) BuildOptions(errSink zapcore.WriteSyncer) []Option {
 	opts := []Option{ErrorOutput(errSink)}
 
 	if cfg.Development {
