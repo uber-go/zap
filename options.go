@@ -107,3 +107,10 @@ func AddStacktrace(lvl zapcore.LevelEnabler) Option {
 		log.addStack = lvl
 	})
 }
+
+// IncreaseLevel increase the level of the logger.
+func IncreaseLevel(lvl zapcore.LevelEnabler) Option {
+	return WrapCore(func(c zapcore.Core) zapcore.Core {
+		return zapcore.NewLevelCore(c, lvl)
+	})
+}

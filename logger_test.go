@@ -392,6 +392,21 @@ func TestLoggerReplaceCore(t *testing.T) {
 	})
 }
 
+func TestLoggerIncreaseLevel(t *testing.T) {
+	withLogger(t, DebugLevel, opts(IncreaseLevel(WarnLevel)), func(logger *Logger, logs *observer.ObservedLogs) {
+		logger.Info("logger.Info")
+		logger.Warn("logger.Warn")
+		logger.Error("logger.Error")
+		require.Equal(t, 2, logs.Len(), "Expected no-op core to write no logs.")
+		assert.Equal(
+			t,
+			logs.AllUntimed()[0].Entry.Message,
+			"logger.Warn",
+			"Expected first logged message to be warn level message",
+		)
+	})
+}
+
 func TestLoggerHooks(t *testing.T) {
 	hook, seen := makeCountingHook()
 	withLogger(t, DebugLevel, opts(Hooks(hook)), func(logger *Logger, logs *observer.ObservedLogs) {
