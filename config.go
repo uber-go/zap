@@ -164,24 +164,32 @@ func NewDevelopmentConfig() Config {
 
 // Build constructs a logger from the Config and Options.
 func (cfg Config) Build(opts ...Option) (*Logger, error) {
+	_, log, err := cfg.BuildOptionsAndLogger()
+	if len(opts) > 0 {
+		log = log.WithOptions(opts...)
+	}
+	return log, err
+}
+
+// BuildOptionsAndLogger generates Options from the Config, builds a logger
+// and returns both Options and the logger.
+func (cfg Config) BuildOptionsAndLogger() ([]Option, *Logger, error) {
 	enc, err := cfg.buildEncoder()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	sink, errSink, err := cfg.openSinks()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
+	configOptions := cfg.buildOptions(errSink)
 	log := New(
 		zapcore.NewCore(enc, sink, cfg.Level),
-		cfg.buildOptions(errSink)...,
+		configOptions...,
 	)
-	if len(opts) > 0 {
-		log = log.WithOptions(opts...)
-	}
-	return log, nil
+	return configOptions, log, nil
 }
 
 func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
