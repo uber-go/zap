@@ -168,6 +168,12 @@ func NanosDurationEncoder(d time.Duration, enc PrimitiveArrayEncoder) {
 	enc.AppendInt64(int64(d))
 }
 
+// MillisDurationEncoder serializes a time.Duration to an integer number of
+// milliseconds elapsed.
+func MillisDurationEncoder(d time.Duration, enc PrimitiveArrayEncoder) {
+	enc.AppendInt64(d.Nanoseconds() / 1e6)
+}
+
 // StringDurationEncoder serializes a time.Duration using its built-in String
 // method.
 func StringDurationEncoder(d time.Duration, enc PrimitiveArrayEncoder) {
@@ -183,6 +189,8 @@ func (e *DurationEncoder) UnmarshalText(text []byte) error {
 		*e = StringDurationEncoder
 	case "nanos":
 		*e = NanosDurationEncoder
+	case "ms":
+		*e = MillisDurationEncoder
 	default:
 		*e = SecondsDurationEncoder
 	}
