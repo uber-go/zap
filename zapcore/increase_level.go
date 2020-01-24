@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2020 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,16 +20,25 @@
 
 package zapcore
 
+import "fmt"
+
 type levelFilterCore struct {
 	Core
 	level LevelEnabler
 }
 
-// NewLevelCore creates a core that can be used to increase the level of an existing
-// Core. It cannot be used to decrease the logging level, as it acts as a filter
-// before calling the underlying core.
-func NewLevelCore(core Core, level LevelEnabler) Core {
-	return &levelFilterCore{core, level}
+// NewIncreaseLevelCore creates a core that can be used to increase the level of
+// an existing Core. It cannot be used to decrease the logging level, as it acts
+// as a filter before calling the underlying core. If level decreases the log level,
+// an error is returned.
+func NewIncreaseLevelCore(core Core, level LevelEnabler) (Core, error) {
+	for l := _maxLevel; l >= _minLevel; l-- {
+		if !core.Enabled(l) && level.Enabled(l) {
+			return nil, fmt.Errorf("invalid increase level, as %v is allowed by increased level, but not by existing core", l)
+		}
+	}
+
+	return &levelFilterCore{core, level}, nil
 }
 
 func (c *levelFilterCore) Enabled(lvl Level) bool {
