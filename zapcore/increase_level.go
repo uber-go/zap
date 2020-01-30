@@ -35,7 +35,7 @@ type levelFilterCore struct {
 func NewIncreaseLevelCore(core Core, level LevelEnabler) (Core, error) {
 	for l := _maxLevel; l >= _minLevel; l-- {
 		if !core.Enabled(l) && level.Enabled(l) {
-			return nil, fmt.Errorf("invalid increase level, as %v is allowed by increased level, but not by existing core", l)
+			return nil, fmt.Errorf("invalid increase level, as level %q is allowed by increased level, but not by existing core", l)
 		}
 	}
 

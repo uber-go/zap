@@ -397,7 +397,7 @@ func TestLoggerIncreaseLevel(t *testing.T) {
 		logger.Info("logger.Info")
 		logger.Warn("logger.Warn")
 		logger.Error("logger.Error")
-		require.Equal(t, 2, logs.Len(), "Expected no-op core to write no logs.")
+		require.Equal(t, 2, logs.Len(), "expected only warn + error logs due to IncreaseLevel.")
 		assert.Equal(
 			t,
 			logs.AllUntimed()[0].Entry.Message,
