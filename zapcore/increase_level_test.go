@@ -35,7 +35,6 @@ func TestIncreaseLevel(t *testing.T) {
 		coreLevel     Level
 		increaseLevel Level
 		wantErr       bool
-		wantLogLevels []Level
 	}{
 		{
 			coreLevel:     InfoLevel,
