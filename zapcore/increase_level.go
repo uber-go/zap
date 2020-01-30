@@ -24,6 +24,7 @@ import "fmt"
 
 type levelFilterCore struct {
 	Core
+
 	level LevelEnabler
 }
 
