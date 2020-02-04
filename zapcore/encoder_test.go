@@ -55,6 +55,7 @@ func testEncoderConfig() EncoderConfig {
 		EncodeTime:     EpochTimeEncoder,
 		EncodeLevel:    LowercaseLevelEncoder,
 		EncodeDuration: SecondsDurationEncoder,
+		EncodeBinary:   Base64BinaryEncoder,
 		EncodeCaller:   ShortCallerEncoder,
 	}
 }
@@ -63,6 +64,7 @@ func humanEncoderConfig() EncoderConfig {
 	cfg := testEncoderConfig()
 	cfg.EncodeTime = ISO8601TimeEncoder
 	cfg.EncodeLevel = CapitalLevelEncoder
+	cfg.EncodeBinary = HexBinaryEncoder
 	cfg.EncodeDuration = StringDurationEncoder
 	return cfg
 }
@@ -112,6 +114,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -130,6 +133,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -148,6 +152,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -166,6 +171,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -184,6 +190,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -202,6 +209,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -220,6 +228,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -238,6 +247,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     func(t time.Time, enc PrimitiveArrayEncoder) { enc.AppendString(t.String()) },
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -265,6 +275,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: StringDurationEncoder,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -281,6 +292,34 @@ func TestEncoderConfiguration(t *testing.T) {
 				"\nfake-stack\n", // stacktrace
 		},
 		{
+			desc: "use the supplied EncodeBinary",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      "C",
+				StacktraceKey:  "S",
+				LineEnding:     base.LineEnding,
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   HexBinaryEncoder,
+				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
+			},
+			extra: func(enc Encoder) {
+				enc.AddBinary("extra", []byte{0x01, 0x02, 0x03})
+				enc.AddArray("extras", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
+					enc.AppendBinary([]byte{0x01, 0x02, 0x03})
+					return nil
+				}))
+			},
+			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","extra":"0x010203","extras":["0x010203"],"S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\t" + // preamble
+				`{"extra": "0x010203", "extras": ["0x010203"]}` + // context
+				"\nfake-stack\n", // stacktrace
+		},
+		{
 			desc: "use the supplied EncodeLevel",
 			cfg: EncoderConfig{
 				LevelKey:       "L",
@@ -292,6 +331,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    CapitalLevelEncoder,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -310,6 +350,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 				EncodeName:     capitalNameEncoder,
@@ -329,6 +370,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -355,6 +397,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     func(time.Time, PrimitiveArrayEncoder) {},
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -374,6 +417,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: func(time.Duration, PrimitiveArrayEncoder) {},
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -393,6 +437,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    func(Level, PrimitiveArrayEncoder) {},
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -411,6 +456,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   func(EntryCaller, PrimitiveArrayEncoder) {},
 			},
@@ -429,6 +475,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 				EncodeName:     func(string, PrimitiveArrayEncoder) {},
@@ -448,6 +495,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LineEnding:     "\r\n",
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
@@ -465,6 +513,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				StacktraceKey:  "S",
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
+				EncodeBinary:   base.EncodeBinary,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},

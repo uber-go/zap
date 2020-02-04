@@ -340,6 +340,7 @@ func assertOutput(t testing.TB, expected string, f func(Encoder)) {
 	enc := &jsonEncoder{buf: bufferpool.Get(), EncoderConfig: &EncoderConfig{
 		EncodeTime:     EpochTimeEncoder,
 		EncodeDuration: SecondsDurationEncoder,
+		EncodeBinary:   Base64BinaryEncoder,
 	}}
 	f(enc)
 	assert.Equal(t, expected, enc.buf.String(), "Unexpected encoder output after adding.")

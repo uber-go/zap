@@ -21,7 +21,6 @@
 package zapcore
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"math"
 	"sync"
@@ -100,7 +99,8 @@ func (enc *jsonEncoder) AddObject(key string, obj ObjectMarshaler) error {
 }
 
 func (enc *jsonEncoder) AddBinary(key string, val []byte) {
-	enc.AddString(key, base64.StdEncoding.EncodeToString(val))
+	enc.addKey(key)
+	enc.AppendBinary(val)
 }
 
 func (enc *jsonEncoder) AddByteString(key string, val []byte) {
@@ -211,6 +211,16 @@ func (enc *jsonEncoder) AppendObject(obj ObjectMarshaler) error {
 func (enc *jsonEncoder) AppendBool(val bool) {
 	enc.addElementSeparator()
 	enc.buf.AppendBool(val)
+}
+
+func (enc *jsonEncoder) AppendBinary(val []byte) {
+	// For backward compatibility, use Base64BinaryEncoder
+	// if no BinaryEncoder is provided.
+	if enc.EncodeBinary == nil {
+		Base64BinaryEncoder(val, enc)
+		return
+	}
+	enc.EncodeBinary(val, enc)
 }
 
 func (enc *jsonEncoder) AppendByteString(val []byte) {
