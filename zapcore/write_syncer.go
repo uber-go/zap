@@ -21,8 +21,10 @@
 package zapcore
 
 import (
+	"bufio"
 	"io"
 	"sync"
+	"time"
 
 	"go.uber.org/multierr"
 )
@@ -73,6 +75,53 @@ func (s *lockedWriteSyncer) Sync() error {
 	err := s.ws.Sync()
 	s.Unlock()
 	return err
+}
+
+type bufferWriterSyncer struct {
+	bufferWriter *bufio.Writer
+	ws           WriteSyncer
+}
+
+// bufferSize sizes the buffer associated with each log file. It's large
+// so that log records can accumulate without the logging thread blocking
+// on disk I/O. The flushDaemon will block instead.
+const bufferSize = 256 * 1024
+
+// flushInterval means the default flush interval
+const flushInterval = 30 * time.Second
+
+// Buffer wraps a WriteSyncer in a buffer to improve performance,
+// which is implemented in https://github.com/golang/glog.
+func Buffer(ws WriteSyncer) WriteSyncer {
+	if _, ok := ws.(*bufferWriterSyncer); ok {
+		// no need to layer on another buffer
+		return ws
+	}
+
+	// bufio is not goroutine safe, so add lock writer here
+	ws = Lock(&bufferWriterSyncer{
+		bufferWriter: bufio.NewWriterSize(ws, bufferSize),
+	})
+
+	// flush buffer every interval
+	// we do not need exit this goroutine explicitly
+	go func() {
+		for range time.NewTicker(flushInterval).C {
+			if err := ws.Sync(); err != nil {
+				return
+			}
+		}
+	}()
+
+	return ws
+}
+
+func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
+	return s.bufferWriter.Write(bs)
+}
+
+func (s *bufferWriterSyncer) Sync() error {
+	return s.bufferWriter.Flush()
 }
 
 type writerWrapper struct {
