@@ -62,7 +62,7 @@ func BenchmarkMultiWriteSyncer(b *testing.B) {
 			&ztest.Discarder{},
 			&ztest.Discarder{},
 			&ztest.Discarder{},
-		))
+		), 0, 0)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
@@ -93,7 +93,7 @@ func BenchmarkWriteSyncer(b *testing.B) {
 		defer file.Close()
 		defer os.Remove(file.Name())
 
-		w := Buffer(AddSync(file))
+		w := Buffer(AddSync(file), 0, 0)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {

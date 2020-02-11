@@ -82,20 +82,29 @@ type bufferWriterSyncer struct {
 	ws           WriteSyncer
 }
 
-// bufferSize sizes the buffer associated with each log file. It's large
+// defaultBufferSize sizes the buffer associated with each log file. It's large
 // so that log records can accumulate without the logging thread blocking
-// on disk I/O. The flushDaemon will block instead.
-const bufferSize = 256 * 1024
+// on disk I/O untill buffer fills up. The flushDaemon will block instead.
+const defaultBufferSize = 256 * 1024
 
-// flushInterval means the default flush interval
-const flushInterval = 30 * time.Second
+// defaultFlushInterval means the default flush interval
+const defaultFlushInterval = 30 * time.Second
 
 // Buffer wraps a WriteSyncer in a buffer to improve performance,
-// which is implemented in https://github.com/golang/glog.
-func Buffer(ws WriteSyncer) WriteSyncer {
-	if _, ok := ws.(*bufferWriterSyncer); ok {
-		// no need to layer on another buffer
-		return ws
+func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) WriteSyncer {
+	if lws, ok := ws.(*lockedWriteSyncer); ok {
+		if _, ok := lws.ws.(*bufferWriterSyncer); ok {
+			// no need to layer on another buffer
+			return ws
+		}
+	}
+
+	if bufferSize == 0 {
+		bufferSize = defaultBufferSize
+	}
+
+	if flushInterval == 0 {
+		flushInterval = defaultFlushInterval
 	}
 
 	// bufio is not goroutine safe, so add lock writer here

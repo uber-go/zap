@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"errors"
 	"testing"
+	"time"
 
 	"io"
 
@@ -69,11 +70,12 @@ func TestBufferWriter(t *testing.T) {
 	// If we pass a plain io.Writer, make sure that we still get a WriteSyncer
 	// with a no-op Sync.
 	buf := &bytes.Buffer{}
-	ws := Buffer(AddSync(buf))
+	ws := Buffer(Buffer(AddSync(buf), 0, time.Millisecond), 0, 0)
 	requireWriteWorks(t, ws)
 	assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
-	assert.NoError(t, ws.Sync(), "Unexpected error calling a no-op Sync method.")
-	assert.Equal(t, "foo", buf.String(), "Unexpected log calling a no-op Sync method.")
+	time.Sleep(2 * time.Millisecond)
+	// assert.NoError(t, ws.Sync(), "Unexpected error calling a no-op Sync method.")
+	assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 }
 
 func TestNewMultiWriteSyncerWorksForSingleWriter(t *testing.T) {
