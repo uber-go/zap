@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -46,6 +47,7 @@ func TestBufferWrites(t *testing.T) {
 		// Intenationally introduce some floating-point error.
 		{"AppendFloat32", func() { buf.AppendFloat(float64(float32(3.14)), 32) }, "3.14"},
 		{"AppendWrite", func() { buf.Write([]byte("foo")) }, "foo"},
+		{"AppendTime", func() { buf.AppendTime(time.Date(2000, 1, 2, 3, 4, 5, 6, time.UTC), time.RFC3339) }, "2000-01-02T03:04:05Z"},
 	}
 
 	for _, tt := range tests {

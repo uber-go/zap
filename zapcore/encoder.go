@@ -112,21 +112,34 @@ func EpochNanosTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 	enc.AppendInt64(t.UnixNano())
 }
 
+type appendTimeEncoder interface {
+	AppendTimeLayout(time.Time, string)
+}
+
+func encodeTimeLayout(t time.Time, layout string, enc PrimitiveArrayEncoder) {
+	if enc, ok := enc.(appendTimeEncoder); ok {
+		enc.AppendTimeLayout(t, layout)
+		return
+	}
+
+	enc.AppendString(t.Format(layout))
+}
+
 // ISO8601TimeEncoder serializes a time.Time to an ISO8601-formatted string
 // with millisecond precision.
 func ISO8601TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
-	enc.AppendString(t.Format("2006-01-02T15:04:05.000Z0700"))
+	encodeTimeLayout(t, "2006-01-02T15:04:05.000Z0700", enc)
 }
 
 // RFC3339TimeEncoder serializes a time.Time to an RFC3339-formatted string.
 func RFC3339TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
-	enc.AppendString(t.Format(time.RFC3339))
+	encodeTimeLayout(t, time.RFC3339, enc)
 }
 
 // RFC3339NanoTimeEncoder serializes a time.Time to an RFC3339-formatted string
 // with nanosecond precision.
 func RFC3339NanoTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
-	enc.AppendString(t.Format(time.RFC3339Nano))
+	encodeTimeLayout(t, time.RFC3339Nano, enc)
 }
 
 // UnmarshalText unmarshals text to a TimeEncoder.
