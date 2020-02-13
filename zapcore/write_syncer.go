@@ -91,6 +91,8 @@ const defaultBufferSize = 256 * 1024
 const defaultFlushInterval = 30 * time.Second
 
 // Buffer wraps a WriteSyncer in a buffer to improve performance,
+// if bufferSize=0, we set it to defaultBufferSize
+// if flushInterval=0, we set it to defaultFlushInterval
 func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) WriteSyncer {
 	if lws, ok := ws.(*lockedWriteSyncer); ok {
 		if _, ok := lws.ws.(*bufferWriterSyncer); ok {
@@ -126,6 +128,19 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) WriteSy
 }
 
 func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
+
+	// there are some logic internal for bufio.Writer here:
+	// 1. when the buffer is not enough, log would be written to disk directly
+	// 2. when the buffer is enough, log would not be flushed until the buffer is filled up
+	// this would lead to log spliting, which is not acceptable for log collector
+	// so we need to flush bufferWriter before writing the log into bufferWriter
+	if len(bs) > s.bufferWriter.Available() && s.bufferWriter.Buffered() > 0 {
+		err := s.bufferWriter.Flush()
+		if err != nil {
+			return 0, err
+		}
+	}
+
 	return s.bufferWriter.Write(bs)
 }
 
