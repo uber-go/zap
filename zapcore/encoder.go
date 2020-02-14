@@ -112,11 +112,11 @@ func EpochNanosTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 	enc.AppendInt64(t.UnixNano())
 }
 
-type appendTimeEncoder interface {
-	AppendTimeLayout(time.Time, string)
-}
-
 func encodeTimeLayout(t time.Time, layout string, enc PrimitiveArrayEncoder) {
+	type appendTimeEncoder interface {
+		AppendTimeLayout(time.Time, string)
+	}
+
 	if enc, ok := enc.(appendTimeEncoder); ok {
 		enc.AppendTimeLayout(t, layout)
 		return
@@ -129,7 +129,7 @@ func encodeTimeLayout(t time.Time, layout string, enc PrimitiveArrayEncoder) {
 // with millisecond precision.
 //
 // If enc supports AppendTimeLayout(t time.Time,layout string), it's used
-// instead of appending a per-formatted string value.
+// instead of appending a pre-formatted string value.
 func ISO8601TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 	encodeTimeLayout(t, "2006-01-02T15:04:05.000Z0700", enc)
 }
@@ -137,7 +137,7 @@ func ISO8601TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 // RFC3339TimeEncoder serializes a time.Time to an RFC3339-formatted string.
 //
 // If enc supports AppendTimeLayout(t time.Time,layout string), it's used
-// instead of appending a per-formatted string value.
+// instead of appending a pre-formatted string value.
 func RFC3339TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 	encodeTimeLayout(t, time.RFC3339, enc)
 }
@@ -146,7 +146,7 @@ func RFC3339TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 // with nanosecond precision.
 //
 // If enc supports AppendTimeLayout(t time.Time,layout string), it's used
-// instead of appending a per-formatted string value.
+// instead of appending a pre-formatted string value.
 func RFC3339NanoTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 	encodeTimeLayout(t, time.RFC3339Nano, enc)
 }
