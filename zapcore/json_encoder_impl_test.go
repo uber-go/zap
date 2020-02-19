@@ -36,6 +36,11 @@ import (
 	"go.uber.org/multierr"
 )
 
+var _defaultEncoderConfig = EncoderConfig{
+	EncodeTime:     EpochTimeEncoder,
+	EncodeDuration: SecondsDurationEncoder,
+}
+
 func TestJSONClone(t *testing.T) {
 	// The parent encoder is created with plenty of excess capacity.
 	parent := &jsonEncoder{buf: bufferpool.Get()}
@@ -224,7 +229,55 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			assertOutput(t, tt.expected, tt.f)
+			assertOutput(t, _defaultEncoderConfig, tt.expected, tt.f)
+		})
+	}
+}
+
+func TestJSONEncoderTimeFormats(t *testing.T) {
+	date := time.Date(2000, time.January, 2, 3, 4, 5, 6, time.UTC)
+
+	f := func(e Encoder) {
+		e.AddTime("k", date)
+		e.AddArray("a", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
+			enc.AppendTime(date)
+			return nil
+		}))
+	}
+	tests := []struct {
+		desc     string
+		cfg      EncoderConfig
+		expected string
+	}{
+		{
+			desc: "time.Time ISO8601",
+			cfg: EncoderConfig{
+				EncodeDuration: NanosDurationEncoder,
+				EncodeTime:     ISO8601TimeEncoder,
+			},
+			expected: `"k":"2000-01-02T03:04:05.000Z","a":["2000-01-02T03:04:05.000Z"]`,
+		},
+		{
+			desc: "time.Time RFC3339",
+			cfg: EncoderConfig{
+				EncodeDuration: NanosDurationEncoder,
+				EncodeTime:     RFC3339TimeEncoder,
+			},
+			expected: `"k":"2000-01-02T03:04:05Z","a":["2000-01-02T03:04:05Z"]`,
+		},
+		{
+			desc: "time.Time RFC3339Nano",
+			cfg: EncoderConfig{
+				EncodeDuration: NanosDurationEncoder,
+				EncodeTime:     RFC3339NanoTimeEncoder,
+			},
+			expected: `"k":"2000-01-02T03:04:05.000000006Z","a":["2000-01-02T03:04:05.000000006Z"]`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			assertOutput(t, tt.cfg, tt.expected, f)
 		})
 	}
 }
@@ -324,7 +377,7 @@ func TestJSONEncoderArrays(t *testing.T) {
 					return nil
 				}))
 			}
-			assertOutput(t, `"array":`+tt.expected, func(enc Encoder) {
+			assertOutput(t, _defaultEncoderConfig, `"array":`+tt.expected, func(enc Encoder) {
 				err := f(enc)
 				assert.NoError(t, err, "Unexpected error adding array to JSON encoder.")
 			})
@@ -336,11 +389,8 @@ func assertJSON(t *testing.T, expected string, enc *jsonEncoder) {
 	assert.Equal(t, expected, enc.buf.String(), "Encoded JSON didn't match expectations.")
 }
 
-func assertOutput(t testing.TB, expected string, f func(Encoder)) {
-	enc := &jsonEncoder{buf: bufferpool.Get(), EncoderConfig: &EncoderConfig{
-		EncodeTime:     EpochTimeEncoder,
-		EncodeDuration: SecondsDurationEncoder,
-	}}
+func assertOutput(t testing.TB, cfg EncoderConfig, expected string, f func(Encoder)) {
+	enc := &jsonEncoder{buf: bufferpool.Get(), EncoderConfig: &cfg}
 	f(enc)
 	assert.Equal(t, expected, enc.buf.String(), "Unexpected encoder output after adding.")
 
