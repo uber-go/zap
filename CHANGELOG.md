@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.14.0 (19 Feb 2020)
+## 1.14.0 (20 Feb 2020)
 
 Enhancements:
 * [#771][]: Optimize calls for disabled log levels.
