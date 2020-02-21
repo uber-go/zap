@@ -174,6 +174,13 @@ func (cfg Config) Build(opts ...Option) (*Logger, error) {
 		return nil, err
 	}
 
+	if cfg.Level == (AtomicLevel{}) {
+		cfg.Level = NewAtomicLevelAt(InfoLevel)
+		if cfg.Development {
+			cfg.Level = NewAtomicLevelAt(DebugLevel)
+		}
+	}
+
 	log := New(
 		zapcore.NewCore(enc, sink, cfg.Level),
 		cfg.buildOptions(errSink)...,
@@ -239,5 +246,12 @@ func (cfg Config) openSinks() (zapcore.WriteSyncer, zapcore.WriteSyncer, error) 
 }
 
 func (cfg Config) buildEncoder() (zapcore.Encoder, error) {
+	if cfg.EncoderConfig.TimeKey != "" && cfg.EncoderConfig.EncodeTime == nil {
+		cfg.EncoderConfig.EncodeTime = zapcore.EpochTimeEncoder
+		if cfg.Development {
+			cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+		}
+	}
+
 	return newEncoder(cfg.Encoding, cfg.EncoderConfig)
 }
