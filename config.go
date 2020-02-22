@@ -174,7 +174,7 @@ func (cfg Config) Build(opts ...Option) (*Logger, error) {
 		return nil, err
 	}
 
-	if cfg.Level == (AtomicLevel{}) {
+	if cfg.Level == AtomicLevel{} {
 		cfg.Level = NewAtomicLevelAt(InfoLevel)
 		if cfg.Development {
 			cfg.Level = NewAtomicLevelAt(DebugLevel)
