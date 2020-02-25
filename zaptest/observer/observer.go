@@ -177,3 +177,7 @@ func (co *contextObserver) Write(ent zapcore.Entry, fields []zapcore.Field) erro
 func (co *contextObserver) Sync() error {
 	return nil
 }
+
+func (co *contextObserver) Close() error {
+	return nil
+}

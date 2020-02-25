@@ -22,6 +22,7 @@ package zapcore
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"sync"
 	"time"
@@ -33,12 +34,13 @@ import (
 // that *os.File (and thus, os.Stderr and os.Stdout) implement WriteSyncer.
 type WriteSyncer interface {
 	io.Writer
+	Close() error
 	Sync() error
 }
 
 // AddSync converts an io.Writer to a WriteSyncer. It attempts to be
 // intelligent: if the concrete type of the io.Writer implements WriteSyncer,
-// we'll use the existing Sync method. If it doesn't, we'll add a no-op Sync.
+// we'll use the existing Sync and Close method. If it doesn't, we'll add a no-op Sync and Close.
 func AddSync(w io.Writer) WriteSyncer {
 	switch w := w.(type) {
 	case WriteSyncer:
@@ -77,9 +79,17 @@ func (s *lockedWriteSyncer) Sync() error {
 	return err
 }
 
+func (s *lockedWriteSyncer) Close() error {
+	s.Lock()
+	err := s.ws.Close()
+	s.Unlock()
+	return err
+}
+
 type bufferWriterSyncer struct {
-	bufferWriter *bufio.Writer
 	ws           WriteSyncer
+	bufferWriter *bufio.Writer
+	cancel       context.CancelFunc
 }
 
 // defaultBufferSize sizes the buffer associated with each WriterSync.
@@ -107,18 +117,24 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) WriteSy
 		flushInterval = defaultFlushInterval
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	// bufio is not goroutine safe, so add lock writer here
 	ws = Lock(&bufferWriterSyncer{
 		bufferWriter: bufio.NewWriterSize(ws, bufferSize),
+		cancel:       cancel,
 	})
 
 	// flush buffer every interval
 	// we do not need exit this goroutine explicitly
 	go func() {
-		for range time.NewTicker(flushInterval).C {
+		select {
+		case <-time.NewTicker(flushInterval).C:
 			if err := ws.Sync(); err != nil {
 				return
 			}
+		case <-ctx.Done():
+			return
 		}
 	}()
 
@@ -126,7 +142,6 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) WriteSy
 }
 
 func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
-
 	// there are some logic internal for bufio.Writer here:
 	// 1. when the buffer is enough, data would not be flushed.
 	// 2. when the buffer is not enough, data would be flushed as soon as the buffer fills up.
@@ -146,11 +161,20 @@ func (s *bufferWriterSyncer) Sync() error {
 	return s.bufferWriter.Flush()
 }
 
+func (s *bufferWriterSyncer) Close() error {
+	s.cancel()
+	return s.Sync()
+}
+
 type writerWrapper struct {
 	io.Writer
 }
 
 func (w writerWrapper) Sync() error {
+	return nil
+}
+
+func (w writerWrapper) Close() error {
 	return nil
 }
 
@@ -190,4 +214,8 @@ func (ws multiWriteSyncer) Sync() error {
 		err = multierr.Append(err, w.Sync())
 	}
 	return err
+}
+
+func (ws multiWriteSyncer) Close() error {
+	return ws.Sync()
 }

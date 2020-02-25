@@ -45,6 +45,13 @@ func (s *Syncer) Sync() error {
 	return s.err
 }
 
+// Close records that it was called, then returns the user-supplied error (if
+// any).
+func (s *Syncer) Close() error {
+	s.called = true
+	return s.err
+}
+
 // Called reports whether the Sync method was called.
 func (s *Syncer) Called() bool {
 	return s.called
