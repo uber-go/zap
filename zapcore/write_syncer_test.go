@@ -85,6 +85,15 @@ func TestBufferWriter(t *testing.T) {
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
+
+	t.Run("cancel context", func(t *testing.T) {
+		buf := &bytes.Buffer{}
+		ws := Buffer(Buffer(AddSync(buf), 0, 0), 0, 0)
+		requireWriteWorks(t, ws)
+		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
+		assert.NoError(t, ws.Close(), "Unexpected error calling a no-op Sync method.")
+		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
+	})
 }
 
 func TestNewMultiWriteSyncerWorksForSingleWriter(t *testing.T) {

@@ -42,6 +42,8 @@ type Core interface {
 	Write(Entry, []Field) error
 	// Sync flushes buffered logs (if any).
 	Sync() error
+	// Close cleans all WriterSync resources (if any).
+	Close() error
 }
 
 type nopCore struct{}
@@ -53,6 +55,7 @@ func (n nopCore) With([]Field) Core                           { return n }
 func (nopCore) Check(_ Entry, ce *CheckedEntry) *CheckedEntry { return ce }
 func (nopCore) Write(Entry, []Field) error                    { return nil }
 func (nopCore) Sync() error                                   { return nil }
+func (nopCore) Close() error                                  { return nil }
 
 // NewCore creates a Core that writes logs to a WriteSyncer.
 func NewCore(enc Encoder, ws WriteSyncer, enab LevelEnabler) Core {
@@ -102,6 +105,10 @@ func (c *ioCore) Write(ent Entry, fields []Field) error {
 
 func (c *ioCore) Sync() error {
 	return c.out.Sync()
+}
+
+func (c *ioCore) Close() error {
+	return c.out.Close()
 }
 
 func (c *ioCore) clone() *ioCore {
