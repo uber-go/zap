@@ -175,7 +175,7 @@ func (cfg Config) Build(opts ...Option) (*Logger, error) {
 		return nil, err
 	}
 
-	if cfg.Level == (AtomicLevel{}) {
+	if cfg.Level == AtomicLevel{} {
 		return nil, fmt.Errorf("missing Level")
 	}
 
