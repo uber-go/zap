@@ -34,7 +34,6 @@ import (
 // that *os.File (and thus, os.Stderr and os.Stdout) implement WriteSyncer.
 type WriteSyncer interface {
 	io.Writer
-	Close() error
 	Sync() error
 }
 
@@ -79,17 +78,9 @@ func (s *lockedWriteSyncer) Sync() error {
 	return err
 }
 
-func (s *lockedWriteSyncer) Close() error {
-	s.Lock()
-	err := s.ws.Close()
-	s.Unlock()
-	return err
-}
-
 type bufferWriterSyncer struct {
 	ws           WriteSyncer
 	bufferWriter *bufio.Writer
-	cancel       context.CancelFunc
 }
 
 // defaultBufferSize sizes the buffer associated with each WriterSync.
@@ -98,14 +89,24 @@ const defaultBufferSize = 256 * 1024
 // defaultFlushInterval means the default flush interval
 const defaultFlushInterval = 30 * time.Second
 
+// CancelFunc should be called when the caller exits to clean up buffers.
+type CancelFunc func() error
+
 // Buffer wraps a WriteSyncer in a buffer to improve performance,
 // if bufferSize = 0, we set it to defaultBufferSize
 // if flushInterval = 0, we set it to defaultFlushInterval
-func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) WriteSyncer {
+func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteSyncer, CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	cancelfunc := func() error {
+		cancel()
+		return ws.Sync()
+	}
+
 	if lws, ok := ws.(*lockedWriteSyncer); ok {
 		if _, ok := lws.ws.(*bufferWriterSyncer); ok {
 			// no need to layer on another buffer
-			return ws
+			return ws, cancelfunc
 		}
 	}
 
@@ -117,12 +118,9 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) WriteSy
 		flushInterval = defaultFlushInterval
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-
 	// bufio is not goroutine safe, so add lock writer here
 	ws = Lock(&bufferWriterSyncer{
 		bufferWriter: bufio.NewWriterSize(ws, bufferSize),
-		cancel:       cancel,
 	})
 
 	// flush buffer every interval
@@ -138,7 +136,7 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) WriteSy
 		}
 	}()
 
-	return ws
+	return ws, cancelfunc
 }
 
 func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
@@ -159,11 +157,6 @@ func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
 
 func (s *bufferWriterSyncer) Sync() error {
 	return s.bufferWriter.Flush()
-}
-
-func (s *bufferWriterSyncer) Close() error {
-	s.cancel()
-	return s.Sync()
 }
 
 type writerWrapper struct {
