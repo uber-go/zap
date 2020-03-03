@@ -167,10 +167,6 @@ func (w writerWrapper) Sync() error {
 	return nil
 }
 
-func (w writerWrapper) Close() error {
-	return nil
-}
-
 type multiWriteSyncer []WriteSyncer
 
 // NewMultiWriteSyncer creates a WriteSyncer that duplicates its writes
