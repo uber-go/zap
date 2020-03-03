@@ -70,25 +70,40 @@ func TestBufferWriter(t *testing.T) {
 	// with a no-op Sync.
 	t.Run("sync", func(t *testing.T) {
 		buf := &bytes.Buffer{}
-		ws := Buffer(Buffer(AddSync(buf), 0, 0), 0, 0)
+		ws, cancel := Buffer(AddSync(buf), 0, 0)
+		defer cancel()
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
 		assert.NoError(t, ws.Sync(), "Unexpected error calling a no-op Sync method.")
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 
-	t.Run("close", func(t *testing.T) {
+	t.Run("1 cancel", func(t *testing.T) {
 		buf := &bytes.Buffer{}
-		ws := Buffer(Buffer(AddSync(buf), 0, 0), 0, 0)
+		ws, cancel := Buffer(AddSync(buf), 0, 0)
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
-		assert.NoError(t, ws.Close(), "Unexpected error calling a no-op Close method.")
+		cancel()
+		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
+	})
+
+	t.Run("2 cancel", func(t *testing.T) {
+		buf := &bytes.Buffer{}
+		bufsync, cancel1 := Buffer(AddSync(buf), 0, 0)
+		ws, cancel2 := Buffer(bufsync, 0, 0)
+		requireWriteWorks(t, ws)
+		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
+		cancel2()
+		cancel1()
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 
 	t.Run("small buffer", func(t *testing.T) {
 		buf := &bytes.Buffer{}
-		ws := Buffer(Buffer(AddSync(buf), 5, 0), 5, 0)
+		bufsync, cancel1 := Buffer(AddSync(buf), 5, 0)
+		ws, cancel2 := Buffer(bufsync, 5, 0)
+		defer cancel1()
+		defer cancel2()
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
 		requireWriteWorks(t, ws)

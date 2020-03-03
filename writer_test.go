@@ -152,10 +152,6 @@ func (w *testWriter) Sync() error {
 	return nil
 }
 
-func (w *testWriter) Close() error {
-	return nil
-}
-
 func TestOpenWithErroringSinkFactory(t *testing.T) {
 	defer resetSinkRegistry()
 

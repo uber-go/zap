@@ -247,12 +247,6 @@ func (log *Logger) Sync() error {
 	return log.core.Sync()
 }
 
-// Close calls the underlying Core's Close method, flushing any buffered log
-// entries. Applications should take care to call Close before exiting.
-func (log *Logger) Close() error {
-	return log.core.Close()
-}
-
 // Core returns the Logger's underlying zapcore.Core.
 func (log *Logger) Core() zapcore.Core {
 	return log.core

@@ -79,11 +79,3 @@ func (mc multiCore) Sync() error {
 	}
 	return err
 }
-
-func (mc multiCore) Close() error {
-	var err error
-	for i := range mc {
-		err = multierr.Append(err, mc[i].Close())
-	}
-	return err
-}

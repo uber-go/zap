@@ -23,6 +23,7 @@ package zap
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"strings"
@@ -54,6 +55,7 @@ func resetSinkRegistry() {
 // Sink defines the interface to write to and close logger destinations.
 type Sink interface {
 	zapcore.WriteSyncer
+	io.Closer
 }
 
 type nopCloserSink struct{ zapcore.WriteSyncer }
