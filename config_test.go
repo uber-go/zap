@@ -115,14 +115,14 @@ func TestConfigWithMissingAttributes(t *testing.T) {
 		expectErr string
 	}{
 		{
-			desc: "missing_level",
+			desc: "missing level",
 			cfg: Config{
 				Encoding: "json",
 			},
 			expectErr: "missing Level",
 		},
 		{
-			desc: "missing_encoder_time_in_encoder_config",
+			desc: "missing encoder time in encoder config",
 			cfg: Config{
 				Level:    NewAtomicLevelAt(zapcore.InfoLevel),
 				Encoding: "json",
