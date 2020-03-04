@@ -10,7 +10,7 @@ require (
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/rs/zerolog v1.16.0
 	github.com/sirupsen/logrus v1.4.2
-	go.uber.org/multierr v1.3.0
+	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v0.0.0-00010101000000-000000000000
 	gopkg.in/inconshreveable/log15.v2 v2.0.0-20180818164646-67afb5ed74ec
 )
