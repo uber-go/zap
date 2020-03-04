@@ -67,14 +67,6 @@ func humanEncoderConfig() EncoderConfig {
 	return cfg
 }
 
-func withJSONEncoder(f func(Encoder)) {
-	f(NewJSONEncoder(testEncoderConfig()))
-}
-
-func withConsoleEncoder(f func(Encoder)) {
-	f(NewConsoleEncoder(humanEncoderConfig()))
-}
-
 func capitalNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
 	enc.AppendString(strings.ToUpper(loggerName))
 }
