@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
 )
 
 func TestConfig(t *testing.T) {
@@ -103,6 +104,43 @@ func TestConfigWithInvalidPaths(t *testing.T) {
 			cfg.ErrorOutputPaths = []string{tt.errOutput}
 			_, err := cfg.Build()
 			assert.Error(t, err, "Expected an error opening a non-existent directory.")
+		})
+	}
+}
+
+func TestConfigWithMissingAttributes(t *testing.T) {
+	tests := []struct {
+		desc      string
+		cfg       Config
+		expectErr string
+	}{
+		{
+			desc: "missing level",
+			cfg: Config{
+				Encoding: "json",
+			},
+			expectErr: "missing Level",
+		},
+		{
+			desc: "missing encoder time in encoder config",
+			cfg: Config{
+				Level:    NewAtomicLevelAt(zapcore.InfoLevel),
+				Encoding: "json",
+				EncoderConfig: zapcore.EncoderConfig{
+					MessageKey: "msg",
+					TimeKey:    "ts",
+				},
+			},
+			expectErr: "missing EncodeTime in EncoderConfig",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			cfg := tt.cfg
+			_, err := cfg.Build()
+			require.Error(t, err)
+			assert.Equal(t, tt.expectErr, err.Error())
 		})
 	}
 }
