@@ -244,9 +244,5 @@ func (cfg Config) openSinks() (zapcore.WriteSyncer, zapcore.WriteSyncer, error) 
 }
 
 func (cfg Config) buildEncoder() (zapcore.Encoder, error) {
-	if cfg.EncoderConfig.TimeKey != "" && cfg.EncoderConfig.EncodeTime == nil {
-		return nil, fmt.Errorf("missing EncodeTime in EncoderConfig")
-	}
-
 	return newEncoder(cfg.Encoding, cfg.EncoderConfig)
 }
