@@ -159,10 +159,6 @@ func TestSugarFieldsInvalidPairs(t *testing.T) {
 	})
 }
 
-type stringerF func() string
-
-func (f stringerF) String() string { return f() }
-
 func TestSugarStructuredLogging(t *testing.T) {
 	tests := []struct {
 		msg       string
