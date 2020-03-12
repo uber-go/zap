@@ -267,6 +267,7 @@ func (enc *jsonEncoder) AppendString(val string) {
 }
 
 func (enc *jsonEncoder) AppendTimeLayout(time time.Time, layout string) {
+	enc.addElementSeparator()
 	enc.buf.AppendByte('"')
 	enc.buf.AppendTime(time, layout)
 	enc.buf.AppendByte('"')
