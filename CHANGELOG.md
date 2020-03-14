@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.14.1 (14 Mar 2020)
+
+Bugfixes:
+* [#791][]: Fix panic on attempting to build a logger with an invalid Config.
+* [#795][]: Vendoring Zap with `go mod vendor` no longer includes Zap's
+  development-time dependencies.
+* [#799][]: Fix issue introduced in 1.14.0 that caused invalid JSON output to
+  be generated for arrays of `time.Time` objects when using string-based time
+  formats.
+
+Thanks to @YashishDua for their contributions to this release.
+
 ## 1.14.0 (20 Feb 2020)
 
 Enhancements:
@@ -364,3 +376,6 @@ upgrade to the upcoming stable release.
 [#773]: https://github.com/uber-go/zap/pull/773
 [#775]: https://github.com/uber-go/zap/pull/775
 [#786]: https://github.com/uber-go/zap/pull/786
+[#791]: https://github.com/uber-go/zap/pull/791
+[#795]: https://github.com/uber-go/zap/pull/795
+[#799]: https://github.com/uber-go/zap/pull/799
