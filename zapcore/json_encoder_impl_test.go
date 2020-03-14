@@ -385,6 +385,58 @@ func TestJSONEncoderArrays(t *testing.T) {
 	}
 }
 
+func TestJSONEncoderTimeArrays(t *testing.T) {
+	times := []time.Time{
+		time.Unix(1008720000, 0).UTC(), // 2001-12-19
+		time.Unix(1040169600, 0).UTC(), // 2002-12-18
+		time.Unix(1071619200, 0).UTC(), // 2003-12-17
+	}
+
+	tests := []struct {
+		desc    string
+		encoder TimeEncoder
+		want    string
+	}{
+		{
+			desc:    "epoch",
+			encoder: EpochTimeEncoder,
+			want:    `[1008720000,1040169600,1071619200]`,
+		},
+		{
+			desc:    "epoch millis",
+			encoder: EpochMillisTimeEncoder,
+			want:    `[1008720000000,1040169600000,1071619200000]`,
+		},
+		{
+			desc:    "iso8601",
+			encoder: ISO8601TimeEncoder,
+			want:    `["2001-12-19T00:00:00.000Z","2002-12-18T00:00:00.000Z","2003-12-17T00:00:00.000Z"]`,
+		},
+		{
+			desc:    "rfc3339",
+			encoder: RFC3339TimeEncoder,
+			want:    `["2001-12-19T00:00:00Z","2002-12-18T00:00:00Z","2003-12-17T00:00:00Z"]`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			cfg := _defaultEncoderConfig
+			cfg.EncodeTime = tt.encoder
+
+			enc := &jsonEncoder{buf: bufferpool.Get(), EncoderConfig: &cfg}
+			err := enc.AddArray("array", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
+				for _, time := range times {
+					arr.AppendTime(time)
+				}
+				return nil
+			}))
+			assert.NoError(t, err)
+			assert.Equal(t, `"array":`+tt.want, enc.buf.String())
+		})
+	}
+}
+
 func assertJSON(t *testing.T, expected string, enc *jsonEncoder) {
 	assert.Equal(t, expected, enc.buf.String(), "Encoded JSON didn't match expectations.")
 }
