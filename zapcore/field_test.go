@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	. "go.uber.org/zap/zapcore"
 )
@@ -164,6 +165,10 @@ func TestFields(t *testing.T) {
 }
 
 func TestEquals(t *testing.T) {
+	timeOutOfRange := time.Unix(0, math.MaxInt64).Add(time.Nanosecond)
+	timeOutOfRangeNano := time.Unix(0, timeOutOfRange.UnixNano())
+	require.NotEqual(t, timeOutOfRange, timeOutOfRangeNano, "should be different as value is out of UnixNano range")
+
 	tests := []struct {
 		a, b Field
 		want bool
@@ -196,6 +201,12 @@ func TestEquals(t *testing.T) {
 		{
 			a:    zap.Time("k", time.Unix(1000, 1000).In(time.UTC)),
 			b:    zap.Time("k", time.Unix(1000, 1000).In(time.FixedZone("TEST", -8))),
+			want: false,
+		},
+		{
+			// Values outside the UnixNano range were encoded incorrectly (#737, #803).
+			a:    zap.Time("k", timeOutOfRange),
+			b:    zap.Time("k", timeOutOfRangeNano),
 			want: false,
 		},
 		{
