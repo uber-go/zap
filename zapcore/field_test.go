@@ -165,9 +165,13 @@ func TestFields(t *testing.T) {
 }
 
 func TestEquals(t *testing.T) {
-	timeOutOfRange := time.Unix(0, math.MaxInt64).Add(time.Nanosecond)
-	timeOutOfRangeNano := time.Unix(0, timeOutOfRange.UnixNano())
-	require.NotEqual(t, timeOutOfRange, timeOutOfRangeNano, "should be different as value is out of UnixNano range")
+	// Values outside the UnixNano range were encoded incorrectly (#737, #803).
+	timeOutOfRangeHigh := time.Unix(0, math.MaxInt64).Add(time.Nanosecond)
+	timeOutOfRangeLow := time.Unix(0, math.MinInt64).Add(-time.Nanosecond)
+	timeOutOfRangeHighNano := time.Unix(0, timeOutOfRangeHigh.UnixNano())
+	timeOutOfRangeLowNano := time.Unix(0, timeOutOfRangeLow.UnixNano())
+	require.NotEqual(t, timeOutOfRangeHigh, timeOutOfRangeHighNano, "should be different as value is >  UnixNano range")
+	require.NotEqual(t, timeOutOfRangeHigh, timeOutOfRangeHighNano, "should be different as value is <  UnixNano range")
 
 	tests := []struct {
 		a, b Field
@@ -204,9 +208,13 @@ func TestEquals(t *testing.T) {
 			want: false,
 		},
 		{
-			// Values outside the UnixNano range were encoded incorrectly (#737, #803).
-			a:    zap.Time("k", timeOutOfRange),
-			b:    zap.Time("k", timeOutOfRangeNano),
+			a:    zap.Time("k", timeOutOfRangeLow),
+			b:    zap.Time("k", timeOutOfRangeLowNano),
+			want: false,
+		},
+		{
+			a:    zap.Time("k", timeOutOfRangeHigh),
+			b:    zap.Time("k", timeOutOfRangeHighNano),
 			want: false,
 		},
 		{

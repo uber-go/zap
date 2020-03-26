@@ -108,6 +108,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"String", Field{Key: "k", Type: zapcore.StringType, String: "foo"}, String("k", "foo")},
 		{"Time", Field{Key: "k", Type: zapcore.TimeType, Integer: 0, Interface: time.UTC}, Time("k", time.Unix(0, 0).In(time.UTC))},
 		{"Time", Field{Key: "k", Type: zapcore.TimeType, Integer: 1000, Interface: time.UTC}, Time("k", time.Unix(0, 1000).In(time.UTC))},
+		{"Time", Field{Key: "k", Type: zapcore.TimeType, Integer: math.MinInt64, Interface: time.UTC}, Time("k", time.Unix(0, math.MinInt64).In(time.UTC))},
 		{"Time", Field{Key: "k", Type: zapcore.TimeType, Integer: math.MaxInt64, Interface: time.UTC}, Time("k", time.Unix(0, math.MaxInt64).In(time.UTC))},
 		{"Time", Field{Key: "k", Type: zapcore.TimeFullType, Interface: time.Time{}}, Time("k", time.Time{})},
 		{"Time", Field{Key: "k", Type: zapcore.TimeFullType, Interface: time.Unix(math.MaxInt64, 0)}, Time("k", time.Unix(math.MaxInt64, 0))},

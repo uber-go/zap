@@ -33,7 +33,7 @@ import (
 type Field = zapcore.Field
 
 var (
-	_minTimeInt64 = time.Unix(0, 0)
+	_minTimeInt64 = time.Unix(0, math.MinInt64)
 	_maxTimeInt64 = time.Unix(0, math.MaxInt64)
 )
 
