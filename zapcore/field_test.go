@@ -170,8 +170,8 @@ func TestEquals(t *testing.T) {
 	timeOutOfRangeLow := time.Unix(0, math.MinInt64).Add(-time.Nanosecond)
 	timeOutOfRangeHighNano := time.Unix(0, timeOutOfRangeHigh.UnixNano())
 	timeOutOfRangeLowNano := time.Unix(0, timeOutOfRangeLow.UnixNano())
-	require.NotEqual(t, timeOutOfRangeHigh, timeOutOfRangeHighNano, "should be different as value is >  UnixNano range")
-	require.NotEqual(t, timeOutOfRangeHigh, timeOutOfRangeHighNano, "should be different as value is <  UnixNano range")
+	require.False(t, timeOutOfRangeHigh.Equal(timeOutOfRangeHighNano), "should be different as value is >  UnixNano range")
+	require.False(t, timeOutOfRangeHigh.Equal(timeOutOfRangeHighNano), "should be different as value is <  UnixNano range")
 
 	tests := []struct {
 		a, b Field
