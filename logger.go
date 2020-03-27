@@ -296,15 +296,33 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 
 	// Thread the error output through to the CheckedEntry.
 	ce.ErrorOutput = log.errorOutput
+
+	addStack := log.addStack.Enabled(ce.Entry.Level)
+	if !log.addCaller && !addStack {
+		return ce
+	}
+
+	programCounters := newProgramCounters()
+	defer programCounters.Release()
+
+	pcs := programCounters.Callers(callerSkipOffset)
 	if log.addCaller {
-		ce.Entry.Caller = zapcore.NewEntryCaller(runtime.Caller(log.callerSkip + callerSkipOffset))
+		callerIdx := log.callerSkip
+		if len(pcs) <= callerIdx {
+			ce.Entry.Caller = zapcore.NewEntryCaller(0, "", 0, false)
+		} else {
+			frame, _ := runtime.CallersFrames(pcs[callerIdx:]).Next()
+			ce.Entry.Caller = zapcore.NewEntryCaller(frame.PC, frame.File, frame.Line, true)
+		}
+
 		if !ce.Entry.Caller.Defined {
 			fmt.Fprintf(log.errorOutput, "%v Logger.check error: failed to get caller\n", time.Now().UTC())
 			log.errorOutput.Sync()
 		}
 	}
-	if log.addStack.Enabled(ce.Entry.Level) {
-		ce.Entry.Stack = Stack("").String
+
+	if addStack {
+		ce.Entry.Stack = makeStacktrace(pcs)
 	}
 
 	return ce
