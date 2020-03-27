@@ -41,7 +41,7 @@ func takeStacktrace() string {
 	pcs := newProgramCounters()
 	defer pcs.Release()
 
-	return makeStacktrace(pcs.Callers(1))
+	return makeStacktrace(pcs.Callers(1 /* skip */, 0 /* limit */))
 }
 
 func makeStacktrace(pcs []uintptr) string {
@@ -113,19 +113,40 @@ func (pcs *programCounters) Release() {
 	_stacktracePool.Put(pcs)
 }
 
-func (pcs *programCounters) Callers(skip int) []uintptr {
+// Callers captures program counters of callers of the current function.
+//
+// skip specifies the number of functions to skip.
+// limit specifies how deep into the stack we go, zero meaning unlimited.
+func (pcs *programCounters) Callers(skip int, limit int) []uintptr {
+	pc := pcs.pcs
+	if limit > 0 {
+		// The shortened slice will never be placed back into the
+		// pool, but the longer one will.
+		if limit < len(pc) {
+			pc = pc[:limit]
+		} else {
+			pc = make([]uintptr, limit)
+			pcs.pcs = pc
+		}
+	}
+
 	var numFrames int
 	for {
 		// Skip the call to runtime.Callers and programCounter.Callers
 		// so that the program counters start at our caller.
-		numFrames = runtime.Callers(skip+2, pcs.pcs)
-		if numFrames < len(pcs.pcs) {
-			return pcs.pcs[:numFrames]
+		numFrames = runtime.Callers(skip+2, pc)
+
+		// All required frames have been captured if the limit was
+		// non-zero or if the stack depth is smaller than the size of
+		// the slice.
+		if limit > 0 || numFrames < len(pc) {
+			return pc[:numFrames]
 		}
 
 		// Don't put the too-short counter slice back into the pool; this lets
 		// the pool adjust if we consistently take deep stacktraces.
-		pcs.pcs = make([]uintptr, len(pcs.pcs)*2)
+		pc = make([]uintptr, len(pcs.pcs)*2)
+		pcs.pcs = pc
 	}
 }
 

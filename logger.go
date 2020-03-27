@@ -302,16 +302,27 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 		return ce
 	}
 
+	// If a stack trace was requested, capture the entire stack.
+	stackLimit := 0
+
+	// For historical reasons, stack traces reported by Zap don't respect
+	// CallerSkip. See also #727.
+	stackSkip := callerSkipOffset
+
+	if !addStack {
+		stackLimit = 1
+		stackSkip += log.callerSkip
+	}
+
 	programCounters := newProgramCounters()
 	defer programCounters.Release()
 
-	pcs := programCounters.Callers(callerSkipOffset)
+	pcs := programCounters.Callers(stackSkip, stackLimit)
 	if log.addCaller {
-		callerIdx := log.callerSkip
-		if len(pcs) <= callerIdx {
+		if len(pcs) == 0 {
 			ce.Entry.Caller = zapcore.NewEntryCaller(0, "", 0, false)
 		} else {
-			frame, _ := runtime.CallersFrames(pcs[callerIdx:]).Next()
+			frame, _ := runtime.CallersFrames(pcs).Next()
 			ce.Entry.Caller = zapcore.NewEntryCaller(frame.PC, frame.File, frame.Line, true)
 		}
 
