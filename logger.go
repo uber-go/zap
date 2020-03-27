@@ -333,7 +333,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	}
 
 	if addStack {
-		ce.Entry.Stack = makeStacktrace(pcs)
+		ce.Entry.Stack = makeStacktrace(pcs, true /* skip zap */)
 	}
 
 	return ce

@@ -41,21 +41,24 @@ func takeStacktrace() string {
 	pcs := newProgramCounters()
 	defer pcs.Release()
 
-	return makeStacktrace(pcs.Callers(1 /* skip */, 0 /* limit */))
+	return makeStacktrace(
+		pcs.Callers(1 /* skip */, 0 /* limit */),
+		true, // skip zap
+	)
 }
 
-func makeStacktrace(pcs []uintptr) string {
+func makeStacktrace(pcs []uintptr, skipZapFrames bool) string {
 	buffer := bufferpool.Get()
 	defer buffer.Free()
 
 	i := 0
-	skipZapFrames := true // skip all consecutive zap frames at the beginning.
 	frames := runtime.CallersFrames(pcs)
 
 	// Note: On the last iteration, frames.Next() returns false, with a valid
 	// frame, but we ignore this frame. The last frame is a a runtime frame which
 	// adds noise, since it's only either runtime.main or runtime.goexit.
 	for frame, more := frames.Next(); more; frame, more = frames.Next() {
+		// skip all consecutive zap frames at the beginning.
 		if skipZapFrames && isZapFrame(frame.Function) {
 			continue
 		} else {

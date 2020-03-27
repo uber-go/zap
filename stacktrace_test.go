@@ -73,3 +73,35 @@ func BenchmarkTakeStacktrace(b *testing.B) {
 		takeStacktrace()
 	}
 }
+
+func TestProgramCountersCallersWithLargeLimit(t *testing.T) {
+	const (
+		N                  = 128
+		testName           = "go.uber.org/zap.TestProgramCountersCallersWithLargeLimit"
+		withStackDepthName = "go.uber.org/zap.withStackDepth"
+	)
+
+	var trace string
+	withStackDepth(N, func() {
+		pcs := newProgramCounters().Callers(0, N+2)
+		trace = makeStacktrace(pcs, false /* don't skip zap */)
+	})
+
+	assert.Contains(t, trace, testName)
+	for found := 0; found < N; found++ {
+		i := strings.Index(trace, withStackDepthName)
+		if i < 0 {
+			t.Fatalf(`expected %d occurrences of %q, found %d`, N, withStackDepthName, found)
+		}
+
+		trace = trace[i+len(withStackDepthName):]
+	}
+}
+
+func withStackDepth(depth int, f func()) {
+	if depth > 0 {
+		withStackDepth(depth-1, f)
+	} else {
+		f()
+	}
+}
