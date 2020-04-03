@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	. "go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -35,6 +36,7 @@ func TestIncreaseLevel(t *testing.T) {
 		coreLevel     Level
 		increaseLevel Level
 		wantErr       bool
+		with          []Field
 	}{
 		{
 			coreLevel:     InfoLevel,
@@ -48,6 +50,11 @@ func TestIncreaseLevel(t *testing.T) {
 		{
 			coreLevel:     InfoLevel,
 			increaseLevel: ErrorLevel,
+		},
+		{
+			coreLevel:     InfoLevel,
+			increaseLevel: ErrorLevel,
+			with:          []Field{zap.String("k", "v")},
 		},
 		{
 			coreLevel:     ErrorLevel,
@@ -80,6 +87,10 @@ func TestIncreaseLevel(t *testing.T) {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), "invalid increase level")
 				return
+			}
+
+			if len(tt.with) > 0 {
+				filteredLogger = filteredLogger.With(tt.with)
 			}
 
 			require.NoError(t, err)
