@@ -84,7 +84,7 @@ func (c *counter) IncCheckReset(t time.Time, tick time.Duration) uint64 {
 type SamplingDecision uint8
 
 const (
-	Dropped SamplingDecision = iota
+	Dropped SamplingDecision = iota // Whether a log was dropped.
 )
 
 // optionFunc wraps a func so it satisfies the SamplerOption interface.
@@ -98,12 +98,37 @@ type SamplerOption interface {
 	apply(*sampler)
 }
 
-func SamplerHook(hook func(entry Entry, dec SamplingDecision)) SamplerOption {
+func NopSamplingHook(_ Entry, _ SamplingDecision) error {
+	return nil
+}
+
+// SampleHook registers a which will be called when Sampler makes a decision.
+// Currently a hook is called when a log is dropped zapcore.Dropped is sent.
+//
+// This hook is useful for side effects, for example emitting number of dropped
+// logs. Note, there is no access to Fields in this hook. In the future, this
+// can be expanded to log whether this is first entry that was dropped, first
+// after a period, etc.
+func SamplerHook(hook func(entry Entry, dec SamplingDecision) error) SamplerOption {
 	return optionFunc(func(s *sampler) {
 		s.hook = hook
 	})
 }
 
+// NewSampler creates a Core that samples incoming entries, which caps the CPU
+// and I/O load of logging while attempting to preserve a representative subset
+// of your logs.
+//
+// Zap samples by logging the first N entries with a given level and message
+// each tick. If more Entries with the same level and message are seen during
+// the same interval, every Mth message is logged and the rest are dropped.
+//
+// Sampler also accepts an optional hook that can be used to count number of
+// dropped logs.
+//
+// Keep in mind that zap's sampling implementation is optimized for speed over
+// absolute precision; under load, each tick may be slightly over- or
+// under-sampled.
 func NewSamplerWithOptions(core Core, tick time.Duration, first, thereafter int, opts ...SamplerOption) Core {
 	s := &sampler{
 		Core:       core,
@@ -116,7 +141,7 @@ func NewSamplerWithOptions(core Core, tick time.Duration, first, thereafter int,
 		opt.apply(s)
 	}
 
-	return  s
+	return s
 }
 
 type sampler struct {
@@ -125,20 +150,10 @@ type sampler struct {
 	counts            *counters
 	tick              time.Duration
 	first, thereafter uint64
-	hook              func(Entry, SamplingDecision)
+	hook              func(Entry, SamplingDecision) error
 }
 
-// NewSampler creates a Core that samples incoming entries, which caps the CPU
-// and I/O load of logging while attempting to preserve a representative subset
-// of your logs.
-//
-// Zap samples by logging the first N entries with a given level and message
-// each tick. If more Entries with the same level and message are seen during
-// the same interval, every Mth message is logged and the rest are dropped.
-//
-// Keep in mind that zap's sampling implementation is optimized for speed over
-// absolute precision; under load, each tick may be slightly over- or
-// under-sampled.
+// Deprecated: use NewSamplerWithOptions.
 func NewSampler(core Core, tick time.Duration, first, thereafter int) Core {
 	return &sampler{
 		Core:       core,
@@ -156,6 +171,7 @@ func (s *sampler) With(fields []Field) Core {
 		counts:     s.counts,
 		first:      s.first,
 		thereafter: s.thereafter,
+		hook:       s.hook,
 	}
 }
 
@@ -167,9 +183,8 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	counter := s.counts.get(ent.Level, ent.Message)
 	n := counter.IncCheckReset(ent.Time, s.tick)
 	if n > s.first && (n-s.first)%s.thereafter != 0 {
-		if s.hook != nil {
-			s.hook(ent, Dropped)
-		}
+		err := s.hook(ent, Dropped)
+		if err != nil {}
 		return ce
 	}
 

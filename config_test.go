@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -143,4 +144,68 @@ func TestConfigWithMissingAttributes(t *testing.T) {
 			assert.Equal(t, tt.expectErr, err.Error())
 		})
 	}
+}
+
+func makeSamplerCountingHook() (func(zapcore.Entry, zapcore.SamplingDecision) error, *atomic.Int64) {
+	count := &atomic.Int64{}
+	h := func(zapcore.Entry, zapcore.SamplingDecision) error {
+		count.Inc()
+		return nil
+	}
+	return h, count
+}
+
+
+func TestConfigWithSamplingHook(t *testing.T) {
+	shook, scount := makeSamplerCountingHook()
+	// desc: "config with a sampler hook",
+	cfg := Config{
+		Level:       NewAtomicLevelAt(InfoLevel),
+		Development: false,
+		Sampling: &SamplingConfig{
+			Initial:    100,
+			Thereafter: 100,
+			Hook: shook,
+		},
+		Encoding:         "json",
+		EncoderConfig:    NewProductionEncoderConfig(),
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+	}
+	expectN := 2 + 100 + 1 // 2 from initial logs, 100 initial sampled logs, 1 from off-by-one in sampler
+	expectRe := `{"level":"info","caller":"zap/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
+		`{"level":"warn","caller":"zap/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n"
+	expectDropped := 99 // 200 - 100 initial - 1 thereafter
+
+	temp, err := ioutil.TempFile("", "zap-prod-config-test")
+	require.NoError(t, err, "Failed to create temp file.")
+	defer func() {
+		err := os.Remove(temp.Name())
+		if err != nil {
+			return
+		}
+	}()
+
+	cfg.OutputPaths = []string{temp.Name()}
+	cfg.EncoderConfig.TimeKey = "" // no timestamps in tests
+	cfg.InitialFields = map[string]interface{}{"z": "zz", "k": "v"}
+
+	hook, count := makeCountingHook()
+	logger, err := cfg.Build(Hooks(hook))
+	require.NoError(t, err, "Unexpected error constructing logger.")
+
+	logger.Debug("debug")
+	logger.Info("info")
+	logger.Warn("warn")
+
+	byteContents, err := ioutil.ReadAll(temp)
+	require.NoError(t, err, "Couldn't read log contents from temp file.")
+	logs := string(byteContents)
+	assert.Regexp(t, expectRe, logs, "Unexpected log output.")
+
+	for i := 0; i < 200; i++ {
+		logger.Info("sampling")
+	}
+	assert.Equal(t, int64(expectN), count.Load(), "Hook called an unexpected number of times.")
+	assert.Equal(t, int64(expectDropped), scount.Load())
 }

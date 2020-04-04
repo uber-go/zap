@@ -203,7 +203,7 @@ var counterTestCases = [][]string{
 func BenchmarkSampler_Check(b *testing.B) {
 	for _, keys := range counterTestCases {
 		b.Run(fmt.Sprintf("%v keys", len(keys)), func(b *testing.B) {
-			fac := NewSampler(
+			fac := NewSamplerWithOptions(
 				NewCore(
 					NewJSONEncoder(testEncoderConfig()),
 					&ztest.Discarder{},
