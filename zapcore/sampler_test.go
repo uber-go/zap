@@ -37,7 +37,7 @@ import (
 
 func fakeSampler(lvl LevelEnabler, tick time.Duration, first, thereafter int) (Core, *observer.ObservedLogs) {
 	core, logs := observer.New(lvl)
-	core = NewSamplerWithOptions(core, tick, first, thereafter, SamplerHook(NopSamplingHook))
+	core = NewSamplerWithOptions(core, tick, first, thereafter)
 	return core, logs
 }
 
@@ -162,8 +162,7 @@ func TestSamplerConcurrent(t *testing.T) {
 
 	tick := ztest.Timeout(10 * time.Millisecond)
 	cc := &countingCore{}
-	sampler := NewSamplerWithOptions(cc, tick, logsPerTick, 100000,
-		SamplerHook(NopSamplingHook))
+	sampler := NewSamplerWithOptions(cc, tick, logsPerTick, 100000)
 
 	var (
 		done atomic.Bool

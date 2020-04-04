@@ -136,6 +136,7 @@ func NewSamplerWithOptions(core Core, tick time.Duration, first, thereafter int,
 		counts:     newCounters(),
 		first:      uint64(first),
 		thereafter: uint64(thereafter),
+		hook:       NopSamplingHook,
 	}
 	for _, opt := range opts {
 		opt.apply(s)
