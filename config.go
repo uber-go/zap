@@ -36,6 +36,7 @@ import (
 type SamplingConfig struct {
 	Initial    int `json:"initial" yaml:"initial"`
 	Thereafter int `json:"thereafter" yaml:"thereafter"`
+	Hook       func(zapcore.Entry, zapcore.SamplingDecision)
 }
 
 // Config offers a declarative way to construct a logger. It doesn't do
@@ -209,9 +210,23 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 	}
 
 	if cfg.Sampling != nil {
-		opts = append(opts, WrapCore(func(core zapcore.Core) zapcore.Core {
-			return zapcore.NewSampler(core, time.Second, int(cfg.Sampling.Initial), int(cfg.Sampling.Thereafter))
-		}))
+		if cfg.Sampling.Hook != nil {
+			opts = append(opts, WrapCore(func(core zapcore.Core) zapcore.Core {
+				return zapcore.NewSamplerWithOptions(
+					core,
+					time.Second,
+					cfg.Sampling.Initial,
+					cfg.Sampling.Thereafter,
+					zapcore.SamplerHook(cfg.Sampling.Hook),
+				)
+			}))
+		} else {
+			opts = append(opts, WrapCore(func(core zapcore.Core) zapcore.Core {
+				return zapcore.NewSampler(
+					core, time.Second, int(cfg.Sampling.Initial),
+					int(cfg.Sampling.Thereafter))
+			}))
+		}
 	}
 
 	if len(cfg.InitialFields) > 0 {

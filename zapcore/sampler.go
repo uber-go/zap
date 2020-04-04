@@ -21,7 +21,6 @@
 package zapcore
 
 import (
-	"fmt"
 	"time"
 
 	"go.uber.org/atomic"
@@ -82,12 +81,51 @@ func (c *counter) IncCheckReset(t time.Time, tick time.Duration) uint64 {
 	return 1
 }
 
+type SamplingDecision uint8
+
+const (
+	Dropped SamplingDecision = iota
+)
+
+// optionFunc wraps a func so it satisfies the SamplerOption interface.
+type optionFunc func(*sampler)
+
+func (f optionFunc) apply(s *sampler) {
+	f(s)
+}
+
+type SamplerOption interface {
+	apply(*sampler)
+}
+
+func SamplerHook(hook func(entry Entry, dec SamplingDecision)) SamplerOption {
+	return optionFunc(func(s *sampler) {
+		s.hook = hook
+	})
+}
+
+func NewSamplerWithOptions(core Core, tick time.Duration, first, thereafter int, opts ...SamplerOption) Core {
+	s := &sampler{
+		Core:       core,
+		tick:       tick,
+		counts:     newCounters(),
+		first:      uint64(first),
+		thereafter: uint64(thereafter),
+	}
+	for _, opt := range opts {
+		opt.apply(s)
+	}
+
+	return  s
+}
+
 type sampler struct {
 	Core
 
 	counts            *counters
 	tick              time.Duration
 	first, thereafter uint64
+	hook              func(Entry, SamplingDecision)
 }
 
 // NewSampler creates a Core that samples incoming entries, which caps the CPU
@@ -129,9 +167,11 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	counter := s.counts.get(ent.Level, ent.Message)
 	n := counter.IncCheckReset(ent.Time, s.tick)
 	if n > s.first && (n-s.first)%s.thereafter != 0 {
+		if s.hook != nil {
+			s.hook(ent, Dropped)
+		}
 		return ce
-	} else if s.thereafter > 0 && s.first > 0 && (n-s.first)%s.thereafter == 0 {
-		ent.Message = fmt.Sprintf("%s dropped %d logs", ent.Message, uint64(s.thereafter - 1))
 	}
+
 	return s.Core.Check(ent, ce)
 }
