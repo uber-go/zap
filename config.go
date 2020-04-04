@@ -32,7 +32,8 @@ import (
 // global CPU and I/O load that logging puts on your process while attempting
 // to preserve a representative subset of your logs.
 //
-//
+// Hook is called whenever a Sampler makes a decision. Currently, whenever a
+// log is dropped.
 //
 // Values configured here are per-second. See zapcore.NewSamplerWithOptions for
 // details.

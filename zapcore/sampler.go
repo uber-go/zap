@@ -98,17 +98,19 @@ type SamplerOption interface {
 	apply(*sampler)
 }
 
+// NopSamplingHook is the default hook used by sampler.
 func NopSamplingHook(_ Entry, _ SamplingDecision) error {
 	return nil
 }
 
-// SampleHook registers a which will be called when Sampler makes a decision.
-// Currently a hook is called when a log is dropped zapcore.Dropped is sent.
+// SamplerHook registers a which will be called when Sampler makes a decision.
+// Currently a hook is called when a log is dropped and zapcore.Dropped decision
+// is emitted.
 //
 // This hook is useful for side effects, for example emitting number of dropped
 // logs. Note, there is no access to Fields in this hook. In the future, this
-// can be expanded to log whether this is first entry that was dropped, first
-// after a period, etc.
+// hook can be expanded to emit whether this is first entry that was dropped,
+// first after a period, etc.
 func SamplerHook(hook func(entry Entry, dec SamplingDecision) error) SamplerOption {
 	return optionFunc(func(s *sampler) {
 		s.hook = hook

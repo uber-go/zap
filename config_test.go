@@ -158,7 +158,6 @@ func makeSamplerCountingHook() (func(zapcore.Entry, zapcore.SamplingDecision) er
 
 func TestConfigWithSamplingHook(t *testing.T) {
 	shook, scount := makeSamplerCountingHook()
-	// desc: "config with a sampler hook",
 	cfg := Config{
 		Level:       NewAtomicLevelAt(InfoLevel),
 		Development: false,
