@@ -161,6 +161,7 @@ func NewSampler(core Core, tick time.Duration, first, thereafter int) Core {
 		counts:     newCounters(),
 		first:      uint64(first),
 		thereafter: uint64(thereafter),
+		hook:       NopSamplingHook,
 	}
 }
 
@@ -184,7 +185,8 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	n := counter.IncCheckReset(ent.Time, s.tick)
 	if n > s.first && (n-s.first)%s.thereafter != 0 {
 		err := s.hook(ent, Dropped)
-		if err != nil {}
+		if err != nil {
+		}
 		return ce
 	}
 
