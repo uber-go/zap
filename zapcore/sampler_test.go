@@ -37,7 +37,8 @@ import (
 
 func fakeSampler(lvl LevelEnabler, tick time.Duration, first, thereafter int) (Core, *observer.ObservedLogs) {
 	core, logs := observer.New(lvl)
-	core = NewSamplerWithOptions(core, tick, first, thereafter)
+	// Keep using deprecated constructor for cc.
+	core = NewSampler(core, tick, first, thereafter)
 	return core, logs
 }
 

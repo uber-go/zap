@@ -159,7 +159,18 @@ type sampler struct {
 	hook              func(Entry, SamplingDecision) error
 }
 
-// NewSampler is deprecated: use NewSamplerWithOptions.
+// NewSampler creates a Core that samples incoming entries, which
+// caps the CPU and I/O load of logging while attempting to preserve a
+// representative subset of your logs.
+//
+// Zap samples by logging the first N entries with a given level and message
+// each tick. If more Entries with the same level and message are seen during
+// the same interval, every Mth message is logged and the rest are dropped.
+//
+// Keep in mind that zap's sampling implementation is optimized for speed over
+// absolute precision; under load, each tick may be slightly over- or
+// under-sampled.
+// Deprecated: use NewSamplerWithOptions.
 func NewSampler(core Core, tick time.Duration, first, thereafter int) Core {
 	return &sampler{
 		Core:       core,
