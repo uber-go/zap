@@ -116,7 +116,7 @@ func newZapLogger(lvl zapcore.Level) *zap.Logger {
 }
 
 func newSampledLogger(lvl zapcore.Level) *zap.Logger {
-	return zap.New(zapcore.NewSamplerWithOptions(
+	return zap.New(zapcore.NewSampler(
 		newZapLogger(zap.DebugLevel).Core(),
 		100*time.Millisecond,
 		10, // first

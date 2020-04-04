@@ -81,10 +81,12 @@ func (c *counter) IncCheckReset(t time.Time, tick time.Duration) uint64 {
 	return 1
 }
 
+// SamplingDecision represents a decision made by sampler.
 type SamplingDecision uint8
 
 const (
-	Dropped SamplingDecision = iota // Whether a log was dropped.
+	// Dropped means that a log was dropped.
+	Dropped SamplingDecision = iota
 )
 
 // optionFunc wraps a func so it satisfies the SamplerOption interface.
@@ -94,6 +96,7 @@ func (f optionFunc) apply(s *sampler) {
 	f(s)
 }
 
+// SamplerOption configures a Sampler option.
 type SamplerOption interface {
 	apply(*sampler)
 }
@@ -117,9 +120,9 @@ func SamplerHook(hook func(entry Entry, dec SamplingDecision) error) SamplerOpti
 	})
 }
 
-// NewSampler creates a Core that samples incoming entries, which caps the CPU
-// and I/O load of logging while attempting to preserve a representative subset
-// of your logs.
+// NewSamplerWithOptions creates a Core that samples incoming entries, which
+// caps the CPU and I/O load of logging while attempting to preserve a
+// representative subset of your logs.
 //
 // Zap samples by logging the first N entries with a given level and message
 // each tick. If more Entries with the same level and message are seen during
@@ -156,7 +159,7 @@ type sampler struct {
 	hook              func(Entry, SamplingDecision) error
 }
 
-// Deprecated: use NewSamplerWithOptions.
+// NewSampler is deprecated: use NewSamplerWithOptions.
 func NewSampler(core Core, tick time.Duration, first, thereafter int) Core {
 	return &sampler{
 		Core:       core,
@@ -187,9 +190,7 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	counter := s.counts.get(ent.Level, ent.Message)
 	n := counter.IncCheckReset(ent.Time, s.tick)
 	if n > s.first && (n-s.first)%s.thereafter != 0 {
-		err := s.hook(ent, Dropped)
-		if err != nil {
-		}
+		_ = s.hook(ent, Dropped)
 		return ce
 	}
 

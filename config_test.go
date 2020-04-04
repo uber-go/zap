@@ -155,7 +155,6 @@ func makeSamplerCountingHook() (func(zapcore.Entry, zapcore.SamplingDecision) er
 	return h, count
 }
 
-
 func TestConfigWithSamplingHook(t *testing.T) {
 	shook, scount := makeSamplerCountingHook()
 	cfg := Config{
@@ -164,7 +163,7 @@ func TestConfigWithSamplingHook(t *testing.T) {
 		Sampling: &SamplingConfig{
 			Initial:    100,
 			Thereafter: 100,
-			Hook: shook,
+			Hook:       shook,
 		},
 		Encoding:         "json",
 		EncoderConfig:    NewProductionEncoderConfig(),
