@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/atomic"
 	"go.uber.org/zap/internal/ztest"
 	. "go.uber.org/zap/zapcore"
 )
@@ -210,6 +211,53 @@ func BenchmarkSampler_Check(b *testing.B) {
 					DebugLevel,
 				),
 				time.Millisecond, 1, 1000)
+			b.ResetTimer()
+			b.RunParallel(func(pb *testing.PB) {
+				i := 0
+				for pb.Next() {
+					ent := Entry{
+						Level:   DebugLevel + Level(i%4),
+						Message: keys[i],
+					}
+					_ = fac.Check(ent, nil)
+					i++
+					if n := len(keys); i >= n {
+						i -= n
+					}
+				}
+			})
+		})
+	}
+}
+
+func makeSamplerCountingHook() (func(_ Entry, dec SamplingDecision), *atomic.Int64, *atomic.Int64) {
+	droppedCount := &atomic.Int64{}
+	sampledCount := &atomic.Int64{}
+	h := func(_ Entry, dec SamplingDecision) {
+		if dec == LogDropped {
+			droppedCount.Inc()
+		} else if dec == LogSampled {
+			sampledCount.Inc()
+		}
+	}
+	return h, droppedCount, sampledCount
+}
+
+func BenchmarkSampler_CheckWithHook(b *testing.B) {
+	hook, _, _ := makeSamplerCountingHook()
+	for _, keys := range counterTestCases {
+		b.Run(fmt.Sprintf("%v keys", len(keys)), func(b *testing.B) {
+			fac := NewSamplerWithOptions(
+				NewCore(
+					NewJSONEncoder(testEncoderConfig()),
+					&ztest.Discarder{},
+					DebugLevel,
+				),
+				time.Millisecond,
+				1,
+				1000,
+				SamplerHook(hook),
+				)
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				i := 0
