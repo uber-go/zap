@@ -146,17 +146,22 @@ func TestConfigWithMissingAttributes(t *testing.T) {
 	}
 }
 
-func makeSamplerCountingHook() (func(zapcore.Entry, zapcore.SamplingDecision) error, *atomic.Int64) {
-	count := &atomic.Int64{}
-	h := func(zapcore.Entry, zapcore.SamplingDecision) error {
-		count.Inc()
-		return nil
+func makeSamplerCountingHook() (func(zapcore.Entry, zapcore.SamplingDecision),
+	*atomic.Int64, *atomic.Int64) {
+	droppedCount := &atomic.Int64{}
+	sampledCount := &atomic.Int64{}
+	h := func(_ zapcore.Entry, dec zapcore.SamplingDecision) {
+		if dec == zapcore.LogDropped {
+			droppedCount.Inc()
+		} else if dec == zapcore.LogSampled {
+			sampledCount.Inc()
+		}
 	}
-	return h, count
+	return h, droppedCount, sampledCount
 }
 
 func TestConfigWithSamplingHook(t *testing.T) {
-	shook, scount := makeSamplerCountingHook()
+	shook, dcount, scount := makeSamplerCountingHook()
 	cfg := Config{
 		Level:       NewAtomicLevelAt(InfoLevel),
 		Development: false,
@@ -173,7 +178,8 @@ func TestConfigWithSamplingHook(t *testing.T) {
 	expectN := 2 + 100 + 1 // 2 from initial logs, 100 initial sampled logs, 1 from off-by-one in sampler
 	expectRe := `{"level":"info","caller":"zap/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
 		`{"level":"warn","caller":"zap/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n"
-	expectDropped := 99 // 200 - 100 initial - 1 thereafter
+	expectDropped := 99  // 200 - 100 initial - 1 thereafter
+	expectSampled := 103 // 2 from initial + 100 + 1 thereafter
 
 	temp, err := ioutil.TempFile("", "zap-prod-config-test")
 	require.NoError(t, err, "Failed to create temp file.")
@@ -205,5 +211,6 @@ func TestConfigWithSamplingHook(t *testing.T) {
 		logger.Info("sampling")
 	}
 	assert.Equal(t, int64(expectN), count.Load(), "Hook called an unexpected number of times.")
-	assert.Equal(t, int64(expectDropped), scount.Load())
+	assert.Equal(t, int64(expectDropped), dcount.Load())
+	assert.Equal(t, int64(expectSampled), scount.Load())
 }

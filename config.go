@@ -40,7 +40,7 @@ import (
 type SamplingConfig struct {
 	Initial    int `json:"initial" yaml:"initial"`
 	Thereafter int `json:"thereafter" yaml:"thereafter"`
-	Hook       func(zapcore.Entry, zapcore.SamplingDecision) error
+	Hook       func(zapcore.Entry, zapcore.SamplingDecision)
 }
 
 // Config offers a declarative way to construct a logger. It doesn't do
@@ -212,19 +212,19 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 	if !cfg.DisableStacktrace {
 		opts = append(opts, AddStacktrace(stackLevel))
 	}
-	if cfg.Sampling != nil && cfg.Sampling.Hook == nil {
-		// Assign a default nop sampling hook.
-		cfg.Sampling.Hook = zapcore.NopSamplingHook
-	}
 
-	if cfg.Sampling != nil {
+	if scfg := cfg.Sampling; scfg != nil {
 		opts = append(opts, WrapCore(func(core zapcore.Core) zapcore.Core {
+			var samplerOpts []zapcore.SamplerOption
+			if scfg.Hook != nil {
+				samplerOpts = append(samplerOpts, zapcore.SamplerHook(scfg.Hook))
+			}
 			return zapcore.NewSamplerWithOptions(
 				core,
 				time.Second,
 				cfg.Sampling.Initial,
 				cfg.Sampling.Thereafter,
-				zapcore.SamplerHook(cfg.Sampling.Hook),
+				samplerOpts...,
 			)
 		}))
 	}
