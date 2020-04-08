@@ -257,7 +257,7 @@ func BenchmarkSampler_CheckWithHook(b *testing.B) {
 				1,
 				1000,
 				SamplerHook(hook),
-				)
+			)
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				i := 0
