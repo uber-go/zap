@@ -85,7 +85,7 @@ func (c *counter) IncCheckReset(t time.Time, tick time.Duration) uint64 {
 type SamplingDecision uint8
 
 const (
-	// LogSampled indicates that the Sampler dropped a log entry.
+	// LogDropped indicates that the Sampler dropped a log entry.
 	LogDropped SamplingDecision = iota
 	// LogSampled indicates that the Sampler sampled a log entry.
 	LogSampled

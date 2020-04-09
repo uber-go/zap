@@ -37,8 +37,8 @@ import (
 // Values configured here are per-second. See zapcore.NewSamplerWithOptions for
 // details.
 type SamplingConfig struct {
-	Initial    int `json:"initial" yaml:"initial"`
-	Thereafter int `json:"thereafter" yaml:"thereafter"`
+	Initial    int                                           `json:"initial" yaml:"initial"`
+	Thereafter int                                           `json:"thereafter" yaml:"thereafter"`
 	Hook       func(zapcore.Entry, zapcore.SamplingDecision) `json:"-" yaml:"-"`
 }
 
