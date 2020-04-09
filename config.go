@@ -32,15 +32,14 @@ import (
 // global CPU and I/O load that logging puts on your process while attempting
 // to preserve a representative subset of your logs.
 //
-// Hook is called whenever a Sampler makes a decision. Currently, whenever a
-// log is dropped.
+// If specified, the Sampler will invoke the Hook after each decision.
 //
 // Values configured here are per-second. See zapcore.NewSamplerWithOptions for
 // details.
 type SamplingConfig struct {
 	Initial    int `json:"initial" yaml:"initial"`
 	Thereafter int `json:"thereafter" yaml:"thereafter"`
-	Hook       func(zapcore.Entry, zapcore.SamplingDecision)
+	Hook       func(zapcore.Entry, zapcore.SamplingDecision) `json:"-" yaml:"-"`
 }
 
 // Config offers a declarative way to construct a logger. It doesn't do

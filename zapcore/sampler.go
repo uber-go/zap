@@ -81,13 +81,13 @@ func (c *counter) IncCheckReset(t time.Time, tick time.Duration) uint64 {
 	return 1
 }
 
-// SamplingDecision represents a decision made by sampler.
+// SamplingDecision is a decision made by sampler.
 type SamplingDecision uint8
 
 const (
-	// LogDropped means that a log was dropped.
+	// LogSampled indicates that the Sampler dropped a log entry.
 	LogDropped SamplingDecision = iota
-	// LogSampled means that a log was successfully sampled.
+	// LogSampled indicates that the Sampler sampled a log entry.
 	LogSampled
 )
 
@@ -98,22 +98,19 @@ func (f optionFunc) apply(s *sampler) {
 	f(s)
 }
 
-// SamplerOption configures a Sampler option.
+// SamplerOption configures a Sampler.
 type SamplerOption interface {
 	apply(*sampler)
 }
 
 // NopSamplingHook is the default hook used by sampler.
-func NopSamplingHook(_ Entry, _ SamplingDecision) {}
+func NopSamplingHook(Entry, SamplingDecision) {}
 
 // SamplerHook registers a function  which will be called when Sampler makes a
-// decision. Currently a hook is called when a log is dropped and
-// zapcore.LogDropped decision is emitted.
+// decision.
 //
-// This hook is useful for side effects, for example emitting number of dropped
-// logs. Note, there is no access to Fields in this hook. In the future, this
-// hook can be expanded to emit whether this is first entry that was dropped,
-// first after a period, etc.
+// This hook may be used to get visibility into the performance of the sampler.
+// For example, use it to track metrics of dropped versus sampled logs.
 func SamplerHook(hook func(entry Entry, dec SamplingDecision)) SamplerOption {
 	return optionFunc(func(s *sampler) {
 		s.hook = hook
@@ -128,8 +125,8 @@ func SamplerHook(hook func(entry Entry, dec SamplingDecision)) SamplerOption {
 // each tick. If more Entries with the same level and message are seen during
 // the same interval, every Mth message is logged and the rest are dropped.
 //
-// Sampler also accepts an optional hook that can be used to count number of
-// dropped logs.
+// Sampler can be configured to report sampling decisions with the SamplerHook
+// option.
 //
 // Keep in mind that zap's sampling implementation is optimized for speed over
 // absolute precision; under load, each tick may be slightly over- or
@@ -173,14 +170,7 @@ type sampler struct {
 //
 // Deprecated: use NewSamplerWithOptions.
 func NewSampler(core Core, tick time.Duration, first, thereafter int) Core {
-	return &sampler{
-		Core:       core,
-		tick:       tick,
-		counts:     newCounters(),
-		first:      uint64(first),
-		thereafter: uint64(thereafter),
-		hook:       NopSamplingHook,
-	}
+	return NewSamplerWithOptions(core, tick, first, thereafter)
 }
 
 func (s *sampler) With(fields []Field) Core {

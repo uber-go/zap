@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
 	"go.uber.org/zap/internal/ztest"
 	. "go.uber.org/zap/zapcore"
@@ -231,8 +232,8 @@ func BenchmarkSampler_Check(b *testing.B) {
 }
 
 func makeSamplerCountingHook() (func(_ Entry, dec SamplingDecision), *atomic.Int64, *atomic.Int64) {
-	droppedCount := &atomic.Int64{}
-	sampledCount := &atomic.Int64{}
+	droppedCount := new(atomic.Int64)
+	sampledCount := new(atomic.Int64)
 	h := func(_ Entry, dec SamplingDecision) {
 		if dec == LogDropped {
 			droppedCount.Inc()
@@ -244,7 +245,7 @@ func makeSamplerCountingHook() (func(_ Entry, dec SamplingDecision), *atomic.Int
 }
 
 func BenchmarkSampler_CheckWithHook(b *testing.B) {
-	hook, _, _ := makeSamplerCountingHook()
+	hook, dropped, sampled := makeSamplerCountingHook()
 	for _, keys := range counterTestCases {
 		b.Run(fmt.Sprintf("%v keys", len(keys)), func(b *testing.B) {
 			fac := NewSamplerWithOptions(
@@ -275,4 +276,8 @@ func BenchmarkSampler_CheckWithHook(b *testing.B) {
 			})
 		})
 	}
+	// We expect to see 1000 dropped messages for every sampled per settings,
+	// with a delta due to less 1000 messages getting dropped after initial one
+	// is sampled.
+	assert.Greater(b, dropped.Load()/1000, sampled.Load()-1000)
 }
