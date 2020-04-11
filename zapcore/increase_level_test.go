@@ -80,7 +80,7 @@ func TestIncreaseLevel(t *testing.T) {
 	for _, tt := range tests {
 		msg := fmt.Sprintf("increase %v to %v", tt.coreLevel, tt.increaseLevel)
 		t.Run(msg, func(t *testing.T) {
-			logger, _ := observer.New(tt.coreLevel)
+			logger, logs := observer.New(tt.coreLevel)
 
 			filteredLogger, err := NewIncreaseLevelCore(logger, tt.increaseLevel)
 			if tt.wantErr {
@@ -97,15 +97,25 @@ func TestIncreaseLevel(t *testing.T) {
 
 			for l := DebugLevel; l <= FatalLevel; l++ {
 				enabled := filteredLogger.Enabled(l)
-				ce := filteredLogger.Check(Entry{Level: l}, nil)
+				entry := Entry{Level: l}
+				ce := filteredLogger.Check(entry, nil)
+				ce.Write()
+				entries := logs.TakeAll()
 
 				if l >= tt.increaseLevel {
 					assert.True(t, enabled, "expect %v to be enabled", l)
 					assert.NotNil(t, ce, "expect non-nil Check")
+					assert.NotEmpty(t, entries, "Expect log to be written")
 				} else {
 					assert.False(t, enabled, "expect %v to be disabled", l)
 					assert.Nil(t, ce, "expect nil Check")
+					assert.Empty(t, entries, "No logs should have been written")
 				}
+
+				// Write should always log the entry as per the Core interface
+				require.NoError(t, filteredLogger.Write(entry, nil), "Write failed")
+				require.NoError(t, filteredLogger.Sync(), "Sync failed")
+				assert.NotEmpty(t, logs.TakeAll(), "Write should always log")
 			}
 		})
 	}
