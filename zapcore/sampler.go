@@ -86,7 +86,7 @@ type SamplingDecision uint8
 
 const (
 	// LogDropped indicates that the Sampler dropped a log entry.
-	LogDropped SamplingDecision = iota
+	LogDropped SamplingDecision = 1 << iota
 	// LogSampled indicates that the Sampler sampled a log entry.
 	LogSampled
 )

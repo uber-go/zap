@@ -146,18 +146,18 @@ func TestConfigWithMissingAttributes(t *testing.T) {
 	}
 }
 
-func makeSamplerCountingHook() (func(zapcore.Entry, zapcore.SamplingDecision),
-	*atomic.Int64, *atomic.Int64) {
-	droppedCount := new(atomic.Int64)
-	sampledCount := new(atomic.Int64)
-	h := func(_ zapcore.Entry, dec zapcore.SamplingDecision) {
+func makeSamplerCountingHook() (h func(zapcore.Entry, zapcore.SamplingDecision),
+	dropped, sampled *atomic.Int64) {
+	dropped = new(atomic.Int64)
+	sampled = new(atomic.Int64)
+	h = func(_ zapcore.Entry, dec zapcore.SamplingDecision) {
 		if dec == zapcore.LogDropped {
-			droppedCount.Inc()
+			dropped.Inc()
 		} else if dec == zapcore.LogSampled {
-			sampledCount.Inc()
+			sampled.Inc()
 		}
 	}
-	return h, droppedCount, sampledCount
+	return h, dropped, sampled
 }
 
 func TestConfigWithSamplingHook(t *testing.T) {
@@ -175,7 +175,7 @@ func TestConfigWithSamplingHook(t *testing.T) {
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
-	expectN := 2 + 100 + 1 // 2 from initial logs, 100 initial sampled logs, 1 from off-by-one in sampler
+	expectN := 2 + 101 // out of 203 logs: 3 types (debug, info, warn), 2 (debug + warn) + 101 (100 initial + 200th thereafter)
 	expectRe := `{"level":"info","caller":"zap/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
 		`{"level":"warn","caller":"zap/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n"
 	expectDropped := 99  // 200 - 100 initial - 1 thereafter
