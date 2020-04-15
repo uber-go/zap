@@ -339,7 +339,12 @@ func TestLoggerAddCaller(t *testing.T) {
 		options []Option
 		pat     string
 	}{
+		{opts(), `^undefined$`},
+		{opts(WithCaller(false)), `^undefined$`},
 		{opts(AddCaller()), `.+/logger_test.go:[\d]+$`},
+		{opts(AddCaller(), WithCaller(false)), `^undefined$`},
+		{opts(WithCaller(true)), `.+/logger_test.go:[\d]+$`},
+		{opts(WithCaller(true), WithCaller(false)), `^undefined$`},
 		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(-1)), `.+/zap/logger_test.go:[\d]+$`},
 		{opts(AddCaller(), AddCallerSkip(1)), `.+/zap/common_test.go:[\d]+$`},
 		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(3)), `.+/src/runtime/.*:[\d]+$`},
