@@ -86,6 +86,28 @@ func TestSampler(t *testing.T) {
 	}
 }
 
+func TestSamplerZeroThereafter(t *testing.T) {
+	for _, lvl := range []Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel, PanicLevel, FatalLevel} {
+		sampler, logs := fakeSampler(DebugLevel, time.Minute, 2, 0)
+
+		// Ensure that counts aren't shared between levels.
+		probeLevel := DebugLevel
+		if lvl == DebugLevel {
+			probeLevel = InfoLevel
+		}
+		for i := 0; i < 10; i++ {
+			writeSequence(sampler, 1, probeLevel)
+		}
+		// Clear any output.
+		logs.TakeAll()
+
+		for i := 1; i < 10; i++ {
+			writeSequence(sampler, i, lvl)
+		}
+		assertSequence(t, logs.TakeAll(), lvl, 1, 2)
+	}
+}
+
 func TestSamplerDisabledLevels(t *testing.T) {
 	sampler, logs := fakeSampler(InfoLevel, time.Minute, 1, 100)
 
