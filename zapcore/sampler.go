@@ -81,8 +81,9 @@ func (c *counter) IncCheckReset(t time.Time, tick time.Duration) uint64 {
 	return 1
 }
 
-// SamplingDecision is a decision made by sampler.
-type SamplingDecision uint8
+// SamplingDecision is a decision represented as a bit field made by sampler.
+// More decisions may be added in the future.
+type SamplingDecision uint32
 
 const (
 	// LogDropped indicates that the Sampler dropped a log entry.
@@ -103,8 +104,8 @@ type SamplerOption interface {
 	apply(*sampler)
 }
 
-// NopSamplingHook is the default hook used by sampler.
-func NopSamplingHook(Entry, SamplingDecision) {}
+// nopSamplingHook is the default hook used by sampler.
+func nopSamplingHook(Entry, SamplingDecision) {}
 
 // SamplerHook registers a function  which will be called when Sampler makes a
 // decision.
@@ -138,7 +139,7 @@ func NewSamplerWithOptions(core Core, tick time.Duration, first, thereafter int,
 		counts:     newCounters(),
 		first:      uint64(first),
 		thereafter: uint64(thereafter),
-		hook:       NopSamplingHook,
+		hook:       nopSamplingHook,
 	}
 	for _, opt := range opts {
 		opt.apply(s)
