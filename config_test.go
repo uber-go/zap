@@ -175,7 +175,6 @@ func TestConfigWithSamplingHook(t *testing.T) {
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
-	expectN := 2 + 101 // out of 203 logs: 3 types (debug, info, warn), 2 (debug + warn) + 101 (100 initial + 200th thereafter)
 	expectRe := `{"level":"info","caller":"zap/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
 		`{"level":"warn","caller":"zap/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n"
 	expectDropped := 99  // 200 - 100 initial - 1 thereafter
@@ -194,8 +193,7 @@ func TestConfigWithSamplingHook(t *testing.T) {
 	cfg.EncoderConfig.TimeKey = "" // no timestamps in tests
 	cfg.InitialFields = map[string]interface{}{"z": "zz", "k": "v"}
 
-	hook, count := makeCountingHook()
-	logger, err := cfg.Build(Hooks(hook))
+	logger, err := cfg.Build()
 	require.NoError(t, err, "Unexpected error constructing logger.")
 
 	logger.Debug("debug")
@@ -210,7 +208,6 @@ func TestConfigWithSamplingHook(t *testing.T) {
 	for i := 0; i < 200; i++ {
 		logger.Info("sampling")
 	}
-	assert.Equal(t, int64(expectN), count.Load(), "Hook called an unexpected number of times.")
 	assert.Equal(t, int64(expectDropped), dcount.Load())
 	assert.Equal(t, int64(expectSampled), scount.Load())
 }

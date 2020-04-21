@@ -112,6 +112,13 @@ func nopSamplingHook(Entry, SamplingDecision) {}
 //
 // This hook may be used to get visibility into the performance of the sampler.
 // For example, use it to track metrics of dropped versus sampled logs.
+//
+//  var dropped atomic.Int64
+//  zapcore.SamplerHook(func(ent zapcore.Entry, dec zapcore.SamplingDecision) {
+//    if dec&zapcore.LogDropped > 0 {
+//      dropped.Inc()
+//    }
+//  })
 func SamplerHook(hook func(entry Entry, dec SamplingDecision)) SamplerOption {
 	return optionFunc(func(s *sampler) {
 		s.hook = hook
