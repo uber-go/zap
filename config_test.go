@@ -151,9 +151,9 @@ func makeSamplerCountingHook() (h func(zapcore.Entry, zapcore.SamplingDecision),
 	dropped = new(atomic.Int64)
 	sampled = new(atomic.Int64)
 	h = func(_ zapcore.Entry, dec zapcore.SamplingDecision) {
-		if dec & zapcore.LogDropped > 0  {
+		if dec&zapcore.LogDropped > 0 {
 			dropped.Inc()
-		} else if dec & zapcore.LogSampled > 0 {
+		} else if dec&zapcore.LogSampled > 0 {
 			sampled.Inc()
 		}
 	}

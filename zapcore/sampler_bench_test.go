@@ -235,9 +235,9 @@ func makeSamplerCountingHook() (func(_ Entry, dec SamplingDecision), *atomic.Int
 	droppedCount := new(atomic.Int64)
 	sampledCount := new(atomic.Int64)
 	h := func(_ Entry, dec SamplingDecision) {
-		if dec & LogDropped > 0 {
+		if dec&LogDropped > 0 {
 			droppedCount.Inc()
-		} else if dec & LogSampled > 0 {
+		} else if dec&LogSampled > 0 {
 			sampledCount.Inc()
 		}
 	}
