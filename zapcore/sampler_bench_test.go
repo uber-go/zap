@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 	"go.uber.org/zap/internal/ztest"
 	. "go.uber.org/zap/zapcore"
 )
@@ -203,7 +205,7 @@ var counterTestCases = [][]string{
 func BenchmarkSampler_Check(b *testing.B) {
 	for _, keys := range counterTestCases {
 		b.Run(fmt.Sprintf("%v keys", len(keys)), func(b *testing.B) {
-			fac := NewSampler(
+			fac := NewSamplerWithOptions(
 				NewCore(
 					NewJSONEncoder(testEncoderConfig()),
 					&ztest.Discarder{},
@@ -227,4 +229,55 @@ func BenchmarkSampler_Check(b *testing.B) {
 			})
 		})
 	}
+}
+
+func makeSamplerCountingHook() (func(_ Entry, dec SamplingDecision), *atomic.Int64, *atomic.Int64) {
+	droppedCount := new(atomic.Int64)
+	sampledCount := new(atomic.Int64)
+	h := func(_ Entry, dec SamplingDecision) {
+		if dec&LogDropped > 0 {
+			droppedCount.Inc()
+		} else if dec&LogSampled > 0 {
+			sampledCount.Inc()
+		}
+	}
+	return h, droppedCount, sampledCount
+}
+
+func BenchmarkSampler_CheckWithHook(b *testing.B) {
+	hook, dropped, sampled := makeSamplerCountingHook()
+	for _, keys := range counterTestCases {
+		b.Run(fmt.Sprintf("%v keys", len(keys)), func(b *testing.B) {
+			fac := NewSamplerWithOptions(
+				NewCore(
+					NewJSONEncoder(testEncoderConfig()),
+					&ztest.Discarder{},
+					DebugLevel,
+				),
+				time.Millisecond,
+				1,
+				1000,
+				SamplerHook(hook),
+			)
+			b.ResetTimer()
+			b.RunParallel(func(pb *testing.PB) {
+				i := 0
+				for pb.Next() {
+					ent := Entry{
+						Level:   DebugLevel + Level(i%4),
+						Message: keys[i],
+					}
+					_ = fac.Check(ent, nil)
+					i++
+					if n := len(keys); i >= n {
+						i -= n
+					}
+				}
+			})
+		})
+	}
+	// We expect to see 1000 dropped messages for every sampled per settings,
+	// with a delta due to less 1000 messages getting dropped after initial one
+	// is sampled.
+	assert.Greater(b, dropped.Load()/1000, sampled.Load()-1000)
 }
