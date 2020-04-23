@@ -7,8 +7,9 @@ Bugfixes:
 * [#812][]: Fix `IncreaseLevel` being reset after a call to `With`.  
 
 Enhancements:
-* [#806][]: Add `WithCaller` method to allow disabling Logger's option to 
-  annotate each message with the filename and line number of zap's caller.
+* [#806][]: Add `WithCaller` option to supersede the `AddCaller` option. This
+  allows disabling annotation of log entries with caller information if
+  previously enabled with `AddCaller`.
 * [#813][]: Deprecate `NewSampler` constructor in favor of 
   `NewSamplerWithOptions` which supports a `SamplerHook` option. This option
    adds support for monitoring sampling decisions through a hook.
