@@ -58,7 +58,7 @@ func TestIncreaseLevelTryDecrease(t *testing.T) {
 			newLoggedEntry(ErrorLevel, "increase level error log"),
 		}, logs.AllUntimed(), "unexpected logs")
 		assert.Equal(t,
-			`failed to IncreaseLevel: invalid increase level, as level "info" is allowed by increased level, but not by existing core`,
+			"failed to IncreaseLevel: invalid increase level, as level \"info\" is allowed by increased level, but not by existing core\n",
 			errorOut.String(),
 			"unexpected error output",
 		)
