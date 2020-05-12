@@ -93,73 +93,87 @@ func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
 }
 
 // Debug uses fmt.Sprint to construct and log a message.
+// If args contains any Fields, they are used as structured data similar to Debugw.
 func (s *SugaredLogger) Debug(args ...interface{}) {
 	s.log(DebugLevel, "", args, nil)
 }
 
 // Info uses fmt.Sprint to construct and log a message.
+// If args contains any Fields, they are used as structured data similar to Infow.
 func (s *SugaredLogger) Info(args ...interface{}) {
 	s.log(InfoLevel, "", args, nil)
 }
 
 // Warn uses fmt.Sprint to construct and log a message.
+// If args contains any Fields, they are used as structured data similar to Warnw.
 func (s *SugaredLogger) Warn(args ...interface{}) {
 	s.log(WarnLevel, "", args, nil)
 }
 
 // Error uses fmt.Sprint to construct and log a message.
+// If args contains any Fields, they are used as structured data similar to Errorw.
 func (s *SugaredLogger) Error(args ...interface{}) {
 	s.log(ErrorLevel, "", args, nil)
 }
 
 // DPanic uses fmt.Sprint to construct and log a message. In development, the
 // logger then panics. (See DPanicLevel for details.)
+// If args contains any Fields, they are used as structured data similar to DPanicw.
 func (s *SugaredLogger) DPanic(args ...interface{}) {
 	s.log(DPanicLevel, "", args, nil)
 }
 
 // Panic uses fmt.Sprint to construct and log a message, then panics.
+// If args contains any Fields, they are used as structured data similar to Panicw.
 func (s *SugaredLogger) Panic(args ...interface{}) {
 	s.log(PanicLevel, "", args, nil)
 }
 
 // Fatal uses fmt.Sprint to construct and log a message, then calls os.Exit.
+// If args contains any Fields, they are used as structured data similar to Fatalw.
 func (s *SugaredLogger) Fatal(args ...interface{}) {
 	s.log(FatalLevel, "", args, nil)
 }
 
 // Debugf uses fmt.Sprintf to log a templated message.
+// If args contains any Fields, they are used as structured data similar to Debugw.
 func (s *SugaredLogger) Debugf(template string, args ...interface{}) {
 	s.log(DebugLevel, template, args, nil)
 }
 
 // Infof uses fmt.Sprintf to log a templated message.
+// If args contains any Fields, they are used as structured data similar to Infow.
 func (s *SugaredLogger) Infof(template string, args ...interface{}) {
 	s.log(InfoLevel, template, args, nil)
 }
 
 // Warnf uses fmt.Sprintf to log a templated message.
+// If args contains any Fields, they are used as structured data similar to Warnw.
 func (s *SugaredLogger) Warnf(template string, args ...interface{}) {
 	s.log(WarnLevel, template, args, nil)
 }
 
 // Errorf uses fmt.Sprintf to log a templated message.
+// If args contains any Fields, they are used as structured data similar to Errorw.
 func (s *SugaredLogger) Errorf(template string, args ...interface{}) {
 	s.log(ErrorLevel, template, args, nil)
 }
 
 // DPanicf uses fmt.Sprintf to log a templated message. In development, the
 // logger then panics. (See DPanicLevel for details.)
+// If args contains any Fields, they are used as structured data similar to DPanicw.
 func (s *SugaredLogger) DPanicf(template string, args ...interface{}) {
 	s.log(DPanicLevel, template, args, nil)
 }
 
 // Panicf uses fmt.Sprintf to log a templated message, then panics.
+// If args contains any Fields, they are used as structured data similar to Panicw.
 func (s *SugaredLogger) Panicf(template string, args ...interface{}) {
 	s.log(PanicLevel, template, args, nil)
 }
 
 // Fatalf uses fmt.Sprintf to log a templated message, then calls os.Exit.
+// If args contains any Fields, they are used as structured data similar to Fatalw.
 func (s *SugaredLogger) Fatalf(template string, args ...interface{}) {
 	s.log(FatalLevel, template, args, nil)
 }
@@ -222,16 +236,21 @@ func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interf
 		return
 	}
 
+	// If any Fields have been provided, extract those to be handled normally.
+	args, fields := s.extractAndSweetenFields(fmtArgs, context)
+
 	// Format with Sprint, Sprintf, or neither.
 	msg := template
-	if msg == "" && len(fmtArgs) > 0 {
-		msg = fmt.Sprint(fmtArgs...)
-	} else if msg != "" && len(fmtArgs) > 0 {
-		msg = fmt.Sprintf(template, fmtArgs...)
+	if len(args) > 0 {
+		if msg == "" {
+			msg = fmt.Sprint(args...)
+		} else {
+			msg = fmt.Sprintf(msg, args...)
+		}
 	}
 
 	if ce := s.base.Check(lvl, msg); ce != nil {
-		ce.Write(s.sweetenFields(context)...)
+		ce.Write(fields...)
 	}
 }
 
@@ -240,32 +259,89 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []Field {
 		return nil
 	}
 
+	_, fields := s.extractAndSweetenFields(nil, args)
+	return fields
+}
+
+func (s *SugaredLogger) extractAndSweetenFields(
+	args []interface{},
+	context []interface{},
+) ([]interface{}, []Field) {
+	var (
+		fields    []Field
+		remainder []interface{}
+	)
+
+	// n.b. args and context are currently mutually-exclusive at the API level:
+	//      callers cannot populate both args and context because only one or
+	//      the other is used by Info or Infow, respectively.
+	//
+	//      Because of this, each type of parameter uses the other as a
+	//      heuristic to determine whether or not pre-allocation should happen.
+	//
+	//      To preserve historical API semantics, if a non-Field is found first,
+	//      optimistically allocate storage assuming that all subsequent args
+	//      are also non-Fields; once a subsequent Field is found, append on a
+	//      per-item basis under the assumption that Fields are in the minority.
+	//      Conversely, if a Field is found first, assume that all arguments are
+	//      fields.
+	//
+	//      Storage for args may owned by the caller and thus should not be
+	//      modified in place. This can incur some penalty in worst-case
+	//      scenarios, for example if args is comrpised of 1 fmt.Sprintf arg
+	//      and the remainder of Fields, in which case the Sprintf allocation is
+	//      excessive and the Field allocation is incremental relative to the
+	//      number of Fields.
+	for i, arg := range args {
+		switch t := arg.(type) {
+		case Field:
+			if fields == nil && remainder == nil {
+				fields = make([]Field, 0, len(args)-i+1)
+			}
+			fields = append(fields, t)
+		default:
+			if remainder == nil && fields == nil {
+				remainder = make([]interface{}, 0, len(args)-i+1)
+			}
+			remainder = append(remainder, arg)
+		}
+	}
+
+	// If there are fields at this point, they were provided as part of args
+	// via Info(), and therefore there's nothing left to do.
+	if len(fields) > 0 || len(remainder) > 0 {
+		return remainder, fields
+	}
+
 	// Allocate enough space for the worst case; if users pass only structured
 	// fields, we shouldn't penalize them with extra allocations.
-	fields := make([]Field, 0, len(args))
-	var invalid invalidPairs
+	var (
+		nargs   = len(context)
+		invalid invalidPairs
+	)
 
-	for i := 0; i < len(args); {
+	fields = make([]Field, 0, nargs)
+	for i := 0; i < nargs; /* noincr */ {
 		// This is a strongly-typed field. Consume it and move on.
-		if f, ok := args[i].(Field); ok {
+		if f, ok := context[i].(Field); ok {
 			fields = append(fields, f)
 			i++
 			continue
 		}
 
 		// Make sure this element isn't a dangling key.
-		if i == len(args)-1 {
-			s.base.DPanic(_oddNumberErrMsg, Any("ignored", args[i]))
+		if i == nargs-1 {
+			s.base.DPanic(_oddNumberErrMsg, Any("ignored", context[i]))
 			break
 		}
 
 		// Consume this value and the next, treating them as a key-value pair. If the
 		// key isn't a string, add this pair to the slice of invalid pairs.
-		key, val := args[i], args[i+1]
+		key, val := context[i], context[i+1]
 		if keyStr, ok := key.(string); !ok {
 			// Subsequent errors are likely, so allocate once up front.
 			if cap(invalid) == 0 {
-				invalid = make(invalidPairs, 0, len(args)/2)
+				invalid = make(invalidPairs, 0, nargs/2)
 			}
 			invalid = append(invalid, invalidPair{i, key, val})
 		} else {
@@ -278,7 +354,7 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []Field {
 	if len(invalid) > 0 {
 		s.base.DPanic(_nonStringKeyErrMsg, Array("invalid", invalid))
 	}
-	return fields
+	return nil, fields
 }
 
 type invalidPair struct {

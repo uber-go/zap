@@ -139,6 +139,21 @@ func TestSugarWith(t *testing.T) {
 	}
 }
 
+func TestSugarFormattingWithField(t *testing.T) {
+	withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+		logger.Info("hello ", "world", String("foo", "bar"))
+		logger.Info("hello ", String("foo", "bar"), "world")
+
+		output := logs.AllUntimed()
+		require.Equal(t, 2, len(output), "Unexpected number of entries logged.")
+		for _, entry := range output {
+			require.Equal(t, "hello world", entry.Message)
+			require.Equal(t, 1, len(entry.Context), "Unexpected number of fields logged.")
+			require.Equal(t, "bar", entry.Context[0].String)
+		}
+	})
+}
+
 func TestSugarFieldsInvalidPairs(t *testing.T) {
 	withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
 		logger.With(42, "foo", []string{"bar"}, "baz").Info("")
@@ -198,7 +213,14 @@ func TestSugarConcatenatingLogging(t *testing.T) {
 		args   []interface{}
 		expect string
 	}{
-		{[]interface{}{nil}, "<nil>"},
+		{
+			args:   []interface{}{nil},
+			expect: "<nil>",
+		},
+		{
+			args:   []interface{}{"foo", "bar"},
+			expect: "foobar",
+		},
 	}
 
 	// Common to all test cases.
