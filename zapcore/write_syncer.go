@@ -89,16 +89,16 @@ const defaultBufferSize = 256 * 1024
 // defaultFlushInterval means the default flush interval
 const defaultFlushInterval = 30 * time.Second
 
-// CancelFunc should be called when the caller exits to clean up buffers.
-type CancelFunc func() error
+// CloseFunc should be called when the caller exits to clean up buffers.
+type CloseFunc func() error
 
 // Buffer wraps a WriteSyncer in a buffer to improve performance,
 // if bufferSize = 0, we set it to defaultBufferSize
 // if flushInterval = 0, we set it to defaultFlushInterval
-func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteSyncer, CancelFunc) {
+func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteSyncer, CloseFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cancelfunc := func() error {
+	closefunc := func() error {
 		cancel()
 		return ws.Sync()
 	}
@@ -106,7 +106,7 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteS
 	if lws, ok := ws.(*lockedWriteSyncer); ok {
 		if _, ok := lws.ws.(*bufferWriterSyncer); ok {
 			// no need to layer on another buffer
-			return ws, cancelfunc
+			return ws, closefunc
 		}
 	}
 
@@ -128,15 +128,15 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteS
 	go func() {
 		select {
 		case <-time.NewTicker(flushInterval).C:
-			if err := ws.Sync(); err != nil {
-				return
-			}
+			// the background goroutine just keep syncing
+			// until the close func is called.
+			_ = ws.Sync()
 		case <-ctx.Done():
 			return
 		}
 	}()
 
-	return ws, cancelfunc
+	return ws, closefunc
 }
 
 func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
