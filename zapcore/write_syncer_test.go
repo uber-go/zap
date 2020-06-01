@@ -129,9 +129,7 @@ func TestBufferWriter(t *testing.T) {
 		ws, _ := Buffer(AddSync(buf), 6, time.Microsecond)
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
-		ticker := ws.(*lockedWriteSyncer).ws.(*bufferWriterSyncer).ticker
-		<-ticker.C
-		<-ticker.C
+		ztest.Sleep(10 * time.Millisecond)
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 }
