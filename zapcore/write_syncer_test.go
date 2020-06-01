@@ -112,8 +112,6 @@ func TestBufferWriter(t *testing.T) {
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
 		requireWriteWorks(t, ws)
-		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
-		requireWriteWorks(t, ws)
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 
