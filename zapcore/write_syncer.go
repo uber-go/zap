@@ -80,6 +80,7 @@ func (s *lockedWriteSyncer) Sync() error {
 
 type bufferWriterSyncer struct {
 	bufferWriter *bufio.Writer
+	ticker       *time.Ticker
 }
 
 // defaultBufferSize sizes the buffer associated with each WriterSync.
@@ -117,16 +118,19 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteS
 		flushInterval = defaultFlushInterval
 	}
 
+	ticker := time.NewTicker(flushInterval)
+
 	// bufio is not goroutine safe, so add lock writer here
 	ws = Lock(&bufferWriterSyncer{
 		bufferWriter: bufio.NewWriterSize(ws, bufferSize),
+		ticker:       ticker,
 	})
 
 	// flush buffer every interval
 	// we do not need exit this goroutine explicitly
 	go func() {
 		select {
-		case <-time.NewTicker(flushInterval).C:
+		case <-ticker.C:
 			// the background goroutine just keep syncing
 			// until the close func is called.
 			_ = ws.Sync()
