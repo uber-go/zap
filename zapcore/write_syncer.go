@@ -79,7 +79,6 @@ func (s *lockedWriteSyncer) Sync() error {
 }
 
 type bufferWriterSyncer struct {
-	ws           WriteSyncer
 	bufferWriter *bufio.Writer
 }
 
