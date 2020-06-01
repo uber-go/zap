@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"errors"
 	"testing"
+	"time"
 
 	"io"
 
@@ -36,6 +37,10 @@ type writeSyncSpy struct {
 	io.Writer
 	ztest.Syncer
 }
+
+type errorWriter struct{}
+
+func (*errorWriter) Write([]byte) (int, error) { return 0, errors.New("unimplemented") }
 
 func requireWriteWorks(t testing.TB, ws WriteSyncer) {
 	n, err := ws.Write([]byte("foo"))
@@ -110,6 +115,25 @@ func TestBufferWriter(t *testing.T) {
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 
+	t.Run("flush error", func(t *testing.T) {
+		ws, cancel := Buffer(AddSync(&errorWriter{}), 4, time.Nanosecond)
+		n, err := ws.Write([]byte("foo"))
+		require.NoError(t, err, "Unexpected error writing to WriteSyncer.")
+		require.Equal(t, 3, n, "Wrote an unexpected number of bytes.")
+		ws.Write([]byte("foo"))
+		assert.NotNil(t, cancel())
+	})
+
+	t.Run("flush timer", func(t *testing.T) {
+		buf := &bytes.Buffer{}
+		ws, _ := Buffer(AddSync(buf), 6, time.Microsecond)
+		requireWriteWorks(t, ws)
+		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
+		ticker := ws.(*lockedWriteSyncer).ws.(*bufferWriterSyncer).ticker
+		<-ticker.C
+		<-ticker.C
+		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
+	})
 }
 
 func TestNewMultiWriteSyncerWorksForSingleWriter(t *testing.T) {
