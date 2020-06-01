@@ -127,7 +127,7 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteS
 	})
 
 	// flush buffer every interval
-	// we only exit this goroutine after closefunc called explicitly
+	// we do not need to exit this goroutine until closefunc called explicitly
 	go func() {
 		select {
 		case <-ticker.C:
