@@ -112,6 +112,8 @@ func TestBufferWriter(t *testing.T) {
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
 		requireWriteWorks(t, ws)
+		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
+		requireWriteWorks(t, ws)
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 
@@ -128,8 +130,10 @@ func TestBufferWriter(t *testing.T) {
 		buf := &bytes.Buffer{}
 		ws, _ := Buffer(AddSync(buf), 6, time.Microsecond)
 		requireWriteWorks(t, ws)
-		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
 		ztest.Sleep(10 * time.Millisecond)
+		bws := ws.(*bufferWriterSyncer)
+		bws.Lock()
+		defer bws.Unlock()
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 }

@@ -79,6 +79,7 @@ func (s *lockedWriteSyncer) Sync() error {
 }
 
 type bufferWriterSyncer struct {
+	sync.Mutex
 	bufferWriter *bufio.Writer
 	ticker       *time.Ticker
 }
@@ -120,11 +121,10 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteS
 
 	ticker := time.NewTicker(flushInterval)
 
-	// bufio is not goroutine safe, so add lock writer here
-	ws = Lock(&bufferWriterSyncer{
+	ws = &bufferWriterSyncer{
 		bufferWriter: bufio.NewWriterSize(ws, bufferSize),
 		ticker:       ticker,
-	})
+	}
 
 	// flush buffer every interval
 	// we do not need to exit this goroutine until closefunc called explicitly
@@ -143,6 +143,10 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteS
 }
 
 func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
+	// bufio is not goroutine safe, so add lock writer here
+	s.Lock()
+	defer s.Unlock()
+
 	// there are some logic internal for bufio.Writer here:
 	// 1. when the buffer is enough, data would not be flushed.
 	// 2. when the buffer is not enough, data would be flushed as soon as the buffer fills up.
@@ -159,6 +163,10 @@ func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
 }
 
 func (s *bufferWriterSyncer) Sync() error {
+	// bufio is not goroutine safe, so add lock writer here
+	s.Lock()
+	defer s.Unlock()
+
 	return s.bufferWriter.Flush()
 }
 
