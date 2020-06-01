@@ -104,11 +104,9 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteS
 		return ws.Sync()
 	}
 
-	if lws, ok := ws.(*lockedWriteSyncer); ok {
-		if _, ok := lws.ws.(*bufferWriterSyncer); ok {
-			// no need to layer on another buffer
-			return ws, closefunc
-		}
+	if _, ok := ws.(*bufferWriterSyncer); ok {
+		// no need to layer on another buffer
+		return ws, closefunc
 	}
 
 	if bufferSize == 0 {
