@@ -75,40 +75,40 @@ func TestBufferWriter(t *testing.T) {
 	// with a no-op Sync.
 	t.Run("sync", func(t *testing.T) {
 		buf := &bytes.Buffer{}
-		ws, cancel := Buffer(AddSync(buf), 0, 0)
-		defer cancel()
+		ws, close := Buffer(AddSync(buf), 0, 0)
+		defer close()
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
 		assert.NoError(t, ws.Sync(), "Unexpected error calling a no-op Sync method.")
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 
-	t.Run("1 cancel", func(t *testing.T) {
+	t.Run("1 close", func(t *testing.T) {
 		buf := &bytes.Buffer{}
-		ws, cancel := Buffer(AddSync(buf), 0, 0)
+		ws, close := Buffer(AddSync(buf), 0, 0)
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
-		cancel()
+		close()
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 
-	t.Run("2 cancel", func(t *testing.T) {
+	t.Run("2 close", func(t *testing.T) {
 		buf := &bytes.Buffer{}
-		bufsync, cancel1 := Buffer(AddSync(buf), 0, 0)
-		ws, cancel2 := Buffer(bufsync, 0, 0)
+		bufsync, close1 := Buffer(AddSync(buf), 0, 0)
+		ws, close2 := Buffer(bufsync, 0, 0)
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
-		cancel2()
-		cancel1()
+		close2()
+		close1()
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 
 	t.Run("small buffer", func(t *testing.T) {
 		buf := &bytes.Buffer{}
-		bufsync, cancel1 := Buffer(AddSync(buf), 5, 0)
-		ws, cancel2 := Buffer(bufsync, 5, 0)
-		defer cancel1()
-		defer cancel2()
+		bufsync, close1 := Buffer(AddSync(buf), 5, 0)
+		ws, close2 := Buffer(bufsync, 5, 0)
+		defer close1()
+		defer close2()
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
 		requireWriteWorks(t, ws)
@@ -116,17 +116,18 @@ func TestBufferWriter(t *testing.T) {
 	})
 
 	t.Run("flush error", func(t *testing.T) {
-		ws, cancel := Buffer(AddSync(&errorWriter{}), 4, time.Nanosecond)
+		ws, close := Buffer(AddSync(&errorWriter{}), 4, time.Nanosecond)
 		n, err := ws.Write([]byte("foo"))
 		require.NoError(t, err, "Unexpected error writing to WriteSyncer.")
 		require.Equal(t, 3, n, "Wrote an unexpected number of bytes.")
 		ws.Write([]byte("foo"))
-		assert.NotNil(t, cancel())
+		assert.NotNil(t, close())
 	})
 
 	t.Run("flush timer", func(t *testing.T) {
 		buf := &bytes.Buffer{}
-		ws, _ := Buffer(AddSync(buf), 6, time.Microsecond)
+		ws, close := Buffer(AddSync(buf), 6, time.Microsecond)
+		defer close()
 		requireWriteWorks(t, ws)
 		ztest.Sleep(10 * time.Millisecond)
 		bws := ws.(*bufferWriterSyncer)
