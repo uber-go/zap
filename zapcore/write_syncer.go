@@ -84,11 +84,13 @@ type bufferWriterSyncer struct {
 	ticker       *time.Ticker
 }
 
-// defaultBufferSize sizes the buffer associated with each WriterSync.
-const defaultBufferSize = 256 * 1024
+const (
+	// defaultBufferSize sizes the buffer associated with each WriterSync.
+	defaultBufferSize = 256 * 1024
 
-// defaultFlushInterval means the default flush interval
-const defaultFlushInterval = 30 * time.Second
+	// defaultFlushInterval means the default flush interval
+	defaultFlushInterval = 30 * time.Second
+)
 
 // CloseFunc should be called when the caller exits to clean up buffers.
 type CloseFunc func() error
