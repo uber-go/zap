@@ -75,8 +75,8 @@ func BenchmarkMultiWriteSyncer(b *testing.B) {
 
 func BenchmarkWriteSyncer(b *testing.B) {
 	b.Run("write file with no buffer", func(b *testing.B) {
-		file, err := ioutil.TempFile(".", "*")
-		assert.Nil(b, err)
+		file, err := ioutil.TempFile("", "log")
+		assert.NoError(b, err)
 		defer file.Close()
 		defer os.Remove(file.Name())
 
@@ -89,8 +89,8 @@ func BenchmarkWriteSyncer(b *testing.B) {
 		})
 	})
 	b.Run("write file with buffer", func(b *testing.B) {
-		file, err := ioutil.TempFile(".", "*")
-		assert.Nil(b, err)
+		file, err := ioutil.TempFile("", "log")
+		assert.NoError(b, err)
 		defer file.Close()
 		defer os.Remove(file.Name())
 
