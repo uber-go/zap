@@ -153,8 +153,7 @@ func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
 	// this would lead to log spliting, which is not acceptable for log collector
 	// so we need to flush bufferWriter before writing the data into bufferWriter
 	if len(bs) > s.bufferWriter.Available() && s.bufferWriter.Buffered() > 0 {
-		err := s.bufferWriter.Flush()
-		if err != nil {
+		if err := s.bufferWriter.Flush(); err != nil {
 			return 0, err
 		}
 	}
