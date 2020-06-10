@@ -129,3 +129,40 @@ func TestJSONEncodeEntry(t *testing.T) {
 		})
 	}
 }
+
+func TestJSONEmptyConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		field    zapcore.Field
+		expected string
+	}{
+		{
+			name:     "time",
+			field:    zap.Time("foo", time.Unix(1591287718, 0)), // 2020-06-04 09:21:58 -0700 PDT
+			expected: `{"foo": 1591287718000000000}`,
+		},
+		{
+			name:     "duration",
+			field:    zap.Duration("bar", time.Microsecond),
+			expected: `{"bar": 1000}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{})
+
+			buf, err := enc.EncodeEntry(zapcore.Entry{
+				Level:      zapcore.DebugLevel,
+				Time:       time.Now(),
+				LoggerName: "mylogger",
+				Message:    "things happened",
+			}, []zapcore.Field{tt.field})
+			if assert.NoError(t, err, "Unexpected JSON encoding error.") {
+				assert.JSONEq(t, tt.expected, buf.String(), "Incorrect encoded JSON entry.")
+			}
+
+			buf.Free()
+		})
+	}
+}
