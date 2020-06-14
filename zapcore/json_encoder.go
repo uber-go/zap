@@ -40,10 +40,7 @@ var _jsonPool = sync.Pool{New: func() interface{} {
 }}
 
 func getJSONEncoder() *jsonEncoder {
-	return _jsonPool.Get().(*jsonEncoder)
-}
-
-func putJSONEncoder(enc *jsonEncoder) {
+	enc := _jsonPool.Get().(*jsonEncoder)
 	if enc.reflectBuf != nil {
 		enc.reflectBuf.Free()
 	}
@@ -53,6 +50,10 @@ func putJSONEncoder(enc *jsonEncoder) {
 	enc.openNamespaces = 0
 	enc.reflectBuf = nil
 	enc.reflectEnc = nil
+	return enc
+}
+
+func putJSONEncoder(enc *jsonEncoder) {
 	_jsonPool.Put(enc)
 }
 
