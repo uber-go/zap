@@ -67,14 +67,6 @@ func humanEncoderConfig() EncoderConfig {
 	return cfg
 }
 
-func withJSONEncoder(f func(Encoder)) {
-	f(NewJSONEncoder(testEncoderConfig()))
-}
-
-func withConsoleEncoder(f func(Encoder)) {
-	f(NewConsoleEncoder(humanEncoderConfig()))
-}
-
 func capitalNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
 	enc.AppendString(strings.ToUpper(loggerName))
 }
@@ -121,7 +113,7 @@ func TestEncoderConfiguration(t *testing.T) {
 		{
 			desc: "skip level if LevelKey is omitted",
 			cfg: EncoderConfig{
-				LevelKey:       "",
+				LevelKey:       OmitKey,
 				TimeKey:        "T",
 				MessageKey:     "M",
 				NameKey:        "N",
@@ -140,7 +132,7 @@ func TestEncoderConfiguration(t *testing.T) {
 			desc: "skip timestamp if TimeKey is omitted",
 			cfg: EncoderConfig{
 				LevelKey:       "L",
-				TimeKey:        "",
+				TimeKey:        OmitKey,
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
@@ -159,7 +151,7 @@ func TestEncoderConfiguration(t *testing.T) {
 			cfg: EncoderConfig{
 				LevelKey:       "L",
 				TimeKey:        "T",
-				MessageKey:     "",
+				MessageKey:     OmitKey,
 				NameKey:        "N",
 				CallerKey:      "C",
 				StacktraceKey:  "S",
@@ -178,7 +170,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				LevelKey:       "L",
 				TimeKey:        "T",
 				MessageKey:     "M",
-				NameKey:        "",
+				NameKey:        OmitKey,
 				CallerKey:      "C",
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
@@ -197,7 +189,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				TimeKey:        "T",
 				MessageKey:     "M",
 				NameKey:        "N",
-				CallerKey:      "",
+				CallerKey:      OmitKey,
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
@@ -216,7 +208,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
-				StacktraceKey:  "",
+				StacktraceKey:  OmitKey,
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
@@ -541,6 +533,10 @@ func TestTimeEncoders(t *testing.T) {
 		{"format=06/01/02 03:04pm", "70/01/01 12:01am"},
 		{"", 100.050005},
 		{"something-random", 100.050005},
+		{"rfc3339", "1970-01-01T00:01:40Z"},
+		{"RFC3339", "1970-01-01T00:01:40Z"},
+		{"rfc3339nano", "1970-01-01T00:01:40.050005Z"},
+		{"RFC3339Nano", "1970-01-01T00:01:40.050005Z"},
 	}
 
 	for _, tt := range tests {
@@ -563,6 +559,7 @@ func TestDurationEncoders(t *testing.T) {
 	}{
 		{"string", "1.0000005s"},
 		{"nanos", int64(1000000500)},
+		{"ms", int64(1000)},
 		{"", 1.0000005},
 		{"something-random", 1.0000005},
 	}

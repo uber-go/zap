@@ -291,8 +291,8 @@ func ExampleLogger_Named() {
 }
 
 func ExampleWrapCore_replace() {
-	// Replacing a Logger's core can alter fundamental behaviors. For example,
-	// example, it can convert a Logger to a no-op.
+	// Replacing a Logger's core can alter fundamental behaviors.
+	// For example, it can convert a Logger to a no-op.
 	nop := zap.WrapCore(func(zapcore.Core) zapcore.Core {
 		return zapcore.NewNopCore()
 	})
