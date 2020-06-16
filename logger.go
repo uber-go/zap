@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -49,6 +50,8 @@ type Logger struct {
 	addStack  zapcore.LevelEnabler
 
 	callerSkip int
+
+	forCtxFn func(context.Context, *Logger) *Logger
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
@@ -163,6 +166,15 @@ func (log *Logger) With(fields ...Field) *Logger {
 	l := log.clone()
 	l.core = l.core.With(fields)
 	return l
+}
+
+// For set a context before logging messages, obtain extra fields from context
+func (log *Logger) For(ctx context.Context) *Logger {
+	if log.forCtxFn == nil {
+		return log
+	}
+
+	return log.forCtxFn(ctx, log)
 }
 
 // Check returns a CheckedEntry if logging a message at the specified level

@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"context"
 	"fmt"
 
 	"go.uber.org/zap/zapcore"
@@ -129,5 +130,13 @@ func IncreaseLevel(lvl zapcore.LevelEnabler) Option {
 		} else {
 			log.core = core
 		}
+	})
+}
+
+// ForContext configures the Logger to get specific inforamation from context for
+// all message
+func ForContext(forCtxFn func(context.Context, *Logger) *Logger) Option {
+	return optionFunc(func(log *Logger) {
+		log.forCtxFn = forCtxFn
 	})
 }

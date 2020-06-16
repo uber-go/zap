@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"testing"
@@ -110,6 +111,23 @@ func TestLoggerWith(t *testing.T) {
 			{Context: []Field{Int("foo", 42), String("three", "four")}},
 			{Context: []Field{Int("foo", 42)}},
 		}, logs.AllUntimed(), "Unexpected cross-talk between child loggers.")
+	})
+}
+
+func TestLoggerFor(t *testing.T) {
+	expectedName := "(0001)"
+	forOpts := opts(ForContext(
+		func(ctx context.Context, log *Logger) *Logger {
+			return log.Named(expectedName)
+		}))
+
+	withLogger(t, DebugLevel, forOpts, func(logger *Logger, logs *observer.ObservedLogs) {
+		logger.For(context.Background()).Info("")
+		logger.For(context.TODO()).Info("")
+		logger.Info("")
+		assert.Equal(t, expectedName, logs.AllUntimed()[0].Entry.LoggerName, "Unexpected logger name.")
+		assert.Equal(t, expectedName, logs.AllUntimed()[1].Entry.LoggerName, "Unexpected logger name.")
+		assert.Equal(t, "", logs.AllUntimed()[2].Entry.LoggerName, "Unexpected logger name.")
 	})
 }
 

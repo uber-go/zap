@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"context"
 	"testing"
 
 	"go.uber.org/zap/internal/exit"
@@ -137,6 +138,23 @@ func TestSugarWith(t *testing.T) {
 			assert.Equal(t, tt.expected, output[len(tt.errLogs)].Context, "Unexpected message context in scenario %s.", tt.desc)
 		})
 	}
+}
+
+func TestSugarFor(t *testing.T) {
+	expectedName := "(0001)"
+	forOpts := opts(ForContext(
+		func(ctx context.Context, log *Logger) *Logger {
+			return log.Named(expectedName)
+		}))
+
+	withSugar(t, DebugLevel, forOpts, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+		logger.For(context.Background()).Info("")
+		logger.For(context.TODO()).Info("")
+		logger.Info("")
+		assert.Equal(t, expectedName, logs.AllUntimed()[0].Entry.LoggerName, "Unexpected logger name.")
+		assert.Equal(t, expectedName, logs.AllUntimed()[1].Entry.LoggerName, "Unexpected logger name.")
+		assert.Equal(t, "", logs.AllUntimed()[2].Entry.LoggerName, "Unexpected logger name.")
+	})
 }
 
 func TestSugarFieldsInvalidPairs(t *testing.T) {
