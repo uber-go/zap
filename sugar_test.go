@@ -155,6 +155,11 @@ func TestSugarFor(t *testing.T) {
 		assert.Equal(t, expectedName, logs.AllUntimed()[1].Entry.LoggerName, "Unexpected logger name.")
 		assert.Equal(t, "", logs.AllUntimed()[2].Entry.LoggerName, "Unexpected logger name.")
 	})
+
+	withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+		logger.For(context.Background()).Info("")
+		assert.Equal(t, "", logs.AllUntimed()[0].Entry.LoggerName, "Unexpected logger name.")
+	})
 }
 
 func TestSugarFieldsInvalidPairs(t *testing.T) {
