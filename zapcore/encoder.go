@@ -156,7 +156,7 @@ func RFC3339NanoTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 // given format.
 func TimeEncoderOfFormat(format string) TimeEncoder {
 	return func(t time.Time, enc PrimitiveArrayEncoder) {
-		enc.AppendString(t.Format(format))
+		encodeTimeLayout(t, format, enc)
 	}
 }
 
