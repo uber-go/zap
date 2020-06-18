@@ -166,7 +166,7 @@ func TimeEncoderOfFormat(format string) TimeEncoder {
 // "iso8601" and "ISO8601" are unmarshaled to ISO8601TimeEncoder.
 // "millis" is unmarshaled to EpochMillisTimeEncoder.
 // "nanos" is unmarshaled to EpochNanosEncoder.
-// "format=*" is unmarshaled to TimeEncoder with given format.
+// "format=<time-layout-format>" is unmarshaled to TimeEncoder with given format.
 // Anything else is unmarshaled to EpochTimeEncoder.
 func (e *TimeEncoder) UnmarshalText(text []byte) error {
 	vals := strings.SplitAfterN(string(text), "=", 2)
