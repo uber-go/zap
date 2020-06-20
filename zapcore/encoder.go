@@ -152,11 +152,11 @@ func RFC3339NanoTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 	encodeTimeLayout(t, time.RFC3339Nano, enc)
 }
 
-// TimeEncoderOfFormat returns TimeEncoder which serializes a time.Time using
-// given format.
-func TimeEncoderOfFormat(format string) TimeEncoder {
+// TimeEncoderOfLayout returns TimeEncoder which serializes a time.Time using
+// given layout.
+func TimeEncoderOfLayout(layout string) TimeEncoder {
 	return func(t time.Time, enc PrimitiveArrayEncoder) {
-		encodeTimeLayout(t, format, enc)
+		encodeTimeLayout(t, layout, enc)
 	}
 }
 
@@ -166,7 +166,7 @@ func TimeEncoderOfFormat(format string) TimeEncoder {
 // "iso8601" and "ISO8601" are unmarshaled to ISO8601TimeEncoder.
 // "millis" is unmarshaled to EpochMillisTimeEncoder.
 // "nanos" is unmarshaled to EpochNanosEncoder.
-// "format=<time-layout-format>" is unmarshaled to TimeEncoder with given format.
+// "layout=<time-layout>" is unmarshaled to TimeEncoder with given layout.
 // Anything else is unmarshaled to EpochTimeEncoder.
 func (e *TimeEncoder) UnmarshalText(text []byte) error {
 	vals := strings.SplitAfterN(string(text), "=", 2)
@@ -181,8 +181,8 @@ func (e *TimeEncoder) UnmarshalText(text []byte) error {
 		*e = EpochMillisTimeEncoder
 	case "nanos":
 		*e = EpochNanosTimeEncoder
-	case "format=":
-		*e = TimeEncoderOfFormat(vals[1])
+	case "layout=":
+		*e = TimeEncoderOfLayout(vals[1])
 	default:
 		*e = EpochTimeEncoder
 	}
