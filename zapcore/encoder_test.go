@@ -533,7 +533,7 @@ func TestTimeEncoders(t *testing.T) {
 		{"timeEncoder: ISO8601", "1970-01-01T00:01:40.050Z"},
 		{"timeEncoder: millis", 100050.005},
 		{"timeEncoder: nanos", int64(100050005000)},
-		{"timeEncoder: layout=06/01/02 03:04pm", "70/01/01 12:01am"},
+		{"timeEncoder: {layout: 06/01/02 03:04pm}", "70/01/01 12:01am"},
 		{"timeEncoder: ''", 100.050005},
 		{"timeEncoder: something-random", 100.050005},
 		{"timeEncoder: rfc3339", "1970-01-01T00:01:40Z"},
@@ -562,7 +562,7 @@ func TestTimeEncodersParseFromJson(t *testing.T) {
 		expected interface{} // output of serializing moment
 	}{
 		{`{"timeEncoder": "iso8601"}`, "1970-01-01T00:01:40.050Z"},
-		{`{"timeEncoder": "layout=06/01/02 03:04pm"}`, "70/01/01 12:01am"},
+		{`{"timeEncoder": {"layout": "06/01/02 03:04pm"}}`, "70/01/01 12:01am"},
 	}
 
 	for _, tt := range tests {

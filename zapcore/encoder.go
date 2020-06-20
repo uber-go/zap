@@ -21,7 +21,7 @@
 package zapcore
 
 import (
-	"strings"
+	"encoding/json"
 	"time"
 
 	"go.uber.org/zap/buffer"
@@ -166,11 +166,9 @@ func TimeEncoderOfLayout(layout string) TimeEncoder {
 // "iso8601" and "ISO8601" are unmarshaled to ISO8601TimeEncoder.
 // "millis" is unmarshaled to EpochMillisTimeEncoder.
 // "nanos" is unmarshaled to EpochNanosEncoder.
-// "layout=<time-layout>" is unmarshaled to TimeEncoder with given layout.
 // Anything else is unmarshaled to EpochTimeEncoder.
 func (e *TimeEncoder) UnmarshalText(text []byte) error {
-	vals := strings.SplitAfterN(string(text), "=", 2)
-	switch vals[0] {
+	switch string(text) {
 	case "rfc3339nano", "RFC3339Nano":
 		*e = RFC3339NanoTimeEncoder
 	case "rfc3339", "RFC3339":
@@ -181,12 +179,39 @@ func (e *TimeEncoder) UnmarshalText(text []byte) error {
 		*e = EpochMillisTimeEncoder
 	case "nanos":
 		*e = EpochNanosTimeEncoder
-	case "layout=":
-		*e = TimeEncoderOfLayout(vals[1])
 	default:
 		*e = EpochTimeEncoder
 	}
 	return nil
+}
+
+// UnmarshalYAML unmarshals yaml to a TimeEncoder.
+// If value is an object with a "layout" field, it will be unmarshaled to  TimeEncoder with given layout.
+//     timeEncoder:
+//       layout: 06/01/02 03:04pm
+// If value is string, it uses UnmarshalText.
+//     timeEncoder: iso8601
+func (e *TimeEncoder) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var o struct {
+		Layout string `json:"layout" yaml:"layout"`
+	}
+	if err := unmarshal(&o); err == nil {
+		*e = TimeEncoderOfLayout(o.Layout)
+		return nil
+	}
+
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	return e.UnmarshalText([]byte(s))
+}
+
+// UnmarshalJSON unmarshals yaml to a TimeEncoder as same way UnmarshalYAML does.
+func (e *TimeEncoder) UnmarshalJSON(data []byte) error {
+	return e.UnmarshalYAML(func(v interface{}) error {
+		return json.Unmarshal(data, v)
+	})
 }
 
 // A DurationEncoder serializes a time.Duration to a primitive type.
