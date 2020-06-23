@@ -99,17 +99,12 @@ type CloseFunc func() error
 // if bufferSize = 0, we set it to defaultBufferSize
 // if flushInterval = 0, we set it to defaultFlushInterval
 func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteSyncer, CloseFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	closefunc := func() error {
-		cancel()
-		return ws.Sync()
-	}
-
 	if _, ok := ws.(*bufferWriterSyncer); ok {
 		// no need to layer on another buffer
-		return ws, closefunc
+		return ws, func() error { return nil }
 	}
+
+	ctx, cancel := context.WithCancel(context.Background())
 
 	if bufferSize == 0 {
 		bufferSize = defaultBufferSize
@@ -140,6 +135,11 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteS
 			}
 		}
 	}()
+
+	closefunc := func() error {
+		cancel()
+		return ws.Sync()
+	}
 
 	return ws, closefunc
 }
