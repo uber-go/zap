@@ -555,6 +555,17 @@ func TestTimeEncoders(t *testing.T) {
 	}
 }
 
+func TestTimeEncodersWrongYAML(t *testing.T) {
+	tests := []string{
+		"timeEncoder: [1, 2, 3]", // wrong type
+		"timeEncoder: {foo:bar",  // broken yaml
+	}
+	for _, tt := range tests {
+		cfg := EncoderConfig{}
+		assert.Error(t, yaml.Unmarshal([]byte(tt), &cfg), "Expected unmarshaling %q to become error, but not.", tt)
+	}
+}
+
 func TestTimeEncodersParseFromJson(t *testing.T) {
 	moment := time.Unix(100, 50005000).UTC()
 	tests := []struct {
