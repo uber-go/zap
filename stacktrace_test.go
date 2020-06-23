@@ -29,7 +29,7 @@ import (
 )
 
 func TestTakeStacktrace(t *testing.T) {
-	trace := takeStacktrace()
+	trace := takeStacktrace(nil)
 	lines := strings.Split(trace, "\n")
 	require.True(t, len(lines) > 0, "Expected stacktrace to have at least one frame.")
 	assert.Contains(
@@ -70,6 +70,6 @@ func TestIsZapFrame(t *testing.T) {
 
 func BenchmarkTakeStacktrace(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		takeStacktrace()
+		takeStacktrace(nil)
 	}
 }

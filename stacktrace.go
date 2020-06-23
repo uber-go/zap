@@ -43,7 +43,7 @@ var (
 	_zapStacktraceVendorContains = addPrefix("/vendor/", _zapStacktracePrefixes...)
 )
 
-func takeStacktrace() string {
+func takeStacktrace(skip *int) string {
 	buffer := bufferpool.Get()
 	defer buffer.Free()
 	programCounters := _stacktracePool.Get().(*programCounters)
@@ -69,11 +69,20 @@ func takeStacktrace() string {
 	// Note: On the last iteration, frames.Next() returns false, with a valid
 	// frame, but we ignore this frame. The last frame is a a runtime frame which
 	// adds noise, since it's only either runtime.main or runtime.goexit.
+	toSkip := 0
+	if skip != nil {
+		toSkip = *skip
+	}
 	for frame, more := frames.Next(); more; frame, more = frames.Next() {
 		if skipZapFrames && isZapFrame(frame.Function) {
 			continue
 		} else {
 			skipZapFrames = false
+		}
+
+		if toSkip > 0 {
+			toSkip--
+			continue
 		}
 
 		if i != 0 {
