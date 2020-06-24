@@ -207,7 +207,7 @@ func (e *TimeEncoder) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return e.UnmarshalText([]byte(s))
 }
 
-// UnmarshalJSON unmarshals yaml to a TimeEncoder as same way UnmarshalYAML does.
+// UnmarshalJSON unmarshals JSON to a TimeEncoder as same way UnmarshalYAML does.
 func (e *TimeEncoder) UnmarshalJSON(data []byte) error {
 	return e.UnmarshalYAML(func(v interface{}) error {
 		return json.Unmarshal(data, v)
