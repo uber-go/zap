@@ -566,7 +566,7 @@ func TestTimeEncodersWrongYAML(t *testing.T) {
 	}
 }
 
-func TestTimeEncodersParseFromJson(t *testing.T) {
+func TestTimeEncodersParseFromJSON(t *testing.T) {
 	moment := time.Unix(100, 50005000).UTC()
 	tests := []struct {
 		jsonDoc  string
