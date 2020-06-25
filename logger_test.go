@@ -385,6 +385,57 @@ func TestLoggerAddCallerFail(t *testing.T) {
 	})
 }
 
+func TestLoggerAddFunction(t *testing.T) {
+	tests := []struct {
+		options []Option
+		pat     string
+	}{
+		{opts(), `^$`},
+		{opts(WithFunction(false)), `^$`},
+		{opts(AddFunction()), `zap.TestLoggerAddFunction.func1$`},
+		{opts(AddFunction(), WithFunction(false)), `^$`},
+		{opts(WithFunction(true)), `zap.TestLoggerAddFunction.func1$`},
+		{opts(WithFunction(true), WithFunction(false)), `^$`},
+		{opts(AddFunction(), AddCallerSkip(1), AddCallerSkip(-1)), `zap.TestLoggerAddFunction.func1$`},
+		{opts(AddFunction(), AddCallerSkip(1)), `zap.withLogger$`},
+		{opts(AddFunction(), AddCallerSkip(1), AddCallerSkip(3)), `runtime.goexit$`},
+	}
+	for _, tt := range tests {
+		withLogger(t, DebugLevel, tt.options, func(logger *Logger, logs *observer.ObservedLogs) {
+			// Make sure that sugaring and desugaring resets caller skip properly.
+			logger = logger.Sugar().Desugar()
+			logger.Info("")
+			output := logs.AllUntimed()
+			assert.Equal(t, 1, len(output), "Unexpected number of logs written out.")
+			assert.Regexp(
+				t,
+				tt.pat,
+				output[0].Entry.Function,
+				"Expected to find function name in output.",
+			)
+		})
+	}
+}
+
+func TestLoggerAddFunctionFail(t *testing.T) {
+	errBuf := &ztest.Buffer{}
+	withLogger(t, DebugLevel, opts(AddFunction(), ErrorOutput(errBuf)), func(log *Logger, logs *observer.ObservedLogs) {
+		log.callerSkip = 1e3
+		log.Info("Failure.")
+		assert.Regexp(
+			t,
+			`Logger.check error: failed to get caller`,
+			errBuf.String(),
+			"Didn't find expected failure message.",
+		)
+		assert.Equal(
+			t,
+			logs.AllUntimed()[0].Entry.Message,
+			"Failure.",
+			"Expected original message to survive failures in runtime.Caller.")
+	})
+}
+
 func TestLoggerReplaceCore(t *testing.T) {
 	replace := WrapCore(func(zapcore.Core) zapcore.Core {
 		return zapcore.NewNopCore()

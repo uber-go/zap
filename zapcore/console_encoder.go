@@ -96,6 +96,9 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	if ent.Caller.Defined && c.CallerKey != "" && c.EncodeCaller != nil {
 		c.EncodeCaller(ent.Caller, arr)
 	}
+	if ent.Function != "" && c.FunctionKey != "" {
+		arr.AppendString(ent.Function)
+	}
 	for i := range arr.elems {
 		if i > 0 {
 			line.AppendString(c.ConsoleSeparator)

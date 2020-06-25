@@ -147,6 +147,7 @@ type Entry struct {
 	LoggerName string
 	Message    string
 	Caller     EntryCaller
+	Function   string
 	Stack      string
 }
 

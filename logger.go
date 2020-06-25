@@ -45,8 +45,9 @@ type Logger struct {
 	name        string
 	errorOutput zapcore.WriteSyncer
 
-	addCaller bool
-	addStack  zapcore.LevelEnabler
+	addCaller   bool
+	addFunction bool
+	addStack    zapcore.LevelEnabler
 
 	callerSkip int
 }
@@ -296,11 +297,21 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 
 	// Thread the error output through to the CheckedEntry.
 	ce.ErrorOutput = log.errorOutput
-	if log.addCaller {
-		ce.Entry.Caller = zapcore.NewEntryCaller(runtime.Caller(log.callerSkip + callerSkipOffset))
-		if !ce.Entry.Caller.Defined {
+	if log.addCaller || log.addFunction {
+		pc := make([]uintptr, 1)
+		numFrames := runtime.Callers(log.callerSkip+callerSkipOffset+1, pc)
+		frame, _ := runtime.CallersFrames(pc[:numFrames]).Next()
+		defined := frame.PC != 0
+		if !defined {
 			fmt.Fprintf(log.errorOutput, "%v Logger.check error: failed to get caller\n", time.Now().UTC())
 			log.errorOutput.Sync()
+		}
+
+		if log.addCaller {
+			ce.Entry.Caller = zapcore.NewEntryCaller(frame.PC, frame.File, frame.Line, defined)
+		}
+		if log.addFunction {
+			ce.Entry.Function = frame.Function
 		}
 	}
 	if log.addStack.Enabled(ce.Entry.Level) {

@@ -87,7 +87,7 @@ func Development() Option {
 }
 
 // AddCaller configures the Logger to annotate each message with the filename
-// and line number of zap's caller.  See also WithCaller.
+// and line number of zap's caller. See also WithCaller.
 func AddCaller() Option {
 	return WithCaller(true)
 }
@@ -101,10 +101,24 @@ func WithCaller(enabled bool) Option {
 	})
 }
 
-// AddCallerSkip increases the number of callers skipped by caller annotation
-// (as enabled by the AddCaller option). When building wrappers around the
-// Logger and SugaredLogger, supplying this Option prevents zap from always
-// reporting the wrapper code as the caller.
+// AddFunction configures the Logger to annotate each message with the function
+// name of zap's caller. See also WithFunction.
+func AddFunction() Option {
+	return WithFunction(true)
+}
+
+// WithFunction configures the Logger to annotate each message with the function
+// name of zap's caller, or not, depending on the value of enabled.
+func WithFunction(enabled bool) Option {
+	return optionFunc(func(log *Logger) {
+		log.addFunction = enabled
+	})
+}
+
+// AddCallerSkip increases the number of callers skipped by caller and function
+// annotations (as enabled by the AddCaller and AddFunction options). When
+// building wrappers around the Logger and SugaredLogger, supplying this Option
+// prevents zap from always reporting the wrapper code as the caller.
 func AddCallerSkip(skip int) Option {
 	return optionFunc(func(log *Logger) {
 		log.callerSkip += skip

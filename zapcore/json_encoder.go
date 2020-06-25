@@ -376,6 +376,10 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 			final.AppendString(ent.Caller.String())
 		}
 	}
+	if ent.Function != "" && final.FunctionKey != "" {
+		final.addKey(final.FunctionKey)
+		final.AppendString(ent.Function)
+	}
 	if final.MessageKey != "" {
 		final.addKey(enc.MessageKey)
 		final.AppendString(ent.Message)
