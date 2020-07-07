@@ -21,12 +21,14 @@
 package zapcore_test
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 
 	. "go.uber.org/zap/zapcore"
 )
@@ -523,29 +525,65 @@ func TestLevelEncoders(t *testing.T) {
 func TestTimeEncoders(t *testing.T) {
 	moment := time.Unix(100, 50005000).UTC()
 	tests := []struct {
-		name     string
+		yamlDoc  string
 		expected interface{} // output of serializing moment
 	}{
-		{"iso8601", "1970-01-01T00:01:40.050Z"},
-		{"ISO8601", "1970-01-01T00:01:40.050Z"},
-		{"millis", 100050.005},
-		{"nanos", int64(100050005000)},
-		{"", 100.050005},
-		{"something-random", 100.050005},
-		{"rfc3339", "1970-01-01T00:01:40Z"},
-		{"RFC3339", "1970-01-01T00:01:40Z"},
-		{"rfc3339nano", "1970-01-01T00:01:40.050005Z"},
-		{"RFC3339Nano", "1970-01-01T00:01:40.050005Z"},
+		{"timeEncoder: iso8601", "1970-01-01T00:01:40.050Z"},
+		{"timeEncoder: ISO8601", "1970-01-01T00:01:40.050Z"},
+		{"timeEncoder: millis", 100050.005},
+		{"timeEncoder: nanos", int64(100050005000)},
+		{"timeEncoder: {layout: 06/01/02 03:04pm}", "70/01/01 12:01am"},
+		{"timeEncoder: ''", 100.050005},
+		{"timeEncoder: something-random", 100.050005},
+		{"timeEncoder: rfc3339", "1970-01-01T00:01:40Z"},
+		{"timeEncoder: RFC3339", "1970-01-01T00:01:40Z"},
+		{"timeEncoder: rfc3339nano", "1970-01-01T00:01:40.050005Z"},
+		{"timeEncoder: RFC3339Nano", "1970-01-01T00:01:40.050005Z"},
 	}
 
 	for _, tt := range tests {
-		var te TimeEncoder
-		require.NoError(t, te.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+		cfg := EncoderConfig{}
+		require.NoError(t, yaml.Unmarshal([]byte(tt.yamlDoc), &cfg), "Unexpected error unmarshaling %q.", tt.yamlDoc)
+		require.NotNil(t, cfg.EncodeTime, "Unmashalled timeEncoder is nil for %q.", tt.yamlDoc)
 		assertAppended(
 			t,
 			tt.expected,
-			func(arr ArrayEncoder) { te(moment, arr) },
-			"Unexpected output serializing %v with %q.", moment, tt.name,
+			func(arr ArrayEncoder) { cfg.EncodeTime(moment, arr) },
+			"Unexpected output serializing %v with %q.", moment, tt.yamlDoc,
+		)
+	}
+}
+
+func TestTimeEncodersWrongYAML(t *testing.T) {
+	tests := []string{
+		"timeEncoder: [1, 2, 3]", // wrong type
+		"timeEncoder: {foo:bar",  // broken yaml
+	}
+	for _, tt := range tests {
+		cfg := EncoderConfig{}
+		assert.Error(t, yaml.Unmarshal([]byte(tt), &cfg), "Expected unmarshaling %q to become error, but not.", tt)
+	}
+}
+
+func TestTimeEncodersParseFromJSON(t *testing.T) {
+	moment := time.Unix(100, 50005000).UTC()
+	tests := []struct {
+		jsonDoc  string
+		expected interface{} // output of serializing moment
+	}{
+		{`{"timeEncoder": "iso8601"}`, "1970-01-01T00:01:40.050Z"},
+		{`{"timeEncoder": {"layout": "06/01/02 03:04pm"}}`, "70/01/01 12:01am"},
+	}
+
+	for _, tt := range tests {
+		cfg := EncoderConfig{}
+		require.NoError(t, json.Unmarshal([]byte(tt.jsonDoc), &cfg), "Unexpected error unmarshaling %q.", tt.jsonDoc)
+		require.NotNil(t, cfg.EncodeTime, "Unmashalled timeEncoder is nil for %q.", tt.jsonDoc)
+		assertAppended(
+			t,
+			tt.expected,
+			func(arr ArrayEncoder) { cfg.EncodeTime(moment, arr) },
+			"Unexpected output serializing %v with %q.", moment, tt.jsonDoc,
 		)
 	}
 }
