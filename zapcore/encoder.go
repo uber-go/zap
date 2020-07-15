@@ -329,7 +329,8 @@ type EncoderConfig struct {
 	// Unlike the other primitive type encoders, EncodeName is optional. The
 	// zero value falls back to FullNameEncoder.
 	EncodeName NameEncoder `json:"nameEncoder" yaml:"nameEncoder"`
-	// Configures the field separator used by the console encoder.
+	// Configures the field separator used by the console encoder. Defaults
+	// to tab.
 	ConsoleSeparator byte `json:"consoleSeparator" yaml:"consoleSeparator"`
 }
 

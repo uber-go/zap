@@ -57,7 +57,7 @@ type consoleEncoder struct {
 // string.
 func NewConsoleEncoder(cfg EncoderConfig) Encoder {
 	if cfg.ConsoleSeparator == 0 {
-		//Default delimiter '\t'
+		// Default delimiter '\t'
 		cfg.ConsoleSeparator = '\t'
 	}
 	return consoleEncoder{newJSONEncoder(cfg, true)}
