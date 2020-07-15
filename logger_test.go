@@ -339,7 +339,12 @@ func TestLoggerAddCaller(t *testing.T) {
 		options []Option
 		pat     string
 	}{
+		{opts(), `^undefined$`},
+		{opts(WithCaller(false)), `^undefined$`},
 		{opts(AddCaller()), `.+/logger_test.go:[\d]+$`},
+		{opts(AddCaller(), WithCaller(false)), `^undefined$`},
+		{opts(WithCaller(true)), `.+/logger_test.go:[\d]+$`},
+		{opts(WithCaller(true), WithCaller(false)), `^undefined$`},
 		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(-1)), `.+/zap/logger_test.go:[\d]+$`},
 		{opts(AddCaller(), AddCallerSkip(1)), `.+/zap/common_test.go:[\d]+$`},
 		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(3)), `.+/src/runtime/.*:[\d]+$`},
@@ -389,6 +394,21 @@ func TestLoggerReplaceCore(t *testing.T) {
 		logger.Info("")
 		logger.Warn("")
 		assert.Equal(t, 0, logs.Len(), "Expected no-op core to write no logs.")
+	})
+}
+
+func TestLoggerIncreaseLevel(t *testing.T) {
+	withLogger(t, DebugLevel, opts(IncreaseLevel(WarnLevel)), func(logger *Logger, logs *observer.ObservedLogs) {
+		logger.Info("logger.Info")
+		logger.Warn("logger.Warn")
+		logger.Error("logger.Error")
+		require.Equal(t, 2, logs.Len(), "expected only warn + error logs due to IncreaseLevel.")
+		assert.Equal(
+			t,
+			logs.AllUntimed()[0].Entry.Message,
+			"logger.Warn",
+			"Expected first logged message to be warn level message",
+		)
 	})
 }
 

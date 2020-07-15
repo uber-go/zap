@@ -273,7 +273,7 @@ func checkStdLogMessage(t *testing.T, msg string, logs *observer.ObservedLogs) {
 	assert.Equal(t, "redirected", entry.Entry.Message, "Unexpected entry message.")
 	assert.Regexp(
 		t,
-		`go.uber.org/zap/global_test.go:\d+$`,
+		`/global_test.go:\d+$`,
 		entry.Entry.Caller.String(),
 		"Unexpected caller annotation.",
 	)

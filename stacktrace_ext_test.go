@@ -22,6 +22,7 @@ package zap_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -84,10 +85,15 @@ func TestStacktraceFiltersZapMarshal(t *testing.T) {
 }
 
 func TestStacktraceFiltersVendorZap(t *testing.T) {
-	// We need to simulate a zap as a vendor library, so we're going to create a fake GOPATH
-	// and run the above test which will contain zap in the vendor directory.
+	// We already have the dependencies downloaded so this should be
+	// instant.
+	deps := downloadDependencies(t)
+
+	// We need to simulate a zap as a vendor library, so we're going to
+	// create a fake GOPATH and run the above test which will contain zap
+	// in the vendor directory.
 	withGoPath(t, func(goPath string) {
-		curDir, err := os.Getwd()
+		zapDir, err := os.Getwd()
 		require.NoError(t, err, "Failed to get current directory")
 
 		testDir := filepath.Join(goPath, "src/go.uber.org/zap_test/")
@@ -95,22 +101,19 @@ func TestStacktraceFiltersVendorZap(t *testing.T) {
 		require.NoError(t, os.MkdirAll(testDir, 0777), "Failed to create source director")
 
 		curFile := getSelfFilename(t)
-		//copyFile(t, curFile, filepath.Join(testDir, curFile))
 		setupSymlink(t, curFile, filepath.Join(testDir, curFile))
 
 		// Set up symlinks for zap, and for any test dependencies.
-		setupSymlink(t, curDir, filepath.Join(vendorDir, "go.uber.org/zap"))
-		for _, testDep := range []string{"github.com/stretchr/testify"} {
-			target := filepath.Join(curDir, "vendor", testDep)
-			_, err := os.Stat(target)
-			require.NoError(t, err, "Required dependency (%v) not installed in vendor", target)
-			setupSymlink(t, target, filepath.Join(vendorDir, testDep))
+		setupSymlink(t, zapDir, filepath.Join(vendorDir, "go.uber.org/zap"))
+		for _, dep := range deps {
+			setupSymlink(t, dep.Dir, filepath.Join(vendorDir, dep.ImportPath))
 		}
 
-		// Now run the above test which ensures we filter out zap stacktraces, but this time
-		// zap is in a vendor
+		// Now run the above test which ensures we filter out zap
+		// stacktraces, but this time zap is in a vendor
 		cmd := exec.Command("go", "test", "-v", "-run", "TestStacktraceFiltersZap")
 		cmd.Dir = testDir
+		cmd.Env = append(os.Environ(), "GO111MODULE=off")
 		out, err := cmd.CombinedOutput()
 		require.NoError(t, err, "Failed to run test in vendor directory, output: %s", out)
 		assert.Contains(t, string(out), "PASS")
@@ -161,4 +164,28 @@ func setupSymlink(t *testing.T, src, dst string) {
 	require.NoError(t, err, "Failed to get absolute path")
 
 	require.NoError(t, os.Symlink(srcAbs, dst), "Failed to set up symlink")
+}
+
+type dependency struct {
+	ImportPath string `json:"Path"` // import path of the dependency
+	Dir        string `json:"Dir"`  // location on disk
+}
+
+// Downloads all dependencies for the current Go module and reports their
+// module paths and locations on disk.
+func downloadDependencies(t *testing.T) []dependency {
+	cmd := exec.Command("go", "mod", "download", "-json")
+
+	stdout, err := cmd.Output()
+	require.NoError(t, err, "Failed to run 'go mod download'")
+
+	var deps []dependency
+	dec := json.NewDecoder(bytes.NewBuffer(stdout))
+	for dec.More() {
+		var d dependency
+		require.NoError(t, dec.Decode(&d), "Failed to decode dependency")
+		deps = append(deps, d)
+	}
+
+	return deps
 }

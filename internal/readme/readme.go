@@ -43,7 +43,6 @@ var (
 		"go-kit/kit/log":        "go-kit",
 		"inconshreveable/log15": "log15",
 		"apex/log":              "apex/log",
-		"go.pedge.io/lion":      "lion",
 		"rs/zerolog":            "zerolog",
 	}
 )
@@ -96,9 +95,18 @@ func getBenchmarkRows(benchmarkName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// get the Zap time (unsugared) as baseline to compare with other loggers
+	baseline, err := getBenchmarkRow(benchmarkOutput, benchmarkName, "Zap", nil)
+	if err != nil {
+		return "", err
+	}
+
 	var benchmarkRows []*benchmarkRow
 	for libraryName := range libraryNameToMarkdownName {
-		benchmarkRow, err := getBenchmarkRow(benchmarkOutput, benchmarkName, libraryName)
+		benchmarkRow, err := getBenchmarkRow(
+			benchmarkOutput, benchmarkName, libraryName, baseline,
+		)
 		if err != nil {
 			return "", err
 		}
@@ -109,8 +117,8 @@ func getBenchmarkRows(benchmarkName string) (string, error) {
 	}
 	sort.Sort(benchmarkRowsByTime(benchmarkRows))
 	rows := []string{
-		"| Package | Time | Objects Allocated |",
-		"| :--- | :---: | :---: |",
+		"| Package | Time | Time % to zap | Objects Allocated |",
+		"| :------ | :--: | :-----------: | :---------------: |",
 	}
 	for _, benchmarkRow := range benchmarkRows {
 		rows = append(rows, benchmarkRow.String())
@@ -118,7 +126,9 @@ func getBenchmarkRows(benchmarkName string) (string, error) {
 	return strings.Join(rows, "\n"), nil
 }
 
-func getBenchmarkRow(input []string, benchmarkName string, libraryName string) (*benchmarkRow, error) {
+func getBenchmarkRow(
+	input []string, benchmarkName string, libraryName string, baseline *benchmarkRow,
+) (*benchmarkRow, error) {
 	line, err := findUniqueSubstring(input, fmt.Sprintf("%s/%s-", benchmarkName, libraryName))
 	if err != nil {
 		return nil, err
@@ -142,12 +152,20 @@ func getBenchmarkRow(input []string, benchmarkName string, libraryName string) (
 	if err != nil {
 		return nil, err
 	}
-	return &benchmarkRow{
-		libraryNameToMarkdownName[libraryName],
-		duration,
-		allocatedBytes,
-		allocatedObjects,
-	}, nil
+	r := &benchmarkRow{
+		Name:             libraryNameToMarkdownName[libraryName],
+		Time:             duration,
+		AllocatedBytes:   allocatedBytes,
+		AllocatedObjects: allocatedObjects,
+	}
+
+	if baseline != nil {
+		r.ZapTime = baseline.Time
+		r.ZapAllocatedBytes = baseline.AllocatedBytes
+		r.ZapAllocatedObjects = baseline.AllocatedObjects
+	}
+
+	return r, nil
 }
 
 func findUniqueSubstring(input []string, substring string) (string, error) {
@@ -164,13 +182,11 @@ func findUniqueSubstring(input []string, substring string) (string, error) {
 }
 
 func getBenchmarkOutput(benchmarkName string) ([]string, error) {
-	return getOutput("go", "test", fmt.Sprintf("-bench=%s", benchmarkName), "-benchmem", "./benchmarks")
-}
-
-func getOutput(name string, arg ...string) ([]string, error) {
-	output, err := exec.Command(name, arg...).CombinedOutput()
+	cmd := exec.Command("go", "test", fmt.Sprintf("-bench=%s", benchmarkName), "-benchmem")
+	cmd.Dir = "benchmarks"
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("error running %s %s: %v\n%s", name, strings.Join(arg, " "), err, string(output))
+		return nil, fmt.Errorf("error running 'go test -bench=%q': %v\n%s", benchmarkName, err, string(output))
 	}
 	return strings.Split(string(output), "\n"), nil
 }
@@ -182,14 +198,31 @@ type tmplData struct {
 }
 
 type benchmarkRow struct {
-	Name             string
+	Name string
+
 	Time             time.Duration
 	AllocatedBytes   int
 	AllocatedObjects int
+
+	ZapTime             time.Duration
+	ZapAllocatedBytes   int
+	ZapAllocatedObjects int
 }
 
 func (b *benchmarkRow) String() string {
-	return fmt.Sprintf("| %s | %d ns/op | %d allocs/op |", b.Name, b.Time.Nanoseconds(), b.AllocatedObjects)
+	pct := func(val, baseline int64) string {
+		return fmt.Sprintf(
+			"%+0.f%%",
+			((float64(val)/float64(baseline))*100)-100,
+		)
+	}
+	t := b.Time.Nanoseconds()
+	tp := pct(t, b.ZapTime.Nanoseconds())
+
+	return fmt.Sprintf(
+		"| %s | %d ns/op | %s | %d allocs/op", b.Name,
+		t, tp, b.AllocatedObjects,
+	)
 }
 
 type benchmarkRowsByTime []*benchmarkRow
