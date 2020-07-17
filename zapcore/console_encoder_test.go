@@ -77,7 +77,7 @@ func TestConsoleSeparator(t *testing.T) {
 				t,
 				tt.wantConsole,
 				consoleOut.String(),
-				"Unexpected console output: expected to %v.", tt.desc,
+				"Unexpected console output",
 			)
 		})
 
