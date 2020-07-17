@@ -40,27 +40,27 @@ var (
 func TestConsoleSeparator(t *testing.T) {
 	tests := []struct {
 		desc        string
-		separator   byte
+		separator   string
 		wantConsole string
 	}{
 		{
 			desc:        "space console separator",
-			separator:   ' ',
+			separator:   " ",
 			wantConsole: "0 info main foo.go:42 hello\nfake-stack\n",
 		},
 		{
-			desc: "default console separator",
-			separator: '	',
+			desc:        "default console separator",
+			separator:   "",
 			wantConsole: "0\tinfo\tmain\tfoo.go:42\thello\nfake-stack\n",
 		},
 		{
-			desc:        "default console separator",
-			separator:   '\t',
+			desc:        "tag console separator",
+			separator:   "\t",
 			wantConsole: "0\tinfo\tmain\tfoo.go:42\thello\nfake-stack\n",
 		},
 		{
 			desc:        "dash console separator",
-			separator:   '-',
+			separator:   "-",
 			wantConsole: "0-info-main-foo.go:42-hello\nfake-stack\n",
 		},
 	}
@@ -82,7 +82,7 @@ func TestConsoleSeparator(t *testing.T) {
 	}
 }
 
-func encoderTestEncoderConfig(separator byte) EncoderConfig {
+func encoderTestEncoderConfig(separator string) EncoderConfig {
 	testEncoder := testEncoderConfig()
 	testEncoder.ConsoleSeparator = separator
 	return testEncoder

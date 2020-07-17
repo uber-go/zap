@@ -331,7 +331,7 @@ type EncoderConfig struct {
 	EncodeName NameEncoder `json:"nameEncoder" yaml:"nameEncoder"`
 	// Configures the field separator used by the console encoder. Defaults
 	// to tab.
-	ConsoleSeparator byte `json:"consoleSeparator" yaml:"consoleSeparator"`
+	ConsoleSeparator string `json:"consoleSeparator" yaml:"consoleSeparator"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a

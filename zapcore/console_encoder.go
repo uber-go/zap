@@ -56,9 +56,9 @@ type consoleEncoder struct {
 // encoder configuration, it will omit any element whose key is set to the empty
 // string.
 func NewConsoleEncoder(cfg EncoderConfig) Encoder {
-	if cfg.ConsoleSeparator == 0 {
+	if len(cfg.ConsoleSeparator) <= 0 {
 		// Default delimiter '\t'
-		cfg.ConsoleSeparator = '\t'
+		cfg.ConsoleSeparator = "\t"
 	}
 	return consoleEncoder{newJSONEncoder(cfg, true)}
 }
@@ -98,7 +98,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	}
 	for i := range arr.elems {
 		if i > 0 {
-			line.AppendByte(c.ConsoleSeparator)
+			line.AppendString(c.ConsoleSeparator)
 		}
 		fmt.Fprint(line, arr.elems[i])
 	}
@@ -146,6 +146,6 @@ func (c consoleEncoder) writeContext(line *buffer.Buffer, extra []Field) {
 
 func (c consoleEncoder) addSeparatorIfNecessary(line *buffer.Buffer) {
 	if line.Len() > 0 {
-		line.AppendByte(c.ConsoleSeparator)
+		line.AppendString(c.ConsoleSeparator)
 	}
 }
