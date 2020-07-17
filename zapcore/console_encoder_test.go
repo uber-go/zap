@@ -60,8 +60,8 @@ func TestConsoleSeparator(t *testing.T) {
 		},
 		{
 			desc:        "dash console separator",
-			separator:   "-",
-			wantConsole: "0-info-main-foo.go:42-hello\nfake-stack\n",
+			separator:   "--",
+			wantConsole: "0--info--main--foo.go:42--hello\nfake-stack\n",
 		},
 	}
 
