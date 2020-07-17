@@ -70,7 +70,9 @@ func TestConsoleSeparator(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			entry := testEntry
 			consoleOut, err := console.EncodeEntry(entry, nil)
-			assert.Nil(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 			assert.Equal(
 				t,
 				tt.wantConsole,
