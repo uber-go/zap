@@ -371,11 +371,8 @@ func Stack(key string) Field {
 	return String(key, takeStacktrace(0))
 }
 
-// StackSkip constructs a field that stores a stacktrace of the current
-// goroutine under provided key, skipping the given number of frames from the
-// top of the stacktrace. Keep in mind that taking a stacktrace is eager and
-// expensive (relatively speaking); this function both makes an allocation and
-// takes about two microseconds.
+// StackSkip constructs a field similarly to Stack, but also skips the given
+// number of frames from the top of the stacktrace.
 func StackSkip(key string, skip int) Field {
 	// Returning the stacktrace as a string costs an allocation, but saves us
 	// from expanding the zapcore.Field union struct to include a byte slice. Since
