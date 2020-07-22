@@ -368,7 +368,7 @@ func Stack(key string) Field {
 	// from expanding the zapcore.Field union struct to include a byte slice. Since
 	// taking a stacktrace is already so expensive (~10us), the extra allocation
 	// is okay.
-	return String(key, takeStacktrace(nil))
+	return String(key, takeStacktrace(0))
 }
 
 // StackSkip constructs a field that stores a stacktrace of the current
@@ -381,7 +381,7 @@ func StackSkip(key string, skip int) Field {
 	// from expanding the zapcore.Field union struct to include a byte slice. Since
 	// taking a stacktrace is already so expensive (~10us), the extra allocation
 	// is okay.
-	return String(key, takeStacktrace(&skip))
+	return String(key, takeStacktrace(skip))
 }
 
 // Duration constructs a field with the given key and value. The encoder
