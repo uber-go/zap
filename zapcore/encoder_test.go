@@ -41,8 +41,7 @@ var (
 		Message:    `hello`,
 		Time:       _epoch,
 		Stack:      "fake-stack",
-		Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42},
-		Function:   "foo.Foo",
+		Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42, Function: "foo.Foo"},
 	}
 )
 

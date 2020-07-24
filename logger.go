@@ -45,9 +45,8 @@ type Logger struct {
 	name        string
 	errorOutput zapcore.WriteSyncer
 
-	addCaller   bool
-	addFunction bool
-	addStack    zapcore.LevelEnabler
+	addCaller bool
+	addStack  zapcore.LevelEnabler
 
 	callerSkip int
 }
@@ -297,7 +296,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 
 	// Thread the error output through to the CheckedEntry.
 	ce.ErrorOutput = log.errorOutput
-	if log.addCaller || log.addFunction {
+	if log.addCaller {
 		pc := make([]uintptr, 1)
 		numFrames := runtime.Callers(log.callerSkip+callerSkipOffset+1, pc)
 		frame, _ := runtime.CallersFrames(pc[:numFrames]).Next()
@@ -307,12 +306,8 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 			log.errorOutput.Sync()
 		}
 
-		if log.addCaller {
-			ce.Entry.Caller = zapcore.NewEntryCaller(frame.PC, frame.File, frame.Line, defined)
-		}
-		if log.addFunction {
-			ce.Entry.Function = frame.Function
-		}
+		ce.Entry.Caller = zapcore.NewEntryCaller(frame.PC, frame.File, frame.Line, defined)
+		ce.Entry.Caller.Function = frame.Function
 	}
 	if log.addStack.Enabled(ce.Entry.Level) {
 		ce.Entry.Stack = Stack("").String

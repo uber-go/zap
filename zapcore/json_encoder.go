@@ -366,19 +366,21 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 			final.AppendString(ent.LoggerName)
 		}
 	}
-	if ent.Caller.Defined && final.CallerKey != "" {
-		final.addKey(final.CallerKey)
-		cur := final.buf.Len()
-		final.EncodeCaller(ent.Caller, final)
-		if cur == final.buf.Len() {
-			// User-supplied EncodeCaller was a no-op. Fall back to strings to
-			// keep output JSON valid.
-			final.AppendString(ent.Caller.String())
+	if ent.Caller.Defined {
+		if final.CallerKey != "" {
+			final.addKey(final.CallerKey)
+			cur := final.buf.Len()
+			final.EncodeCaller(ent.Caller, final)
+			if cur == final.buf.Len() {
+				// User-supplied EncodeCaller was a no-op. Fall back to strings to
+				// keep output JSON valid.
+				final.AppendString(ent.Caller.String())
+			}
 		}
-	}
-	if ent.Function != "" && final.FunctionKey != "" {
-		final.addKey(final.FunctionKey)
-		final.AppendString(ent.Function)
+		if final.FunctionKey != "" {
+			final.addKey(final.FunctionKey)
+			final.AppendString(ent.Caller.Function)
+		}
 	}
 	if final.MessageKey != "" {
 		final.addKey(enc.MessageKey)
