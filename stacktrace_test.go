@@ -68,6 +68,33 @@ func TestIsZapFrame(t *testing.T) {
 	})
 }
 
+func TestTakeStacktraceWithSkip(t *testing.T) {
+	trace := takeStacktrace(1)
+	lines := strings.Split(trace, "\n")
+	require.True(t, len(lines) > 0, "Expected stacktrace to have at least one frame.")
+	assert.Contains(
+		t,
+		lines[0],
+		"testing.",
+		"Expected stacktrace to start with the test runner (skipping our own frame) %s.", lines[0],
+	)
+}
+
+func TestTakeStacktraceWithSkipInnerFunc(t *testing.T) {
+	var trace string
+	func() {
+		trace = takeStacktrace(1)
+	}()
+	lines := strings.Split(trace, "\n")
+	require.True(t, len(lines) > 0, "Expected stacktrace to have at least one frame.")
+	assert.Contains(
+		t,
+		lines[0],
+		"testing.",
+		"Expected stacktrace to start with the test function (skipping the inner func) %s.", lines[0],
+	)
+}
+
 func BenchmarkTakeStacktrace(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		takeStacktrace(0)

@@ -374,6 +374,11 @@ func Stack(key string) Field {
 // StackSkip constructs a field similarly to Stack, but also skips the given
 // number of frames from the top of the stacktrace.
 func StackSkip(key string, skip int) Field {
+	// Skip the call to StackSkip
+	if skip != 0 {
+		skip++
+	}
+
 	// Returning the stacktrace as a string costs an allocation, but saves us
 	// from expanding the zapcore.Field union struct to include a byte slice. Since
 	// taking a stacktrace is already so expensive (~10us), the extra allocation

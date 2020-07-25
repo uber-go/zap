@@ -306,7 +306,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	}
 	if log.addStack.Enabled(ce.Entry.Level) {
 		if log.useCallerSkipForStack {
-			ce.Entry.Stack = StackSkip("", log.callerSkip).String
+			ce.Entry.Stack = StackSkip("", log.callerSkip+callerSkipOffset).String
 		} else {
 			ce.Entry.Stack = Stack("").String
 		}

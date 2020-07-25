@@ -51,7 +51,7 @@ func takeStacktrace(skip int) string {
 
 	var numFrames int
 	for {
-		// Skip the call to runtime.Counters and takeStacktrace so that the
+		// Skip the call to runtime.Callers and takeStacktrace so that the
 		// program counters start at the caller of takeStacktrace.
 		numFrames = runtime.Callers(2, programCounters.pcs)
 		if numFrames < len(programCounters.pcs) {
@@ -62,8 +62,9 @@ func takeStacktrace(skip int) string {
 		programCounters = newProgramCounters(len(programCounters.pcs) * 2)
 	}
 
+	// Skip all consecutive zap frames at the beginning if no skip is set.
+	skipZapFrames := skip == 0
 	i := 0
-	skipZapFrames := true // skip all consecutive zap frames at the beginning.
 	frames := runtime.CallersFrames(programCounters.pcs[:numFrames])
 
 	// Note: On the last iteration, frames.Next() returns false, with a valid
