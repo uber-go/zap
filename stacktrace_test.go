@@ -83,7 +83,7 @@ func TestTakeStacktraceWithSkip(t *testing.T) {
 func TestTakeStacktraceWithSkipInnerFunc(t *testing.T) {
 	var trace string
 	func() {
-		trace = takeStacktrace(1)
+		trace = takeStacktrace(2)
 	}()
 	lines := strings.Split(trace, "\n")
 	require.True(t, len(lines) > 0, "Expected stacktrace to have at least one frame.")
@@ -91,7 +91,7 @@ func TestTakeStacktraceWithSkipInnerFunc(t *testing.T) {
 		t,
 		lines[0],
 		"testing.",
-		"Expected stacktrace to start with the test function (skipping the inner func) %s.", lines[0],
+		"Expected stacktrace to start with the test function (skipping the test function) %s.", lines[0],
 	)
 }
 
