@@ -130,7 +130,10 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 
 func (c consoleEncoder) writeContext(line *buffer.Buffer, extra []Field) {
 	context := c.jsonEncoder.Clone().(*jsonEncoder)
-	defer context.buf.Free()
+	defer func() {
+		context.buf.Free()
+		putJSONEncoder(context)
+	}()
 
 	addFields(context, extra)
 	context.closeOpenNamespaces()
