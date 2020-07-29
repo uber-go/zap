@@ -297,21 +297,39 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	// Thread the error output through to the CheckedEntry.
 	ce.ErrorOutput = log.errorOutput
 	if log.addCaller {
-		pc := make([]uintptr, 1)
-		numFrames := runtime.Callers(log.callerSkip+callerSkipOffset+1, pc)
-		frame, _ := runtime.CallersFrames(pc[:numFrames]).Next()
-		defined := frame.PC != 0
+		frame, defined := getCallerFrame(log.callerSkip + callerSkipOffset)
 		if !defined {
 			fmt.Fprintf(log.errorOutput, "%v Logger.check error: failed to get caller\n", time.Now().UTC())
 			log.errorOutput.Sync()
 		}
 
-		ce.Entry.Caller = zapcore.NewEntryCaller(frame.PC, frame.File, frame.Line, defined)
-		ce.Entry.Caller.Function = frame.Function
+		ce.Entry.Caller = zapcore.EntryCaller{
+			Defined:  defined,
+			PC:       frame.PC,
+			File:     frame.File,
+			Line:     frame.Line,
+			Function: frame.Function,
+		}
 	}
 	if log.addStack.Enabled(ce.Entry.Level) {
 		ce.Entry.Stack = Stack("").String
 	}
 
 	return ce
+}
+
+// getCallerFrame gets caller frame. The argument skip is the number of stack
+// frames to ascend, with 0 identifying the caller of getCallerFrame. The
+// boolean ok is false if it was not possible to recover the information.
+func getCallerFrame(skip int) (frame runtime.Frame, ok bool) {
+	const skipOffset = 2
+
+	pc := make([]uintptr, 1)
+	numFrames := runtime.Callers(skip+skipOffset, pc[:])
+	if numFrames < 1 {
+		return
+	}
+
+	frame, _ = runtime.CallersFrames(pc).Next()
+	return frame, frame.PC != 0
 }
