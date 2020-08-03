@@ -321,6 +321,8 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 // getCallerFrame gets caller frame. The argument skip is the number of stack
 // frames to ascend, with 0 identifying the caller of getCallerFrame. The
 // boolean ok is false if it was not possible to recover the information.
+//
+// Note: This implementation is similar to runtime.Caller, but it returns the whole frame.
 func getCallerFrame(skip int) (frame runtime.Frame, ok bool) {
 	const skipOffset = 2
 
