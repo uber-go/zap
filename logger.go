@@ -324,7 +324,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 //
 // Note: This implementation is similar to runtime.Caller, but it returns the whole frame.
 func getCallerFrame(skip int) (frame runtime.Frame, ok bool) {
-	const skipOffset = 2
+	const skipOffset = 2 // skip getCallerFrame and Callers
 
 	pc := make([]uintptr, 1)
 	numFrames := runtime.Callers(skip+skipOffset, pc[:])
