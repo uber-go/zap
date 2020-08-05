@@ -22,13 +22,10 @@ package zap
 
 import (
 	"runtime"
-	"strings"
 	"sync"
 
 	"go.uber.org/zap/internal/bufferpool"
 )
-
-const _zapPackage = "go.uber.org/zap"
 
 var (
 	_stacktracePool = sync.Pool{
@@ -36,11 +33,6 @@ var (
 			return newProgramCounters(64)
 		},
 	}
-
-	// We add "." and "/" suffixes to the package name to ensure we only match
-	// the exact package and not any package with the same prefix.
-	_zapStacktracePrefixes       = addPrefix(_zapPackage, ".", "/")
-	_zapStacktraceVendorContains = addPrefix("/vendor/", _zapStacktracePrefixes...)
 )
 
 func takeStacktrace(skip int) string {
@@ -62,8 +54,6 @@ func takeStacktrace(skip int) string {
 		programCounters = newProgramCounters(len(programCounters.pcs) * 2)
 	}
 
-	// Skip all consecutive zap frames at the beginning if no skip is set.
-	skipZapFrames := skip == 0
 	i := 0
 	frames := runtime.CallersFrames(programCounters.pcs[:numFrames])
 
@@ -71,12 +61,6 @@ func takeStacktrace(skip int) string {
 	// frame, but we ignore this frame. The last frame is a a runtime frame which
 	// adds noise, since it's only either runtime.main or runtime.goexit.
 	for frame, more := frames.Next(); more; frame, more = frames.Next() {
-		if skipZapFrames && isZapFrame(frame.Function) {
-			continue
-		} else {
-			skipZapFrames = false
-		}
-
 		if skip > 0 {
 			skip--
 			continue
@@ -97,36 +81,10 @@ func takeStacktrace(skip int) string {
 	return buffer.String()
 }
 
-func isZapFrame(function string) bool {
-	for _, prefix := range _zapStacktracePrefixes {
-		if strings.HasPrefix(function, prefix) {
-			return true
-		}
-	}
-
-	// We can't use a prefix match here since the location of the vendor
-	// directory affects the prefix. Instead we do a contains match.
-	for _, contains := range _zapStacktraceVendorContains {
-		if strings.Contains(function, contains) {
-			return true
-		}
-	}
-
-	return false
-}
-
 type programCounters struct {
 	pcs []uintptr
 }
 
 func newProgramCounters(size int) *programCounters {
 	return &programCounters{make([]uintptr, size)}
-}
-
-func addPrefix(prefix string, ss ...string) []string {
-	withPrefix := make([]string, len(ss))
-	for i, s := range ss {
-		withPrefix[i] = prefix + s
-	}
-	return withPrefix
 }

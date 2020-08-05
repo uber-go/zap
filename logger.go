@@ -48,8 +48,7 @@ type Logger struct {
 	addCaller bool
 	addStack  zapcore.LevelEnabler
 
-	callerSkip            int
-	useCallerSkipForStack bool
+	callerSkip int
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
@@ -305,11 +304,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 		}
 	}
 	if log.addStack.Enabled(ce.Entry.Level) {
-		if log.useCallerSkipForStack {
-			ce.Entry.Stack = StackSkip("", log.callerSkip+callerSkipOffset).String
-		} else {
-			ce.Entry.Stack = Stack("").String
-		}
+		ce.Entry.Stack = StackSkip("", log.callerSkip+callerSkipOffset).String
 	}
 
 	return ce

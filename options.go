@@ -119,14 +119,6 @@ func AddStacktrace(lvl zapcore.LevelEnabler) Option {
 	})
 }
 
-// UseCallerSkipForStacktrace configures the logger to use the number of frames
-// that should be skipped for caller (CallerSkip) annotation when taking stacktraces.
-func UseCallerSkipForStacktrace(enabled bool) Option {
-	return optionFunc(func(log *Logger) {
-		log.useCallerSkipForStack = enabled
-	})
-}
-
 // IncreaseLevel increase the level of the logger. It has no effect if
 // the passed in level tries to decrease the level of the logger.
 func IncreaseLevel(lvl zapcore.LevelEnabler) Option {

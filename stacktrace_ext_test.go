@@ -120,28 +120,27 @@ func TestStacktraceFiltersVendorZap(t *testing.T) {
 	})
 }
 
-func TestStacktraceUseCallerSkipForStacktraceWithoutCallerSkip(t *testing.T) {
+func TestStacktraceWithoutCallerSkip(t *testing.T) {
 	withLogger(t, func(logger *zap.Logger, out *bytes.Buffer) {
-		logger = logger.WithOptions(zap.UseCallerSkipForStacktrace(true))
 		func() {
 			logger.Error("test log")
 		}()
 
-		require.Contains(t, out.String(), "TestStacktraceUseCallerSkipForStacktraceWithoutCallerSkip.", "Should not skip too much")
-		require.Contains(t, out.String(), "TestStacktraceUseCallerSkipForStacktraceWithoutCallerSkip", "Should not skip too much")
+		require.Contains(t, out.String(), "TestStacktraceWithoutCallerSkip.", "Should not skip too much")
+		require.Contains(t, out.String(), "TestStacktraceWithoutCallerSkip", "Should not skip too much")
 		verifyNoZap(t, out.String())
 	})
 }
 
-func TestStacktraceUseCallerSkipForStacktraceWithCallerSkip(t *testing.T) {
+func TestStacktraceWithCallerSkip(t *testing.T) {
 	withLogger(t, func(logger *zap.Logger, out *bytes.Buffer) {
-		logger = logger.WithOptions(zap.UseCallerSkipForStacktrace(true), zap.AddCallerSkip(2))
+		logger = logger.WithOptions(zap.AddCallerSkip(2))
 		func() {
 			logger.Error("test log")
 		}()
 
-		require.NotContains(t, out.String(), "TestStacktraceUseCallerSkipForStacktraceWithCallerSkip.", "Should skip as requested by caller skip")
-		require.Contains(t, out.String(), "TestStacktraceUseCallerSkipForStacktraceWithCallerSkip", "Should not skip too much")
+		require.NotContains(t, out.String(), "TestStacktraceWithCallerSkip.", "Should skip as requested by caller skip")
+		require.Contains(t, out.String(), "TestStacktraceWithCallerSkip", "Should not skip too much")
 		verifyNoZap(t, out.String())
 	})
 }
