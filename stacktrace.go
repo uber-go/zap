@@ -45,7 +45,7 @@ func takeStacktrace(skip int) string {
 	for {
 		// Skip the call to runtime.Callers and takeStacktrace so that the
 		// program counters start at the caller of takeStacktrace.
-		numFrames = runtime.Callers(2, programCounters.pcs)
+		numFrames = runtime.Callers(skip+2, programCounters.pcs)
 		if numFrames < len(programCounters.pcs) {
 			break
 		}
@@ -61,11 +61,6 @@ func takeStacktrace(skip int) string {
 	// frame, but we ignore this frame. The last frame is a a runtime frame which
 	// adds noise, since it's only either runtime.main or runtime.goexit.
 	for frame, more := frames.Next(); more; frame, more = frames.Next() {
-		if skip > 0 {
-			skip--
-			continue
-		}
-
 		if i != 0 {
 			buffer.AppendByte('\n')
 		}
