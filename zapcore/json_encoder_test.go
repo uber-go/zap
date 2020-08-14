@@ -112,6 +112,7 @@ func TestJSONEncodeEntry(t *testing.T) {
 		TimeKey:        "T",
 		NameKey:        "N",
 		CallerKey:      "C",
+		FunctionKey:    "F",
 		StacktraceKey:  "S",
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,

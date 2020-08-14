@@ -317,6 +317,7 @@ type EncoderConfig struct {
 	TimeKey       string `json:"timeKey" yaml:"timeKey"`
 	NameKey       string `json:"nameKey" yaml:"nameKey"`
 	CallerKey     string `json:"callerKey" yaml:"callerKey"`
+	FunctionKey   string `json:"functionKey" yaml:"functionKey"`
 	StacktraceKey string `json:"stacktraceKey" yaml:"stacktraceKey"`
 	LineEnding    string `json:"lineEnding" yaml:"lineEnding"`
 	// Configure the primitive representations of common complex types. For
