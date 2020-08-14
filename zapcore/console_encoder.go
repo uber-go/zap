@@ -93,8 +93,13 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 
 		nameEncoder(ent.LoggerName, arr)
 	}
-	if ent.Caller.Defined && c.CallerKey != "" && c.EncodeCaller != nil {
-		c.EncodeCaller(ent.Caller, arr)
+	if ent.Caller.Defined {
+		if c.CallerKey != "" && c.EncodeCaller != nil {
+			c.EncodeCaller(ent.Caller, arr)
+		}
+		if c.FunctionKey != "" {
+			arr.AppendString(ent.Caller.Function)
+		}
 	}
 	for i := range arr.elems {
 		if i > 0 {

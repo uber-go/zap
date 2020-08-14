@@ -366,10 +366,89 @@ func TestLoggerAddCaller(t *testing.T) {
 	}
 }
 
+func TestLoggerAddCallerFunction(t *testing.T) {
+	tests := []struct {
+		options         []Option
+		loggerFunction  string
+		sugaredFunction string
+	}{
+		{
+			options:         opts(),
+			loggerFunction:  "",
+			sugaredFunction: "",
+		},
+		{
+			options:         opts(WithCaller(false)),
+			loggerFunction:  "",
+			sugaredFunction: "",
+		},
+		{
+			options:         opts(AddCaller()),
+			loggerFunction:  "go.uber.org/zap.infoLog",
+			sugaredFunction: "go.uber.org/zap.infoLogSugared",
+		},
+		{
+			options:         opts(AddCaller(), WithCaller(false)),
+			loggerFunction:  "",
+			sugaredFunction: "",
+		},
+		{
+			options:         opts(WithCaller(true)),
+			loggerFunction:  "go.uber.org/zap.infoLog",
+			sugaredFunction: "go.uber.org/zap.infoLogSugared",
+		},
+		{
+			options:         opts(WithCaller(true), WithCaller(false)),
+			loggerFunction:  "",
+			sugaredFunction: "",
+		},
+		{
+			options:         opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(-1)),
+			loggerFunction:  "go.uber.org/zap.infoLog",
+			sugaredFunction: "go.uber.org/zap.infoLogSugared",
+		},
+		{
+			options:         opts(AddCaller(), AddCallerSkip(2)),
+			loggerFunction:  "go.uber.org/zap.withLogger",
+			sugaredFunction: "go.uber.org/zap.withLogger",
+		},
+		{
+			options:         opts(AddCaller(), AddCallerSkip(2), AddCallerSkip(3)),
+			loggerFunction:  "runtime.goexit",
+			sugaredFunction: "runtime.goexit",
+		},
+	}
+	for _, tt := range tests {
+		withLogger(t, DebugLevel, tt.options, func(logger *Logger, logs *observer.ObservedLogs) {
+			// Make sure that sugaring and desugaring resets caller skip properly.
+			logger = logger.Sugar().Desugar()
+			infoLog(logger, "")
+			infoLogSugared(logger.Sugar(), "")
+			infoLog(logger.Sugar().Desugar(), "")
+
+			entries := logs.AllUntimed()
+			assert.Equal(t, 3, len(entries), "Unexpected number of logs written out.")
+			for _, entry := range []observer.LoggedEntry{entries[0], entries[2]} {
+				assert.Regexp(
+					t,
+					tt.loggerFunction,
+					entry.Entry.Caller.Function,
+					"Expected to find function name in output.",
+				)
+			}
+			assert.Regexp(
+				t,
+				tt.sugaredFunction,
+				entries[1].Entry.Caller.Function,
+				"Expected to find function name in output.",
+			)
+		})
+	}
+}
+
 func TestLoggerAddCallerFail(t *testing.T) {
 	errBuf := &ztest.Buffer{}
-	withLogger(t, DebugLevel, opts(AddCaller(), ErrorOutput(errBuf)), func(log *Logger, logs *observer.ObservedLogs) {
-		log.callerSkip = 1e3
+	withLogger(t, DebugLevel, opts(AddCaller(), AddCallerSkip(1e3), ErrorOutput(errBuf)), func(log *Logger, logs *observer.ObservedLogs) {
 		log.Info("Failure.")
 		assert.Regexp(
 			t,
@@ -382,6 +461,11 @@ func TestLoggerAddCallerFail(t *testing.T) {
 			logs.AllUntimed()[0].Entry.Message,
 			"Failure.",
 			"Expected original message to survive failures in runtime.Caller.")
+		assert.Equal(
+			t,
+			logs.AllUntimed()[0].Entry.Caller.Function,
+			"",
+			"Expected function name to be empty string.")
 	})
 }
 
@@ -449,4 +533,12 @@ func TestLoggerConcurrent(t *testing.T) {
 			)
 		}
 	})
+}
+
+func infoLog(logger *Logger, msg string, fields ...Field) {
+	logger.Info(msg, fields...)
+}
+
+func infoLogSugared(logger *SugaredLogger, args ...interface{}) {
+	logger.Info(args...)
 }

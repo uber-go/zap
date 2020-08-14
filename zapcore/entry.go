@@ -70,10 +70,11 @@ func NewEntryCaller(pc uintptr, file string, line int, ok bool) EntryCaller {
 
 // EntryCaller represents the caller of a logging function.
 type EntryCaller struct {
-	Defined bool
-	PC      uintptr
-	File    string
-	Line    int
+	Defined  bool
+	PC       uintptr
+	File     string
+	Line     int
+	Function string
 }
 
 // String returns the full path and line number of the caller.

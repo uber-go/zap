@@ -33,7 +33,7 @@ var (
 		Message:    `hello`,
 		Time:       _epoch,
 		Stack:      "fake-stack",
-		Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42},
+		Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42, Function: "foo.Foo"},
 	}
 )
 
@@ -46,22 +46,22 @@ func TestConsoleSeparator(t *testing.T) {
 		{
 			desc:        "space console separator",
 			separator:   " ",
-			wantConsole: "0 info main foo.go:42 hello\nfake-stack\n",
+			wantConsole: "0 info main foo.go:42 foo.Foo hello\nfake-stack\n",
 		},
 		{
 			desc:        "default console separator",
 			separator:   "",
-			wantConsole: "0\tinfo\tmain\tfoo.go:42\thello\nfake-stack\n",
+			wantConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\nfake-stack\n",
 		},
 		{
 			desc:        "tag console separator",
 			separator:   "\t",
-			wantConsole: "0\tinfo\tmain\tfoo.go:42\thello\nfake-stack\n",
+			wantConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\nfake-stack\n",
 		},
 		{
 			desc:        "dash console separator",
 			separator:   "--",
-			wantConsole: "0--info--main--foo.go:42--hello\nfake-stack\n",
+			wantConsole: "0--info--main--foo.go:42--foo.Foo--hello\nfake-stack\n",
 		},
 	}
 
