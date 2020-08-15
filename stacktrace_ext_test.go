@@ -127,7 +127,6 @@ func TestStacktraceWithoutCallerSkip(t *testing.T) {
 		}()
 
 		require.Contains(t, out.String(), "TestStacktraceWithoutCallerSkip.", "Should not skip too much")
-		require.Contains(t, out.String(), "TestStacktraceWithoutCallerSkip", "Should not skip too much")
 		verifyNoZap(t, out.String())
 	})
 }

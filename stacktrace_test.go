@@ -31,24 +31,24 @@ import (
 func TestTakeStacktrace(t *testing.T) {
 	trace := takeStacktrace(0)
 	lines := strings.Split(trace, "\n")
-	require.True(t, len(lines) > 0, "Expected stacktrace to have at least one frame.")
+	require.NotEmpty(t, lines, "Expected stacktrace to have at least one frame.")
 	assert.Contains(
 		t,
 		lines[0],
 		"go.uber.org/zap.TestTakeStacktrace",
-		"Expected stacktrace to start with the test %s.", lines[0],
+		"Expected stacktrace to start with the test.",
 	)
 }
 
 func TestTakeStacktraceWithSkip(t *testing.T) {
 	trace := takeStacktrace(1)
 	lines := strings.Split(trace, "\n")
-	require.True(t, len(lines) > 0, "Expected stacktrace to have at least one frame.")
+	require.NotEmpty(t, lines, "Expected stacktrace to have at least one frame.")
 	assert.Contains(
 		t,
 		lines[0],
 		"testing.",
-		"Expected stacktrace to start with the test runner (skipping our own frame) %s.", lines[0],
+		"Expected stacktrace to start with the test runner (skipping our own frame).",
 	)
 }
 
@@ -58,12 +58,12 @@ func TestTakeStacktraceWithSkipInnerFunc(t *testing.T) {
 		trace = takeStacktrace(2)
 	}()
 	lines := strings.Split(trace, "\n")
-	require.True(t, len(lines) > 0, "Expected stacktrace to have at least one frame.")
+	require.NotEmpty(t, lines, "Expected stacktrace to have at least one frame.")
 	assert.Contains(
 		t,
 		lines[0],
 		"testing.",
-		"Expected stacktrace to start with the test function (skipping the test function) %s.", lines[0],
+		"Expected stacktrace to start with the test function (skipping the test function).",
 	)
 }
 
