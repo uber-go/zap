@@ -120,6 +120,30 @@ func TestStacktraceFiltersVendorZap(t *testing.T) {
 	})
 }
 
+func TestStacktraceWithoutCallerSkip(t *testing.T) {
+	withLogger(t, func(logger *zap.Logger, out *bytes.Buffer) {
+		func() {
+			logger.Error("test log")
+		}()
+
+		require.Contains(t, out.String(), "TestStacktraceWithoutCallerSkip.", "Should not skip too much")
+		verifyNoZap(t, out.String())
+	})
+}
+
+func TestStacktraceWithCallerSkip(t *testing.T) {
+	withLogger(t, func(logger *zap.Logger, out *bytes.Buffer) {
+		logger = logger.WithOptions(zap.AddCallerSkip(2))
+		func() {
+			logger.Error("test log")
+		}()
+
+		require.NotContains(t, out.String(), "TestStacktraceWithCallerSkip.", "Should skip as requested by caller skip")
+		require.Contains(t, out.String(), "TestStacktraceWithCallerSkip", "Should not skip too much")
+		verifyNoZap(t, out.String())
+	})
+}
+
 // withLogger sets up a logger with a real encoder set up, so that any marshal functions are called.
 // The inbuilt observer does not call Marshal for objects/arrays, which we need for some tests.
 func withLogger(t *testing.T, fn func(logger *zap.Logger, out *bytes.Buffer)) {
