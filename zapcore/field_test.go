@@ -102,7 +102,6 @@ func TestFieldAddingError(t *testing.T) {
 		{t: StringerType, iface: &obj{1}, want: empty, err: "PANIC=panic with string"},
 		{t: StringerType, iface: &obj{2}, want: empty, err: "PANIC=panic with error"},
 		{t: StringerType, iface: &obj{3}, want: empty, err: "PANIC=<nil>"},
-		{t: StringerType, iface: (*url.URL)(nil), want: empty, err: "PANIC=runtime error: invalid memory address or nil pointer dereference"},
 	}
 	for _, tt := range tests {
 		f := Field{Key: "k", Interface: tt.iface, Type: tt.t}
@@ -149,6 +148,8 @@ func TestFields(t *testing.T) {
 		{t: StringerType, iface: &obj{}, want: "obj"},
 		{t: StringerType, iface: (*obj)(nil), want: "nil obj"},
 		{t: SkipType, want: interface{}(nil)},
+		{t: StringerType, iface: (*url.URL)(nil), want: "<nil>"},
+		{t: StringerType, iface: (*users)(nil), want: "<nil>"},
 	}
 
 	for _, tt := range tests {

@@ -208,7 +208,12 @@ func addFields(enc ObjectEncoder, fields []Field) {
 func encodeStringer(key string, stringer interface{}, enc ObjectEncoder) (err error) {
 	defer func() {
 		if v := recover(); v != nil {
-			err = fmt.Errorf("PANIC=%v", v)
+			val := reflect.ValueOf(stringer)
+			if val.Kind() == reflect.Ptr && val.IsNil() {
+				enc.AddString(key, "<nil>")
+			} else {
+				err = fmt.Errorf("PANIC=%v", v)
+			}
 		}
 	}()
 
