@@ -282,6 +282,8 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 		ce = ce.Should(ent, zapcore.WriteThenPanic)
 	case zapcore.FatalLevel:
 		onFatal := log.onFatal
+		// Noop is the default value for CheckWriteAction, and it leads to
+		// continued execution after a Fatal which is unexpected.
 		if onFatal == zapcore.WriteThenNoop {
 			onFatal = zapcore.WriteThenFatal
 		}
