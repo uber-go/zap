@@ -22,6 +22,7 @@ package zapcore
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -163,6 +164,8 @@ const (
 	WriteThenPanic
 	// WriteThenFatal causes a fatal os.Exit after Write.
 	WriteThenFatal
+	// WriteThenGoexit runs runtime.Goexit after Write.
+	WriteThenGoexit
 )
 
 // CheckedEntry is an Entry together with a collection of Cores that have
@@ -231,6 +234,8 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 		panic(msg)
 	case WriteThenFatal:
 		exit.Exit()
+	case WriteThenGoexit:
+		runtime.Goexit()
 	}
 }
 

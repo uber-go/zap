@@ -49,6 +49,7 @@ type Logger struct {
 	addStack  zapcore.LevelEnabler
 
 	callerSkip int
+	onFatal    zapcore.CheckWriteAction // default is WriteThenFatal.
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
@@ -280,7 +281,11 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	case zapcore.PanicLevel:
 		ce = ce.Should(ent, zapcore.WriteThenPanic)
 	case zapcore.FatalLevel:
-		ce = ce.Should(ent, zapcore.WriteThenFatal)
+		onFatal := log.onFatal
+		if onFatal == 0 {
+			onFatal = zapcore.WriteThenFatal
+		}
+		ce = ce.Should(ent, onFatal)
 	case zapcore.DPanicLevel:
 		if log.development {
 			ce = ce.Should(ent, zapcore.WriteThenPanic)

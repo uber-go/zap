@@ -535,6 +535,51 @@ func TestLoggerConcurrent(t *testing.T) {
 	})
 }
 
+func TestLoggerCustomOnFatal(t *testing.T) {
+	tests := []struct {
+		msg          string
+		onFatal      zapcore.CheckWriteAction
+		recoverValue interface{}
+	}{
+		{
+			msg:          "panic",
+			onFatal:      zapcore.WriteThenPanic,
+			recoverValue: "fatal",
+		},
+		{
+			msg:          "goexit",
+			onFatal:      zapcore.WriteThenGoexit,
+			recoverValue: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			withLogger(t, InfoLevel, opts(OnFatal(tt.onFatal)), func(logger *Logger, logs *observer.ObservedLogs) {
+
+				var finished bool
+				recovered := make(chan interface{})
+				go func() {
+					defer func() {
+						recovered <- recover()
+					}()
+
+					logger.Fatal("fatal")
+					finished = true
+				}()
+
+				assert.Equal(t, tt.recoverValue, <-recovered, "unexpected value from recover()")
+				assert.False(t, finished, "expect goroutine to not finish after Fatal")
+
+				assert.Equal(t, []observer.LoggedEntry{{
+					Entry:   zapcore.Entry{Level: FatalLevel, Message: "fatal"},
+					Context: []Field{},
+				}}, logs.AllUntimed(), "unexpected logs")
+			})
+		})
+	}
+}
+
 func infoLog(logger *Logger, msg string, fields ...Field) {
 	logger.Info(msg, fields...)
 }
