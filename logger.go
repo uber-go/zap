@@ -49,7 +49,7 @@ type Logger struct {
 	addStack  zapcore.LevelEnabler
 
 	callerSkip int
-	onFatal    zapcore.CheckWriteAction // default is WriteThenFatal.
+	onFatal    zapcore.CheckWriteAction // default is WriteThenFatal
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
