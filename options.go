@@ -131,3 +131,10 @@ func IncreaseLevel(lvl zapcore.LevelEnabler) Option {
 		}
 	})
 }
+
+// OnFatal sets the action to take on fatal logs.
+func OnFatal(action zapcore.CheckWriteAction) Option {
+	return optionFunc(func(log *Logger) {
+		log.onFatal = action
+	})
+}
