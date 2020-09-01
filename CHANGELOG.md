@@ -8,6 +8,7 @@ Bugfixes:
   without specifying a time or duration encoder.
 * [#843][]: Honor CallerSkip when taking stack traces.
 * [#862][]: Fix the default file permissions to use `0666` and rely on the umask instead.
+* [#854][]: Encode `<nil>` for nil `Stringer` instead of a panic error log.
 
 Enhancements:
 * [#629][]: Added `zapcore.TimeEncoderOfLayout` to easily create time encoders
@@ -16,7 +17,6 @@ Enhancements:
 * [#852][]: Optimize console encoder by pooling the underlying JSON encoder.
 * [#844][]: Add ability to include the calling function as part of logs.
 * [#843][]: Add `StackSkip` for including truncated stacks as a field.
-* [#854][]: Show `<nil>` for nil `Stringer` instead of a panic error log.
 * [#861][]: Add options to customize Fatal behaviour for better testability.
 
 Thanks to @SteelPhase, @tmshn, @lixingwang, @wyxloading, @moul, @segevfiner, @andy-retailnext and @jcorbin for their contributions to this release.
