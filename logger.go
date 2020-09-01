@@ -282,7 +282,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 		ce = ce.Should(ent, zapcore.WriteThenPanic)
 	case zapcore.FatalLevel:
 		onFatal := log.onFatal
-		if onFatal == 0 {
+		if onFatal == zapcore.WriteThenNoop {
 			onFatal = zapcore.WriteThenFatal
 		}
 		ce = ce.Should(ent, onFatal)
