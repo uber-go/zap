@@ -39,17 +39,18 @@ import (
 // safety over brevity. For most applications, the SugaredLogger strikes a
 // better balance between performance and ergonomics.
 type Logger struct {
-	core zapcore.Core
+	onFatal zapcore.CheckWriteAction // default is WriteThenFatal
 
 	development bool
+	addCaller   bool
+	core        zapcore.Core
+
 	name        string
 	errorOutput zapcore.WriteSyncer
 
-	addCaller bool
-	addStack  zapcore.LevelEnabler
+	addStack zapcore.LevelEnabler
 
 	callerSkip int
-	onFatal    zapcore.CheckWriteAction // default is WriteThenFatal
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
