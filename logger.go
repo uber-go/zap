@@ -50,7 +50,11 @@ type Logger struct {
 
 	callerSkip int
 	onFatal    zapcore.CheckWriteAction // default is WriteThenFatal
+
+	exitFunc exitFunc // default is os.Exit
 }
+
+type exitFunc func(int)
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
 // the passed zapcore.Core is nil, it falls back to using a no-op

@@ -22,6 +22,7 @@ package zap
 
 import (
 	"fmt"
+	"os"
 
 	"go.uber.org/zap/zapcore"
 
@@ -112,6 +113,15 @@ func (s *SugaredLogger) Error(args ...interface{}) {
 	s.log(ErrorLevel, "", args, nil)
 }
 
+// Exit uses fmt.Sprint to construct and log a message.
+func (s *SugaredLogger) Exit(code int, args ...interface{}) {
+	s.log(ErrorLevel, "", args, nil)
+	if s.base.exitFunc == nil {
+		s.base.exitFunc = os.Exit
+	}
+	s.base.exitFunc(code)
+}
+
 // DPanic uses fmt.Sprint to construct and log a message. In development, the
 // logger then panics. (See DPanicLevel for details.)
 func (s *SugaredLogger) DPanic(args ...interface{}) {
@@ -146,6 +156,15 @@ func (s *SugaredLogger) Warnf(template string, args ...interface{}) {
 // Errorf uses fmt.Sprintf to log a templated message.
 func (s *SugaredLogger) Errorf(template string, args ...interface{}) {
 	s.log(ErrorLevel, template, args, nil)
+}
+
+// Exitf uses fmt.Sprintf to log a templated message.
+func (s *SugaredLogger) Exitf(code int, template string, args ...interface{}) {
+	s.log(ErrorLevel, template, args, nil)
+	if s.base.exitFunc == nil {
+		s.base.exitFunc = os.Exit
+	}
+	s.base.exitFunc(code)
 }
 
 // DPanicf uses fmt.Sprintf to log a templated message. In development, the
@@ -189,6 +208,16 @@ func (s *SugaredLogger) Warnw(msg string, keysAndValues ...interface{}) {
 // pairs are treated as they are in With.
 func (s *SugaredLogger) Errorw(msg string, keysAndValues ...interface{}) {
 	s.log(ErrorLevel, msg, nil, keysAndValues)
+}
+
+// Exitw logs a message with some additional context. The variadic key-value
+// pairs are treated as they are in With.
+func (s *SugaredLogger) Exitw(code int, msg string, keysAndValues ...interface{}) {
+	s.log(ErrorLevel, msg, nil, keysAndValues)
+	if s.base.exitFunc == nil {
+		s.base.exitFunc = os.Exit
+	}
+	s.base.exitFunc(code)
 }
 
 // DPanicw logs a message with some additional context. In development, the
