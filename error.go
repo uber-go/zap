@@ -21,9 +21,8 @@
 package zap
 
 import (
-	"sync"
-
 	"go.uber.org/zap/zapcore"
+	"sync"
 )
 
 var _errArrayElemPool = sync.Pool{New: func() interface{} {

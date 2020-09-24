@@ -80,6 +80,14 @@ func (o *obj) String() string {
 	return "obj"
 }
 
+type errObj struct {
+	errMessage string
+}
+
+func (eobj *errObj) Error() string {
+	return eobj.errMessage
+}
+
 func TestUnknownFieldType(t *testing.T) {
 	unknown := Field{Key: "k", String: "foo"}
 	assert.Equal(t, UnknownType, unknown.Type, "Expected zero value of FieldType to be UnknownType.")
@@ -150,6 +158,7 @@ func TestFields(t *testing.T) {
 		{t: SkipType, want: interface{}(nil)},
 		{t: StringerType, iface: (*url.URL)(nil), want: "<nil>"},
 		{t: StringerType, iface: (*users)(nil), want: "<nil>"},
+		{t: ErrorType, iface: (*errObj)(nil), want: "<nil>"},
 	}
 
 	for _, tt := range tests {

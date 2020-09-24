@@ -22,6 +22,7 @@ package zapcore
 
 import (
 	"fmt"
+	"reflect"
 	"sync"
 )
 
@@ -42,13 +43,29 @@ import (
 //      ...
 //    ],
 //  }
-func encodeError(key string, err error, enc ObjectEncoder) error {
+func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
+	// Try to capture panics (from nil references or otherwise) when calling
+	// the Error() method
+	defer func() {
+		if rerr := recover(); rerr != nil {
+			// If it's a nil pointer, just say "<nil>". The likeliest causes are a
+			// Stringer that fails to guard against nil or a nil pointer for a
+			// value receiver, and in either case, "<nil>" is a nice result.
+			if v := reflect.ValueOf(err); v.Kind() == reflect.Ptr && v.IsNil() {
+				enc.AddString(key, "<nil>")
+				return
+			}
+
+			retErr = fmt.Errorf("PANIC=%v", rerr)
+		}
+	}()
+
 	basic := err.Error()
 	enc.AddString(key, basic)
 
 	switch e := err.(type) {
 	case errorGroup:
-		return enc.AddArray(key+"Causes", errArray(e.Errors()))
+		retErr = enc.AddArray(key+"Causes", errArray(e.Errors()))
 	case fmt.Formatter:
 		verbose := fmt.Sprintf("%+v", e)
 		if verbose != basic {
@@ -57,7 +74,7 @@ func encodeError(key string, err error, enc ObjectEncoder) error {
 			enc.AddString(key+"Verbose", verbose)
 		}
 	}
-	return nil
+	return retErr
 }
 
 type errorGroup interface {
