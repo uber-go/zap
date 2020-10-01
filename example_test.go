@@ -27,6 +27,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -89,6 +90,43 @@ func Example_basicConfiguration() {
 
 	var cfg zap.Config
 	if err := json.Unmarshal(rawJSON, &cfg); err != nil {
+		panic(err)
+	}
+	logger, err := cfg.Build()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+
+	logger.Info("logger construction succeeded")
+	// Output:
+	// {"level":"info","message":"logger construction succeeded","foo":"bar"}
+}
+
+func Example_tomlConfiguration() {
+	// For some users, the presets offered by the NewProduction, NewDevelopment,
+	// and NewExample constructors won't be appropriate. For most of those
+	// users, the bundled Config struct offers the right balance of flexibility
+	// and convenience. (For more complex needs, see the AdvancedConfiguration
+	// example.)
+	//
+	// See the documentation for Config and zapcore.EncoderConfig for all the
+	// available options.
+	rawTOML := `
+level = "debug"
+encoding = "json"
+outputPaths = ["stdout", "/tmp/logs"]
+errorOutputPaths = ["stderr"]
+[initialFields]
+	foo = "bar"
+[encoderConfig]
+    messageKey = "message"
+    levelKey = "level"
+    levelEncoder = "lowercase"
+`
+
+	var cfg zap.Config
+	if _, err := toml.Decode(rawTOML, &cfg); err != nil {
 		panic(err)
 	}
 	logger, err := cfg.Build()
