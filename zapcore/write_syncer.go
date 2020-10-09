@@ -80,6 +80,7 @@ func (s *lockedWriteSyncer) Sync() error {
 
 type bufferWriterSyncer struct {
 	sync.Mutex
+
 	bufferWriter *bufio.Writer
 	ticker       *time.Ticker
 }
