@@ -83,7 +83,7 @@ func TestBufferWriter(t *testing.T) {
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 
-	t.Run("1 close", func(t *testing.T) {
+	t.Run("close", func(t *testing.T) {
 		buf := &bytes.Buffer{}
 		ws, close := Buffer(AddSync(buf), 0, 0)
 		requireWriteWorks(t, ws)
