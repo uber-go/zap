@@ -92,7 +92,7 @@ func TestBufferWriter(t *testing.T) {
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 
-	t.Run("2 close", func(t *testing.T) {
+	t.Run("wrap twice", func(t *testing.T) {
 		buf := &bytes.Buffer{}
 		bufsync, close1 := Buffer(AddSync(buf), 0, 0)
 		ws, close2 := Buffer(bufsync, 0, 0)
