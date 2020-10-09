@@ -105,10 +105,8 @@ func TestBufferWriter(t *testing.T) {
 
 	t.Run("small buffer", func(t *testing.T) {
 		buf := &bytes.Buffer{}
-		bufsync, close1 := Buffer(AddSync(buf), 5, 0)
-		ws, close2 := Buffer(bufsync, 5, 0)
-		defer close1()
-		defer close2()
+		ws, close := Buffer(AddSync(buf), 5, 0)
+		defer close()
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
 		requireWriteWorks(t, ws)
