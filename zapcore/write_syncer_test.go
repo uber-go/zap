@@ -119,7 +119,7 @@ func TestBufferWriter(t *testing.T) {
 		require.NoError(t, err, "Unexpected error writing to WriteSyncer.")
 		require.Equal(t, 3, n, "Wrote an unexpected number of bytes.")
 		ws.Write([]byte("foo"))
-		assert.NotNil(t, close())
+		assert.Error(t, close(), "Expected close to fail.")
 	})
 
 	t.Run("flush timer", func(t *testing.T) {
