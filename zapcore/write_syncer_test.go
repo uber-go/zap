@@ -78,7 +78,7 @@ func TestBufferWriter(t *testing.T) {
 		ws, close := Buffer(AddSync(buf), 0, 0)
 		defer close()
 		requireWriteWorks(t, ws)
-		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
+		assert.Empty(t, buf.String(), "Unexpected log calling a no-op Write method.")
 		assert.NoError(t, ws.Sync(), "Unexpected error calling a no-op Sync method.")
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
