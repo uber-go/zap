@@ -22,7 +22,6 @@ package zapcore
 
 import (
 	"bufio"
-	"context"
 	"io"
 	"sync"
 	"time"
@@ -80,6 +79,7 @@ func (s *lockedWriteSyncer) Sync() error {
 
 type bufferWriterSyncer struct {
 	sync.Mutex
+	stop chan struct{}
 
 	bufferWriter *bufio.Writer
 	ticker       *time.Ticker
@@ -96,7 +96,7 @@ const (
 // CloseFunc should be called when the caller exits to clean up buffers.
 type CloseFunc func() error
 
-// Buffer wraps a WriteSyncer in a buffer to improve performance,
+// Buffer wraps a WriteSyncer in a buffer to improve performance
 // if bufferSize = 0, we set it to defaultBufferSize
 // if flushInterval = 0, we set it to defaultFlushInterval
 func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteSyncer, CloseFunc) {
@@ -104,8 +104,6 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteS
 		// no need to layer on another buffer
 		return ws, func() error { return nil }
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
 
 	if bufferSize == 0 {
 		bufferSize = defaultBufferSize
@@ -117,7 +115,8 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteS
 
 	ticker := time.NewTicker(flushInterval)
 
-	ws = &bufferWriterSyncer{
+	bws := &bufferWriterSyncer{
+		stop:         make(chan struct{}),
 		bufferWriter: bufio.NewWriterSize(ws, bufferSize),
 		ticker:       ticker,
 	}
@@ -130,21 +129,24 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteS
 			case <-ticker.C:
 				// the background goroutine just keep syncing
 				// until the close func is called.
-				_ = ws.Sync()
-			case <-ctx.Done():
+				_ = bws.Sync()
+			case <-bws.stop:
 				return
 			}
 		}
 	}()
 
 	closefunc := func() error {
-		cancel()
-		return ws.Sync()
+		bws.stop <- struct{}{}
+
+		return bws.Sync()
 	}
 
-	return ws, closefunc
+	return bws, closefunc
 }
 
+// Write writes log data into buffer syncer directly, multiple Write calls will be batched,
+// and log data will be flushed to disk when the buffer is full or periodically.
 func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
 	// bufio is not goroutine safe, so add lock writer here
 	s.Lock()
@@ -164,6 +166,7 @@ func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
 	return s.bufferWriter.Write(bs)
 }
 
+// Sync flushes buffered log data into disk directly.
 func (s *bufferWriterSyncer) Sync() error {
 	// bufio is not goroutine safe, so add lock writer here
 	s.Lock()

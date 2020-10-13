@@ -30,6 +30,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"go.uber.org/zap/internal/ztest"
 )
 
@@ -71,6 +72,8 @@ func TestAddSyncWriter(t *testing.T) {
 }
 
 func TestBufferWriter(t *testing.T) {
+	goleak.VerifyNone(t)
+
 	// If we pass a plain io.Writer, make sure that we still get a WriteSyncer
 	// with a no-op Sync.
 	t.Run("sync", func(t *testing.T) {
