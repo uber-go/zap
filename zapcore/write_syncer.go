@@ -86,10 +86,11 @@ type bufferWriterSyncer struct {
 }
 
 const (
-	// _defaultBufferSize sizes the buffer associated with each WriterSync.
+	// _defaultBufferSize specifies the default size used by Buffer.
 	_defaultBufferSize = 256 * 1024 // 256 kB
 
-	// _defaultFlushInterval means the default flush interval
+	// _defaultFlushInterval specifies the default flush interval for
+	// Buffer.
 	_defaultFlushInterval = 30 * time.Second
 )
 
