@@ -93,13 +93,11 @@ const (
 	defaultFlushInterval = 30 * time.Second
 )
 
-// CloseFunc should be called when the caller exits to clean up buffers.
-type CloseFunc func() error
 
 // Buffer wraps a WriteSyncer in a buffer to improve performance
 // if bufferSize = 0, we set it to defaultBufferSize
 // if flushInterval = 0, we set it to defaultFlushInterval
-func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteSyncer, CloseFunc) {
+func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (_ WriteSyncer, close func() error) {
 	if _, ok := ws.(*bufferWriterSyncer); ok {
 		// no need to layer on another buffer
 		return ws, func() error { return nil }
@@ -136,13 +134,10 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (WriteS
 		}
 	}()
 
-	closefunc := func() error {
+	return bws, func() error {
 		bws.stop <- struct{}{}
-
 		return bws.Sync()
 	}
-
-	return bws, closefunc
 }
 
 // Write writes log data into buffer syncer directly, multiple Write calls will be batched,
