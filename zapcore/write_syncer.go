@@ -86,11 +86,11 @@ type bufferWriterSyncer struct {
 }
 
 const (
-	// defaultBufferSize sizes the buffer associated with each WriterSync.
-	defaultBufferSize = 256 * 1024
+	// _defaultBufferSize sizes the buffer associated with each WriterSync.
+	_defaultBufferSize = 256 * 1024 // 256 kB
 
-	// defaultFlushInterval means the default flush interval
-	defaultFlushInterval = 30 * time.Second
+	// _defaultFlushInterval means the default flush interval
+	_defaultFlushInterval = 30 * time.Second
 )
 
 // Buffer wraps a WriteSyncer to buffer its output. The returned WriteSyncer
@@ -116,11 +116,11 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (_ Writ
 	}
 
 	if bufferSize == 0 {
-		bufferSize = defaultBufferSize
+		bufferSize = _defaultBufferSize
 	}
 
 	if flushInterval == 0 {
-		flushInterval = defaultFlushInterval
+		flushInterval = _defaultFlushInterval
 	}
 
 	ticker := time.NewTicker(flushInterval)
