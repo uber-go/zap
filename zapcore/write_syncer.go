@@ -183,6 +183,7 @@ func (s *bufferWriterSyncer) flushLoop() {
 // close closes the buffer, cleans up background goroutines, and flushes
 // remaining, unwritten data.
 func (s *bufferWriterSyncer) close() error {
+	s.ticker.Stop()
 	close(s.stop)
 	return s.Sync()
 }
