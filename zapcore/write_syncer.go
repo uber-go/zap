@@ -182,7 +182,7 @@ func (s *bufferWriterSyncer) Sync() error {
 // Close closes the buffer, cleans up background goroutines, and flushes
 // remaining, unwritten data.
 func (s *bufferWriterSyncer) close() error {
-	s.stop <- struct{}{}
+	close(s.stop)
 	return s.Sync()
 }
 
