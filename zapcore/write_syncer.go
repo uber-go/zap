@@ -132,20 +132,7 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (_ Writ
 		ticker:       ticker,
 	}
 
-	// flush buffer every interval
-	// we do not need to exit this goroutine until closefunc called explicitly
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				// the background goroutine just keep syncing
-				// until the close func is called.
-				_ = bws.Sync()
-			case <-bws.stop:
-				return
-			}
-		}
-	}()
+	go bws.flushLoop()
 
 	return bws, bws.close
 }
@@ -180,7 +167,20 @@ func (s *bufferWriterSyncer) Sync() error {
 	return s.bufferWriter.Flush()
 }
 
-// Close closes the buffer, cleans up background goroutines, and flushes
+// flushLoop flushes the buffer at the configured interval until Close is
+// called.
+func (s *bufferWriterSyncer) flushLoop() {
+	for {
+		select {
+		case <-s.ticker.C:
+			_ = s.Sync()
+		case <-s.stop:
+			return
+		}
+	}
+}
+
+// close closes the buffer, cleans up background goroutines, and flushes
 // remaining, unwritten data.
 func (s *bufferWriterSyncer) close() error {
 	close(s.stop)
