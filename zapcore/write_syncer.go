@@ -146,10 +146,7 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (_ Writ
 		}
 	}()
 
-	return bws, func() error {
-		bws.stop <- struct{}{}
-		return bws.Sync()
-	}
+	return bws, bws.close
 }
 
 // Write writes log data into buffer syncer directly, multiple Write calls will be batched,
@@ -180,6 +177,13 @@ func (s *bufferWriterSyncer) Sync() error {
 	defer s.Unlock()
 
 	return s.bufferWriter.Flush()
+}
+
+// Close closes the buffer, cleans up background goroutines, and flushes
+// remaining, unwritten data.
+func (s *bufferWriterSyncer) close() error {
+	s.stop <- struct{}{}
+	return s.Sync()
 }
 
 type writerWrapper struct {
