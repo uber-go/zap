@@ -93,10 +93,22 @@ const (
 	defaultFlushInterval = 30 * time.Second
 )
 
-
-// Buffer wraps a WriteSyncer in a buffer to improve performance
-// if bufferSize = 0, we set it to defaultBufferSize
-// if flushInterval = 0, we set it to defaultFlushInterval
+// Buffer wraps a WriteSyncer to buffer its output. The returned WriteSyncer
+// flushes its output as the buffer fills up, or at the provided interval,
+// whichever comes first.
+//
+// Call the returned function to finish using the WriteSyncer and flush
+// remaining bytes.
+//
+//   func main() {
+//     // ...
+//     ws, closeWS := zapcore.Buffer(ws, 0, 0)
+//     defer closeWS()
+//     // ...
+//   }
+//
+// The buffer size defaults to 256 kB if set to zero.
+// The flush interval defaults to 30 seconds if set to zero.
 func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (_ WriteSyncer, close func() error) {
 	if _, ok := ws.(*bufferWriterSyncer); ok {
 		// no need to layer on another buffer
