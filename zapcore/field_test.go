@@ -81,11 +81,16 @@ func (o *obj) String() string {
 }
 
 type errObj struct {
-	errMessage string
+	kind   int
+	errMsg string
 }
 
 func (eobj *errObj) Error() string {
-	return eobj.errMessage
+	if eobj.kind == 1 {
+		panic("panic in Error() method")
+	} else {
+		return eobj.errMsg
+	}
 }
 
 func TestUnknownFieldType(t *testing.T) {
@@ -110,6 +115,7 @@ func TestFieldAddingError(t *testing.T) {
 		{t: StringerType, iface: &obj{1}, want: empty, err: "PANIC=panic with string"},
 		{t: StringerType, iface: &obj{2}, want: empty, err: "PANIC=panic with error"},
 		{t: StringerType, iface: &obj{3}, want: empty, err: "PANIC=<nil>"},
+		{t: ErrorType, iface: &errObj{kind: 1}, want: empty, err: "PANIC=panic in Error() method"},
 	}
 	for _, tt := range tests {
 		f := Field{Key: "k", Interface: tt.iface, Type: tt.t}
