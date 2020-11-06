@@ -79,8 +79,8 @@ func (s *lockedWriteSyncer) Sync() error {
 
 type bufferWriterSyncer struct {
 	sync.Mutex
-	stop chan struct{}
 
+	stop         chan struct{}
 	bufferWriter *bufio.Writer
 	ticker       *time.Ticker
 }
