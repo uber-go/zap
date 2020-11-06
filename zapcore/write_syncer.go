@@ -155,7 +155,6 @@ func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
 
 // Sync flushes buffered log data into disk directly.
 func (s *bufferWriterSyncer) Sync() error {
-	// bufio is not goroutine safe, so add lock writer here
 	s.Lock()
 	defer s.Unlock()
 
