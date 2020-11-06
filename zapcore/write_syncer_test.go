@@ -72,7 +72,7 @@ func TestAddSyncWriter(t *testing.T) {
 }
 
 func TestBufferWriter(t *testing.T) {
-	goleak.VerifyNone(t)
+	defer goleak.VerifyNone(t)
 
 	// If we pass a plain io.Writer, make sure that we still get a WriteSyncer
 	// with a no-op Sync.
