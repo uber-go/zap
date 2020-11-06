@@ -124,12 +124,10 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (_ Writ
 		flushInterval = _defaultFlushInterval
 	}
 
-	ticker := time.NewTicker(flushInterval)
-
 	bws := &bufferWriterSyncer{
 		stop:         make(chan struct{}),
 		bufferWriter: bufio.NewWriterSize(ws, bufferSize),
-		ticker:       ticker,
+		ticker:       time.NewTicker(flushInterval),
 	}
 
 	go bws.flushLoop()
