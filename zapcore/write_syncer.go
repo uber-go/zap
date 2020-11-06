@@ -141,11 +141,9 @@ func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
 	s.Lock()
 	defer s.Unlock()
 
-	// there are some logic internal for bufio.Writer here:
-	// 1. when the buffer is enough, data would not be flushed.
-	// 2. when the buffer is not enough, data would be flushed as soon as the buffer fills up.
-	// this would lead to log spliting, which is not acceptable for log collector
-	// so we need to flush bufferWriter before writing the data into bufferWriter
+	// To avoid partial writes from being flushed, we manually flush the existing buffer if:
+	// * The current write doesn't fit into the buffer fully, and
+	// * The buffer is not empty (since bufio will not split large writes when the buffer is empty)
 	if len(bs) > s.bufferWriter.Available() && s.bufferWriter.Buffered() > 0 {
 		if err := s.bufferWriter.Flush(); err != nil {
 			return 0, err
