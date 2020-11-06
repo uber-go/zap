@@ -168,6 +168,9 @@ func (s *bufferWriterSyncer) flushLoop() {
 	for {
 		select {
 		case <-s.ticker.C:
+			// we just simply ignore error here
+			// because the underlying bufio writer stores any errors
+			// and we return any error from Sync() as part of the close
 			_ = s.Sync()
 		case <-s.stop:
 			return
