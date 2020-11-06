@@ -138,7 +138,6 @@ func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (_ Writ
 // Write writes log data into buffer syncer directly, multiple Write calls will be batched,
 // and log data will be flushed to disk when the buffer is full or periodically.
 func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
-	// bufio is not goroutine safe, so add lock writer here
 	s.Lock()
 	defer s.Unlock()
 
