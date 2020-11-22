@@ -21,7 +21,10 @@
 // Package zapgrpc provides a logger that is compatible with grpclog.
 package zapgrpc // import "go.uber.org/zap/zapgrpc"
 
-import "go.uber.org/zap"
+import (
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
 
 // An Option overrides a Logger's default configuration.
 type Option interface {
@@ -36,23 +39,19 @@ func (f optionFunc) apply(log *Logger) {
 
 // WithDebug configures a Logger to print at zap's DebugLevel instead of
 // InfoLevel.
+// Deprecated: use grpclog.SetLoggerV2() for v2 API.
 func WithDebug() Option {
 	return optionFunc(func(logger *Logger) {
-		logger.print = (*zap.SugaredLogger).Debug
-		logger.printf = (*zap.SugaredLogger).Debugf
+		logger.printToDebug = true
 	})
 }
 
 // NewLogger returns a new Logger.
-//
-// By default, Loggers print at zap's InfoLevel.
 func NewLogger(l *zap.Logger, options ...Option) *Logger {
 	logger := &Logger{
-		log:    l.Sugar(),
-		fatal:  (*zap.SugaredLogger).Fatal,
-		fatalf: (*zap.SugaredLogger).Fatalf,
-		print:  (*zap.SugaredLogger).Info,
-		printf: (*zap.SugaredLogger).Infof,
+		delegate:     l.Sugar(),
+		printToDebug: false,
+		fatalToWarn:  false,
 	}
 	for _, option := range options {
 		option.apply(logger)
@@ -60,41 +59,108 @@ func NewLogger(l *zap.Logger, options ...Option) *Logger {
 	return logger
 }
 
-// Logger adapts zap's Logger to be compatible with grpclog.Logger.
+// Logger adapts zap's Logger to be compatible with grpclog.LoggerV2 and the deprecated grpclog.Logger.
 type Logger struct {
-	log    *zap.SugaredLogger
-	fatal  func(*zap.SugaredLogger, ...interface{})
-	fatalf func(*zap.SugaredLogger, string, ...interface{})
-	print  func(*zap.SugaredLogger, ...interface{})
-	printf func(*zap.SugaredLogger, string, ...interface{})
-}
-
-// Fatal implements grpclog.Logger.
-func (l *Logger) Fatal(args ...interface{}) {
-	l.fatal(l.log, args...)
-}
-
-// Fatalf implements grpclog.Logger.
-func (l *Logger) Fatalf(format string, args ...interface{}) {
-	l.fatalf(l.log, format, args...)
-}
-
-// Fatalln implements grpclog.Logger.
-func (l *Logger) Fatalln(args ...interface{}) {
-	l.fatal(l.log, args...)
+	delegate     *zap.SugaredLogger
+	printToDebug bool
+	fatalToWarn  bool
 }
 
 // Print implements grpclog.Logger.
+// Deprecated: use Info().
 func (l *Logger) Print(args ...interface{}) {
-	l.print(l.log, args...)
+	if l.printToDebug {
+		l.delegate.Debug(args...)
+	} else {
+		l.delegate.Info(args...)
+	}
 }
 
 // Printf implements grpclog.Logger.
+// Deprecated: use Infof().
 func (l *Logger) Printf(format string, args ...interface{}) {
-	l.printf(l.log, format, args...)
+	if l.printToDebug {
+		l.delegate.Debugf(format, args...)
+	} else {
+		l.delegate.Infof(format, args...)
+	}
 }
 
 // Println implements grpclog.Logger.
+// Deprecated: use Info().
 func (l *Logger) Println(args ...interface{}) {
-	l.print(l.log, args...)
+	l.Print(args...)
+}
+
+// Info implements grpclog.LoggerV2.
+func (l *Logger) Info(args ...interface{}) {
+	l.delegate.Info(args...)
+}
+
+// Infoln implements grpclog.LoggerV2.
+func (l *Logger) Infoln(args ...interface{}) {
+	l.delegate.Info(args...)
+}
+
+// Infof implements grpclog.LoggerV2.
+func (l *Logger) Infof(format string, args ...interface{}) {
+	l.delegate.Infof(format, args...)
+}
+
+// Warning implements grpclog.LoggerV2.
+func (l *Logger) Warning(args ...interface{}) {
+	l.delegate.Warn(args...)
+}
+
+// Warningln implements grpclog.LoggerV2.
+func (l *Logger) Warningln(args ...interface{}) {
+	l.delegate.Warn(args...)
+}
+
+// Warningf implements grpclog.LoggerV2.
+func (l *Logger) Warningf(format string, args ...interface{}) {
+	l.delegate.Warnf(format, args...)
+}
+
+// Error implements grpclog.LoggerV2.
+func (l *Logger) Error(args ...interface{}) {
+	l.delegate.Error(args...)
+}
+
+// Errorln implements grpclog.LoggerV2.
+func (l *Logger) Errorln(args ...interface{}) {
+	l.delegate.Error(args...)
+}
+
+// Errorf implements grpclog.LoggerV2.
+func (l *Logger) Errorf(format string, args ...interface{}) {
+	l.delegate.Errorf(format, args...)
+}
+
+// Fatal implements grpclog.LoggerV2.
+func (l *Logger) Fatal(args ...interface{}) {
+	if l.fatalToWarn {
+		l.delegate.Warn(args...)
+	} else {
+		l.delegate.Fatal(args...)
+	}
+}
+
+// Fatalln implements grpclog.LoggerV2.
+func (l *Logger) Fatalln(args ...interface{}) {
+	l.Fatal(args...)
+}
+
+// Fatalf implements grpclog.LoggerV2.
+func (l *Logger) Fatalf(format string, args ...interface{}) {
+	if l.fatalToWarn {
+		l.delegate.Warnf(format, args...)
+	} else {
+		l.delegate.Fatalf(format, args...)
+	}
+}
+
+// V implements grpclog.LoggerV2.
+func (l *Logger) V(level int) bool {
+	return l.delegate.Desugar().Core().Enabled(zapcore.Level(level))
 }
