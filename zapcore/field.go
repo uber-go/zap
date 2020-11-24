@@ -167,7 +167,7 @@ func (f Field) AddTo(enc ObjectEncoder) {
 	case StringerType:
 		err = encodeStringer(f.Key, f.Interface, enc)
 	case ErrorType:
-		encodeError(f.Key, f.Interface.(error), enc)
+		err = encodeError(f.Key, f.Interface.(error), enc)
 	case SkipType:
 		break
 	default:
