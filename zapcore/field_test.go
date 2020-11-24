@@ -80,6 +80,19 @@ func (o *obj) String() string {
 	return "obj"
 }
 
+type errObj struct {
+	kind   int
+	errMsg string
+}
+
+func (eobj *errObj) Error() string {
+	if eobj.kind == 1 {
+		panic("panic in Error() method")
+	} else {
+		return eobj.errMsg
+	}
+}
+
 func TestUnknownFieldType(t *testing.T) {
 	unknown := Field{Key: "k", String: "foo"}
 	assert.Equal(t, UnknownType, unknown.Type, "Expected zero value of FieldType to be UnknownType.")
@@ -102,6 +115,7 @@ func TestFieldAddingError(t *testing.T) {
 		{t: StringerType, iface: &obj{1}, want: empty, err: "PANIC=panic with string"},
 		{t: StringerType, iface: &obj{2}, want: empty, err: "PANIC=panic with error"},
 		{t: StringerType, iface: &obj{3}, want: empty, err: "PANIC=<nil>"},
+		{t: ErrorType, iface: &errObj{kind: 1}, want: empty, err: "PANIC=panic in Error() method"},
 	}
 	for _, tt := range tests {
 		f := Field{Key: "k", Interface: tt.iface, Type: tt.t}
@@ -150,6 +164,7 @@ func TestFields(t *testing.T) {
 		{t: SkipType, want: interface{}(nil)},
 		{t: StringerType, iface: (*url.URL)(nil), want: "<nil>"},
 		{t: StringerType, iface: (*users)(nil), want: "<nil>"},
+		{t: ErrorType, iface: (*errObj)(nil), want: "<nil>"},
 	}
 
 	for _, tt := range tests {
