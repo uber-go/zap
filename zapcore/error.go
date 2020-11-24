@@ -49,7 +49,7 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 	defer func() {
 		if rerr := recover(); rerr != nil {
 			// If it's a nil pointer, just say "<nil>". The likeliest causes are a
-			// Stringer that fails to guard against nil or a nil pointer for a
+			// error that fails to guard against nil or a nil pointer for a
 			// value receiver, and in either case, "<nil>" is a nice result.
 			if v := reflect.ValueOf(err); v.Kind() == reflect.Ptr && v.IsNil() {
 				enc.AddString(key, "<nil>")
@@ -65,7 +65,7 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 
 	switch e := err.(type) {
 	case errorGroup:
-		retErr = enc.AddArray(key+"Causes", errArray(e.Errors()))
+		return enc.AddArray(key+"Causes", errArray(e.Errors()))
 	case fmt.Formatter:
 		verbose := fmt.Sprintf("%+v", e)
 		if verbose != basic {
@@ -74,7 +74,7 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 			enc.AddString(key+"Verbose", verbose)
 		}
 	}
-	return retErr
+	return nil
 }
 
 type errorGroup interface {

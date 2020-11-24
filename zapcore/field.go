@@ -209,7 +209,7 @@ func encodeStringer(key string, stringer interface{}, enc ObjectEncoder) (retErr
 	// Try to capture panics (from nil references or otherwise) when calling
 	// the String() method, similar to https://golang.org/src/fmt/print.go#L540
 	defer func() {
-		if rerr := recover(); rerr != nil {
+		if err := recover(); err != nil {
 			// If it's a nil pointer, just say "<nil>". The likeliest causes are a
 			// Stringer that fails to guard against nil or a nil pointer for a
 			// value receiver, and in either case, "<nil>" is a nice result.
@@ -218,7 +218,7 @@ func encodeStringer(key string, stringer interface{}, enc ObjectEncoder) (retErr
 				return
 			}
 
-			retErr = fmt.Errorf("PANIC=%v", rerr)
+			retErr = fmt.Errorf("PANIC=%v", err)
 		}
 	}()
 
