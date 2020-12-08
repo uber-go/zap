@@ -123,6 +123,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Reflect", Field{Key: "k", Type: zapcore.ReflectType}, Reflect("k", nil)},
 		{"Stringer", Field{Key: "k", Type: zapcore.StringerType, Interface: addr}, Stringer("k", addr)},
 		{"Object", Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: name}, Object("k", name)},
+		{"InlineObject", Field{Type: zapcore.InlineObjectMarshalerType, Interface: name}, InlineObject(name)},
 		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
 		{"Any:ArrayMarshaler", Any("k", bools([]bool{true})), Array("k", bools([]bool{true}))},
 		{"Any:Stringer", Any("k", addr), Stringer("k", addr)},

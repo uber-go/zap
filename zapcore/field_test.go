@@ -111,6 +111,7 @@ func TestFieldAddingError(t *testing.T) {
 	}{
 		{t: ArrayMarshalerType, iface: users(-1), want: []interface{}{}, err: "too few users"},
 		{t: ObjectMarshalerType, iface: users(-1), want: map[string]interface{}{}, err: "too few users"},
+		{t: InlineObjectMarshalerType, iface: users(-1), want: nil, err: "too few users"},
 		{t: StringerType, iface: obj{}, want: empty, err: "PANIC=interface conversion: zapcore_test.obj is not fmt.Stringer: missing method String"},
 		{t: StringerType, iface: &obj{1}, want: empty, err: "PANIC=panic with string"},
 		{t: StringerType, iface: &obj{2}, want: empty, err: "PANIC=panic with error"},
@@ -136,7 +137,6 @@ func TestFields(t *testing.T) {
 	}{
 		{t: ArrayMarshalerType, iface: users(2), want: []interface{}{"user", "user"}},
 		{t: ObjectMarshalerType, iface: users(2), want: map[string]interface{}{"users": 2}},
-		{t: BinaryType, iface: []byte("foo"), want: []byte("foo")},
 		{t: BoolType, i: 0, want: false},
 		{t: ByteStringType, iface: []byte("foo"), want: "foo"},
 		{t: Complex128Type, iface: 1 + 2i, want: 1 + 2i},
@@ -178,6 +178,27 @@ func TestFields(t *testing.T) {
 
 		assert.True(t, f.Equals(f), "Field does not equal itself")
 	}
+}
+
+func TestInlineObjectMarshaler(t *testing.T) {
+	enc := NewMapObjectEncoder()
+
+	topLevelStr := Field{Key: "k", Type: StringType, String: "s"}
+	topLevelStr.AddTo(enc)
+
+	inlineObj := Field{Key: "ignored", Type: InlineObjectMarshalerType, Interface: users(10)}
+	inlineObj.AddTo(enc)
+
+	nestedObj := Field{Key: "nested", Type: ObjectMarshalerType, Interface: users(11)}
+	nestedObj.AddTo(enc)
+
+	assert.Equal(t, map[string]interface{}{
+		"k":     "s",
+		"users": 10,
+		"nested": map[string]interface{}{
+			"users": 11,
+		},
+	}, enc.Fields)
 }
 
 func TestEquals(t *testing.T) {

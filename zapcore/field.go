@@ -39,6 +39,9 @@ const (
 	ArrayMarshalerType
 	// ObjectMarshalerType indicates that the field carries an ObjectMarshaler.
 	ObjectMarshalerType
+	// InlineObjectMarshalerType indicates that the field carries an ObjectMarshaler
+	// that should be inlined.
+	InlineObjectMarshalerType
 	// BinaryType indicates that the field carries an opaque binary blob.
 	BinaryType
 	// BoolType indicates that the field carries a bool.
@@ -115,6 +118,8 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		err = enc.AddArray(f.Key, f.Interface.(ArrayMarshaler))
 	case ObjectMarshalerType:
 		err = enc.AddObject(f.Key, f.Interface.(ObjectMarshaler))
+	case InlineObjectMarshalerType:
+		err = f.Interface.(ObjectMarshaler).MarshalLogObject(enc)
 	case BinaryType:
 		enc.AddBinary(f.Key, f.Interface.([]byte))
 	case BoolType:

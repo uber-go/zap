@@ -165,6 +165,29 @@ func ExampleNamespace() {
 	// {"level":"info","msg":"tracked some metrics","metrics":{"counter":1}}
 }
 
+type request struct {
+	URL string
+	IP  string
+}
+
+func (r request) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("url", r.URL)
+	enc.AddString("ip", r.IP)
+	return nil
+}
+
+func ExampleObject() {
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	req := &request{"/test", "127.0.0.1"}
+	logger.Info("new request, in nested object", zap.Object("req", req))
+	logger.Info("new request, inline", zap.InlineObject(req))
+	// Output:
+	// {"level":"info","msg":"new request, in nested object","req":{"url":"/test","ip":"127.0.0.1"}}
+	// {"level":"info","msg":"new request, inline","url":"/test","ip":"127.0.0.1"}
+}
+
 func ExampleNewStdLog() {
 	logger := zap.NewExample()
 	defer logger.Sync()
