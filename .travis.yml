@@ -13,13 +13,10 @@ matrix:
   - go: oldstable
   - go: stable
     env: LINT=1
-# Adding code to run on  power systems    
   - arch: ppc64le
-    go: 1.13.x    
+    go: oldstable
   - arch: ppc64le
-    go: 1.14.x
-    env: LINT=1
-      
+    go: stable
 
 script:
   - test -z "$LINT" || make lint
