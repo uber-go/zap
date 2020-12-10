@@ -1,7 +1,5 @@
 language: go
-arch:
-    - amd64
-    - ppc64le
+
 sudo: false
 
 go_import_path: go.uber.org/zap
