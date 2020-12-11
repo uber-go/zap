@@ -42,14 +42,15 @@ type Logger struct {
 	core zapcore.Core
 
 	development bool
+	addCaller   bool
+	onFatal     zapcore.CheckWriteAction // default is WriteThenFatal
+
 	name        string
 	errorOutput zapcore.WriteSyncer
 
-	addCaller bool
-	addStack  zapcore.LevelEnabler
+	addStack zapcore.LevelEnabler
 
 	callerSkip int
-	onFatal    zapcore.CheckWriteAction // default is WriteThenFatal
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
