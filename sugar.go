@@ -225,7 +225,8 @@ func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interf
 	// Format with Sprint, Sprintf, or neither.
 	msg := template
 	if msg == "" && len(fmtArgs) > 0 {
-		msg = fmt.Sprint(fmtArgs...)
+		msg := fmt.Sprintln(args...)
+		msg = msg[:len(msg)-1]
 	} else if msg != "" && len(fmtArgs) > 0 {
 		msg = fmt.Sprintf(template, fmtArgs...)
 	}
