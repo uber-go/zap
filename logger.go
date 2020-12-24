@@ -26,6 +26,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"go.uber.org/zap/zapcore"
 )
@@ -309,7 +310,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	if log.addCaller {
 		frame, defined := getCallerFrame(log.callerSkip + callerSkipOffset)
 		if !defined {
-			fmt.Fprintf(log.errorOutput, "%v Logger.check error: failed to get caller\n", log.clock.Now().UTC())
+			fmt.Fprintf(log.errorOutput, "%v Logger.check error: failed to get caller\n", time.Now().UTC())
 			log.errorOutput.Sync()
 		}
 
