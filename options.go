@@ -138,3 +138,10 @@ func OnFatal(action zapcore.CheckWriteAction) Option {
 		log.onFatal = action
 	})
 }
+
+// WithClock configures the Logger to use Clock while creating entries.
+func WithClock(clock Clock) Option {
+	return optionFunc(func(log *Logger) {
+		log.clock = clock
+	})
+}
