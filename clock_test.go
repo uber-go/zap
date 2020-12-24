@@ -29,15 +29,13 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type constantClock struct {
-	now time.Time
-}
+type constantClock time.Time
 
-func (c constantClock) Now() time.Time { return c.now }
+func (c constantClock) Now() time.Time { return time.Time(c) }
 
 func TestWithClock(t *testing.T) {
 	date := time.Date(2077, 1, 23, 10, 15, 13, 441, time.UTC)
-	clock := constantClock{now: date}
+	clock := constantClock(date)
 	withLogger(t, DebugLevel, []Option{WithClock(clock)}, func(log *Logger, logs *observer.ObservedLogs) {
 		log.Info("")
 		require.Equal(t, 1, logs.Len(), "Expected only one log entry to be written.")
