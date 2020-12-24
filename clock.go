@@ -22,9 +22,9 @@ package zap
 
 import "time"
 
-// Clock represents time source.
+// Clock is a source of time for logged entries.
 type Clock interface {
-	// Now returns current time.
+	// Now returns the current local time.
 	Now() time.Time
 }
 
