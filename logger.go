@@ -72,7 +72,7 @@ func New(core zapcore.Core, options ...Option) *Logger {
 		core:        core,
 		errorOutput: zapcore.Lock(os.Stderr),
 		addStack:    zapcore.FatalLevel + 1,
-		clock:       systemClock{},
+		clock:       _systemClock,
 	}
 	return log.WithOptions(options...)
 }

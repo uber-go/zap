@@ -31,6 +31,8 @@ type Clock interface {
 // systemClock implements default Clock that uses system time.
 type systemClock struct{}
 
+var _systemClock Clock = systemClock{}
+
 func (systemClock) Now() time.Time {
 	return time.Now()
 }
