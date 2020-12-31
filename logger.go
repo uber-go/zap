@@ -250,6 +250,21 @@ func (log *Logger) Core() zapcore.Core {
 	return log.core
 }
 
+func (log *Logger) SetCore(core zapcore.Core) {
+	log.core = core
+}
+
+func (log *Logger) Clone() *Logger {
+	return log.clone()
+}
+
+func (log *Logger) CloneWithNewCore(core zapcore.Core) *Logger {
+	c := log.clone()
+	c.SetCore(core)
+
+	return c
+}
+
 func (log *Logger) clone() *Logger {
 	copy := *log
 	return &copy
