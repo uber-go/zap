@@ -131,17 +131,12 @@ func TestBufferWriter(t *testing.T) {
 		defer close()
 		requireWriteWorks(t, ws)
 		ztest.Sleep(10 * time.Millisecond)
-		bws := ws.(*bufferWriterSyncer)
-		bws.Lock()
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
-		bws.Unlock()
 
 		// flush twice to validate loop logic
 		requireWriteWorks(t, ws)
 		ztest.Sleep(10 * time.Millisecond)
-		bws.Lock()
 		assert.Equal(t, "foofoo", buf.String(), "Unexpected log string")
-		bws.Unlock()
 	})
 }
 
