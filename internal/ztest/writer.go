@@ -25,6 +25,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"strings"
+	"sync"
 )
 
 // A Syncer is a spy for the Sync portion of zapcore.WriteSyncer.
@@ -93,4 +94,29 @@ func (b *Buffer) Lines() []string {
 // stripped.
 func (b *Buffer) Stripped() string {
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// SyncBuffer is an implementation of bytes.Buffer which is goroutine safe.
+type SyncBuffer struct {
+	sync.RWMutex
+
+	buf bytes.Buffer
+}
+
+// Write appends the contents of p to the buffer, growing the buffer as
+// needed.
+func (b *SyncBuffer) Write(p []byte) (n int, err error) {
+	b.Lock()
+	defer b.Unlock()
+
+	return b.buf.Write(p)
+}
+
+// String returns the contents of the unread portion of the buffer
+// as a string.
+func (b *SyncBuffer) String() string {
+	b.RLock()
+	defer b.RUnlock()
+
+	return b.buf.String()
 }

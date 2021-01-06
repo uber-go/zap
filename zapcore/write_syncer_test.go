@@ -122,7 +122,7 @@ func TestBufferWriter(t *testing.T) {
 	})
 
 	t.Run("flush timer", func(t *testing.T) {
-		buf := &bytes.Buffer{}
+		buf := &ztest.SyncBuffer{}
 		ws, close := Buffer(AddSync(buf), 6, time.Microsecond)
 		defer close()
 		requireWriteWorks(t, ws)
