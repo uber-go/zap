@@ -117,7 +117,7 @@ func TestBufferWriter(t *testing.T) {
 	})
 
 	t.Run("flush error", func(t *testing.T) {
-		ws, close := Buffer(AddSync(&errorWriter{}), 4, time.Nanosecond)
+		ws, close := Buffer(AddSync(&errorWriter{}), 4, 0)
 		n, err := ws.Write([]byte("foo"))
 		require.NoError(t, err, "Unexpected error writing to WriteSyncer.")
 		require.Equal(t, 3, n, "Wrote an unexpected number of bytes.")
