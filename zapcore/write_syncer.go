@@ -111,11 +111,6 @@ const (
 // The buffer size defaults to 256 kB if set to zero.
 // The flush interval defaults to 30 seconds if set to zero.
 func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (_ WriteSyncer, close func() error) {
-	if _, ok := ws.(*bufferWriterSyncer); ok {
-		// no need to layer on another buffer
-		return ws, func() error { return nil }
-	}
-
 	if bufferSize == 0 {
 		bufferSize = _defaultBufferSize
 	}
