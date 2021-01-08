@@ -80,7 +80,7 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 			Method:       http.MethodPut,
 			ExpectedCode: http.StatusBadRequest,
 			ContentType:  "application/x-www-form-urlencoded",
-			Body:         "level",
+			Body:         "level=%",
 		},
 		"PUT JSON unspecified": {
 			Method:       http.MethodPut,
