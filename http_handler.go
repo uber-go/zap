@@ -23,7 +23,10 @@ package zap
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 
 	"go.uber.org/zap/zapcore"
 )
@@ -31,11 +34,36 @@ import (
 // ServeHTTP is a simple JSON endpoint that can report on or change the current
 // logging level.
 //
-// GET requests return a JSON description of the current logging level. PUT
-// requests change the logging level and expect a payload like:
+// GET
+//
+// The GET request returns a JSON description of the current logging level like:
 //   {"level":"info"}
 //
-// It's perfectly safe to change the logging level while a program is running.
+// PUT
+//
+// The PUT request changes the logging level. It is perfectly safe to change the
+// logging level while a program is running. Two content types are supported:
+//
+//    Content-Type: application/x-www-form-urlencoded
+//
+// With this content type, the request body is expected to be URL encoded like:
+//
+//    level=debug
+//
+// This is the default content type for a curl PUT request. An example curl
+// request could look like this:
+//
+//    curl -X PUT localhost:8080/log/level -d level=debug
+//
+// For any other content type, the payload is expected to be JSON encoded and
+// look like:
+//
+//   {"level":"info"}
+//
+// An example curl request could look like this:
+//
+//    curl -X PUT localhost:8080/log/level -H "Content-Type: application/json" -d '{"level":"debug"}'
+//
 func (lvl AtomicLevel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	type errorResponse struct {
 		Error string `json:"error"`
@@ -53,25 +81,44 @@ func (lvl AtomicLevel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		enc.Encode(payload{Level: &current})
 
 	case http.MethodPut:
-		var req payload
-
-		if errmess := func() string {
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				return fmt.Sprintf("Request body must be well-formed JSON: %v", err)
+		requestedLvl, err := func(body io.Reader) (*zapcore.Level, error) {
+			switch r.Header.Get("Content-Type") {
+			case "application/x-www-form-urlencoded":
+				pld, err := ioutil.ReadAll(body)
+				if err != nil {
+					return nil, err
+				}
+				values, err := url.ParseQuery(string(pld))
+				if err != nil {
+					return nil, err
+				}
+				lvl := values.Get("level")
+				if lvl == "" {
+					return nil, fmt.Errorf("must specify logging level")
+				}
+				var l zapcore.Level
+				if err := l.UnmarshalText([]byte(lvl)); err != nil {
+					return nil, err
+				}
+				return &l, nil
+			default:
+				var pld payload
+				if err := json.NewDecoder(r.Body).Decode(&pld); err != nil {
+					return nil, fmt.Errorf("malformed request body: %v", err)
+				}
+				if pld.Level == nil {
+					return nil, fmt.Errorf("must specify logging level")
+				}
+				return pld.Level, nil
 			}
-			if req.Level == nil {
-				return "Must specify a logging level."
-			}
-			return ""
-		}(); errmess != "" {
+		}(r.Body)
+		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			enc.Encode(errorResponse{Error: errmess})
+			enc.Encode(errorResponse{Error: err.Error()})
 			return
 		}
-
-		lvl.SetLevel(*req.Level)
-		enc.Encode(req)
-
+		lvl.SetLevel(*requestedLvl)
+		enc.Encode(payload{Level: requestedLvl})
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		enc.Encode(errorResponse{
