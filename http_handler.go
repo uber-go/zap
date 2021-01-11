@@ -69,60 +69,68 @@ func (lvl AtomicLevel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Error string `json:"error"`
 	}
 	type payload struct {
-		Level *zapcore.Level `json:"level"`
+		Level zapcore.Level `json:"level"`
 	}
 
 	enc := json.NewEncoder(w)
 
 	switch r.Method {
-
 	case http.MethodGet:
-		current := lvl.Level()
-		enc.Encode(payload{Level: &current})
-
+		enc.Encode(payload{Level: lvl.Level()})
 	case http.MethodPut:
-		requestedLvl, err := func(body io.Reader) (*zapcore.Level, error) {
-			switch r.Header.Get("Content-Type") {
-			case "application/x-www-form-urlencoded":
-				pld, err := ioutil.ReadAll(body)
-				if err != nil {
-					return nil, err
-				}
-				values, err := url.ParseQuery(string(pld))
-				if err != nil {
-					return nil, err
-				}
-				lvl := values.Get("level")
-				if lvl == "" {
-					return nil, fmt.Errorf("must specify logging level")
-				}
-				var l zapcore.Level
-				if err := l.UnmarshalText([]byte(lvl)); err != nil {
-					return nil, err
-				}
-				return &l, nil
-			default:
-				var pld payload
-				if err := json.NewDecoder(r.Body).Decode(&pld); err != nil {
-					return nil, fmt.Errorf("malformed request body: %v", err)
-				}
-				if pld.Level == nil {
-					return nil, fmt.Errorf("must specify logging level")
-				}
-				return pld.Level, nil
-			}
-		}(r.Body)
+		requestedLvl, err := lvl.decodePutRequest(r.Header.Get("Content-Type"), r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			enc.Encode(errorResponse{Error: err.Error()})
 			return
 		}
-		lvl.SetLevel(*requestedLvl)
-		enc.Encode(payload{Level: requestedLvl})
+		lvl.SetLevel(requestedLvl)
+		enc.Encode(payload{Level: lvl.Level()})
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		enc.Encode(errorResponse{
 			Error: "Only GET and PUT are supported.",
 		})
 	}
+}
+
+func (lvl AtomicLevel) decodePutRequest(contentType string, body io.Reader) (zapcore.Level, error) {
+	if contentType == "application/x-www-form-urlencoded" {
+		return lvl.decodePutURL(body)
+	}
+	return lvl.decodePutJSON(body)
+}
+
+func (lvl AtomicLevel) decodePutURL(body io.Reader) (zapcore.Level, error) {
+	pld, err := ioutil.ReadAll(body)
+	if err != nil {
+		return 0, err
+	}
+	values, err := url.ParseQuery(string(pld))
+	if err != nil {
+		return 0, err
+	}
+	lvlHeader := values.Get("level")
+	if lvlHeader == "" {
+		return 0, fmt.Errorf("must specify logging level")
+	}
+	var l zapcore.Level
+	if err := l.UnmarshalText([]byte(lvlHeader)); err != nil {
+		return 0, err
+	}
+	return l, nil
+}
+
+func (lvl AtomicLevel) decodePutJSON(body io.Reader) (zapcore.Level, error) {
+	var pld struct {
+		Level *zapcore.Level `json:"level"`
+	}
+	if err := json.NewDecoder(body).Decode(&pld); err != nil {
+		return 0, fmt.Errorf("malformed request body: %v", err)
+	}
+	if pld.Level == nil {
+		return 0, fmt.Errorf("must specify logging level")
+	}
+	return *pld.Level, nil
+
 }

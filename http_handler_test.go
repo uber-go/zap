@@ -35,97 +35,109 @@ import (
 )
 
 func TestAtomicLevelServeHTTP(t *testing.T) {
-	tests := map[string]struct {
-		Method        string
-		ContentType   string
-		Body          string
-		ExpectedCode  int
-		ExpectedLevel zapcore.Level
+	tests := []struct {
+		desc          string
+		method        string
+		contentType   string
+		body          string
+		expectedCode  int
+		expectedLevel zapcore.Level
 	}{
-		"GET": {
-			Method:        http.MethodGet,
-			ExpectedCode:  http.StatusOK,
-			ExpectedLevel: zap.InfoLevel,
+		{
+			desc:          "GET",
+			method:        http.MethodGet,
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.InfoLevel,
 		},
-		"PUT JSON": {
-			Method:        http.MethodPut,
-			ExpectedCode:  http.StatusOK,
-			ExpectedLevel: zap.WarnLevel,
-			Body:          `{"level":"warn"}`,
+		{
+			desc:          "PUT JSON",
+			method:        http.MethodPut,
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			body:          `{"level":"warn"}`,
 		},
-		"PUT URL encoded": {
-			Method:        http.MethodPut,
-			ExpectedCode:  http.StatusOK,
-			ExpectedLevel: zap.WarnLevel,
-			ContentType:   "application/x-www-form-urlencoded",
-			Body:          "level=warn",
+		{
+			desc:          "PUT URL encoded",
+			method:        http.MethodPut,
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			contentType:   "application/x-www-form-urlencoded",
+			body:          "level=warn",
 		},
-		"PUT JSON unrecognized": {
-			Method:       http.MethodPut,
-			ExpectedCode: http.StatusBadRequest,
-			Body:         `{"level":"unrecognized"}`,
+		{
+			desc:         "PUT JSON unrecognized",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			body:         `{"level":"unrecognized"}`,
 		},
-		"PUT URL encoded unrecognized": {
-			Method:       http.MethodPut,
-			ExpectedCode: http.StatusBadRequest,
-			ContentType:  "application/x-www-form-urlencoded",
-			Body:         "level=unrecognized",
+		{
+			desc:         "PUT URL encoded unrecognized",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			contentType:  "application/x-www-form-urlencoded",
+			body:         "level=unrecognized",
 		},
-		"PUT JSON malformed": {
-			Method:       http.MethodPut,
-			ExpectedCode: http.StatusBadRequest,
-			Body:         `{"level":"warn`,
+		{
+			desc:         "PUT JSON malformed",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			body:         `{"level":"warn`,
 		},
-		"PUT URL encoded malformed": {
-			Method:       http.MethodPut,
-			ExpectedCode: http.StatusBadRequest,
-			ContentType:  "application/x-www-form-urlencoded",
-			Body:         "level=%",
+		{
+			desc:         "PUT URL encoded malformed",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			contentType:  "application/x-www-form-urlencoded",
+			body:         "level=%",
 		},
-		"PUT JSON unspecified": {
-			Method:       http.MethodPut,
-			ExpectedCode: http.StatusBadRequest,
-			Body:         `{}`,
+		{
+			desc:         "PUT JSON unspecified",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			body:         `{}`,
 		},
-		"PUT URL encoded unspecified": {
-			Method:       http.MethodPut,
-			ExpectedCode: http.StatusBadRequest,
-			ContentType:  "application/x-www-form-urlencoded",
-			Body:         "",
+		{
+			desc:         "PUT URL encoded unspecified",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			contentType:  "application/x-www-form-urlencoded",
+			body:         "",
 		},
-		"POST JSON": {
-			Method:       http.MethodPost,
-			ExpectedCode: http.StatusMethodNotAllowed,
-			Body:         `{"level":"warn"}`,
+		{
+			desc:         "POST JSON",
+			method:       http.MethodPost,
+			expectedCode: http.StatusMethodNotAllowed,
+			body:         `{"level":"warn"}`,
 		},
-		"POST URL": {
-			Method:       http.MethodPost,
-			ExpectedCode: http.StatusMethodNotAllowed,
-			ContentType:  "application/x-www-form-urlencoded",
-			Body:         "level=warn",
+		{
+			desc:         "POST URL",
+			method:       http.MethodPost,
+			expectedCode: http.StatusMethodNotAllowed,
+			contentType:  "application/x-www-form-urlencoded",
+			body:         "level=warn",
 		},
 	}
 
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
 			lvl := zap.NewAtomicLevel()
 			lvl.SetLevel(zapcore.InfoLevel)
 
-			ts := httptest.NewServer(lvl)
-			defer ts.Close()
+			server := httptest.NewServer(lvl)
+			defer server.Close()
 
-			req, err := http.NewRequest(test.Method, ts.URL, strings.NewReader(test.Body))
+			req, err := http.NewRequest(tt.method, server.URL, strings.NewReader(tt.body))
 			require.NoError(t, err, "Error constructing %s request.", req.Method)
-			if test.ContentType != "" {
-				req.Header.Set("Content-Type", test.ContentType)
+			if tt.contentType != "" {
+				req.Header.Set("Content-Type", tt.contentType)
 			}
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err, "Error making %s request.", req.Method)
 			defer res.Body.Close()
 
-			require.Equal(t, test.ExpectedCode, res.StatusCode, "Unexpected status code.")
-			if test.ExpectedCode != http.StatusOK {
+			require.Equal(t, tt.expectedCode, res.StatusCode, "Unexpected status code.")
+			if tt.expectedCode != http.StatusOK {
 				// Don't need to test exact error message, but one should be present.
 				var pld struct {
 					Error string `json:"error"`
@@ -139,7 +151,7 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 				Level zapcore.Level `json:"level"`
 			}
 			require.NoError(t, json.NewDecoder(res.Body).Decode(&pld), "Decoding response body")
-			assert.Equal(t, test.ExpectedLevel, pld.Level, "Unexpected logging level returned")
+			assert.Equal(t, tt.expectedLevel, pld.Level, "Unexpected logging level returned")
 		})
 	}
 }
