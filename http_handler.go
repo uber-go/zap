@@ -78,7 +78,7 @@ func (lvl AtomicLevel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		enc.Encode(payload{Level: lvl.Level()})
 	case http.MethodPut:
-		requestedLvl, err := lvl.decodePutRequest(r.Header.Get("Content-Type"), r.Body)
+		requestedLvl, err := decodePutRequest(r.Header.Get("Content-Type"), r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			enc.Encode(errorResponse{Error: err.Error()})
@@ -94,14 +94,15 @@ func (lvl AtomicLevel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (lvl AtomicLevel) decodePutRequest(contentType string, body io.Reader) (zapcore.Level, error) {
+// Decodes incoming PUT requests and returns the requested logging level.
+func decodePutRequest(contentType string, body io.Reader) (zapcore.Level, error) {
 	if contentType == "application/x-www-form-urlencoded" {
-		return lvl.decodePutURL(body)
+		return decodePutURL(body)
 	}
-	return lvl.decodePutJSON(body)
+	return decodePutJSON(body)
 }
 
-func (lvl AtomicLevel) decodePutURL(body io.Reader) (zapcore.Level, error) {
+func decodePutURL(body io.Reader) (zapcore.Level, error) {
 	pld, err := ioutil.ReadAll(body)
 	if err != nil {
 		return 0, err
@@ -110,18 +111,18 @@ func (lvl AtomicLevel) decodePutURL(body io.Reader) (zapcore.Level, error) {
 	if err != nil {
 		return 0, err
 	}
-	lvlHeader := values.Get("level")
-	if lvlHeader == "" {
+	lvl := values.Get("level")
+	if lvl == "" {
 		return 0, fmt.Errorf("must specify logging level")
 	}
 	var l zapcore.Level
-	if err := l.UnmarshalText([]byte(lvlHeader)); err != nil {
+	if err := l.UnmarshalText([]byte(lvl)); err != nil {
 		return 0, err
 	}
 	return l, nil
 }
 
-func (lvl AtomicLevel) decodePutJSON(body io.Reader) (zapcore.Level, error) {
+func decodePutJSON(body io.Reader) (zapcore.Level, error) {
 	var pld struct {
 		Level *zapcore.Level `json:"level"`
 	}
