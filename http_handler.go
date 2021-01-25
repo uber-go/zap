@@ -24,9 +24,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
-	"net/url"
 
 	"go.uber.org/zap/zapcore"
 )
@@ -78,7 +76,7 @@ func (lvl AtomicLevel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		enc.Encode(payload{Level: lvl.Level()})
 	case http.MethodPut:
-		requestedLvl, err := decodePutRequest(r.Header.Get("Content-Type"), r.Body)
+		requestedLvl, err := decodePutRequest(r.Header.Get("Content-Type"), r)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			enc.Encode(errorResponse{Error: err.Error()})
@@ -95,23 +93,15 @@ func (lvl AtomicLevel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Decodes incoming PUT requests and returns the requested logging level.
-func decodePutRequest(contentType string, body io.Reader) (zapcore.Level, error) {
+func decodePutRequest(contentType string, r *http.Request) (zapcore.Level, error) {
 	if contentType == "application/x-www-form-urlencoded" {
-		return decodePutURL(body)
+		return decodePutURL(r)
 	}
-	return decodePutJSON(body)
+	return decodePutJSON(r.Body)
 }
 
-func decodePutURL(body io.Reader) (zapcore.Level, error) {
-	pld, err := ioutil.ReadAll(body)
-	if err != nil {
-		return 0, err
-	}
-	values, err := url.ParseQuery(string(pld))
-	if err != nil {
-		return 0, err
-	}
-	lvl := values.Get("level")
+func decodePutURL(r *http.Request) (zapcore.Level, error) {
+	lvl := r.FormValue("level")
 	if lvl == "" {
 		return 0, fmt.Errorf("must specify logging level")
 	}
