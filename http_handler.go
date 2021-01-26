@@ -44,13 +44,18 @@ import (
 //
 //    Content-Type: application/x-www-form-urlencoded
 //
-// With this content type, the request body is expected to be URL encoded like:
+// With this content type, the level can be provided through the request body or
+// a query parameter. The log level is URL encoded like:
 //
 //    level=debug
 //
-// This is the default content type for a curl PUT request. An example curl
-// request could look like this:
+// The request body takes precedence over the query parameter, if both are
+// specified.
 //
+// This content type is the default for a curl PUT request. Following are two
+// example curl requests that both set the logging level to debug.
+//
+//    curl -X PUT localhost:8080/log/level?level=debug
 //    curl -X PUT localhost:8080/log/level -d level=debug
 //
 // For any other content type, the payload is expected to be JSON encoded and

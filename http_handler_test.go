@@ -38,6 +38,7 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 	tests := []struct {
 		desc          string
 		method        string
+		query         string
 		contentType   string
 		body          string
 		expectedCode  int
@@ -65,6 +66,31 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 			body:          "level=warn",
 		},
 		{
+			desc:          "PUT query parameters",
+			method:        http.MethodPut,
+			query:         "?level=warn",
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			contentType:   "application/x-www-form-urlencoded",
+		},
+		{
+			desc:          "body takes precedence over query",
+			method:        http.MethodPut,
+			query:         "?level=info",
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			contentType:   "application/x-www-form-urlencoded",
+			body:          "level=warn",
+		},
+		{
+			desc:          "JSON ignores query",
+			method:        http.MethodPut,
+			query:         "?level=info",
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			body:          `{"level":"warn"}`,
+		},
+		{
 			desc:         "PUT JSON unrecognized",
 			method:       http.MethodPut,
 			expectedCode: http.StatusBadRequest,
@@ -85,6 +111,13 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 		},
 		{
 			desc:         "PUT URL encoded malformed",
+			method:       http.MethodPut,
+			query:        "?level=%",
+			expectedCode: http.StatusBadRequest,
+			contentType:  "application/x-www-form-urlencoded",
+		},
+		{
+			desc:         "PUT Query parameters malformed",
 			method:       http.MethodPut,
 			expectedCode: http.StatusBadRequest,
 			contentType:  "application/x-www-form-urlencoded",
@@ -126,7 +159,7 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 			server := httptest.NewServer(lvl)
 			defer server.Close()
 
-			req, err := http.NewRequest(tt.method, server.URL, strings.NewReader(tt.body))
+			req, err := http.NewRequest(tt.method, server.URL+tt.query, strings.NewReader(tt.body))
 			require.NoError(t, err, "Error constructing %s request.", req.Method)
 			if tt.contentType != "" {
 				req.Header.Set("Content-Type", tt.contentType)
