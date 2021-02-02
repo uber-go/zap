@@ -22,110 +22,169 @@ package zap_test
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	. "go.uber.org/zap"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func newHandler() (AtomicLevel, *Logger) {
-	lvl := NewAtomicLevel()
-	logger := New(zapcore.NewNopCore())
-	return lvl, logger
-}
+func TestAtomicLevelServeHTTP(t *testing.T) {
+	tests := []struct {
+		desc          string
+		method        string
+		query         string
+		contentType   string
+		body          string
+		expectedCode  int
+		expectedLevel zapcore.Level
+	}{
+		{
+			desc:          "GET",
+			method:        http.MethodGet,
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.InfoLevel,
+		},
+		{
+			desc:          "PUT JSON",
+			method:        http.MethodPut,
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			body:          `{"level":"warn"}`,
+		},
+		{
+			desc:          "PUT URL encoded",
+			method:        http.MethodPut,
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			contentType:   "application/x-www-form-urlencoded",
+			body:          "level=warn",
+		},
+		{
+			desc:          "PUT query parameters",
+			method:        http.MethodPut,
+			query:         "?level=warn",
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			contentType:   "application/x-www-form-urlencoded",
+		},
+		{
+			desc:          "body takes precedence over query",
+			method:        http.MethodPut,
+			query:         "?level=info",
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			contentType:   "application/x-www-form-urlencoded",
+			body:          "level=warn",
+		},
+		{
+			desc:          "JSON ignores query",
+			method:        http.MethodPut,
+			query:         "?level=info",
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			body:          `{"level":"warn"}`,
+		},
+		{
+			desc:         "PUT JSON unrecognized",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			body:         `{"level":"unrecognized"}`,
+		},
+		{
+			desc:         "PUT URL encoded unrecognized",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			contentType:  "application/x-www-form-urlencoded",
+			body:         "level=unrecognized",
+		},
+		{
+			desc:         "PUT JSON malformed",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			body:         `{"level":"warn`,
+		},
+		{
+			desc:         "PUT URL encoded malformed",
+			method:       http.MethodPut,
+			query:        "?level=%",
+			expectedCode: http.StatusBadRequest,
+			contentType:  "application/x-www-form-urlencoded",
+		},
+		{
+			desc:         "PUT Query parameters malformed",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			contentType:  "application/x-www-form-urlencoded",
+			body:         "level=%",
+		},
+		{
+			desc:         "PUT JSON unspecified",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			body:         `{}`,
+		},
+		{
+			desc:         "PUT URL encoded unspecified",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+			contentType:  "application/x-www-form-urlencoded",
+			body:         "",
+		},
+		{
+			desc:         "POST JSON",
+			method:       http.MethodPost,
+			expectedCode: http.StatusMethodNotAllowed,
+			body:         `{"level":"warn"}`,
+		},
+		{
+			desc:         "POST URL",
+			method:       http.MethodPost,
+			expectedCode: http.StatusMethodNotAllowed,
+			contentType:  "application/x-www-form-urlencoded",
+			body:         "level=warn",
+		},
+	}
 
-func assertCodeOK(t testing.TB, code int) {
-	assert.Equal(t, http.StatusOK, code, "Unexpected response status code.")
-}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			lvl := zap.NewAtomicLevel()
+			lvl.SetLevel(zapcore.InfoLevel)
 
-func assertCodeBadRequest(t testing.TB, code int) {
-	assert.Equal(t, http.StatusBadRequest, code, "Unexpected response status code.")
-}
+			server := httptest.NewServer(lvl)
+			defer server.Close()
 
-func assertCodeMethodNotAllowed(t testing.TB, code int) {
-	assert.Equal(t, http.StatusMethodNotAllowed, code, "Unexpected response status code.")
-}
+			req, err := http.NewRequest(tt.method, server.URL+tt.query, strings.NewReader(tt.body))
+			require.NoError(t, err, "Error constructing %s request.", req.Method)
+			if tt.contentType != "" {
+				req.Header.Set("Content-Type", tt.contentType)
+			}
 
-func assertResponse(t testing.TB, expectedLevel zapcore.Level, actualBody string) {
-	assert.Equal(t, fmt.Sprintf(`{"level":"%s"}`, expectedLevel)+"\n", actualBody, "Unexpected response body.")
-}
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err, "Error making %s request.", req.Method)
+			defer res.Body.Close()
 
-func assertJSONError(t testing.TB, body string) {
-	// Don't need to test exact error message, but one should be present.
-	var payload map[string]interface{}
-	require.NoError(t, json.Unmarshal([]byte(body), &payload), "Expected error response to be JSON.")
+			require.Equal(t, tt.expectedCode, res.StatusCode, "Unexpected status code.")
+			if tt.expectedCode != http.StatusOK {
+				// Don't need to test exact error message, but one should be present.
+				var pld struct {
+					Error string `json:"error"`
+				}
+				require.NoError(t, json.NewDecoder(res.Body).Decode(&pld), "Decoding response body")
+				assert.NotEmpty(t, pld.Error, "Expected an error message")
+				return
+			}
 
-	msg, ok := payload["error"]
-	require.True(t, ok, "Error message is an unexpected type.")
-	assert.NotEqual(t, "", msg, "Expected an error message in response.")
-}
-
-func makeRequest(t testing.TB, method string, handler http.Handler, reader io.Reader) (int, string) {
-	ts := httptest.NewServer(handler)
-	defer ts.Close()
-
-	req, err := http.NewRequest(method, ts.URL, reader)
-	require.NoError(t, err, "Error constructing %s request.", method)
-
-	res, err := http.DefaultClient.Do(req)
-	require.NoError(t, err, "Error making %s request.", method)
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-	require.NoError(t, err, "Error reading request body.")
-
-	return res.StatusCode, string(body)
-}
-
-func TestHTTPHandlerGetLevel(t *testing.T) {
-	lvl, _ := newHandler()
-	code, body := makeRequest(t, "GET", lvl, nil)
-	assertCodeOK(t, code)
-	assertResponse(t, lvl.Level(), body)
-}
-
-func TestHTTPHandlerPutLevel(t *testing.T) {
-	lvl, _ := newHandler()
-
-	code, body := makeRequest(t, "PUT", lvl, strings.NewReader(`{"level":"warn"}`))
-
-	assertCodeOK(t, code)
-	assertResponse(t, lvl.Level(), body)
-}
-
-func TestHTTPHandlerPutUnrecognizedLevel(t *testing.T) {
-	lvl, _ := newHandler()
-	code, body := makeRequest(t, "PUT", lvl, strings.NewReader(`{"level":"unrecognized-level"}`))
-	assertCodeBadRequest(t, code)
-	assertJSONError(t, body)
-}
-
-func TestHTTPHandlerNotJSON(t *testing.T) {
-	lvl, _ := newHandler()
-	code, body := makeRequest(t, "PUT", lvl, strings.NewReader(`{`))
-	assertCodeBadRequest(t, code)
-	assertJSONError(t, body)
-}
-
-func TestHTTPHandlerNoLevelSpecified(t *testing.T) {
-	lvl, _ := newHandler()
-	code, body := makeRequest(t, "PUT", lvl, strings.NewReader(`{}`))
-	assertCodeBadRequest(t, code)
-	assertJSONError(t, body)
-}
-
-func TestHTTPHandlerMethodNotAllowed(t *testing.T) {
-	lvl, _ := newHandler()
-	code, body := makeRequest(t, "POST", lvl, strings.NewReader(`{`))
-	assertCodeMethodNotAllowed(t, code)
-	assertJSONError(t, body)
+			var pld struct {
+				Level zapcore.Level `json:"level"`
+			}
+			require.NoError(t, json.NewDecoder(res.Body).Decode(&pld), "Decoding response body")
+			assert.Equal(t, tt.expectedLevel, pld.Level, "Unexpected logging level returned")
+		})
+	}
 }
