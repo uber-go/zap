@@ -21,6 +21,7 @@
 package zapgrpc
 
 import (
+	"fmt"
 	"testing"
 
 	"go.uber.org/zap"
@@ -33,87 +34,171 @@ import (
 func TestLoggerInfoExpected(t *testing.T) {
 	checkMessages(t, zapcore.DebugLevel, nil, zapcore.InfoLevel, []string{
 		"hello",
-		"world",
+		"hello world",
+		"",
 		"foo",
+		"foo bar",
 		"hello",
-		"world",
+		"hello world",
+		"",
 		"foo",
+		"foo bar",
 	}, func(logger *Logger) {
 		logger.Info("hello")
-		logger.Infof("world")
+		logger.Infof("%s world", "hello")
+		logger.Infoln()
 		logger.Infoln("foo")
+		logger.Infoln("foo", "bar")
 		logger.Print("hello")
-		logger.Printf("world")
+		logger.Printf("%s world", "hello")
+		logger.Println()
 		logger.Println("foo")
+		logger.Println("foo", "bar")
 	})
 }
 
 func TestLoggerDebugExpected(t *testing.T) {
 	checkMessages(t, zapcore.DebugLevel, []Option{WithDebug()}, zapcore.DebugLevel, []string{
 		"hello",
-		"world",
+		"hello world",
+		"",
 		"foo",
+		"foo bar",
 	}, func(logger *Logger) {
 		logger.Print("hello")
-		logger.Printf("world")
+		logger.Printf("%s world", "hello")
+		logger.Println()
 		logger.Println("foo")
+		logger.Println("foo", "bar")
 	})
 }
 
 func TestLoggerDebugSuppressed(t *testing.T) {
 	checkMessages(t, zapcore.InfoLevel, []Option{WithDebug()}, zapcore.DebugLevel, nil, func(logger *Logger) {
 		logger.Print("hello")
-		logger.Printf("world")
+		logger.Printf("%s world", "hello")
+		logger.Println()
 		logger.Println("foo")
+		logger.Println("foo", "bar")
 	})
 }
 
 func TestLoggerWarningExpected(t *testing.T) {
 	checkMessages(t, zapcore.DebugLevel, nil, zapcore.WarnLevel, []string{
 		"hello",
-		"world",
+		"hello world",
+		"",
 		"foo",
+		"foo bar",
 	}, func(logger *Logger) {
 		logger.Warning("hello")
-		logger.Warningf("world")
+		logger.Warningf("%s world", "hello")
+		logger.Warningln()
 		logger.Warningln("foo")
+		logger.Warningln("foo", "bar")
 	})
 }
 
 func TestLoggerErrorExpected(t *testing.T) {
 	checkMessages(t, zapcore.DebugLevel, nil, zapcore.ErrorLevel, []string{
 		"hello",
-		"world",
+		"hello world",
+		"",
 		"foo",
+		"foo bar",
 	}, func(logger *Logger) {
 		logger.Error("hello")
-		logger.Errorf("world")
+		logger.Errorf("%s world", "hello")
+		logger.Errorln()
 		logger.Errorln("foo")
+		logger.Errorln("foo", "bar")
 	})
 }
 
 func TestLoggerFatalExpected(t *testing.T) {
 	checkMessages(t, zapcore.DebugLevel, nil, zapcore.FatalLevel, []string{
 		"hello",
-		"world",
+		"hello world",
+		"",
 		"foo",
+		"foo bar",
 	}, func(logger *Logger) {
 		logger.Fatal("hello")
-		logger.Fatalf("world")
+		logger.Fatalf("%s world", "hello")
+		logger.Fatalln()
 		logger.Fatalln("foo")
+		logger.Fatalln("foo", "bar")
 	})
 }
 
 func TestLoggerVTrueExpected(t *testing.T) {
-	checkLevel(t, zapcore.DebugLevel, true, func(logger *Logger) bool {
-		return logger.V(0)
-	})
+	enabled := map[zapcore.Level][]int{
+		zapcore.DebugLevel: {
+			grpcLvlInfo, grpcLvlWarn, grpcLvlError, grpcLvlFatal,
+		},
+		zapcore.InfoLevel: {
+			grpcLvlInfo, grpcLvlWarn, grpcLvlError, grpcLvlFatal,
+		},
+		zapcore.WarnLevel: {
+			grpcLvlWarn, grpcLvlError, grpcLvlFatal,
+		},
+		zapcore.ErrorLevel: {
+			grpcLvlError, grpcLvlFatal,
+		},
+		zapcore.DPanicLevel: {
+			grpcLvlFatal,
+		},
+		zapcore.PanicLevel: {
+			grpcLvlFatal,
+		},
+		zapcore.FatalLevel: {
+			grpcLvlFatal,
+		},
+	}
+	for zapLvl, grpcLvls := range enabled {
+		for _, grpcLvl := range grpcLvls {
+			t.Run(fmt.Sprintf("%s %d", zapLvl, grpcLvl), func(t *testing.T) {
+				checkLevel(t, zapLvl, true, func(logger *Logger) bool {
+					return logger.V(grpcLvl)
+				})
+			})
+		}
+	}
 }
 
 func TestLoggerVFalseExpected(t *testing.T) {
-	checkLevel(t, zapcore.WarnLevel, false, func(logger *Logger) bool {
-		return logger.V(0)
-	})
+	disabled := map[zapcore.Level][]int{
+		zapcore.DebugLevel: {
+			// everything is enabled, nothing is disabled
+		},
+		zapcore.InfoLevel: {
+			// everything is enabled, nothing is disabled
+		},
+		zapcore.WarnLevel: {
+			grpcLvlInfo,
+		},
+		zapcore.ErrorLevel: {
+			grpcLvlInfo, grpcLvlWarn,
+		},
+		zapcore.DPanicLevel: {
+			grpcLvlInfo, grpcLvlWarn, grpcLvlError,
+		},
+		zapcore.PanicLevel: {
+			grpcLvlInfo, grpcLvlWarn, grpcLvlError,
+		},
+		zapcore.FatalLevel: {
+			grpcLvlInfo, grpcLvlWarn, grpcLvlError,
+		},
+	}
+	for zapLvl, grpcLvls := range disabled {
+		for _, grpcLvl := range grpcLvls {
+			t.Run(fmt.Sprintf("%s %d", zapLvl, grpcLvl), func(t *testing.T) {
+				checkLevel(t, zapLvl, false, func(logger *Logger) bool {
+					return logger.V(grpcLvl)
+				})
+			})
+		}
+	}
 }
 
 func checkLevel(
