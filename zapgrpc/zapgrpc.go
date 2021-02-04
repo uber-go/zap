@@ -26,9 +26,8 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// See https://github.com/grpc/grpc-go/blob/v1.35.0/grpclog/loggerv2.go#L77-L86
 const (
-	// See https://github.com/grpc/grpc-go/blob/v1.35.0/grpclog/loggerv2.go#L77-L86
-
 	grpcLvlInfo  = 0
 	grpcLvlWarn  = 1
 	grpcLvlError = 2
