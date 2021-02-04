@@ -35,9 +35,9 @@ const (
 )
 
 var (
-	// grpc2zapLvl maps gRPC log levels to zap log levels.
+	// _grpcToZapLevel maps gRPC log levels to zap log levels.
 	// See https://pkg.go.dev/go.uber.org/zap@v1.16.0/zapcore#Level
-	grpc2zapLvl = map[int]zapcore.Level{
+	_grpcToZapLevel = map[int]zapcore.Level{
 		grpcLvlInfo:  zapcore.InfoLevel,
 		grpcLvlWarn:  zapcore.WarnLevel,
 		grpcLvlError: zapcore.ErrorLevel,
@@ -182,7 +182,7 @@ func (l *Logger) Fatalf(format string, args ...interface{}) {
 
 // V implements grpclog.LoggerV2.
 func (l *Logger) V(level int) bool {
-	return l.delegate.Desugar().Core().Enabled(grpc2zapLvl[level])
+	return l.delegate.Desugar().Core().Enabled(_grpcToZapLevel[level])
 }
 
 // addSpaces always adds spaces between arguments like https://golang.org/pkg/fmt/#Println
