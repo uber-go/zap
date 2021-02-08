@@ -368,3 +368,11 @@ func TestSugarAddCallerFail(t *testing.T) {
 			"Expected original message to survive failures in runtime.Caller.")
 	})
 }
+
+func BenchmarkSugarSingleStrArg(b *testing.B) {
+	withSugar(b, InfoLevel, nil /* opts* */, func(log *SugaredLogger, logs *observer.ObservedLogs) {
+		for i := 0; i < b.N; i++ {
+			log.Info("hello world")
+		}
+	})
+}
