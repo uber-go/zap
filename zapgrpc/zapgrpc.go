@@ -72,6 +72,7 @@ func WithDebug() Option {
 func NewLogger(l *zap.Logger, options ...Option) *Logger {
 	logger := &Logger{
 		delegate:     l.Sugar(),
+		levelEnabler: l.Core(),
 		printToDebug: false,
 		fatalToWarn:  false,
 	}
@@ -84,6 +85,7 @@ func NewLogger(l *zap.Logger, options ...Option) *Logger {
 // Logger adapts zap's Logger to be compatible with grpclog.LoggerV2 and the deprecated grpclog.Logger.
 type Logger struct {
 	delegate     *zap.SugaredLogger
+	levelEnabler zapcore.LevelEnabler
 	printToDebug bool
 	fatalToWarn  bool
 }
@@ -112,11 +114,11 @@ func (l *Logger) Printf(format string, args ...interface{}) {
 // Deprecated: use Info().
 func (l *Logger) Println(args ...interface{}) {
 	if l.printToDebug {
-		if l.delegate.Desugar().Core().Enabled(zapcore.DebugLevel) {
+		if l.levelEnabler.Enabled(zapcore.DebugLevel) {
 			l.delegate.Debug(sprintln(args))
 		}
 	} else {
-		if l.delegate.Desugar().Core().Enabled(zapcore.InfoLevel) {
+		if l.levelEnabler.Enabled(zapcore.InfoLevel) {
 			l.delegate.Info(sprintln(args))
 		}
 	}
@@ -129,7 +131,7 @@ func (l *Logger) Info(args ...interface{}) {
 
 // Infoln implements grpclog.LoggerV2.
 func (l *Logger) Infoln(args ...interface{}) {
-	if l.delegate.Desugar().Core().Enabled(zapcore.InfoLevel) {
+	if l.levelEnabler.Enabled(zapcore.InfoLevel) {
 		l.delegate.Info(sprintln(args))
 	}
 }
@@ -146,7 +148,7 @@ func (l *Logger) Warning(args ...interface{}) {
 
 // Warningln implements grpclog.LoggerV2.
 func (l *Logger) Warningln(args ...interface{}) {
-	if l.delegate.Desugar().Core().Enabled(zapcore.WarnLevel) {
+	if l.levelEnabler.Enabled(zapcore.WarnLevel) {
 		l.delegate.Warn(sprintln(args))
 	}
 }
@@ -163,7 +165,7 @@ func (l *Logger) Error(args ...interface{}) {
 
 // Errorln implements grpclog.LoggerV2.
 func (l *Logger) Errorln(args ...interface{}) {
-	if l.delegate.Desugar().Core().Enabled(zapcore.ErrorLevel) {
+	if l.levelEnabler.Enabled(zapcore.ErrorLevel) {
 		l.delegate.Error(sprintln(args))
 	}
 }
@@ -185,11 +187,11 @@ func (l *Logger) Fatal(args ...interface{}) {
 // Fatalln implements grpclog.LoggerV2.
 func (l *Logger) Fatalln(args ...interface{}) {
 	if l.fatalToWarn {
-		if l.delegate.Desugar().Core().Enabled(zapcore.WarnLevel) {
+		if l.levelEnabler.Enabled(zapcore.WarnLevel) {
 			l.delegate.Warn(sprintln(args))
 		}
 	} else {
-		if l.delegate.Desugar().Core().Enabled(zapcore.FatalLevel) {
+		if l.levelEnabler.Enabled(zapcore.FatalLevel) {
 			l.delegate.Fatal(sprintln(args))
 		}
 	}
@@ -206,7 +208,7 @@ func (l *Logger) Fatalf(format string, args ...interface{}) {
 
 // V implements grpclog.LoggerV2.
 func (l *Logger) V(level int) bool {
-	return l.delegate.Desugar().Core().Enabled(_grpcToZapLevel[level])
+	return l.levelEnabler.Enabled(_grpcToZapLevel[level])
 }
 
 func sprintln(args []interface{}) string {
