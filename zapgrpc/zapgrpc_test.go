@@ -155,69 +155,59 @@ func TestLoggerFatalExpected(t *testing.T) {
 	})
 }
 
-func TestLoggerVTrueExpected(t *testing.T) {
-	enabled := map[zapcore.Level][]int{
-		zapcore.DebugLevel: {
-			grpcLvlInfo, grpcLvlWarn, grpcLvlError, grpcLvlFatal,
+func TestLoggerV(t *testing.T) {
+	tests := []struct {
+		zapLevel     zapcore.Level
+		grpcEnabled  []int
+		grpcDisabled []int
+	}{
+		{
+			zapLevel:     zapcore.DebugLevel,
+			grpcEnabled:  []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError, grpcLvlFatal},
+			grpcDisabled: []int{}, // everything is enabled, nothing is disabled
 		},
-		zapcore.InfoLevel: {
-			grpcLvlInfo, grpcLvlWarn, grpcLvlError, grpcLvlFatal,
+		{
+			zapLevel:     zapcore.InfoLevel,
+			grpcEnabled:  []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError, grpcLvlFatal},
+			grpcDisabled: []int{}, // everything is enabled, nothing is disabled
 		},
-		zapcore.WarnLevel: {
-			grpcLvlWarn, grpcLvlError, grpcLvlFatal,
+		{
+			zapLevel:     zapcore.WarnLevel,
+			grpcEnabled:  []int{grpcLvlWarn, grpcLvlError, grpcLvlFatal},
+			grpcDisabled: []int{grpcLvlInfo},
 		},
-		zapcore.ErrorLevel: {
-			grpcLvlError, grpcLvlFatal,
+		{
+			zapLevel:     zapcore.ErrorLevel,
+			grpcEnabled:  []int{grpcLvlError, grpcLvlFatal},
+			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn},
 		},
-		zapcore.DPanicLevel: {
-			grpcLvlFatal,
+		{
+			zapLevel:     zapcore.DPanicLevel,
+			grpcEnabled:  []int{grpcLvlFatal},
+			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError},
 		},
-		zapcore.PanicLevel: {
-			grpcLvlFatal,
+		{
+			zapLevel:     zapcore.PanicLevel,
+			grpcEnabled:  []int{grpcLvlFatal},
+			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError},
 		},
-		zapcore.FatalLevel: {
-			grpcLvlFatal,
+		{
+			zapLevel:     zapcore.FatalLevel,
+			grpcEnabled:  []int{grpcLvlFatal},
+			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError},
 		},
 	}
-	for zapLvl, grpcLvls := range enabled {
-		for _, grpcLvl := range grpcLvls {
-			t.Run(fmt.Sprintf("%s %d", zapLvl, grpcLvl), func(t *testing.T) {
-				checkLevel(t, zapLvl, true, func(logger *Logger) bool {
+	for _, tst := range tests {
+		for _, grpcLvl := range tst.grpcEnabled {
+			t.Run(fmt.Sprintf("enabled %s %d", tst.zapLevel, grpcLvl), func(t *testing.T) {
+				checkLevel(t, tst.zapLevel, true, func(logger *Logger) bool {
 					return logger.V(grpcLvl)
 				})
 			})
 		}
-	}
-}
-
-func TestLoggerVFalseExpected(t *testing.T) {
-	disabled := map[zapcore.Level][]int{
-		zapcore.DebugLevel: {
-			// everything is enabled, nothing is disabled
-		},
-		zapcore.InfoLevel: {
-			// everything is enabled, nothing is disabled
-		},
-		zapcore.WarnLevel: {
-			grpcLvlInfo,
-		},
-		zapcore.ErrorLevel: {
-			grpcLvlInfo, grpcLvlWarn,
-		},
-		zapcore.DPanicLevel: {
-			grpcLvlInfo, grpcLvlWarn, grpcLvlError,
-		},
-		zapcore.PanicLevel: {
-			grpcLvlInfo, grpcLvlWarn, grpcLvlError,
-		},
-		zapcore.FatalLevel: {
-			grpcLvlInfo, grpcLvlWarn, grpcLvlError,
-		},
-	}
-	for zapLvl, grpcLvls := range disabled {
-		for _, grpcLvl := range grpcLvls {
-			t.Run(fmt.Sprintf("%s %d", zapLvl, grpcLvl), func(t *testing.T) {
-				checkLevel(t, zapLvl, false, func(logger *Logger) bool {
+		for _, grpcLvl := range tst.grpcDisabled {
+			t.Run(fmt.Sprintf("disabled %s %d", tst.zapLevel, grpcLvl), func(t *testing.T) {
+				checkLevel(t, tst.zapLevel, false, func(logger *Logger) bool {
 					return logger.V(grpcLvl)
 				})
 			})
