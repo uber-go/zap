@@ -22,6 +22,8 @@
 package zapgrpc // import "go.uber.org/zap/zapgrpc"
 
 import (
+	"fmt"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -109,7 +111,15 @@ func (l *Logger) Printf(format string, args ...interface{}) {
 // Println implements grpclog.Logger.
 // Deprecated: use Info().
 func (l *Logger) Println(args ...interface{}) {
-	l.Print(addSpaces(args)...)
+	if l.printToDebug {
+		if l.delegate.Desugar().Core().Enabled(zapcore.DebugLevel) {
+			l.delegate.Debug(sprintln(args))
+		}
+	} else {
+		if l.delegate.Desugar().Core().Enabled(zapcore.InfoLevel) {
+			l.delegate.Info(sprintln(args))
+		}
+	}
 }
 
 // Info implements grpclog.LoggerV2.
@@ -119,7 +129,9 @@ func (l *Logger) Info(args ...interface{}) {
 
 // Infoln implements grpclog.LoggerV2.
 func (l *Logger) Infoln(args ...interface{}) {
-	l.delegate.Info(addSpaces(args)...)
+	if l.delegate.Desugar().Core().Enabled(zapcore.InfoLevel) {
+		l.delegate.Info(sprintln(args))
+	}
 }
 
 // Infof implements grpclog.LoggerV2.
@@ -134,7 +146,9 @@ func (l *Logger) Warning(args ...interface{}) {
 
 // Warningln implements grpclog.LoggerV2.
 func (l *Logger) Warningln(args ...interface{}) {
-	l.delegate.Warn(addSpaces(args)...)
+	if l.delegate.Desugar().Core().Enabled(zapcore.WarnLevel) {
+		l.delegate.Warn(sprintln(args))
+	}
 }
 
 // Warningf implements grpclog.LoggerV2.
@@ -149,7 +163,9 @@ func (l *Logger) Error(args ...interface{}) {
 
 // Errorln implements grpclog.LoggerV2.
 func (l *Logger) Errorln(args ...interface{}) {
-	l.delegate.Error(addSpaces(args)...)
+	if l.delegate.Desugar().Core().Enabled(zapcore.ErrorLevel) {
+		l.delegate.Error(sprintln(args))
+	}
 }
 
 // Errorf implements grpclog.LoggerV2.
@@ -168,7 +184,15 @@ func (l *Logger) Fatal(args ...interface{}) {
 
 // Fatalln implements grpclog.LoggerV2.
 func (l *Logger) Fatalln(args ...interface{}) {
-	l.Fatal(addSpaces(args)...)
+	if l.fatalToWarn {
+		if l.delegate.Desugar().Core().Enabled(zapcore.WarnLevel) {
+			l.delegate.Warn(sprintln(args))
+		}
+	} else {
+		if l.delegate.Desugar().Core().Enabled(zapcore.FatalLevel) {
+			l.delegate.Fatal(sprintln(args))
+		}
+	}
 }
 
 // Fatalf implements grpclog.LoggerV2.
@@ -185,21 +209,7 @@ func (l *Logger) V(level int) bool {
 	return l.delegate.Desugar().Core().Enabled(_grpcToZapLevel[level])
 }
 
-// addSpaces always adds spaces between arguments like https://golang.org/pkg/fmt/#Println
-func addSpaces(args []interface{}) []interface{} {
-	l := len(args)
-	if l == 0 || l == 1 {
-		return args
-	}
-	res := make([]interface{}, 0, l+l-1)
-	first := true
-	for _, arg := range args {
-		if first {
-			first = false
-			res = append(res, arg)
-		} else {
-			res = append(res, " ", arg)
-		}
-	}
-	return res
+func sprintln(args []interface{}) string {
+	s := fmt.Sprintln(args...)
+	return s[:len(s)-1]
 }
