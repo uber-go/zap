@@ -213,5 +213,6 @@ func (l *Logger) V(level int) bool {
 
 func sprintln(args []interface{}) string {
 	s := fmt.Sprintln(args...)
+	// Drop the new line character added by Sprintln 
 	return s[:len(s)-1]
 }
