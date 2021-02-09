@@ -34,42 +34,54 @@ import (
 func TestLoggerInfoExpected(t *testing.T) {
 	checkMessages(t, zapcore.DebugLevel, nil, zapcore.InfoLevel, []string{
 		"hello",
+		"s1s21 2 3s34s56",
 		"hello world",
 		"",
 		"foo",
 		"foo bar",
+		"s1 s2 1 2 3 s3 4 s5 6",
 		"hello",
+		"s1s21 2 3s34s56",
 		"hello world",
 		"",
 		"foo",
 		"foo bar",
+		"s1 s2 1 2 3 s3 4 s5 6",
 	}, func(logger *Logger) {
 		logger.Info("hello")
+		logger.Info("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
 		logger.Infof("%s world", "hello")
 		logger.Infoln()
 		logger.Infoln("foo")
 		logger.Infoln("foo", "bar")
+		logger.Infoln("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
 		logger.Print("hello")
+		logger.Print("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
 		logger.Printf("%s world", "hello")
 		logger.Println()
 		logger.Println("foo")
 		logger.Println("foo", "bar")
+		logger.Println("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
 	})
 }
 
 func TestLoggerDebugExpected(t *testing.T) {
 	checkMessages(t, zapcore.DebugLevel, []Option{WithDebug()}, zapcore.DebugLevel, []string{
 		"hello",
+		"s1s21 2 3s34s56",
 		"hello world",
 		"",
 		"foo",
 		"foo bar",
+		"s1 s2 1 2 3 s3 4 s5 6",
 	}, func(logger *Logger) {
 		logger.Print("hello")
+		logger.Print("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
 		logger.Printf("%s world", "hello")
 		logger.Println()
 		logger.Println("foo")
 		logger.Println("foo", "bar")
+		logger.Println("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
 	})
 }
 
@@ -86,48 +98,60 @@ func TestLoggerDebugSuppressed(t *testing.T) {
 func TestLoggerWarningExpected(t *testing.T) {
 	checkMessages(t, zapcore.DebugLevel, nil, zapcore.WarnLevel, []string{
 		"hello",
+		"s1s21 2 3s34s56",
 		"hello world",
 		"",
 		"foo",
 		"foo bar",
+		"s1 s2 1 2 3 s3 4 s5 6",
 	}, func(logger *Logger) {
 		logger.Warning("hello")
+		logger.Warning("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
 		logger.Warningf("%s world", "hello")
 		logger.Warningln()
 		logger.Warningln("foo")
 		logger.Warningln("foo", "bar")
+		logger.Warningln("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
 	})
 }
 
 func TestLoggerErrorExpected(t *testing.T) {
 	checkMessages(t, zapcore.DebugLevel, nil, zapcore.ErrorLevel, []string{
 		"hello",
+		"s1s21 2 3s34s56",
 		"hello world",
 		"",
 		"foo",
 		"foo bar",
+		"s1 s2 1 2 3 s3 4 s5 6",
 	}, func(logger *Logger) {
 		logger.Error("hello")
+		logger.Error("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
 		logger.Errorf("%s world", "hello")
 		logger.Errorln()
 		logger.Errorln("foo")
 		logger.Errorln("foo", "bar")
+		logger.Errorln("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
 	})
 }
 
 func TestLoggerFatalExpected(t *testing.T) {
 	checkMessages(t, zapcore.DebugLevel, nil, zapcore.FatalLevel, []string{
 		"hello",
+		"s1s21 2 3s34s56",
 		"hello world",
 		"",
 		"foo",
 		"foo bar",
+		"s1 s2 1 2 3 s3 4 s5 6",
 	}, func(logger *Logger) {
 		logger.Fatal("hello")
+		logger.Fatal("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
 		logger.Fatalf("%s world", "hello")
 		logger.Fatalln()
 		logger.Fatalln("foo")
 		logger.Fatalln("foo", "bar")
+		logger.Fatalln("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
 	})
 }
 
