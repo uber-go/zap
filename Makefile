@@ -7,7 +7,7 @@ BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 # Directories containing independent Go modules.
 #
 # We track coverage only for the main module.
-MODULE_DIRS = . ./benchmarks
+MODULE_DIRS = . ./benchmarks ./zapgrpc/internal/test
 
 # Many Go tools take file globs or directories as arguments instead of packages.
 GO_FILES := $(shell \
