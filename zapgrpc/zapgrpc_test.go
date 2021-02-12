@@ -261,11 +261,3 @@ func withLogger(
 	core, observedLogs := observer.New(enab)
 	f(NewLogger(zap.New(core), append(opts, withWarn())...), observedLogs)
 }
-
-// withWarn redirects the fatal level to the warn level, which makes testing
-// easier.
-func withWarn() Option {
-	return optionFunc(func(logger *Logger) {
-		logger.fatalToWarn = true
-	})
-}

@@ -64,7 +64,25 @@ func (f optionFunc) apply(log *Logger) {
 // Deprecated: use grpclog.SetLoggerV2() for v2 API.
 func WithDebug() Option {
 	return optionFunc(func(logger *Logger) {
-		logger.printToDebug = true
+		logger.print = &printer{
+			enab:   logger.levelEnabler,
+			level:  zapcore.DebugLevel,
+			print:  logger.delegate.Debug,
+			printf: logger.delegate.Debugf,
+		}
+	})
+}
+
+// withWarn redirects the fatal level to the warn level, which makes testing
+// easier. This is intentionally unexported.
+func withWarn() Option {
+	return optionFunc(func(logger *Logger) {
+		logger.fatal = &printer{
+			enab:   logger.levelEnabler,
+			level:  zapcore.WarnLevel,
+			print:  logger.delegate.Warn,
+			printf: logger.delegate.Warnf,
+		}
 	})
 }
 
@@ -73,8 +91,18 @@ func NewLogger(l *zap.Logger, options ...Option) *Logger {
 	logger := &Logger{
 		delegate:     l.Sugar(),
 		levelEnabler: l.Core(),
-		printToDebug: false,
-		fatalToWarn:  false,
+	}
+	logger.print = &printer{
+		enab:   logger.levelEnabler,
+		level:  zapcore.InfoLevel,
+		print:  logger.delegate.Info,
+		printf: logger.delegate.Infof,
+	}
+	logger.fatal = &printer{
+		enab:   logger.levelEnabler,
+		level:  zapcore.FatalLevel,
+		print:  logger.delegate.Fatal,
+		printf: logger.delegate.Fatalf,
 	}
 	for _, option := range options {
 		option.apply(logger)
@@ -82,46 +110,57 @@ func NewLogger(l *zap.Logger, options ...Option) *Logger {
 	return logger
 }
 
+// printer implements Print, Printf, and Println operations for a Zap level.
+//
+// We use it to customize Debug vs Info, and Warn vs Fatal for Print and Fatal
+// respectively.
+type printer struct {
+	enab   zapcore.LevelEnabler
+	level  zapcore.Level
+	print  func(...interface{})
+	printf func(string, ...interface{})
+}
+
+func (v *printer) Print(args ...interface{}) {
+	v.print(args...)
+}
+
+func (v *printer) Printf(format string, args ...interface{}) {
+	v.printf(format, args...)
+}
+
+func (v *printer) Println(args ...interface{}) {
+	if v.enab.Enabled(v.level) {
+		v.print(sprintln(args))
+	}
+}
+
 // Logger adapts zap's Logger to be compatible with grpclog.LoggerV2 and the deprecated grpclog.Logger.
 type Logger struct {
 	delegate     *zap.SugaredLogger
 	levelEnabler zapcore.LevelEnabler
-	printToDebug bool
-	fatalToWarn  bool
+	print        *printer
+	fatal        *printer
+	// printToDebug bool
+	// fatalToWarn  bool
 }
 
 // Print implements grpclog.Logger.
 // Deprecated: use Info().
 func (l *Logger) Print(args ...interface{}) {
-	if l.printToDebug {
-		l.delegate.Debug(args...)
-	} else {
-		l.delegate.Info(args...)
-	}
+	l.print.Print(args...)
 }
 
 // Printf implements grpclog.Logger.
 // Deprecated: use Infof().
 func (l *Logger) Printf(format string, args ...interface{}) {
-	if l.printToDebug {
-		l.delegate.Debugf(format, args...)
-	} else {
-		l.delegate.Infof(format, args...)
-	}
+	l.print.Printf(format, args...)
 }
 
 // Println implements grpclog.Logger.
 // Deprecated: use Info().
 func (l *Logger) Println(args ...interface{}) {
-	if l.printToDebug {
-		if l.levelEnabler.Enabled(zapcore.DebugLevel) {
-			l.delegate.Debug(sprintln(args))
-		}
-	} else {
-		if l.levelEnabler.Enabled(zapcore.InfoLevel) {
-			l.delegate.Info(sprintln(args))
-		}
-	}
+	l.print.Println(args...)
 }
 
 // Info implements grpclog.LoggerV2.
@@ -177,33 +216,17 @@ func (l *Logger) Errorf(format string, args ...interface{}) {
 
 // Fatal implements grpclog.LoggerV2.
 func (l *Logger) Fatal(args ...interface{}) {
-	if l.fatalToWarn {
-		l.delegate.Warn(args...)
-	} else {
-		l.delegate.Fatal(args...)
-	}
+	l.fatal.Print(args...)
 }
 
 // Fatalln implements grpclog.LoggerV2.
 func (l *Logger) Fatalln(args ...interface{}) {
-	if l.fatalToWarn {
-		if l.levelEnabler.Enabled(zapcore.WarnLevel) {
-			l.delegate.Warn(sprintln(args))
-		}
-	} else {
-		if l.levelEnabler.Enabled(zapcore.FatalLevel) {
-			l.delegate.Fatal(sprintln(args))
-		}
-	}
+	l.fatal.Println(args...)
 }
 
 // Fatalf implements grpclog.LoggerV2.
 func (l *Logger) Fatalf(format string, args ...interface{}) {
-	if l.fatalToWarn {
-		l.delegate.Warnf(format, args...)
-	} else {
-		l.delegate.Fatalf(format, args...)
-	}
+	l.fatal.Printf(format, args...)
 }
 
 // V implements grpclog.LoggerV2.
