@@ -20,7 +20,7 @@
 
 // +build tools
 
-package zap
+package tools
 
 import (
 	// Tools we use during development.

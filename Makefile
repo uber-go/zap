@@ -35,10 +35,10 @@ lint: $(GOLINT) $(STATICCHECK)
 	@[ ! -s lint.log ]
 
 $(GOLINT):
-	go install golang.org/x/lint/golint
+	cd tools && go install golang.org/x/lint/golint
 
 $(STATICCHECK):
-	go install honnef.co/go/tools/cmd/staticcheck
+	cd tools && go install honnef.co/go/tools/cmd/staticcheck
 
 .PHONY: test
 test:
