@@ -26,6 +26,9 @@ import (
 )
 
 const (
+	// NoneLevel logs are meant to be surpressed/muted, instead of configuring
+	// DebugLevel to be used for this.
+	NoneLevel = zapcore.NoneLevel
 	// DebugLevel logs are typically voluminous, and are usually disabled in
 	// production.
 	DebugLevel = zapcore.DebugLevel

@@ -32,6 +32,9 @@ var errUnmarshalNilLevel = errors.New("can't unmarshal a nil *Level")
 type Level int8
 
 const (
+	// NoneLevel logs are meant to be surpressed/muted, instead of configuring
+	// DebugLevel to be used for this.
+	NoneLevel Level = iota - 10
 	// DebugLevel logs are typically voluminous, and are usually disabled in
 	// production.
 	DebugLevel Level = iota - 1
@@ -51,7 +54,7 @@ const (
 	// FatalLevel logs a message, then calls os.Exit(1).
 	FatalLevel
 
-	_minLevel = DebugLevel
+	_minLevel = NoneLevel
 	_maxLevel = FatalLevel
 )
 
