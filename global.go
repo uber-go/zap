@@ -139,6 +139,8 @@ func redirectStdLogAt(l *Logger, level zapcore.Level) (func(), error) {
 
 func levelToFunc(logger *Logger, lvl zapcore.Level) (func(string, ...Field), error) {
 	switch lvl {
+	case NoneLevel:
+		return logger.None, nil
 	case DebugLevel:
 		return logger.Debug, nil
 	case InfoLevel:

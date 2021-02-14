@@ -111,7 +111,7 @@ func (lvl AtomicLevel) String() string {
 }
 
 // UnmarshalText unmarshals the text to an AtomicLevel. It uses the same text
-// representations as the static zapcore.Levels ("debug", "info", "warn",
+// representations as the static zapcore.Levels ("none", "debug", "info", "warn",
 // "error", "dpanic", "panic", and "fatal").
 func (lvl *AtomicLevel) UnmarshalText(text []byte) error {
 	if lvl.l == nil {
@@ -128,7 +128,7 @@ func (lvl *AtomicLevel) UnmarshalText(text []byte) error {
 }
 
 // MarshalText marshals the AtomicLevel to a byte slice. It uses the same
-// text representation as the static zapcore.Levels ("debug", "info", "warn",
+// text representation as the static zapcore.Levels ("none", "debug", "info", "warn",
 // "error", "dpanic", "panic", and "fatal").
 func (lvl AtomicLevel) MarshalText() (text []byte, err error) {
 	return lvl.Level().MarshalText()

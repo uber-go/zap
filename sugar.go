@@ -92,6 +92,11 @@ func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
 	return &SugaredLogger{base: s.base.With(s.sweetenFields(args)...)}
 }
 
+// None uses fmt.Sprint to construct and log a message.
+func (s *SugaredLogger) None(args ...interface{}) {
+	s.log(NoneLevel, "", args, nil)
+}
+
 // Debug uses fmt.Sprint to construct and log a message.
 func (s *SugaredLogger) Debug(args ...interface{}) {
 	s.log(DebugLevel, "", args, nil)
