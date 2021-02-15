@@ -133,6 +133,11 @@ func (s *SugaredLogger) Fatal(args ...interface{}) {
 	s.log(FatalLevel, "", args, nil)
 }
 
+// Nonef uses fmt.Sprintf to log a templated message.
+func (s *SugaredLogger) Nonef(template string, args ...interface{}) {
+	s.log(NoneLevel, template, args, nil)
+}
+
 // Debugf uses fmt.Sprintf to log a templated message.
 func (s *SugaredLogger) Debugf(template string, args ...interface{}) {
 	s.log(DebugLevel, template, args, nil)
@@ -167,6 +172,12 @@ func (s *SugaredLogger) Panicf(template string, args ...interface{}) {
 // Fatalf uses fmt.Sprintf to log a templated message, then calls os.Exit.
 func (s *SugaredLogger) Fatalf(template string, args ...interface{}) {
 	s.log(FatalLevel, template, args, nil)
+}
+
+// Nonew logs a message with some additional context. The variadic key-value
+// pairs are treated as they are in With.
+func (s *SugaredLogger) Nonew(msg string, keysAndValues ...interface{}) {
+	s.log(NoneLevel, msg, nil, keysAndValues)
 }
 
 // Debugw logs a message with some additional context. The variadic key-value

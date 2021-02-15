@@ -175,6 +175,7 @@ func TestSugarStructuredLogging(t *testing.T) {
 
 	for _, tt := range tests {
 		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+			logger.With(context...).Nonew(tt.msg, extra...)
 			logger.With(context...).Debugw(tt.msg, extra...)
 			logger.With(context...).Infow(tt.msg, extra...)
 			logger.With(context...).Warnw(tt.msg, extra...)
@@ -207,6 +208,7 @@ func TestSugarConcatenatingLogging(t *testing.T) {
 
 	for _, tt := range tests {
 		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+			logger.With(context...).None(tt.args...)
 			logger.With(context...).Debug(tt.args...)
 			logger.With(context...).Info(tt.args...)
 			logger.With(context...).Warn(tt.args...)
@@ -243,6 +245,7 @@ func TestSugarTemplatedLogging(t *testing.T) {
 
 	for _, tt := range tests {
 		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+			logger.With(context...).Nonef(tt.format, tt.args...)
 			logger.With(context...).Debugf(tt.format, tt.args...)
 			logger.With(context...).Infof(tt.format, tt.args...)
 			logger.With(context...).Warnf(tt.format, tt.args...)

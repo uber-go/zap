@@ -474,6 +474,7 @@ func TestLoggerReplaceCore(t *testing.T) {
 		return zapcore.NewNopCore()
 	})
 	withLogger(t, DebugLevel, opts(replace), func(logger *Logger, logs *observer.ObservedLogs) {
+		logger.None("")
 		logger.Debug("")
 		logger.Info("")
 		logger.Warn("")
