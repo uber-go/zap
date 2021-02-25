@@ -82,6 +82,9 @@ func NewJSONEncoder(cfg EncoderConfig) Encoder {
 }
 
 func newJSONEncoder(cfg EncoderConfig, spaced bool) *jsonEncoder {
+	if cfg.Precision == 0 {
+		cfg.Precision = -1
+	}
 	return &jsonEncoder{
 		EncoderConfig: &cfg,
 		buf:           bufferpool.Get(),
@@ -454,7 +457,7 @@ func (enc *jsonEncoder) appendFloat(val float64, bitSize int) {
 	case math.IsInf(val, -1):
 		enc.buf.AppendString(`"-Inf"`)
 	default:
-		enc.buf.AppendFloat(val, bitSize)
+		enc.buf.AppendFloatWithPrecision(val, bitSize, enc.Precision)
 	}
 }
 
