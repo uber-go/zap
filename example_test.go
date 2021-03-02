@@ -184,7 +184,7 @@ func (a addr) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 
 func (r request) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("url", r.URL)
-	zap.InlineObject(r.Listen).AddTo(enc)
+	zap.Inline(r.Listen).AddTo(enc)
 	return enc.AddObject("remote", r.Remote)
 }
 
@@ -198,7 +198,7 @@ func ExampleObject() {
 		Remote: addr{"127.0.0.1", 31200},
 	}
 	logger.Info("new request, in nested object", zap.Object("req", req))
-	logger.Info("new request, inline", zap.InlineObject(req))
+	logger.Info("new request, inline", zap.Inline(req))
 	// Output:
 	// {"level":"info","msg":"new request, in nested object","req":{"url":"/test","ip":"127.0.0.1","port":8080,"remote":{"ip":"127.0.0.1","port":31200}}}
 	// {"level":"info","msg":"new request, inline","url":"/test","ip":"127.0.0.1","port":8080,"remote":{"ip":"127.0.0.1","port":31200}}

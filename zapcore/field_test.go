@@ -111,7 +111,7 @@ func TestFieldAddingError(t *testing.T) {
 	}{
 		{t: ArrayMarshalerType, iface: users(-1), want: []interface{}{}, err: "too few users"},
 		{t: ObjectMarshalerType, iface: users(-1), want: map[string]interface{}{}, err: "too few users"},
-		{t: InlineObjectMarshalerType, iface: users(-1), want: nil, err: "too few users"},
+		{t: InlineMarshalerType, iface: users(-1), want: nil, err: "too few users"},
 		{t: StringerType, iface: obj{}, want: empty, err: "PANIC=interface conversion: zapcore_test.obj is not fmt.Stringer: missing method String"},
 		{t: StringerType, iface: &obj{1}, want: empty, err: "PANIC=panic with string"},
 		{t: StringerType, iface: &obj{2}, want: empty, err: "PANIC=panic with error"},
@@ -180,13 +180,13 @@ func TestFields(t *testing.T) {
 	}
 }
 
-func TestInlineObjectMarshaler(t *testing.T) {
+func TestInlineMarshaler(t *testing.T) {
 	enc := NewMapObjectEncoder()
 
 	topLevelStr := Field{Key: "k", Type: StringType, String: "s"}
 	topLevelStr.AddTo(enc)
 
-	inlineObj := Field{Key: "ignored", Type: InlineObjectMarshalerType, Interface: users(10)}
+	inlineObj := Field{Key: "ignored", Type: InlineMarshalerType, Interface: users(10)}
 	inlineObj.AddTo(enc)
 
 	nestedObj := Field{Key: "nested", Type: ObjectMarshalerType, Interface: users(11)}

@@ -400,11 +400,11 @@ func Object(key string, val zapcore.ObjectMarshaler) Field {
 	return Field{Key: key, Type: zapcore.ObjectMarshalerType, Interface: val}
 }
 
-// InlineObject is similar to Object, but does not nest the object under a field
+// Inline is similar to Object, but does not nest the object under a field
 // name, but adds the fields to the current namespace inline.
-func InlineObject(val zapcore.ObjectMarshaler) Field {
+func Inline(val zapcore.ObjectMarshaler) Field {
 	return zapcore.Field{
-		Type:      zapcore.InlineObjectMarshalerType,
+		Type:      zapcore.InlineMarshalerType,
 		Interface: val,
 	}
 }
