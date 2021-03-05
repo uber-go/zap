@@ -37,9 +37,9 @@ import (
 // Values configured here are per-second. See zapcore.NewSamplerWithOptions for
 // details.
 type SamplingConfig struct {
+	Hook       func(zapcore.Entry, zapcore.SamplingDecision) `json:"-" yaml:"-"`
 	Initial    int                                           `json:"initial" yaml:"initial"`
 	Thereafter int                                           `json:"thereafter" yaml:"thereafter"`
-	Hook       func(zapcore.Entry, zapcore.SamplingDecision) `json:"-" yaml:"-"`
 }
 
 // Config offers a declarative way to construct a logger. It doesn't do

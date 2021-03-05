@@ -47,8 +47,8 @@ func AddSync(w io.Writer) WriteSyncer {
 }
 
 type lockedWriteSyncer struct {
-	sync.Mutex
 	ws WriteSyncer
+	sync.Mutex
 }
 
 // Lock wraps a WriteSyncer in a mutex to make it safe for concurrent use. In

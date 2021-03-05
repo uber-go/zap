@@ -33,8 +33,8 @@ const _size = 1024 // by default, create 1 KiB buffers
 // Buffer is a thin wrapper around a byte slice. It's intended to be pooled, so
 // the only way to construct one is via a Pool.
 type Buffer struct {
-	bs   []byte
 	pool Pool
+	bs   []byte
 }
 
 // AppendByte writes a single byte to the Buffer.

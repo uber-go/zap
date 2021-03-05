@@ -40,18 +40,19 @@ import (
 type Logger struct {
 	core zapcore.Core
 
-	development bool
-	addCaller   bool
-	onFatal     zapcore.CheckWriteAction // default is WriteThenFatal
+	clock Clock
 
-	name        string
 	errorOutput zapcore.WriteSyncer
 
 	addStack zapcore.LevelEnabler
 
+	name string
+
 	callerSkip int
 
-	clock Clock
+	onFatal     zapcore.CheckWriteAction // default is WriteThenFatal
+	development bool
+	addCaller   bool
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If

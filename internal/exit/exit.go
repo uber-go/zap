@@ -34,8 +34,8 @@ func Exit() {
 
 // A StubbedExit is a testing fake for os.Exit.
 type StubbedExit struct {
-	Exited bool
 	prev   func()
+	Exited bool
 }
 
 // Stub substitutes a fake for the call to os.Exit(1).
