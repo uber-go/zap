@@ -31,7 +31,7 @@ import (
 // Alternate line endings specified in EncoderConfig can override this
 // behavior.
 const DefaultLineEnding = "\n"
-const DefaultPrecision = -1
+const DefaultFloatPrecision = -1
 
 // OmitKey defines the key to use when callers want to remove a key from log output.
 const OmitKey = ""
@@ -335,8 +335,9 @@ type EncoderConfig struct {
 	// to tab.
 	ConsoleSeparator string `json:"consoleSeparator" yaml:"consoleSeparator"`
 
-	// float precision
-	Precision int `json:"precision" yaml:"precision"`
+	// float precision controls the length after dot in a float
+	// For example, 3.1415 will be 3.14 if floatPrecision is set to 2
+	FloatPrecision int `json:"floatPrecision" yaml:"floatPrecision"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a

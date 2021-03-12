@@ -76,7 +76,7 @@ func (b *Buffer) AppendFloat(f float64, bitSize int) {
 
 // AppendFloatWithPrecision appends a float with precision to the underlying buffer. It doesn't quote NaN
 // or +/- Inf.
-func (b *Buffer) AppendFloatWithPrecision(f float64, bitSize int, prec int) {
+func (b *Buffer) AppendFloatWithPrecision(f float64, prec int, bitSize int) {
 	b.bs = strconv.AppendFloat(b.bs, f, 'f', prec, bitSize)
 }
 

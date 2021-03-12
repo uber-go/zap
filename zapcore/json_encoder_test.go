@@ -251,7 +251,7 @@ func TestJSONEncodeWithPrecision(t *testing.T) {
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeDuration: zapcore.SecondsDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
-		Precision:      2,
+		FloatPrecision: 2,
 	})
 
 	for _, tt := range tests {

@@ -109,7 +109,7 @@ func NewProductionEncoderConfig() zapcore.EncoderConfig {
 		EncodeTime:     zapcore.EpochTimeEncoder,
 		EncodeDuration: zapcore.SecondsDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
-		Precision:      zapcore.DefaultPrecision,
+		FloatPrecision: zapcore.DefaultFloatPrecision,
 	}
 }
 
@@ -150,7 +150,7 @@ func NewDevelopmentEncoderConfig() zapcore.EncoderConfig {
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeDuration: zapcore.StringDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
-		Precision:      zapcore.DefaultPrecision,
+		FloatPrecision: zapcore.DefaultFloatPrecision,
 	}
 }
 
