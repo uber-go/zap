@@ -400,8 +400,9 @@ func Object(key string, val zapcore.ObjectMarshaler) Field {
 	return Field{Key: key, Type: zapcore.ObjectMarshalerType, Interface: val}
 }
 
-// Inline is similar to Object, but does not nest the object under a field
-// name, but adds the fields to the current namespace inline.
+// Inline constructs a Field that is similar to Object, but it
+// will add the elements of the provided ObjectMarshaler to the
+// current namespace.
 func Inline(val zapcore.ObjectMarshaler) Field {
 	return zapcore.Field{
 		Type:      zapcore.InlineMarshalerType,
