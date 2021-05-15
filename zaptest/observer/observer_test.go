@@ -55,7 +55,7 @@ func TestObserver(t *testing.T) {
 	assert.Equal(t, want, logs.AllUntimed(), "Unexpected contents from AllUntimed.")
 
 	all := logs.All()
-	require.Equal(t, 1, len(all), "Unexpected numbed of LoggedEntries returned from All.")
+	require.Equal(t, 1, len(all), "Unexpected number of LoggedEntries returned from All.")
 	assert.NotEqual(t, time.Time{}, all[0].Time, "Expected non-zero time on LoggedEntry.")
 
 	// copy & zero time for stable assertions
@@ -218,6 +218,19 @@ func TestFilters(t *testing.T) {
 			msg:      "filter field key",
 			filtered: sink.FilterFieldKey("filterMe"),
 			want:     logs[7:9],
+		},
+		{
+			msg: "filter by arbitrary function",
+			filtered: sink.Filter(func(e LoggedEntry) bool {
+				return len(e.Context) > 1
+			}),
+			want: func() []LoggedEntry {
+				// Do not modify logs slice.
+				w := []LoggedEntry{}
+				w = append(w, logs[0:5]...)
+				w = append(w, logs[7])
+				return w
+			}(),
 		},
 	}
 
