@@ -78,6 +78,13 @@ func (o *ObservedLogs) AllUntimed() []LoggedEntry {
 	return ret
 }
 
+// FilterLevelExact filters entries to those logged at exactly the given level.
+func (o *ObservedLogs) FilterLevelExact(level zapcore.Level) *ObservedLogs {
+	return o.Filter(func(e LoggedEntry) bool {
+		return e.Level == level
+	})
+}
+
 // FilterMessage filters entries to those that have the specified message.
 func (o *ObservedLogs) FilterMessage(msg string) *ObservedLogs {
 	return o.Filter(func(e LoggedEntry) bool {
