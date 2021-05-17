@@ -234,7 +234,7 @@ func (b benchmarkRowsByTime) Less(i, j int) bool {
 	leftZap, rightZap := strings.Contains(left.Name, "zap"), strings.Contains(right.Name, "zap")
 
 	// If neither benchmark is for zap or both are, sort by time.
-	if !(leftZap || rightZap) || (leftZap && rightZap) {
+	if leftZap == rightZap {
 		return left.Time.Nanoseconds() < right.Time.Nanoseconds()
 	}
 	// Sort zap benchmark first.
