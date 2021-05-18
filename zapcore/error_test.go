@@ -95,6 +95,38 @@ func TestErrorEncoding(t *testing.T) {
 			},
 		},
 		{
+			k: "err",
+			iface: fmt.Errorf("wrap: %w", multierr.Combine(
+				errors.New("foo"),
+				errors.New("bar"),
+				errors.New("baz"),
+			)),
+			want: map[string]interface{}{
+				"err": "wrap: foo; bar; baz",
+				"errCauses": []interface{}{
+					map[string]interface{}{"error": "foo"},
+					map[string]interface{}{"error": "bar"},
+					map[string]interface{}{"error": "baz"},
+				},
+			},
+		},
+		{
+			k: "err",
+			iface: richErrors.WithMessage(multierr.Combine(
+				errors.New("foo"),
+				errors.New("bar"),
+				errors.New("baz"),
+			), "wrap"),
+			want: map[string]interface{}{
+				"err": "wrap: foo; bar; baz",
+				"errCauses": []interface{}{
+					map[string]interface{}{"error": "foo"},
+					map[string]interface{}{"error": "bar"},
+					map[string]interface{}{"error": "baz"},
+				},
+			},
+		},
+		{
 			k:     "e",
 			iface: customMultierr{},
 			want: map[string]interface{}{
@@ -120,6 +152,14 @@ func TestErrorEncoding(t *testing.T) {
 			},
 		},
 		{
+			k:     "k",
+			iface: fmt.Errorf("wrap: %w", richErrors.WithMessage(errors.New("egad"), "failed")),
+			want: map[string]interface{}{
+				"k":        "wrap: failed: egad",
+				"kVerbose": "egad\nfailed",
+			},
+		},
+		{
 			k: "error",
 			iface: multierr.Combine(
 				richErrors.WithMessage(
@@ -134,10 +174,10 @@ func TestErrorEncoding(t *testing.T) {
 				"errorCauses": []interface{}{
 					map[string]interface{}{
 						"error": "hello: foo; bar",
-						"errorVerbose": "the following errors occurred:\n" +
-							" -  foo\n" +
-							" -  bar\n" +
-							"hello",
+						"errorCauses": []interface{}{
+							map[string]interface{}{"error": "foo"},
+							map[string]interface{}{"error": "bar"},
+						},
 					},
 					map[string]interface{}{"error": "baz"},
 					map[string]interface{}{"error": "world: qux", "errorVerbose": "qux\nworld"},

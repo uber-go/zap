@@ -21,6 +21,7 @@
 package zapcore
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"sync"
@@ -63,11 +64,13 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 	basic := err.Error()
 	enc.AddString(key, basic)
 
-	switch e := err.(type) {
-	case errorGroup:
-		return enc.AddArray(key+"Causes", errArray(e.Errors()))
-	case fmt.Formatter:
-		verbose := fmt.Sprintf("%+v", e)
+	var eg errorGroup
+	if errors.As(err, &eg) {
+		return enc.AddArray(key+"Causes", errArray(eg.Errors()))
+	}
+	var f fmt.Formatter
+	if errors.As(err, &f) {
+		verbose := fmt.Sprintf("%+v", f)
 		if verbose != basic {
 			// This is a rich error type, like those produced by
 			// github.com/pkg/errors.
