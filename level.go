@@ -26,6 +26,9 @@ import (
 )
 
 const (
+	// TraceLevel logs are even more voluminous than debug, such that they
+	// might even usually be disabled in development mode
+	TraceLevel = zapcore.TraceLevel
 	// DebugLevel logs are typically voluminous, and are usually disabled in
 	// production.
 	DebugLevel = zapcore.DebugLevel

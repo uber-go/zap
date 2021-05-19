@@ -40,6 +40,11 @@ func TestIncreaseLevel(t *testing.T) {
 	}{
 		{
 			coreLevel:     InfoLevel,
+			increaseLevel: TraceLevel,
+			wantErr:       true,
+		},
+		{
+			coreLevel:     InfoLevel,
 			increaseLevel: DebugLevel,
 			wantErr:       true,
 		},

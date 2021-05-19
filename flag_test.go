@@ -78,6 +78,10 @@ func TestLevelFlag(t *testing.T) {
 			args:      []string{"--level", "error"},
 			wantLevel: zapcore.ErrorLevel,
 		},
+		{
+			args:      []string{"--level", "trace"},
+			wantLevel: zapcore.TraceLevel,
+		},
 	}
 
 	for _, tt := range tests {

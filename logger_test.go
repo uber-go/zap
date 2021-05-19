@@ -57,6 +57,8 @@ func TestLoggerAtomicLevel(t *testing.T) {
 			testLevel zapcore.Level
 			enabled   bool
 		}{
+			{TraceLevel, TraceLevel, true},
+			{DebugLevel, TraceLevel, false},
 			{DebugLevel, DebugLevel, true},
 			{InfoLevel, DebugLevel, false},
 			{WarnLevel, PanicLevel, true},
@@ -169,11 +171,12 @@ func TestLoggerLogFatal(t *testing.T) {
 }
 
 func TestLoggerLeveledMethods(t *testing.T) {
-	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
+	withLogger(t, TraceLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		tests := []struct {
 			method        func(string, ...Field)
 			expectedLevel zapcore.Level
 		}{
+			{logger.Trace, TraceLevel},
 			{logger.Debug, DebugLevel},
 			{logger.Info, InfoLevel},
 			{logger.Warn, WarnLevel},
@@ -250,6 +253,8 @@ func TestLoggerDPanic(t *testing.T) {
 
 func TestLoggerNoOpsDisabledLevels(t *testing.T) {
 	withLogger(t, WarnLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
+		logger.Trace("silence!")
+		logger.Debug("silence!")
 		logger.Info("silence!")
 		assert.Equal(
 			t,

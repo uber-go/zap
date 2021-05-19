@@ -66,12 +66,12 @@ func writeSequence(core Core, n int, lvl Level) {
 }
 
 func TestSampler(t *testing.T) {
-	for _, lvl := range []Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel, PanicLevel, FatalLevel} {
-		sampler, logs := fakeSampler(DebugLevel, time.Minute, 2, 3)
+	for _, lvl := range []Level{TraceLevel, DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel, PanicLevel, FatalLevel} {
+		sampler, logs := fakeSampler(TraceLevel, time.Minute, 2, 3)
 
 		// Ensure that counts aren't shared between levels.
-		probeLevel := DebugLevel
-		if lvl == DebugLevel {
+		probeLevel := TraceLevel
+		if lvl == TraceLevel {
 			probeLevel = InfoLevel
 		}
 		for i := 0; i < 10; i++ {
