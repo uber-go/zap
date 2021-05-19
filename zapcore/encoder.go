@@ -312,27 +312,27 @@ func (e *NameEncoder) UnmarshalText(text []byte) error {
 type EncoderConfig struct {
 	// Set the keys used for each log entry. If any key is empty, that portion
 	// of the entry is omitted.
-	MessageKey    string `json:"messageKey" yaml:"messageKey"`
-	LevelKey      string `json:"levelKey" yaml:"levelKey"`
-	TimeKey       string `json:"timeKey" yaml:"timeKey"`
-	NameKey       string `json:"nameKey" yaml:"nameKey"`
-	CallerKey     string `json:"callerKey" yaml:"callerKey"`
-	FunctionKey   string `json:"functionKey" yaml:"functionKey"`
-	StacktraceKey string `json:"stacktraceKey" yaml:"stacktraceKey"`
-	LineEnding    string `json:"lineEnding" yaml:"lineEnding"`
+	MessageKey    string `json:"messageKey" yaml:"messageKey" toml:"messageKey"`
+	LevelKey      string `json:"levelKey" yaml:"levelKey" toml:"levelKey"`
+	TimeKey       string `json:"timeKey" yaml:"timeKey" toml:"timeKey"`
+	NameKey       string `json:"nameKey" yaml:"nameKey" toml:"nameKey"`
+	CallerKey     string `json:"callerKey" yaml:"callerKey" toml:"callerKey"`
+	FunctionKey   string `json:"functionKey" yaml:"functionKey" toml:"functionKey"`
+	StacktraceKey string `json:"stacktraceKey" yaml:"stacktraceKey" toml:"stacktraceKey"`
+	LineEnding    string `json:"lineEnding" yaml:"lineEnding" toml:"lineEnding"`
 	// Configure the primitive representations of common complex types. For
 	// example, some users may want all time.Times serialized as floating-point
 	// seconds since epoch, while others may prefer ISO8601 strings.
-	EncodeLevel    LevelEncoder    `json:"levelEncoder" yaml:"levelEncoder"`
-	EncodeTime     TimeEncoder     `json:"timeEncoder" yaml:"timeEncoder"`
-	EncodeDuration DurationEncoder `json:"durationEncoder" yaml:"durationEncoder"`
-	EncodeCaller   CallerEncoder   `json:"callerEncoder" yaml:"callerEncoder"`
+	EncodeLevel    LevelEncoder    `json:"levelEncoder" yaml:"levelEncoder" toml:"levelEncoder"`
+	EncodeTime     TimeEncoder     `json:"timeEncoder" yaml:"timeEncoder" toml:"timeEncoder"`
+	EncodeDuration DurationEncoder `json:"durationEncoder" yaml:"durationEncoder" toml:"durationEncoder"`
+	EncodeCaller   CallerEncoder   `json:"callerEncoder" yaml:"callerEncoder" toml:"callerEncoder"`
 	// Unlike the other primitive type encoders, EncodeName is optional. The
 	// zero value falls back to FullNameEncoder.
-	EncodeName NameEncoder `json:"nameEncoder" yaml:"nameEncoder"`
+	EncodeName NameEncoder `json:"nameEncoder" yaml:"nameEncoder" toml:"nameEncoder"`
 	// Configures the field separator used by the console encoder. Defaults
 	// to tab.
-	ConsoleSeparator string `json:"consoleSeparator" yaml:"consoleSeparator"`
+	ConsoleSeparator string `json:"consoleSeparator" yaml:"consoleSeparator" toml:"consoleSeparator"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a
