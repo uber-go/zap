@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,30 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+package zapcore
 
 import (
-	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest/observer"
 )
 
-type constantClock time.Time
-
-func (c constantClock) Now() time.Time { return time.Time(c) }
-func (c constantClock) NewTicker(d time.Duration) *time.Ticker {
-	return time.NewTicker(d)
-}
-
-func TestWithClock(t *testing.T) {
-	date := time.Date(2077, 1, 23, 10, 15, 13, 441, time.UTC)
-	clock := constantClock(date)
-	withLogger(t, DebugLevel, []Option{WithClock(clock)}, func(log *Logger, logs *observer.ObservedLogs) {
-		log.Info("")
-		require.Equal(t, 1, logs.Len(), "Expected only one log entry to be written.")
-		assert.Equal(t, date, logs.All()[0].Entry.Time, "Unexpected entry time.")
-	})
+// Clock is a source of time for logged entries.
+type Clock interface {
+	// Now returns the current local time.
+	Now() time.Time
+	// NewTicker returns *time.Ticker that holds a channel
+	// that delivers ``ticks'' of a clock.
+	NewTicker(time.Duration) *time.Ticker
 }

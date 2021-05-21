@@ -20,13 +20,14 @@
 
 package zap
 
-import "time"
+import (
+	"time"
+
+	"go.uber.org/zap/zapcore"
+)
 
 // Clock is a source of time for logged entries.
-type Clock interface {
-	// Now returns the current local time.
-	Now() time.Time
-}
+type Clock zapcore.Clock
 
 // systemClock implements default Clock that uses system time.
 type systemClock struct{}
@@ -35,4 +36,8 @@ var _systemClock Clock = systemClock{}
 
 func (systemClock) Now() time.Time {
 	return time.Now()
+}
+
+func (systemClock) NewTicker(duration time.Duration) *time.Ticker {
+	return time.NewTicker(duration)
 }
