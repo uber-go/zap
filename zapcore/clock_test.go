@@ -21,41 +21,45 @@
 package zapcore
 
 import (
-	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
+	"go.uber.org/goleak"
 )
 
-type controlledClock struct {
-	mockClock *clock.Mock
-}
+type controlledClock struct{ *clock.Mock }
 
-func (c *controlledClock) Now() time.Time {
-	return c.mockClock.Now()
+func newControlledClock() *controlledClock {
+	return &controlledClock{clock.NewMock()}
 }
-
 func (c *controlledClock) NewTicker(d time.Duration) *time.Ticker {
-	return &time.Ticker{C: c.mockClock.Ticker(d).C}
+	return &time.Ticker{C: c.Ticker(d).C}
 }
 
 func TestMockClock(t *testing.T) {
-	var n int32
-	ctrlMock := &controlledClock{mockClock: clock.NewMock()}
+	defer goleak.VerifyNone(t)
+	var n atomic.Int32
+	ctrlMock := newControlledClock()
 
+	quit := make(chan bool)
 	// Create a channel to increment every microsecond.
-	go func() {
-		ticker := ctrlMock.NewTicker(1 * time.Microsecond)
+	go func(ticker *time.Ticker) {
 		for {
-			<-ticker.C
-			atomic.AddInt32(&n, 1)
+			select {
+			case <-quit:
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				n.Inc()
+			}
 		}
-	}()
-	time.Sleep(1 * time.Microsecond)
+	}(ctrlMock.NewTicker(time.Microsecond))
 
 	// Move clock forward.
-	ctrlMock.mockClock.Add(10 * time.Microsecond)
-	assert.Equal(t, atomic.LoadInt32(&n), int32(10))
+	ctrlMock.Add(2 * time.Microsecond)
+	assert.Equal(t, int32(2), n.Load())
+	quit <- true
 }
