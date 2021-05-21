@@ -27,7 +27,7 @@ import (
 )
 
 // Clock is a source of time for logged entries.
-type Clock zapcore.Clock
+type Clock = zapcore.Clock
 
 // systemClock implements default Clock that uses system time.
 type systemClock struct{}
