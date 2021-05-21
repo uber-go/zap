@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,30 +18,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+package zapcore
 
 import (
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest/observer"
 )
 
-type constantClock time.Time
-
-func (c constantClock) Now() time.Time { return time.Time(c) }
-func (c constantClock) NewTicker(d time.Duration) *time.Ticker {
-	return &time.Ticker{}
+type controlledClock struct {
+	mockClock *clock.Mock
 }
 
-func TestWithClock(t *testing.T) {
-	date := time.Date(2077, 1, 23, 10, 15, 13, 441, time.UTC)
-	clock := constantClock(date)
-	withLogger(t, DebugLevel, []Option{WithClock(clock)}, func(log *Logger, logs *observer.ObservedLogs) {
-		log.Info("")
-		require.Equal(t, 1, logs.Len(), "Expected only one log entry to be written.")
-		assert.Equal(t, date, logs.All()[0].Entry.Time, "Unexpected entry time.")
-	})
+func (c *controlledClock) Now() time.Time {
+	return c.mockClock.Now()
+}
+
+func (c *controlledClock) NewTicker(d time.Duration) *time.Ticker {
+	return &time.Ticker{C: c.mockClock.Ticker(d).C}
+}
+
+func TestMockClock(t *testing.T) {
+	var n int32
+	ctrlMock := &controlledClock{mockClock: clock.NewMock()}
+
+	// Create a channel to increment every microsecond.
+	go func() {
+		ticker := ctrlMock.NewTicker(1 * time.Microsecond)
+		for {
+			<-ticker.C
+			atomic.AddInt32(&n, 1)
+		}
+	}()
+	time.Sleep(1 * time.Microsecond)
+
+	// Move clock forward.
+	ctrlMock.mockClock.Add(10 * time.Microsecond)
+	assert.Equal(t, atomic.LoadInt32(&n), int32(10))
 }
