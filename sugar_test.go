@@ -36,13 +36,13 @@ func TestSugarWith(t *testing.T) {
 	// Convenience functions to create expected error logs.
 	ignored := func(msg interface{}) observer.LoggedEntry {
 		return observer.LoggedEntry{
-			Entry:   zapcore.Entry{Level: DPanicLevel, Message: _oddNumberErrMsg},
+			Entry:   zapcore.Entry{Level: ErrorLevel, Message: _oddNumberErrMsg},
 			Context: []Field{Any("ignored", msg)},
 		}
 	}
 	nonString := func(pairs ...invalidPair) observer.LoggedEntry {
 		return observer.LoggedEntry{
-			Entry:   zapcore.Entry{Level: DPanicLevel, Message: _nonStringKeyErrMsg},
+			Entry:   zapcore.Entry{Level: ErrorLevel, Message: _nonStringKeyErrMsg},
 			Context: []Field{Array("invalid", invalidPairs(pairs))},
 		}
 	}
