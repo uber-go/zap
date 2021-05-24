@@ -27,7 +27,6 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
-	"go.uber.org/goleak"
 )
 
 type controlledClock struct{ *clock.Mock }
@@ -40,13 +39,16 @@ func (c *controlledClock) NewTicker(d time.Duration) *time.Ticker {
 }
 
 func TestMockClock(t *testing.T) {
-	defer goleak.VerifyNone(t)
 	var n atomic.Int32
 	ctrlMock := newControlledClock()
 
-	quit := make(chan bool)
+	done := make(chan struct{})
+	defer func() { <-done }() // wait for end
+
+	quit := make(chan struct{})
 	// Create a channel to increment every microsecond.
 	go func(ticker *time.Ticker) {
+		defer close(done)
 		for {
 			select {
 			case <-quit:
@@ -61,5 +63,5 @@ func TestMockClock(t *testing.T) {
 	// Move clock forward.
 	ctrlMock.Add(2 * time.Microsecond)
 	assert.Equal(t, int32(2), n.Load())
-	quit <- true
+	close(quit)
 }
