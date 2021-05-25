@@ -29,16 +29,18 @@ import (
 	"go.uber.org/atomic"
 )
 
+// controlledClock provides control over the time via a mock clock.
 type controlledClock struct{ *clock.Mock }
 
 func newControlledClock() *controlledClock {
 	return &controlledClock{clock.NewMock()}
 }
+
 func (c *controlledClock) NewTicker(d time.Duration) *time.Ticker {
 	return &time.Ticker{C: c.Ticker(d).C}
 }
 
-func TestMockClock(t *testing.T) {
+func TestControlledClock_NewTicker(t *testing.T) {
 	var n atomic.Int32
 	ctrlMock := newControlledClock()
 
@@ -64,4 +66,17 @@ func TestMockClock(t *testing.T) {
 	ctrlMock.Add(2 * time.Microsecond)
 	assert.Equal(t, int32(2), n.Load())
 	close(quit)
+}
+
+func TestSystemClock_NewTicker(t *testing.T) {
+	want := 3
+
+	var n int
+	timer := DefaultClock.NewTicker(time.Millisecond)
+	for range timer.C {
+		n++
+		if n == want {
+			return
+		}
+	}
 }

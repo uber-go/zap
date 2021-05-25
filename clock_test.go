@@ -45,16 +45,3 @@ func TestWithClock(t *testing.T) {
 		assert.Equal(t, date, logs.All()[0].Entry.Time, "Unexpected entry time.")
 	})
 }
-
-func TestSystemClockNewTicker(t *testing.T) {
-	want := 3
-
-	var n int
-	timer := _systemClock.NewTicker(time.Millisecond)
-	for range timer.C {
-		n++
-		if n == want {
-			return
-		}
-	}
-}
