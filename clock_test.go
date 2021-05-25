@@ -26,7 +26,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 	"go.uber.org/zap/zaptest/observer"
 )
 
@@ -48,29 +47,14 @@ func TestWithClock(t *testing.T) {
 }
 
 func TestSystemClockNewTicker(t *testing.T) {
-	var target = int32(3)
-	var n atomic.Int32
-	done := make(chan struct{})
-	defer func() {
-		<-done
-		assert.Equal(t, target, n.Load())
-	}() // wait for end
+	want := 3
 
-	quit := make(chan struct{})
-	// Create a channel to increment every millisecond.
-	go func(ticker *time.Ticker) {
-		defer close(done)
-		for {
-			select {
-			case <-quit:
-				return
-			case <-ticker.C:
-				n.Inc()
-				if n.Load() == target {
-					ticker.Stop()
-					close(quit)
-				}
-			}
+	var n int
+	timer := _systemClock.NewTicker(time.Millisecond)
+	for range timer.C {
+		n++
+		if n == want {
+			return
 		}
-	}(_systemClock.NewTicker(time.Millisecond))
+	}
 }
