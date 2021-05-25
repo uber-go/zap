@@ -33,6 +33,12 @@ lint: $(GOLINT) $(STATICCHECK)
 	@echo "Checking for license headers..."
 	@./checklicense.sh | tee -a lint.log
 	@[ ! -s lint.log ]
+	@echo "Checking 'go mod tidy'..."
+	@make tidy
+	@if ! git diff --quiet; then \
+		echo "'go mod tidy' resulted in changes or working tree is dirty:"; \
+		git --no-pager diff; \
+	fi
 
 $(GOLINT):
 	cd tools && go install golang.org/x/lint/golint
@@ -61,3 +67,7 @@ bench:
 updatereadme:
 	rm -f README.md
 	cat .readme.tmpl | go run internal/readme/readme.go > README.md
+
+.PHONY: tidy
+tidy:
+	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && go mod tidy) &&) true
