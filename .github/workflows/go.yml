@@ -26,6 +26,11 @@ jobs:
 
     - name: Checkout code
       uses: actions/checkout@v2
+      
+    - name: FOSSA analysis
+      uses: fossas/fossa-action@v1
+      with:
+        api-key: ${{ secrets.FOSSA_API_KEY }}
 
     - name: Load cached dependencies
       uses: actions/cache@v1
