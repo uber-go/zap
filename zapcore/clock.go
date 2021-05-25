@@ -29,6 +29,6 @@ type Clock interface {
 	// Now returns the current local time.
 	Now() time.Time
 	// NewTicker returns *time.Ticker that holds a channel
-	// that delivers ``ticks'' of a clock.
+	// that delivers "ticks" of a clock.
 	NewTicker(time.Duration) *time.Ticker
 }
