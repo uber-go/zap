@@ -51,7 +51,7 @@ type Logger struct {
 
 	callerSkip int
 
-	clock Clock
+	clock zapcore.Clock
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
@@ -72,7 +72,7 @@ func New(core zapcore.Core, options ...Option) *Logger {
 		core:        core,
 		errorOutput: zapcore.Lock(os.Stderr),
 		addStack:    zapcore.FatalLevel + 1,
-		clock:       _systemClock,
+		clock:       zapcore.DefaultClock,
 	}
 	return log.WithOptions(options...)
 }
