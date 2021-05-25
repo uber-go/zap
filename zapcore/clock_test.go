@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,26 +18,50 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+package zapcore
 
 import (
+	"testing"
 	"time"
 
-	"go.uber.org/zap/zapcore"
+	"github.com/benbjohnson/clock"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 )
 
-// Clock is a source of time for logged entries.
-type Clock = zapcore.Clock
+type controlledClock struct{ *clock.Mock }
 
-// systemClock implements default Clock that uses system time.
-type systemClock struct{}
-
-var _systemClock Clock = systemClock{}
-
-func (systemClock) Now() time.Time {
-	return time.Now()
+func newControlledClock() *controlledClock {
+	return &controlledClock{clock.NewMock()}
+}
+func (c *controlledClock) NewTicker(d time.Duration) *time.Ticker {
+	return &time.Ticker{C: c.Ticker(d).C}
 }
 
-func (systemClock) NewTicker(duration time.Duration) *time.Ticker {
-	return time.NewTicker(duration)
+func TestMockClock(t *testing.T) {
+	var n atomic.Int32
+	ctrlMock := newControlledClock()
+
+	done := make(chan struct{})
+	defer func() { <-done }() // wait for end
+
+	quit := make(chan struct{})
+	// Create a channel to increment every microsecond.
+	go func(ticker *time.Ticker) {
+		defer close(done)
+		for {
+			select {
+			case <-quit:
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				n.Inc()
+			}
+		}
+	}(ctrlMock.NewTicker(time.Microsecond))
+
+	// Move clock forward.
+	ctrlMock.Add(2 * time.Microsecond)
+	assert.Equal(t, int32(2), n.Load())
+	close(quit)
 }

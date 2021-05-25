@@ -32,6 +32,9 @@ import (
 type constantClock time.Time
 
 func (c constantClock) Now() time.Time { return time.Time(c) }
+func (c constantClock) NewTicker(d time.Duration) *time.Ticker {
+	return &time.Ticker{}
+}
 
 func TestWithClock(t *testing.T) {
 	date := time.Date(2077, 1, 23, 10, 15, 13, 441, time.UTC)
@@ -41,4 +44,17 @@ func TestWithClock(t *testing.T) {
 		require.Equal(t, 1, logs.Len(), "Expected only one log entry to be written.")
 		assert.Equal(t, date, logs.All()[0].Entry.Time, "Unexpected entry time.")
 	})
+}
+
+func TestSystemClockNewTicker(t *testing.T) {
+	want := 3
+
+	var n int
+	timer := _systemClock.NewTicker(time.Millisecond)
+	for range timer.C {
+		n++
+		if n == want {
+			return
+		}
+	}
 }

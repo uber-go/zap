@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,26 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+package zapcore
 
 import (
-	"time"
+	"testing"
 
-	"go.uber.org/zap/zapcore"
+	"go.uber.org/goleak"
 )
 
-// Clock is a source of time for logged entries.
-type Clock = zapcore.Clock
-
-// systemClock implements default Clock that uses system time.
-type systemClock struct{}
-
-var _systemClock Clock = systemClock{}
-
-func (systemClock) Now() time.Time {
-	return time.Now()
-}
-
-func (systemClock) NewTicker(duration time.Duration) *time.Ticker {
-	return time.NewTicker(duration)
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
 }
