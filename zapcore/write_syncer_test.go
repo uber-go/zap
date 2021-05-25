@@ -23,14 +23,11 @@ package zapcore
 import (
 	"bytes"
 	"errors"
-	"testing"
-	"time"
-
 	"io"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/goleak"
 	"go.uber.org/zap/internal/ztest"
 )
 
@@ -65,75 +62,6 @@ func TestAddSyncWriter(t *testing.T) {
 	ws := AddSync(buf)
 	requireWriteWorks(t, ws)
 	assert.NoError(t, ws.Sync(), "Unexpected error calling a no-op Sync method.")
-}
-
-func TestBufferWriter(t *testing.T) {
-	defer goleak.VerifyNone(t)
-
-	// If we pass a plain io.Writer, make sure that we still get a WriteSyncer
-	// with a no-op Sync.
-	t.Run("sync", func(t *testing.T) {
-		buf := &bytes.Buffer{}
-		ws, close := Buffer(AddSync(buf), 0, 0)
-		defer close()
-		requireWriteWorks(t, ws)
-		assert.Empty(t, buf.String(), "Unexpected log calling a no-op Write method.")
-		assert.NoError(t, ws.Sync(), "Unexpected error calling a no-op Sync method.")
-		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
-	})
-
-	t.Run("close", func(t *testing.T) {
-		buf := &bytes.Buffer{}
-		ws, close := Buffer(AddSync(buf), 0, 0)
-		requireWriteWorks(t, ws)
-		assert.Empty(t, buf.String(), "Unexpected log calling a no-op Write method.")
-		close()
-		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
-	})
-
-	t.Run("wrap twice", func(t *testing.T) {
-		buf := &bytes.Buffer{}
-		bufsync, close1 := Buffer(AddSync(buf), 0, 0)
-		ws, close2 := Buffer(bufsync, 0, 0)
-		requireWriteWorks(t, ws)
-		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
-		close2()
-		close1()
-		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
-	})
-
-	t.Run("small buffer", func(t *testing.T) {
-		buf := &bytes.Buffer{}
-		ws, close := Buffer(AddSync(buf), 5, 0)
-		defer close()
-		requireWriteWorks(t, ws)
-		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
-		requireWriteWorks(t, ws)
-		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
-	})
-
-	t.Run("flush error", func(t *testing.T) {
-		ws, close := Buffer(AddSync(&ztest.FailWriter{}), 4, 0)
-		n, err := ws.Write([]byte("foo"))
-		require.NoError(t, err, "Unexpected error writing to WriteSyncer.")
-		require.Equal(t, 3, n, "Wrote an unexpected number of bytes.")
-		ws.Write([]byte("foo"))
-		assert.Error(t, close(), "Expected close to fail.")
-	})
-
-	t.Run("flush timer", func(t *testing.T) {
-		buf := &ztest.SyncBuffer{}
-		ws, close := Buffer(AddSync(buf), 6, time.Microsecond)
-		defer close()
-		requireWriteWorks(t, ws)
-		ztest.Sleep(10 * time.Millisecond)
-		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
-
-		// flush twice to validate loop logic
-		requireWriteWorks(t, ws)
-		ztest.Sleep(10 * time.Millisecond)
-		assert.Equal(t, "foofoo", buf.String(), "Unexpected log string")
-	})
 }
 
 func TestNewMultiWriteSyncerWorksForSingleWriter(t *testing.T) {

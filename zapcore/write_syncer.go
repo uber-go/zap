@@ -21,10 +21,8 @@
 package zapcore
 
 import (
-	"bufio"
 	"io"
 	"sync"
-	"time"
 
 	"go.uber.org/multierr"
 )
@@ -75,109 +73,6 @@ func (s *lockedWriteSyncer) Sync() error {
 	err := s.ws.Sync()
 	s.Unlock()
 	return err
-}
-
-type bufferWriterSyncer struct {
-	sync.Mutex
-
-	stop         chan struct{}
-	bufferWriter *bufio.Writer
-	ticker       *time.Ticker
-}
-
-const (
-	// _defaultBufferSize specifies the default size used by Buffer.
-	_defaultBufferSize = 256 * 1024 // 256 kB
-
-	// _defaultFlushInterval specifies the default flush interval for
-	// Buffer.
-	_defaultFlushInterval = 30 * time.Second
-)
-
-// Buffer wraps a WriteSyncer to buffer its output. The returned WriteSyncer
-// flushes its output as the buffer fills up, or at the provided interval,
-// whichever comes first.
-//
-// Call the returned function to finish using the WriteSyncer and flush
-// remaining bytes.
-//
-//   func main() {
-//     // ...
-//     ws, closeWS := zapcore.Buffer(ws, 0, 0)
-//     defer closeWS()
-//     // ...
-//   }
-//
-// The buffer size defaults to 256 kB if set to zero.
-// The flush interval defaults to 30 seconds if set to zero.
-func Buffer(ws WriteSyncer, bufferSize int, flushInterval time.Duration) (_ WriteSyncer, close func() error) {
-	if bufferSize == 0 {
-		bufferSize = _defaultBufferSize
-	}
-
-	if flushInterval == 0 {
-		flushInterval = _defaultFlushInterval
-	}
-
-	bws := &bufferWriterSyncer{
-		stop:         make(chan struct{}),
-		bufferWriter: bufio.NewWriterSize(ws, bufferSize),
-		ticker:       time.NewTicker(flushInterval),
-	}
-
-	go bws.flushLoop()
-
-	return bws, bws.close
-}
-
-// Write writes log data into buffer syncer directly, multiple Write calls will be batched,
-// and log data will be flushed to disk when the buffer is full or periodically.
-func (s *bufferWriterSyncer) Write(bs []byte) (int, error) {
-	s.Lock()
-	defer s.Unlock()
-
-	// To avoid partial writes from being flushed, we manually flush the existing buffer if:
-	// * The current write doesn't fit into the buffer fully, and
-	// * The buffer is not empty (since bufio will not split large writes when the buffer is empty)
-	if len(bs) > s.bufferWriter.Available() && s.bufferWriter.Buffered() > 0 {
-		if err := s.bufferWriter.Flush(); err != nil {
-			return 0, err
-		}
-	}
-
-	return s.bufferWriter.Write(bs)
-}
-
-// Sync flushes buffered log data into disk directly.
-func (s *bufferWriterSyncer) Sync() error {
-	s.Lock()
-	defer s.Unlock()
-
-	return s.bufferWriter.Flush()
-}
-
-// flushLoop flushes the buffer at the configured interval until Close is
-// called.
-func (s *bufferWriterSyncer) flushLoop() {
-	for {
-		select {
-		case <-s.ticker.C:
-			// we just simply ignore error here
-			// because the underlying bufio writer stores any errors
-			// and we return any error from Sync() as part of the close
-			_ = s.Sync()
-		case <-s.stop:
-			return
-		}
-	}
-}
-
-// close closes the buffer, cleans up background goroutines, and flushes
-// remaining, unwritten data.
-func (s *bufferWriterSyncer) close() error {
-	s.ticker.Stop()
-	close(s.stop)
-	return s.Sync()
 }
 
 type writerWrapper struct {
