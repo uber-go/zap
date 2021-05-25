@@ -39,9 +39,6 @@ const (
 	ArrayMarshalerType
 	// ObjectMarshalerType indicates that the field carries an ObjectMarshaler.
 	ObjectMarshalerType
-	// InlineMarshalerType indicates that the field carries an ObjectMarshaler
-	// that should be inlined.
-	InlineMarshalerType
 	// BinaryType indicates that the field carries an opaque binary blob.
 	BinaryType
 	// BoolType indicates that the field carries a bool.
@@ -95,6 +92,10 @@ const (
 	ErrorType
 	// SkipType indicates that the field is a no-op.
 	SkipType
+
+	// InlineMarshalerType indicates that the field carries an ObjectMarshaler
+	// that should be inlined.
+	InlineMarshalerType
 )
 
 // A Field is a marshaling operation used to add a key-value pair to a logger's
