@@ -31,7 +31,7 @@ import (
 func BenchmarkBufferedWriteSyncer(b *testing.B) {
 	b.Run("write file with buffer", func(b *testing.B) {
 		file, err := ioutil.TempFile("", "log")
-		assert.NoError(b, err)
+		require.NoError(b, err)
 		defer file.Close()
 		defer os.Remove(file.Name())
 
