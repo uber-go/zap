@@ -64,11 +64,10 @@ func (s *BufferedWriteSyncer) loadConfig() {
 		flushInterval = _defaultFlushInterval
 	}
 
-	if s.Clock != nil {
-		s.ticker = s.Clock.NewTicker(flushInterval)
-	} else {
-		s.ticker = DefaultClock.NewTicker(flushInterval)
+	if s.Clock == nil {
+		s.Clock = DefaultClock
 	}
+	s.ticker = s.clock.NewTicker(flushInterval)
 
 	s.writer = bufio.NewWriterSize(s.WriteSyncer, size)
 	s.stop = make(chan struct{})
