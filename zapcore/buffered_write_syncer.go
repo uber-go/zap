@@ -67,7 +67,7 @@ func (s *BufferedWriteSyncer) loadConfig() {
 	if s.Clock == nil {
 		s.Clock = DefaultClock
 	}
-	s.ticker = s.clock.NewTicker(flushInterval)
+	s.ticker = s.Clock.NewTicker(flushInterval)
 
 	s.writer = bufio.NewWriterSize(s.WriteSyncer, size)
 	s.stop = make(chan struct{})
@@ -122,7 +122,7 @@ func (s *BufferedWriteSyncer) flushLoop() {
 }
 
 // Close closes the buffer, cleans up background goroutines, and flushes
-// remaining, unwritten data.
+// remaining, unwritten data. This will not close the underlying WriteSyncer.
 func (s *BufferedWriteSyncer) Close() error {
 	s.ticker.Stop()
 	close(s.stop)
