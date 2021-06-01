@@ -21,8 +21,8 @@
 package zapcore
 
 import (
+	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,7 +30,7 @@ import (
 
 func BenchmarkBufferedWriteSyncer(b *testing.B) {
 	b.Run("write file with buffer", func(b *testing.B) {
-		file, err := os.Create(filepath.Join(b.TempDir(), "log"))
+		file, err := ioutil.TempFile("", "log")
 		require.NoError(b, err)
 		defer file.Close()
 		defer os.Remove(file.Name())
