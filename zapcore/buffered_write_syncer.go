@@ -30,13 +30,20 @@ import (
 
 // A BufferedWriteSyncer is a WriteSyncer that can also flush any buffered data
 // with the ability to change the buffer size, flush interval and Clock.
-// The default values are; Size 256kb, FlushInterval 30s.
+// BufferedWriteSyncer is safe for concurrent use. You don't need to use
+// zapcore.Lock for WriteSyncers with BufferedWriteSyncer.
 type BufferedWriteSyncer struct {
 	WriteSyncer
 
-	Size          int
+	// Size specifies the maximum amount of data the writer will buffer before
+	// flushing. Defaults to 256 kB.
+	Size int
+	// FlushInterval specifies how often the writer should flush data if there
+	// have been no writes. Defaults to 30 seconds.
 	FlushInterval time.Duration
-	Clock         Clock
+	// Clock, if specified, provides control of the source of time for the
+	// writer. Uses the system clock by default.
+	Clock Clock
 
 	// unexported fields for state
 	ws          WriteSyncer
@@ -56,7 +63,7 @@ const (
 	_defaultFlushInterval = 30 * time.Second
 )
 
-func (s *BufferedWriteSyncer) loadConfig() {
+func (s *BufferedWriteSyncer) initialize() {
 	s.ws = s.WriteSyncer
 
 	size := s.Size
@@ -74,7 +81,12 @@ func (s *BufferedWriteSyncer) loadConfig() {
 	}
 	s.ticker = s.Clock.NewTicker(flushInterval)
 
-	s.writer = bufio.NewWriterSize(s.WriteSyncer, size)
+	writer := s.WriteSyncer
+	if w, ok := writer.(*lockedWriteSyncer); ok {
+		writer = w.ws
+	} // don't double lock
+	s.writer = bufio.NewWriterSize(writer, size)
+
 	s.stop = make(chan struct{})
 	s.initialized = true
 	go s.flushLoop()
@@ -87,7 +99,7 @@ func (s *BufferedWriteSyncer) Write(bs []byte) (int, error) {
 	defer s.mu.Unlock()
 
 	if !s.initialized {
-		s.loadConfig()
+		s.initialize()
 	}
 
 	// To avoid partial writes from being flushed, we manually flush the existing buffer if:
