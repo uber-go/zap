@@ -75,6 +75,17 @@ func TestBufferWriter(t *testing.T) {
 		assert.NoError(t, ws.Close())
 	})
 
+	t.Run("with lockedWriteSyncer", func(t *testing.T) {
+		buf := &bytes.Buffer{}
+		ws := &BufferedWriteSyncer{WriteSyncer: &lockedWriteSyncer{ws: AddSync(buf)}, Size: 5}
+
+		requireWriteWorks(t, ws)
+		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
+		requireWriteWorks(t, ws)
+		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
+		assert.NoError(t, ws.Close())
+	})
+
 	t.Run("flush error", func(t *testing.T) {
 		ws := &BufferedWriteSyncer{WriteSyncer: &ztest.FailWriter{}, Size: 4}
 		n, err := ws.Write([]byte("foo"))
