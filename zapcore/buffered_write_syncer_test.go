@@ -94,12 +94,12 @@ func TestBufferWriter(t *testing.T) {
 			Clock:         clock,
 		}
 		requireWriteWorks(t, ws)
-		clock.Add(10 * time.Millisecond)
+		clock.Add(10 * time.Microsecond)
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 
 		// flush twice to validate loop logic
 		requireWriteWorks(t, ws)
-		clock.Add(10 * time.Millisecond)
+		clock.Add(10 * time.Microsecond)
 		assert.Equal(t, "foofoo", buf.String(), "Unexpected log string")
 		assert.NoError(t, ws.Close())
 	})

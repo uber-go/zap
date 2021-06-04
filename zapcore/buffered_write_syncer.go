@@ -24,6 +24,8 @@ import (
 	"bufio"
 	"sync"
 	"time"
+
+	"go.uber.org/multierr"
 )
 
 // A BufferedWriteSyncer is a WriteSyncer that can also flush any buffered data
@@ -37,6 +39,7 @@ type BufferedWriteSyncer struct {
 	Clock         Clock
 
 	// unexported fields for state
+	ws          WriteSyncer
 	mu          sync.Mutex
 	writer      *bufio.Writer
 	ticker      *time.Ticker
@@ -54,6 +57,8 @@ const (
 )
 
 func (s *BufferedWriteSyncer) loadConfig() {
+	s.ws = s.WriteSyncer
+
 	size := s.Size
 	if size == 0 {
 		size = _defaultBufferSize
@@ -102,7 +107,7 @@ func (s *BufferedWriteSyncer) Sync() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return s.writer.Flush()
+	return multierr.Append(s.writer.Flush(), s.ws.Sync())
 }
 
 // flushLoop flushes the buffer at the configured interval until Close is
