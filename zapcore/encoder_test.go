@@ -363,10 +363,12 @@ func TestEncoderConfiguration(t *testing.T) {
 				enc.OpenNamespace("inner")
 				enc.AddString("foo", "bar")
 				enc.OpenNamespace("innermost")
+				enc.CloseNamespace()
+				enc.AddString("bar", "baz")
 			},
-			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","outer":{"inner":{"foo":"bar","innermost":{}}},"S":"fake-stack"}` + "\n",
+			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","outer":{"inner":{"foo":"bar","innermost":{},"bar":"baz"}},"S":"fake-stack"}` + "\n",
 			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\t" +
-				`{"outer": {"inner": {"foo": "bar", "innermost": {}}}}` +
+				`{"outer": {"inner": {"foo": "bar", "innermost": {}, "bar": "baz"}}}` +
 				"\nfake-stack\n",
 		},
 		{

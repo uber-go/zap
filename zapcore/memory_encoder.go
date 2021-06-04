@@ -30,14 +30,22 @@ type MapObjectEncoder struct {
 	Fields map[string]interface{}
 	// cur is a pointer to the namespace we're currently writing to.
 	cur map[string]interface{}
+
+	ns *namespace
+}
+
+type namespace struct {
+	data map[string]interface{}
+	prev *namespace
 }
 
 // NewMapObjectEncoder creates a new map-backed ObjectEncoder.
 func NewMapObjectEncoder() *MapObjectEncoder {
 	m := make(map[string]interface{})
 	return &MapObjectEncoder{
-		Fields: m,
-		cur:    m,
+		Fields:   m,
+		cur:      m,
+		ns:       &namespace{m, nil},
 	}
 }
 
@@ -127,9 +135,18 @@ func (m *MapObjectEncoder) AddReflected(k string, v interface{}) error {
 
 // OpenNamespace implements ObjectEncoder.
 func (m *MapObjectEncoder) OpenNamespace(k string) {
-	ns := make(map[string]interface{})
-	m.cur[k] = ns
-	m.cur = ns
+	ns := &namespace{make(map[string]interface{}), m.ns}
+	m.cur[k] = ns.data
+	m.cur = ns.data
+	m.ns = ns
+}
+
+// CloseNamespace implements ObjectEncoder.
+func (m *MapObjectEncoder) CloseNamespace() {
+	if m.ns.prev != nil {
+		m.ns = m.ns.prev
+		m.cur = m.ns.data
+	}
 }
 
 // sliceArrayEncoder is an ArrayEncoder backed by a simple []interface{}. Like

@@ -373,6 +373,10 @@ type ObjectEncoder interface {
 	// be added. Applications can use namespaces to prevent key collisions when
 	// injecting loggers into sub-components or third-party libraries.
 	OpenNamespace(key string)
+
+	// CloseNamespace closes an isolated namespace. All subsequent fields will
+	// be added to the parent namespace.
+	CloseNamespace()
 }
 
 // ArrayEncoder is a strongly-typed, encoding-agnostic interface for adding

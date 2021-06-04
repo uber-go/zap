@@ -215,7 +215,7 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 		{
 			desc: "namespace",
 			// EncodeEntry is responsible for closing all open namespaces.
-			expected: `"outermost":{"outer":{"foo":1,"inner":{"foo":2,"innermost":{`,
+			expected: `"outermost":{"outer":{"foo":1,"inner":{"foo":2,"innermost":{},"bar":4`,
 			f: func(e Encoder) {
 				e.OpenNamespace("outermost")
 				e.OpenNamespace("outer")
@@ -223,6 +223,8 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 				e.OpenNamespace("inner")
 				e.AddInt("foo", 2)
 				e.OpenNamespace("innermost")
+				e.CloseNamespace()
+				e.AddInt("bar", 4)
 			},
 		},
 	}

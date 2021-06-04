@@ -247,6 +247,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:PtrUintptr", Any("k", (*uintptr)(nil)), nilField("k")},
 		{"Any:PtrUintptr", Any("k", &uintptrVal), Uintptr("k", uintptrVal)},
 		{"Namespace", Namespace("k"), Field{Key: "k", Type: zapcore.NamespaceType}},
+		{"CloseNamespace", CloseNamespace(), Field{Type: zapcore.CloseNamespaceType}},
 	}
 
 	for _, tt := range tests {

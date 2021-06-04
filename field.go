@@ -335,6 +335,12 @@ func Namespace(key string) Field {
 	return Field{Key: key, Type: zapcore.NamespaceType}
 }
 
+// CloseNamespace ends a scope, created by Namespace field. All
+// subsequent fields will be added to the parent namespace.
+func CloseNamespace() Field {
+	return Field{Type: zapcore.CloseNamespaceType}
+}
+
 // Stringer constructs a field with the given key and the output of the value's
 // String method. The Stringer's String method is called lazily.
 func Stringer(key string, val fmt.Stringer) Field {

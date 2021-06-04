@@ -75,6 +75,23 @@ func TestLoggedEntryContextMap(t *testing.T) {
 				},
 			},
 		},
+		{
+			msg: "closed nested",
+			fields: []zapcore.Field{
+				zap.String("k1", "v1"),
+				zap.Namespace("nested"),
+				zap.String("k2", "v2"),
+				zap.CloseNamespace(),
+				zap.String("k3", "v3"),
+			},
+			want: map[string]interface{}{
+				"k1": "v1",
+				"k3": "v3",
+				"nested": map[string]interface{}{
+					"k2": "v2",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

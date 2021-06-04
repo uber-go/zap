@@ -86,6 +86,9 @@ const (
 	// NamespaceType signals the beginning of an isolated namespace. All
 	// subsequent fields should be added to the new namespace.
 	NamespaceType
+	// CloseNamespaceType signals the end of an isolated namespace. All
+	// subsequent fields should be added to the parent namespace.
+	CloseNamespaceType
 	// StringerType indicates that the field carries a fmt.Stringer.
 	StringerType
 	// ErrorType indicates that the field carries an error.
@@ -170,6 +173,8 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		err = enc.AddReflected(f.Key, f.Interface)
 	case NamespaceType:
 		enc.OpenNamespace(f.Key)
+	case CloseNamespaceType:
+		enc.CloseNamespace()
 	case StringerType:
 		err = encodeStringer(f.Key, f.Interface, enc)
 	case ErrorType:

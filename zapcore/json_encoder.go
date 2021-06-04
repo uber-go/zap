@@ -177,6 +177,13 @@ func (enc *jsonEncoder) OpenNamespace(key string) {
 	enc.openNamespaces++
 }
 
+func (enc *jsonEncoder) CloseNamespace() {
+	if enc.openNamespaces > 0 {
+		enc.buf.AppendByte('}')
+		enc.openNamespaces--
+	}
+}
+
 func (enc *jsonEncoder) AddString(key, val string) {
 	enc.addKey(key)
 	enc.AppendString(val)
