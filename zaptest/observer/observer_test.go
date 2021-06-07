@@ -234,7 +234,7 @@ func TestFilters(t *testing.T) {
 			}),
 			want: func() []LoggedEntry {
 				// Do not modify logs slice.
-				w := []LoggedEntry{}
+				w := make([]LoggedEntry, 0, len(logs))
 				w = append(w, logs[0:5]...)
 				w = append(w, logs[7])
 				return w
