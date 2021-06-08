@@ -28,6 +28,15 @@ import (
 	"go.uber.org/multierr"
 )
 
+const (
+	// _defaultBufferSize specifies the default size used by Buffer.
+	_defaultBufferSize = 256 * 1024 // 256 kB
+
+	// _defaultFlushInterval specifies the default flush interval for
+	// Buffer.
+	_defaultFlushInterval = 30 * time.Second
+)
+
 // A BufferedWriteSyncer is a WriteSyncer that buffers writes in-memory before
 // flushing them to a wrapped WriteSyncer after reaching some limit, or at some
 // fixed interval--whichever comes first.
@@ -66,15 +75,6 @@ type BufferedWriteSyncer struct {
 	stop        chan struct{}
 	initialized bool
 }
-
-const (
-	// _defaultBufferSize specifies the default size used by Buffer.
-	_defaultBufferSize = 256 * 1024 // 256 kB
-
-	// _defaultFlushInterval specifies the default flush interval for
-	// Buffer.
-	_defaultFlushInterval = 30 * time.Second
-)
 
 func (s *BufferedWriteSyncer) initialize() {
 	s.ws = s.WriteSyncer
