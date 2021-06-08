@@ -134,6 +134,10 @@ func (s *BufferedWriteSyncer) Sync() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if !s.initialized {
+		return nil
+	}
+
 	return multierr.Append(s.writer.Flush(), s.ws.Sync())
 }
 
@@ -157,9 +161,22 @@ func (s *BufferedWriteSyncer) flushLoop() {
 
 // Stop closes the buffer, cleans up background goroutines, and flushes
 // remaining unwritten data.
+//
+// This must be called exactly once per BufferedWriteSyncer.
 func (s *BufferedWriteSyncer) Stop() error {
-	s.ticker.Stop()
-	close(s.stop) // tell flushLoop to stop
-	<-s.done      // and wait until it has
+	// Critical section.
+	func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+
+		if !s.initialized {
+			return
+		}
+
+		s.ticker.Stop()
+		close(s.stop) // tell flushLoop to stop
+		<-s.done      // and wait until it has
+	}()
+
 	return s.Sync()
 }

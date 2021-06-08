@@ -94,7 +94,7 @@ func TestBufferWriter(t *testing.T) {
 		require.NoError(t, err, "Unexpected error writing to WriteSyncer.")
 		require.Equal(t, 3, n, "Wrote an unexpected number of bytes.")
 		ws.Write([]byte("foo"))
-		assert.Error(t, ws.Stop(), "Expected close to fail.")
+		assert.Error(t, ws.Stop(), "Expected stop to fail.")
 	})
 
 	t.Run("flush timer", func(t *testing.T) {
@@ -115,5 +115,17 @@ func TestBufferWriter(t *testing.T) {
 		clock.Add(10 * time.Microsecond)
 		assert.Equal(t, "foofoo", buf.String(), "Unexpected log string")
 		assert.NoError(t, ws.Stop())
+	})
+}
+
+func TestBufferWriterWithoutStart(t *testing.T) {
+	t.Run("stop", func(t *testing.T) {
+		ws := &BufferedWriteSyncer{WriteSyncer: AddSync(new(bytes.Buffer))}
+		assert.NoError(t, ws.Stop(), "Stop must not fail")
+	})
+
+	t.Run("Sync", func(t *testing.T) {
+		ws := &BufferedWriteSyncer{WriteSyncer: AddSync(new(bytes.Buffer))}
+		assert.NoError(t, ws.Sync(), "Sync must not fail")
 	})
 }
