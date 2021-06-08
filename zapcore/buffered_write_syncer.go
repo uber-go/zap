@@ -45,7 +45,8 @@ const (
 // zapcore.Lock for WriteSyncers with BufferedWriteSyncer.
 type BufferedWriteSyncer struct {
 	// WS is the WriteSyncer around which BufferedWriteSyncer will buffer
-	// writes.
+	// writes. The provided WriteSyncer must not be used directly once
+	// wrapped in a BufferedWriteSyncer.
 	//
 	// This field is required.
 	WS WriteSyncer
@@ -71,7 +72,6 @@ type BufferedWriteSyncer struct {
 	// unexported fields for state
 	mu          sync.Mutex
 	initialized bool // whether initialize() has run
-	ws          WriteSyncer
 	writer      *bufio.Writer
 	ticker      *time.Ticker
 	stop        chan struct{} // closed when flushLoop should stop
@@ -79,8 +79,6 @@ type BufferedWriteSyncer struct {
 }
 
 func (s *BufferedWriteSyncer) initialize() {
-	s.ws = s.WS
-
 	size := s.Size
 	if size == 0 {
 		size = _defaultBufferSize
@@ -96,11 +94,15 @@ func (s *BufferedWriteSyncer) initialize() {
 	}
 	s.ticker = s.Clock.NewTicker(flushInterval)
 
-	writer := s.WS
-	if w, ok := writer.(*lockedWriteSyncer); ok {
-		writer = w.ws
-	} // don't double lock
-	s.writer = bufio.NewWriterSize(writer, size)
+	// Unpack to the underlying WriteSyncer if we have a lockedWriteSyncer
+	// to avoid double-locking. Note that there's a risk here if the user
+	// tries to use the Lock-ed WriteSyncer directly in addition to using
+	// it with BufferedWriteSyncer, so we declare that the wrapped
+	// WriteSyncer is only ours to use once wrapped.
+	if w, ok := s.WS.(*lockedWriteSyncer); ok {
+		s.WS = w.ws
+	}
+	s.writer = bufio.NewWriterSize(s.WS, size)
 
 	s.stop = make(chan struct{})
 	s.done = make(chan struct{})
@@ -135,11 +137,13 @@ func (s *BufferedWriteSyncer) Sync() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if !s.initialized {
-		return nil
+	var err error
+	if w := s.writer; w != nil {
+		// w is nil if we haven't yet been initialized.
+		err = w.Flush()
 	}
 
-	return multierr.Append(s.writer.Flush(), s.ws.Sync())
+	return multierr.Append(err, s.WS.Sync())
 }
 
 // flushLoop flushes the buffer at the configured interval until Stop is
