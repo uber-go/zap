@@ -45,8 +45,7 @@ const (
 // zapcore.Lock for WriteSyncers with BufferedWriteSyncer.
 type BufferedWriteSyncer struct {
 	// WS is the WriteSyncer around which BufferedWriteSyncer will buffer
-	// writes. The provided WriteSyncer must not be used directly once
-	// wrapped in a BufferedWriteSyncer.
+	// writes.
 	//
 	// This field is required.
 	WS WriteSyncer
@@ -92,18 +91,9 @@ func (s *BufferedWriteSyncer) initialize() {
 	if s.Clock == nil {
 		s.Clock = DefaultClock
 	}
+
 	s.ticker = s.Clock.NewTicker(flushInterval)
-
-	// Unpack to the underlying WriteSyncer if we have a lockedWriteSyncer
-	// to avoid double-locking. Note that there's a risk here if the user
-	// tries to use the Lock-ed WriteSyncer directly in addition to using
-	// it with BufferedWriteSyncer, so we declare that the wrapped
-	// WriteSyncer is only ours to use once wrapped.
-	if w, ok := s.WS.(*lockedWriteSyncer); ok {
-		s.WS = w.ws
-	}
 	s.writer = bufio.NewWriterSize(s.WS, size)
-
 	s.stop = make(chan struct{})
 	s.done = make(chan struct{})
 	s.initialized = true
@@ -138,9 +128,8 @@ func (s *BufferedWriteSyncer) Sync() error {
 	defer s.mu.Unlock()
 
 	var err error
-	if w := s.writer; w != nil {
-		// w is nil if we haven't yet been initialized.
-		err = w.Flush()
+	if s.initialized {
+		err = s.writer.Flush()
 	}
 
 	return multierr.Append(err, s.WS.Sync())
@@ -167,7 +156,7 @@ func (s *BufferedWriteSyncer) flushLoop() {
 // Stop closes the buffer, cleans up background goroutines, and flushes
 // remaining unwritten data.
 //
-// This must be called exactly once per BufferedWriteSyncer.
+// This must be called exactly once.
 func (s *BufferedWriteSyncer) Stop() error {
 	// Critical section.
 	func() {
