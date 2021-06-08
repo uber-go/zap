@@ -65,7 +65,7 @@ func BenchmarkMultiWriteSyncer(b *testing.B) {
 				&ztest.Discarder{},
 			),
 		}
-		defer w.Close()
+		defer w.Stop()
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {

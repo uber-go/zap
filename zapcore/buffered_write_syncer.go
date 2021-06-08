@@ -135,7 +135,7 @@ func (s *BufferedWriteSyncer) Sync() error {
 	return multierr.Append(s.writer.Flush(), s.ws.Sync())
 }
 
-// flushLoop flushes the buffer at the configured interval until Close is
+// flushLoop flushes the buffer at the configured interval until Stop is
 // called.
 func (s *BufferedWriteSyncer) flushLoop() {
 	for {
@@ -151,9 +151,9 @@ func (s *BufferedWriteSyncer) flushLoop() {
 	}
 }
 
-// Close closes the buffer, cleans up background goroutines, and flushes
-// remaining, unwritten data. This will not close the underlying WriteSyncer.
-func (s *BufferedWriteSyncer) Close() error {
+// Stop closes the buffer, cleans up background goroutines, and flushes
+// remaining unwritten data.
+func (s *BufferedWriteSyncer) Stop() error {
 	s.ticker.Stop()
 	close(s.stop)
 	return s.Sync()

@@ -42,7 +42,7 @@ func BenchmarkBufferedWriteSyncer(b *testing.B) {
 		w := &BufferedWriteSyncer{
 			WriteSyncer: AddSync(file),
 		}
-		defer w.Close()
+		defer w.Stop()
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {

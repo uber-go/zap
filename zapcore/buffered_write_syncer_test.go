@@ -41,7 +41,7 @@ func TestBufferWriter(t *testing.T) {
 		assert.Empty(t, buf.String(), "Unexpected log calling a no-op Write method.")
 		assert.NoError(t, ws.Sync(), "Unexpected error calling a no-op Sync method.")
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
-		assert.NoError(t, ws.Close())
+		assert.NoError(t, ws.Stop())
 	})
 
 	t.Run("close", func(t *testing.T) {
@@ -49,7 +49,7 @@ func TestBufferWriter(t *testing.T) {
 		ws := &BufferedWriteSyncer{WriteSyncer: AddSync(buf)}
 		requireWriteWorks(t, ws)
 		assert.Empty(t, buf.String(), "Unexpected log calling a no-op Write method.")
-		assert.NoError(t, ws.Close())
+		assert.NoError(t, ws.Stop())
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 
@@ -61,8 +61,8 @@ func TestBufferWriter(t *testing.T) {
 		assert.Empty(t, buf.String(), "Unexpected log calling a no-op Write method.")
 		require.NoError(t, ws.Sync())
 		assert.Equal(t, "foo", buf.String())
-		assert.NoError(t, ws.Close())
-		assert.NoError(t, bufsync.Close())
+		assert.NoError(t, ws.Stop())
+		assert.NoError(t, bufsync.Stop())
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 
@@ -74,7 +74,7 @@ func TestBufferWriter(t *testing.T) {
 		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
-		assert.NoError(t, ws.Close())
+		assert.NoError(t, ws.Stop())
 	})
 
 	t.Run("with lockedWriteSyncer", func(t *testing.T) {
@@ -85,7 +85,7 @@ func TestBufferWriter(t *testing.T) {
 		assert.Equal(t, "", buf.String(), "Unexpected log calling a no-op Write method.")
 		requireWriteWorks(t, ws)
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
-		assert.NoError(t, ws.Close())
+		assert.NoError(t, ws.Stop())
 	})
 
 	t.Run("flush error", func(t *testing.T) {
@@ -94,7 +94,7 @@ func TestBufferWriter(t *testing.T) {
 		require.NoError(t, err, "Unexpected error writing to WriteSyncer.")
 		require.Equal(t, 3, n, "Wrote an unexpected number of bytes.")
 		ws.Write([]byte("foo"))
-		assert.Error(t, ws.Close(), "Expected close to fail.")
+		assert.Error(t, ws.Stop(), "Expected close to fail.")
 	})
 
 	t.Run("flush timer", func(t *testing.T) {
@@ -114,6 +114,6 @@ func TestBufferWriter(t *testing.T) {
 		requireWriteWorks(t, ws)
 		clock.Add(10 * time.Microsecond)
 		assert.Equal(t, "foofoo", buf.String(), "Unexpected log string")
-		assert.NoError(t, ws.Close())
+		assert.NoError(t, ws.Stop())
 	})
 }
