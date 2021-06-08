@@ -25,6 +25,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,8 +33,11 @@ func BenchmarkBufferedWriteSyncer(b *testing.B) {
 	b.Run("write file with buffer", func(b *testing.B) {
 		file, err := ioutil.TempFile("", "log")
 		require.NoError(b, err)
-		defer file.Close()
-		defer os.Remove(file.Name())
+
+		defer func() {
+			assert.NoError(b, file.Close())
+			assert.NoError(b, os.Remove(file.Name()))
+		}()
 
 		w := &BufferedWriteSyncer{
 			WriteSyncer: AddSync(file),
