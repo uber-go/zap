@@ -68,12 +68,13 @@ type BufferedWriteSyncer struct {
 	Clock Clock
 
 	// unexported fields for state
-	ws          WriteSyncer
 	mu          sync.Mutex
+	initialized bool // whether initialize() has run
+	ws          WriteSyncer
 	writer      *bufio.Writer
 	ticker      *time.Ticker
-	stop        chan struct{}
-	initialized bool
+	stop        chan struct{} // closed when flushLoop should stop
+	done        chan struct{} // closed when flushLoop has stopped
 }
 
 func (s *BufferedWriteSyncer) initialize() {
@@ -101,6 +102,7 @@ func (s *BufferedWriteSyncer) initialize() {
 	s.writer = bufio.NewWriterSize(writer, size)
 
 	s.stop = make(chan struct{})
+	s.done = make(chan struct{})
 	s.initialized = true
 	go s.flushLoop()
 }
@@ -138,6 +140,8 @@ func (s *BufferedWriteSyncer) Sync() error {
 // flushLoop flushes the buffer at the configured interval until Stop is
 // called.
 func (s *BufferedWriteSyncer) flushLoop() {
+	defer close(s.done)
+
 	for {
 		select {
 		case <-s.ticker.C:
@@ -155,6 +159,7 @@ func (s *BufferedWriteSyncer) flushLoop() {
 // remaining unwritten data.
 func (s *BufferedWriteSyncer) Stop() error {
 	s.ticker.Stop()
-	close(s.stop)
+	close(s.stop) // tell flushLoop to stop
+	<-s.done      // and wait until it has
 	return s.Sync()
 }
