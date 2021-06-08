@@ -28,21 +28,34 @@ import (
 	"go.uber.org/multierr"
 )
 
-// A BufferedWriteSyncer is a WriteSyncer that can also flush any buffered data
-// with the ability to change the buffer size, flush interval and Clock.
+// A BufferedWriteSyncer is a WriteSyncer that buffers writes in-memory before
+// flushing them to a wrapped WriteSyncer after reaching some limit, or at some
+// fixed interval--whichever comes first.
+//
 // BufferedWriteSyncer is safe for concurrent use. You don't need to use
 // zapcore.Lock for WriteSyncers with BufferedWriteSyncer.
 type BufferedWriteSyncer struct {
+	// WriteSyncer is the WriteSyncer wrapped by BufferedWriteSyncer.
+	//
+	// This field is required.
 	WriteSyncer
 
-	// Size specifies the maximum amount of data the writer will buffer before
-	// flushing. Defaults to 256 kB.
+	// Size specifies the maximum amount of data the writer will buffered
+	// before flushing.
+	//
+	// Defaults to 256 kB if unspecified.
 	Size int
-	// FlushInterval specifies how often the writer should flush data if there
-	// have been no writes. Defaults to 30 seconds.
+
+	// FlushInterval specifies how often the writer should flush data if
+	// there have been no writes.
+	//
+	// Defaults to 30 seconds if unspecified.
 	FlushInterval time.Duration
+
 	// Clock, if specified, provides control of the source of time for the
-	// writer. Uses the system clock by default.
+	// writer.
+	//
+	// Defaults to the system clock.
 	Clock Clock
 
 	// unexported fields for state
