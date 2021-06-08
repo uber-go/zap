@@ -58,7 +58,7 @@ func BenchmarkMultiWriteSyncer(b *testing.B) {
 	})
 	b.Run("4 discarder with buffer", func(b *testing.B) {
 		w := &BufferedWriteSyncer{
-			WriteSyncer: NewMultiWriteSyncer(
+			WS: NewMultiWriteSyncer(
 				&ztest.Discarder{},
 				&ztest.Discarder{},
 				&ztest.Discarder{},

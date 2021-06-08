@@ -40,7 +40,7 @@ func BenchmarkBufferedWriteSyncer(b *testing.B) {
 		}()
 
 		w := &BufferedWriteSyncer{
-			WriteSyncer: AddSync(file),
+			WS: AddSync(file),
 		}
 		defer w.Stop()
 		b.ResetTimer()

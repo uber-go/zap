@@ -44,10 +44,11 @@ const (
 // BufferedWriteSyncer is safe for concurrent use. You don't need to use
 // zapcore.Lock for WriteSyncers with BufferedWriteSyncer.
 type BufferedWriteSyncer struct {
-	// WriteSyncer is the WriteSyncer wrapped by BufferedWriteSyncer.
+	// WS is the WriteSyncer around which BufferedWriteSyncer will buffer
+	// writes.
 	//
 	// This field is required.
-	WriteSyncer
+	WS WriteSyncer
 
 	// Size specifies the maximum amount of data the writer will buffered
 	// before flushing.
@@ -78,7 +79,7 @@ type BufferedWriteSyncer struct {
 }
 
 func (s *BufferedWriteSyncer) initialize() {
-	s.ws = s.WriteSyncer
+	s.ws = s.WS
 
 	size := s.Size
 	if size == 0 {
@@ -95,7 +96,7 @@ func (s *BufferedWriteSyncer) initialize() {
 	}
 	s.ticker = s.Clock.NewTicker(flushInterval)
 
-	writer := s.WriteSyncer
+	writer := s.WS
 	if w, ok := writer.(*lockedWriteSyncer); ok {
 		writer = w.ws
 	} // don't double lock
