@@ -44,7 +44,7 @@ func TestBufferWriter(t *testing.T) {
 		assert.NoError(t, ws.Stop())
 	})
 
-	t.Run("close", func(t *testing.T) {
+	t.Run("stop", func(t *testing.T) {
 		buf := &bytes.Buffer{}
 		ws := &BufferedWriteSyncer{WriteSyncer: AddSync(buf)}
 		requireWriteWorks(t, ws)
