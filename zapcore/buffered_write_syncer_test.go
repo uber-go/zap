@@ -53,6 +53,14 @@ func TestBufferWriter(t *testing.T) {
 		assert.Equal(t, "foo", buf.String(), "Unexpected log string")
 	})
 
+	t.Run("stop twice", func(t *testing.T) {
+		ws := &BufferedWriteSyncer{WS: &ztest.FailWriter{}}
+		_, err := ws.Write([]byte("foo"))
+		require.NoError(t, err, "Unexpected error writing to WriteSyncer.")
+		assert.Error(t, ws.Stop(), "Expected stop to fail.")
+		assert.NoError(t, ws.Stop(), "Expected stop to not fail.")
+	})
+
 	t.Run("wrap twice", func(t *testing.T) {
 		buf := &bytes.Buffer{}
 		bufsync := &BufferedWriteSyncer{WS: AddSync(buf)}
