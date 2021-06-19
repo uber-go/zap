@@ -74,7 +74,7 @@ type BufferedWriteSyncer struct {
 	writer      *bufio.Writer
 	ticker      *time.Ticker
 	stop        chan struct{} // closed when flushLoop should stop
-	stopOnce    sync.Once
+	stopped     bool          // whether Stop() has run
 	done        chan struct{} // closed when flushLoop has stopped
 }
 
@@ -157,23 +157,31 @@ func (s *BufferedWriteSyncer) flushLoop() {
 // Stop closes the buffer, cleans up background goroutines, and flushes
 // remaining unwritten data.
 func (s *BufferedWriteSyncer) Stop() (err error) {
-	s.stopOnce.Do(func() {
-		// Critical section.
-		func() {
-			s.mu.Lock()
-			defer s.mu.Unlock()
+	var stopped bool
 
-			if !s.initialized {
-				return
-			}
+	// Critical section.
+	func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
 
-			s.ticker.Stop()
-			close(s.stop) // tell flushLoop to stop
-			<-s.done      // and wait until it has
-		}()
+		if !s.initialized {
+			return
+		}
 
+		stopped = s.stopped
+		if stopped {
+			return
+		}
+		s.stopped = true
+
+		s.ticker.Stop()
+		close(s.stop) // tell flushLoop to stop
+		<-s.done      // and wait until it has
+	}()
+
+	if !stopped {
 		err = s.Sync()
-	})
+	}
 
 	return err
 }
