@@ -157,6 +157,39 @@ func TestWriter(t *testing.T) {
 	}
 }
 
+func TestWrite_Sync(t *testing.T) {
+	t.Parallel()
+
+	core, observed := observer.New(zap.InfoLevel)
+
+	w := Writer{
+		Log:   zap.New(core),
+		Level: zap.InfoLevel,
+	}
+
+	io.WriteString(&w, "foo")
+	io.WriteString(&w, "bar")
+
+	t.Run("no sync", func(t *testing.T) {
+		assert.Zero(t, observed.Len(), "Expected no logs yet")
+	})
+
+	t.Run("sync", func(t *testing.T) {
+		defer observed.TakeAll()
+
+		require.NoError(t, w.Sync(), "Sync must not fail")
+
+		assert.Equal(t, []observer.LoggedEntry{
+			{Entry: zapcore.Entry{Message: "foobar"}, Context: []zapcore.Field{}},
+		}, observed.AllUntimed(), "Log messages did not match")
+	})
+
+	t.Run("sync on empty", func(t *testing.T) {
+		require.NoError(t, w.Sync(), "Sync must not fail")
+		assert.Zero(t, observed.Len(), "Expected no logs yet")
+	})
+}
+
 func BenchmarkWriter(b *testing.B) {
 	tests := []struct {
 		name   string
