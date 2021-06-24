@@ -72,6 +72,14 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 
 	// Split on the newline, buffer and flush the left.
 	line, remaining = line[:idx], line[idx+1:]
+
+	// Fast path: if we don't have a partial message from a previous write
+	// in the buffer, skip the buffer and log directly.
+	if w.buff.Len() == 0 {
+		w.log(line)
+		return
+	}
+
 	w.buff.Write(line)
 
 	// Log empty messages in the middle of the stream so that we don't lose
@@ -100,9 +108,13 @@ func (w *Writer) Sync() error {
 // if the bool is set.
 func (w *Writer) flush(allowEmpty bool) {
 	if allowEmpty || w.buff.Len() > 0 {
-		if ce := w.Log.Check(w.Level, w.buff.String()); ce != nil {
-			ce.Write()
-		}
+		w.log(w.buff.Bytes())
 	}
 	w.buff.Reset()
+}
+
+func (w *Writer) log(b []byte) {
+	if ce := w.Log.Check(w.Level, string(b)); ce != nil {
+		ce.Write()
+	}
 }
