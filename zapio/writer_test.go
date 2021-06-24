@@ -156,3 +156,60 @@ func TestWriter(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkWriter(b *testing.B) {
+	tests := []struct {
+		name   string
+		writes [][]byte
+	}{
+		{
+			name: "single",
+			writes: [][]byte{
+				[]byte("foobar\n"),
+				[]byte("bazqux\n"),
+			},
+		},
+		{
+			name: "splits",
+			writes: [][]byte{
+				[]byte("foo"),
+				[]byte("bar\nbaz"),
+				[]byte("qux\n"),
+			},
+		},
+	}
+
+	writer := Writer{
+		Log:   zap.New(new(partiallyNopCore)),
+		Level: zapcore.DebugLevel,
+	}
+
+	for _, tt := range tests {
+		b.Run(tt.name, func(b *testing.B) {
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				for _, bs := range tt.writes {
+					writer.Write(bs)
+				}
+			}
+		})
+	}
+}
+
+// partiallyNopCore behaves exactly like NopCore except it always returns true
+// for whether the provided level is enabled, and accepts all Check requests.
+//
+// This lets us measure the overhead of the writer without measuring the cost
+// of logging.
+type partiallyNopCore struct{}
+
+func (*partiallyNopCore) Enabled(zapcore.Level) bool { return true }
+
+func (c *partiallyNopCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	return ce.AddCore(ent, c)
+}
+
+func (c *partiallyNopCore) With([]zapcore.Field) zapcore.Core        { return c }
+func (*partiallyNopCore) Write(zapcore.Entry, []zapcore.Field) error { return nil }
+func (*partiallyNopCore) Sync() error                                { return nil }
