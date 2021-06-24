@@ -21,7 +21,9 @@
 package zap
 
 import (
+	"math"
 	"net"
+	"regexp"
 	"sync"
 	"testing"
 	"time"
@@ -63,6 +65,29 @@ func TestFieldConstructors(t *testing.T) {
 	name := username("phil")
 	ints := []int{5, 6}
 
+	// Helpful values for use in constructing pointers to primitives below.
+	var (
+		boolVal       bool          = true
+		complex128Val complex128    = complex(0, 0)
+		complex64Val  complex64     = complex(0, 0)
+		durationVal   time.Duration = time.Second
+		float64Val    float64       = 1.0
+		float32Val    float32       = 1.0
+		intVal        int           = 1
+		int64Val      int64         = 1
+		int32Val      int32         = 1
+		int16Val      int16         = 1
+		int8Val       int8          = 1
+		stringVal     string        = "hello"
+		timeVal       time.Time     = time.Unix(100000, 0)
+		uintVal       uint          = 1
+		uint64Val     uint64        = 1
+		uint32Val     uint32        = 1
+		uint16Val     uint16        = 1
+		uint8Val      uint8         = 1
+		uintptrVal    uintptr       = 1
+	)
+
 	tests := []struct {
 		name   string
 		field  Field
@@ -84,6 +109,10 @@ func TestFieldConstructors(t *testing.T) {
 		{"String", Field{Key: "k", Type: zapcore.StringType, String: "foo"}, String("k", "foo")},
 		{"Time", Field{Key: "k", Type: zapcore.TimeType, Integer: 0, Interface: time.UTC}, Time("k", time.Unix(0, 0).In(time.UTC))},
 		{"Time", Field{Key: "k", Type: zapcore.TimeType, Integer: 1000, Interface: time.UTC}, Time("k", time.Unix(0, 1000).In(time.UTC))},
+		{"Time", Field{Key: "k", Type: zapcore.TimeType, Integer: math.MinInt64, Interface: time.UTC}, Time("k", time.Unix(0, math.MinInt64).In(time.UTC))},
+		{"Time", Field{Key: "k", Type: zapcore.TimeType, Integer: math.MaxInt64, Interface: time.UTC}, Time("k", time.Unix(0, math.MaxInt64).In(time.UTC))},
+		{"Time", Field{Key: "k", Type: zapcore.TimeFullType, Interface: time.Time{}}, Time("k", time.Time{})},
+		{"Time", Field{Key: "k", Type: zapcore.TimeFullType, Interface: time.Unix(math.MaxInt64, 0)}, Time("k", time.Unix(math.MaxInt64, 0))},
 		{"Uint", Field{Key: "k", Type: zapcore.Uint64Type, Integer: 1}, Uint("k", 1)},
 		{"Uint64", Field{Key: "k", Type: zapcore.Uint64Type, Integer: 1}, Uint64("k", 1)},
 		{"Uint32", Field{Key: "k", Type: zapcore.Uint32Type, Integer: 1}, Uint32("k", 1)},
@@ -91,8 +120,10 @@ func TestFieldConstructors(t *testing.T) {
 		{"Uint8", Field{Key: "k", Type: zapcore.Uint8Type, Integer: 1}, Uint8("k", 1)},
 		{"Uintptr", Field{Key: "k", Type: zapcore.UintptrType, Integer: 10}, Uintptr("k", 0xa)},
 		{"Reflect", Field{Key: "k", Type: zapcore.ReflectType, Interface: ints}, Reflect("k", ints)},
+		{"Reflect", Field{Key: "k", Type: zapcore.ReflectType}, Reflect("k", nil)},
 		{"Stringer", Field{Key: "k", Type: zapcore.StringerType, Interface: addr}, Stringer("k", addr)},
 		{"Object", Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: name}, Object("k", name)},
+		{"Inline", Field{Type: zapcore.InlineMarshalerType, Interface: name}, Inline(name)},
 		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
 		{"Any:ArrayMarshaler", Any("k", bools([]bool{true})), Array("k", bools([]bool{true}))},
 		{"Any:Stringer", Any("k", addr), Stringer("k", addr)},
@@ -139,6 +170,82 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:Duration", Any("k", time.Second), Duration("k", time.Second)},
 		{"Any:Durations", Any("k", []time.Duration{time.Second}), Durations("k", []time.Duration{time.Second})},
 		{"Any:Fallback", Any("k", struct{}{}), Reflect("k", struct{}{})},
+		{"Ptr:Bool", Boolp("k", nil), nilField("k")},
+		{"Ptr:Bool", Boolp("k", &boolVal), Bool("k", boolVal)},
+		{"Any:PtrBool", Any("k", (*bool)(nil)), nilField("k")},
+		{"Any:PtrBool", Any("k", &boolVal), Bool("k", boolVal)},
+		{"Ptr:Complex128", Complex128p("k", nil), nilField("k")},
+		{"Ptr:Complex128", Complex128p("k", &complex128Val), Complex128("k", complex128Val)},
+		{"Any:PtrComplex128", Any("k", (*complex128)(nil)), nilField("k")},
+		{"Any:PtrComplex128", Any("k", &complex128Val), Complex128("k", complex128Val)},
+		{"Ptr:Complex64", Complex64p("k", nil), nilField("k")},
+		{"Ptr:Complex64", Complex64p("k", &complex64Val), Complex64("k", complex64Val)},
+		{"Any:PtrComplex64", Any("k", (*complex64)(nil)), nilField("k")},
+		{"Any:PtrComplex64", Any("k", &complex64Val), Complex64("k", complex64Val)},
+		{"Ptr:Duration", Durationp("k", nil), nilField("k")},
+		{"Ptr:Duration", Durationp("k", &durationVal), Duration("k", durationVal)},
+		{"Any:PtrDuration", Any("k", (*time.Duration)(nil)), nilField("k")},
+		{"Any:PtrDuration", Any("k", &durationVal), Duration("k", durationVal)},
+		{"Ptr:Float64", Float64p("k", nil), nilField("k")},
+		{"Ptr:Float64", Float64p("k", &float64Val), Float64("k", float64Val)},
+		{"Any:PtrFloat64", Any("k", (*float64)(nil)), nilField("k")},
+		{"Any:PtrFloat64", Any("k", &float64Val), Float64("k", float64Val)},
+		{"Ptr:Float32", Float32p("k", nil), nilField("k")},
+		{"Ptr:Float32", Float32p("k", &float32Val), Float32("k", float32Val)},
+		{"Any:PtrFloat32", Any("k", (*float32)(nil)), nilField("k")},
+		{"Any:PtrFloat32", Any("k", &float32Val), Float32("k", float32Val)},
+		{"Ptr:Int", Intp("k", nil), nilField("k")},
+		{"Ptr:Int", Intp("k", &intVal), Int("k", intVal)},
+		{"Any:PtrInt", Any("k", (*int)(nil)), nilField("k")},
+		{"Any:PtrInt", Any("k", &intVal), Int("k", intVal)},
+		{"Ptr:Int64", Int64p("k", nil), nilField("k")},
+		{"Ptr:Int64", Int64p("k", &int64Val), Int64("k", int64Val)},
+		{"Any:PtrInt64", Any("k", (*int64)(nil)), nilField("k")},
+		{"Any:PtrInt64", Any("k", &int64Val), Int64("k", int64Val)},
+		{"Ptr:Int32", Int32p("k", nil), nilField("k")},
+		{"Ptr:Int32", Int32p("k", &int32Val), Int32("k", int32Val)},
+		{"Any:PtrInt32", Any("k", (*int32)(nil)), nilField("k")},
+		{"Any:PtrInt32", Any("k", &int32Val), Int32("k", int32Val)},
+		{"Ptr:Int16", Int16p("k", nil), nilField("k")},
+		{"Ptr:Int16", Int16p("k", &int16Val), Int16("k", int16Val)},
+		{"Any:PtrInt16", Any("k", (*int16)(nil)), nilField("k")},
+		{"Any:PtrInt16", Any("k", &int16Val), Int16("k", int16Val)},
+		{"Ptr:Int8", Int8p("k", nil), nilField("k")},
+		{"Ptr:Int8", Int8p("k", &int8Val), Int8("k", int8Val)},
+		{"Any:PtrInt8", Any("k", (*int8)(nil)), nilField("k")},
+		{"Any:PtrInt8", Any("k", &int8Val), Int8("k", int8Val)},
+		{"Ptr:String", Stringp("k", nil), nilField("k")},
+		{"Ptr:String", Stringp("k", &stringVal), String("k", stringVal)},
+		{"Any:PtrString", Any("k", (*string)(nil)), nilField("k")},
+		{"Any:PtrString", Any("k", &stringVal), String("k", stringVal)},
+		{"Ptr:Time", Timep("k", nil), nilField("k")},
+		{"Ptr:Time", Timep("k", &timeVal), Time("k", timeVal)},
+		{"Any:PtrTime", Any("k", (*time.Time)(nil)), nilField("k")},
+		{"Any:PtrTime", Any("k", &timeVal), Time("k", timeVal)},
+		{"Ptr:Uint", Uintp("k", nil), nilField("k")},
+		{"Ptr:Uint", Uintp("k", &uintVal), Uint("k", uintVal)},
+		{"Any:PtrUint", Any("k", (*uint)(nil)), nilField("k")},
+		{"Any:PtrUint", Any("k", &uintVal), Uint("k", uintVal)},
+		{"Ptr:Uint64", Uint64p("k", nil), nilField("k")},
+		{"Ptr:Uint64", Uint64p("k", &uint64Val), Uint64("k", uint64Val)},
+		{"Any:PtrUint64", Any("k", (*uint64)(nil)), nilField("k")},
+		{"Any:PtrUint64", Any("k", &uint64Val), Uint64("k", uint64Val)},
+		{"Ptr:Uint32", Uint32p("k", nil), nilField("k")},
+		{"Ptr:Uint32", Uint32p("k", &uint32Val), Uint32("k", uint32Val)},
+		{"Any:PtrUint32", Any("k", (*uint32)(nil)), nilField("k")},
+		{"Any:PtrUint32", Any("k", &uint32Val), Uint32("k", uint32Val)},
+		{"Ptr:Uint16", Uint16p("k", nil), nilField("k")},
+		{"Ptr:Uint16", Uint16p("k", &uint16Val), Uint16("k", uint16Val)},
+		{"Any:PtrUint16", Any("k", (*uint16)(nil)), nilField("k")},
+		{"Any:PtrUint16", Any("k", &uint16Val), Uint16("k", uint16Val)},
+		{"Ptr:Uint8", Uint8p("k", nil), nilField("k")},
+		{"Ptr:Uint8", Uint8p("k", &uint8Val), Uint8("k", uint8Val)},
+		{"Any:PtrUint8", Any("k", (*uint8)(nil)), nilField("k")},
+		{"Any:PtrUint8", Any("k", &uint8Val), Uint8("k", uint8Val)},
+		{"Ptr:Uintptr", Uintptrp("k", nil), nilField("k")},
+		{"Ptr:Uintptr", Uintptrp("k", &uintptrVal), Uintptr("k", uintptrVal)},
+		{"Any:PtrUintptr", Any("k", (*uintptr)(nil)), nilField("k")},
+		{"Any:PtrUintptr", Any("k", &uintptrVal), Uintptr("k", uintptrVal)},
 		{"Namespace", Namespace("k"), Field{Key: "k", Type: zapcore.NamespaceType}},
 	}
 
@@ -154,6 +261,24 @@ func TestStackField(t *testing.T) {
 	f := Stack("stacktrace")
 	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
-	assert.Equal(t, takeStacktrace(), f.String, "Unexpected stack trace")
+	r := regexp.MustCompile(`field_test.go:(\d+)`)
+	assert.Equal(t, r.ReplaceAllString(takeStacktrace(0), "field_test.go"), r.ReplaceAllString(f.String, "field_test.go"), "Unexpected stack trace")
+	assertCanBeReused(t, f)
+}
+
+func TestStackSkipField(t *testing.T) {
+	f := StackSkip("stacktrace", 0)
+	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
+	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
+	r := regexp.MustCompile(`field_test.go:(\d+)`)
+	assert.Equal(t, r.ReplaceAllString(takeStacktrace(0), "field_test.go"), r.ReplaceAllString(f.String, "field_test.go"), f.String, "Unexpected stack trace")
+	assertCanBeReused(t, f)
+}
+
+func TestStackSkipFieldWithSkip(t *testing.T) {
+	f := StackSkip("stacktrace", 1)
+	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
+	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
+	assert.Equal(t, takeStacktrace(1), f.String, "Unexpected stack trace")
 	assertCanBeReused(t, f)
 }

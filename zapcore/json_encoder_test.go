@@ -64,6 +64,8 @@ func TestJSONEncodeEntry(t *testing.T) {
 				"so": "passes",
 				"answer": 42,
 				"common_pie": 3.14,
+				"null_value": null,
+				"array_with_null_elements": [{}, null, null, 2],
 				"such": {
 					"aee": "lol",
 					"bee": 123,
@@ -84,6 +86,13 @@ func TestJSONEncodeEntry(t *testing.T) {
 				zap.String("so", "passes"),
 				zap.Int("answer", 42),
 				zap.Float64("common_pie", 3.14),
+				// Cover special-cased handling of nil in AddReflect() and
+				// AppendReflect(). Note that for the latter, we explicitly test
+				// correct results for both the nil static interface{} value
+				// (`nil`), as well as the non-nil interface value with a
+				// dynamic type and nil value (`(*struct{})(nil)`).
+				zap.Reflect("null_value", nil),
+				zap.Reflect("array_with_null_elements", []interface{}{&struct{}{}, nil, (*struct{})(nil), 2}),
 				zap.Reflect("such", foo{
 					A: "lol",
 					B: 123,
@@ -103,6 +112,7 @@ func TestJSONEncodeEntry(t *testing.T) {
 		TimeKey:        "T",
 		NameKey:        "N",
 		CallerKey:      "C",
+		FunctionKey:    "F",
 		StacktraceKey:  "S",
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
@@ -116,6 +126,43 @@ func TestJSONEncodeEntry(t *testing.T) {
 			if assert.NoError(t, err, "Unexpected JSON encoding error.") {
 				assert.JSONEq(t, tt.expected, buf.String(), "Incorrect encoded JSON entry.")
 			}
+			buf.Free()
+		})
+	}
+}
+
+func TestJSONEmptyConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		field    zapcore.Field
+		expected string
+	}{
+		{
+			name:     "time",
+			field:    zap.Time("foo", time.Unix(1591287718, 0)), // 2020-06-04 09:21:58 -0700 PDT
+			expected: `{"foo": 1591287718000000000}`,
+		},
+		{
+			name:     "duration",
+			field:    zap.Duration("bar", time.Microsecond),
+			expected: `{"bar": 1000}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{})
+
+			buf, err := enc.EncodeEntry(zapcore.Entry{
+				Level:      zapcore.DebugLevel,
+				Time:       time.Now(),
+				LoggerName: "mylogger",
+				Message:    "things happened",
+			}, []zapcore.Field{tt.field})
+			if assert.NoError(t, err, "Unexpected JSON encoding error.") {
+				assert.JSONEq(t, tt.expected, buf.String(), "Incorrect encoded JSON entry.")
+			}
+
 			buf.Free()
 		})
 	}

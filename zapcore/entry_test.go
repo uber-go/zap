@@ -29,6 +29,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func assertGoexit(t *testing.T, f func()) {
+	var finished bool
+	recovered := make(chan interface{})
+	go func() {
+		defer func() {
+			recovered <- recover()
+		}()
+
+		f()
+		finished = true
+	}()
+
+	assert.Nil(t, <-recovered, "Goexit should cause recover to return nil")
+	assert.False(t, finished, "Goroutine should not finish after Goexit")
+}
+
 func TestPutNilEntry(t *testing.T) {
 	// Pooling nil entries defeats the purpose.
 	var wg sync.WaitGroup
@@ -88,20 +104,29 @@ func TestEntryCaller(t *testing.T) {
 }
 
 func TestCheckedEntryWrite(t *testing.T) {
-	// Nil checked entries are safe.
-	var ce *CheckedEntry
-	assert.NotPanics(t, func() { ce.Write() }, "Unexpected panic writing nil CheckedEntry.")
-
-	// WriteThenPanic
-	ce = ce.Should(Entry{}, WriteThenPanic)
-	assert.Panics(t, func() { ce.Write() }, "Expected to panic when WriteThenPanic is set.")
-	ce.reset()
-
-	// WriteThenFatal
-	ce = ce.Should(Entry{}, WriteThenFatal)
-	stub := exit.WithStub(func() {
-		ce.Write()
+	t.Run("nil is safe", func(t *testing.T) {
+		var ce *CheckedEntry
+		assert.NotPanics(t, func() { ce.Write() }, "Unexpected panic writing nil CheckedEntry.")
 	})
-	assert.True(t, stub.Exited, "Expected to exit when WriteThenFatal is set.")
-	ce.reset()
+
+	t.Run("WriteThenPanic", func(t *testing.T) {
+		var ce *CheckedEntry
+		ce = ce.Should(Entry{}, WriteThenPanic)
+		assert.Panics(t, func() { ce.Write() }, "Expected to panic when WriteThenPanic is set.")
+	})
+
+	t.Run("WriteThenGoexit", func(t *testing.T) {
+		var ce *CheckedEntry
+		ce = ce.Should(Entry{}, WriteThenGoexit)
+		assertGoexit(t, func() { ce.Write() })
+	})
+
+	t.Run("WriteThenFatal", func(t *testing.T) {
+		var ce *CheckedEntry
+		ce = ce.Should(Entry{}, WriteThenFatal)
+		stub := exit.WithStub(func() {
+			ce.Write()
+		})
+		assert.True(t, stub.Exited, "Expected to exit when WriteThenFatal is set.")
+	})
 }

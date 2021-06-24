@@ -21,12 +21,14 @@
 package zapcore_test
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 
 	. "go.uber.org/zap/zapcore"
 )
@@ -39,7 +41,7 @@ var (
 		Message:    `hello`,
 		Time:       _epoch,
 		Stack:      "fake-stack",
-		Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42},
+		Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42, Function: "foo.Foo"},
 	}
 )
 
@@ -50,6 +52,7 @@ func testEncoderConfig() EncoderConfig {
 		NameKey:        "name",
 		TimeKey:        "ts",
 		CallerKey:      "caller",
+		FunctionKey:    "func",
 		StacktraceKey:  "stacktrace",
 		LineEnding:     "\n",
 		EncodeTime:     EpochTimeEncoder,
@@ -65,14 +68,6 @@ func humanEncoderConfig() EncoderConfig {
 	cfg.EncodeLevel = CapitalLevelEncoder
 	cfg.EncodeDuration = StringDurationEncoder
 	return cfg
-}
-
-func withJSONEncoder(f func(Encoder)) {
-	f(NewJSONEncoder(testEncoderConfig()))
-}
-
-func withConsoleEncoder(f func(Encoder)) {
-	f(NewConsoleEncoder(humanEncoderConfig()))
 }
 
 func capitalNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
@@ -97,8 +92,8 @@ func TestEncoderConfiguration(t *testing.T) {
 				ent.Message = `hello\`
 				return ent
 			},
-			expectedJSON:    `{"level":"info","ts":0,"name":"main","caller":"foo.go:42","msg":"hello\\","stacktrace":"fake-stack"}` + "\n",
-			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\\\nfake-stack\n",
+			expectedJSON:    `{"level":"info","ts":0,"name":"main","caller":"foo.go:42","func":"foo.Foo","msg":"hello\\","stacktrace":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\\\nfake-stack\n",
 		},
 		{
 			desc: "use custom entry keys in JSON output and ignore them in console output",
@@ -108,6 +103,121 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
+				FunctionKey:    "F",
+				StacktraceKey:  "S",
+				LineEnding:     base.LineEnding,
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
+			},
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\nfake-stack\n",
+		},
+		{
+			desc: "skip level if LevelKey is omitted",
+			cfg: EncoderConfig{
+				LevelKey:       OmitKey,
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      "C",
+				FunctionKey:    "F",
+				StacktraceKey:  "S",
+				LineEnding:     base.LineEnding,
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
+			},
+			expectedJSON:    `{"T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tmain\tfoo.go:42\tfoo.Foo\thello\nfake-stack\n",
+		},
+		{
+			desc: "skip timestamp if TimeKey is omitted",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        OmitKey,
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      "C",
+				FunctionKey:    "F",
+				StacktraceKey:  "S",
+				LineEnding:     base.LineEnding,
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
+			},
+			expectedJSON:    `{"L":"info","N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","S":"fake-stack"}` + "\n",
+			expectedConsole: "info\tmain\tfoo.go:42\tfoo.Foo\thello\nfake-stack\n",
+		},
+		{
+			desc: "skip message if MessageKey is omitted",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     OmitKey,
+				NameKey:        "N",
+				CallerKey:      "C",
+				FunctionKey:    "F",
+				StacktraceKey:  "S",
+				LineEnding:     base.LineEnding,
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
+			},
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\nfake-stack\n",
+		},
+		{
+			desc: "skip name if NameKey is omitted",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        OmitKey,
+				CallerKey:      "C",
+				FunctionKey:    "F",
+				StacktraceKey:  "S",
+				LineEnding:     base.LineEnding,
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
+			},
+			expectedJSON:    `{"L":"info","T":0,"C":"foo.go:42","F":"foo.Foo","M":"hello","S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tfoo.go:42\tfoo.Foo\thello\nfake-stack\n",
+		},
+		{
+			desc: "skip caller if CallerKey is omitted",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      OmitKey,
+				FunctionKey:    "F",
+				StacktraceKey:  "S",
+				LineEnding:     base.LineEnding,
+				EncodeTime:     base.EncodeTime,
+				EncodeDuration: base.EncodeDuration,
+				EncodeLevel:    base.EncodeLevel,
+				EncodeCaller:   base.EncodeCaller,
+			},
+			expectedJSON:    `{"L":"info","T":0,"N":"main","F":"foo.Foo","M":"hello","S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tmain\tfoo.Foo\thello\nfake-stack\n",
+		},
+		{
+			desc: "skip function if FunctionKey is omitted",
+			cfg: EncoderConfig{
+				LevelKey:       "L",
+				TimeKey:        "T",
+				MessageKey:     "M",
+				NameKey:        "N",
+				CallerKey:      "C",
+				FunctionKey:    OmitKey,
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
@@ -119,96 +229,6 @@ func TestEncoderConfiguration(t *testing.T) {
 			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\nfake-stack\n",
 		},
 		{
-			desc: "skip level if LevelKey is omitted",
-			cfg: EncoderConfig{
-				LevelKey:       "",
-				TimeKey:        "T",
-				MessageKey:     "M",
-				NameKey:        "N",
-				CallerKey:      "C",
-				StacktraceKey:  "S",
-				LineEnding:     base.LineEnding,
-				EncodeTime:     base.EncodeTime,
-				EncodeDuration: base.EncodeDuration,
-				EncodeLevel:    base.EncodeLevel,
-				EncodeCaller:   base.EncodeCaller,
-			},
-			expectedJSON:    `{"T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}` + "\n",
-			expectedConsole: "0\tmain\tfoo.go:42\thello\nfake-stack\n",
-		},
-		{
-			desc: "skip timestamp if TimeKey is omitted",
-			cfg: EncoderConfig{
-				LevelKey:       "L",
-				TimeKey:        "",
-				MessageKey:     "M",
-				NameKey:        "N",
-				CallerKey:      "C",
-				StacktraceKey:  "S",
-				LineEnding:     base.LineEnding,
-				EncodeTime:     base.EncodeTime,
-				EncodeDuration: base.EncodeDuration,
-				EncodeLevel:    base.EncodeLevel,
-				EncodeCaller:   base.EncodeCaller,
-			},
-			expectedJSON:    `{"L":"info","N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}` + "\n",
-			expectedConsole: "info\tmain\tfoo.go:42\thello\nfake-stack\n",
-		},
-		{
-			desc: "skip message if MessageKey is omitted",
-			cfg: EncoderConfig{
-				LevelKey:       "L",
-				TimeKey:        "T",
-				MessageKey:     "",
-				NameKey:        "N",
-				CallerKey:      "C",
-				StacktraceKey:  "S",
-				LineEnding:     base.LineEnding,
-				EncodeTime:     base.EncodeTime,
-				EncodeDuration: base.EncodeDuration,
-				EncodeLevel:    base.EncodeLevel,
-				EncodeCaller:   base.EncodeCaller,
-			},
-			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","S":"fake-stack"}` + "\n",
-			expectedConsole: "0\tinfo\tmain\tfoo.go:42\nfake-stack\n",
-		},
-		{
-			desc: "skip name if NameKey is omitted",
-			cfg: EncoderConfig{
-				LevelKey:       "L",
-				TimeKey:        "T",
-				MessageKey:     "M",
-				NameKey:        "",
-				CallerKey:      "C",
-				StacktraceKey:  "S",
-				LineEnding:     base.LineEnding,
-				EncodeTime:     base.EncodeTime,
-				EncodeDuration: base.EncodeDuration,
-				EncodeLevel:    base.EncodeLevel,
-				EncodeCaller:   base.EncodeCaller,
-			},
-			expectedJSON:    `{"L":"info","T":0,"C":"foo.go:42","M":"hello","S":"fake-stack"}` + "\n",
-			expectedConsole: "0\tinfo\tfoo.go:42\thello\nfake-stack\n",
-		},
-		{
-			desc: "skip caller if CallerKey is omitted",
-			cfg: EncoderConfig{
-				LevelKey:       "L",
-				TimeKey:        "T",
-				MessageKey:     "M",
-				NameKey:        "N",
-				CallerKey:      "",
-				StacktraceKey:  "S",
-				LineEnding:     base.LineEnding,
-				EncodeTime:     base.EncodeTime,
-				EncodeDuration: base.EncodeDuration,
-				EncodeLevel:    base.EncodeLevel,
-				EncodeCaller:   base.EncodeCaller,
-			},
-			expectedJSON:    `{"L":"info","T":0,"N":"main","M":"hello","S":"fake-stack"}` + "\n",
-			expectedConsole: "0\tinfo\tmain\thello\nfake-stack\n",
-		},
-		{
 			desc: "skip stacktrace if StacktraceKey is omitted",
 			cfg: EncoderConfig{
 				LevelKey:       "L",
@@ -216,15 +236,16 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
-				StacktraceKey:  "",
+				FunctionKey:    "F",
+				StacktraceKey:  OmitKey,
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
-			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello"}` + "\n",
-			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\n",
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello"}` + "\n",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\n",
 		},
 		{
 			desc: "use the supplied EncodeTime, for both the entry and any times added",
@@ -234,6 +255,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
+				FunctionKey:    "F",
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
 				EncodeTime:     func(t time.Time, enc PrimitiveArrayEncoder) { enc.AppendString(t.String()) },
@@ -248,8 +270,8 @@ func TestEncoderConfiguration(t *testing.T) {
 					return nil
 				}))
 			},
-			expectedJSON: `{"L":"info","T":"1970-01-01 00:00:00 +0000 UTC","N":"main","C":"foo.go:42","M":"hello","extra":"1970-01-01 00:00:00 +0000 UTC","extras":["1970-01-01 00:00:00 +0000 UTC"],"S":"fake-stack"}` + "\n",
-			expectedConsole: "1970-01-01 00:00:00 +0000 UTC\tinfo\tmain\tfoo.go:42\thello\t" + // plain-text preamble
+			expectedJSON: `{"L":"info","T":"1970-01-01 00:00:00 +0000 UTC","N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","extra":"1970-01-01 00:00:00 +0000 UTC","extras":["1970-01-01 00:00:00 +0000 UTC"],"S":"fake-stack"}` + "\n",
+			expectedConsole: "1970-01-01 00:00:00 +0000 UTC\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\t" + // plain-text preamble
 				`{"extra": "1970-01-01 00:00:00 +0000 UTC", "extras": ["1970-01-01 00:00:00 +0000 UTC"]}` + // JSON context
 				"\nfake-stack\n", // stacktrace after newline
 		},
@@ -261,6 +283,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
+				FunctionKey:    "F",
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
@@ -275,8 +298,8 @@ func TestEncoderConfiguration(t *testing.T) {
 					return nil
 				}))
 			},
-			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","extra":"1s","extras":["1m0s"],"S":"fake-stack"}` + "\n",
-			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\t" + // preamble
+			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","extra":"1s","extras":["1m0s"],"S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\t" + // preamble
 				`{"extra": "1s", "extras": ["1m0s"]}` + // context
 				"\nfake-stack\n", // stacktrace
 		},
@@ -288,6 +311,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
+				FunctionKey:    "F",
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
@@ -295,8 +319,8 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeLevel:    CapitalLevelEncoder,
 				EncodeCaller:   base.EncodeCaller,
 			},
-			expectedJSON:    `{"L":"INFO","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}` + "\n",
-			expectedConsole: "0\tINFO\tmain\tfoo.go:42\thello\nfake-stack\n",
+			expectedJSON:    `{"L":"INFO","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tINFO\tmain\tfoo.go:42\tfoo.Foo\thello\nfake-stack\n",
 		},
 		{
 			desc: "use the supplied EncodeName",
@@ -306,6 +330,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
+				FunctionKey:    "F",
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
@@ -314,8 +339,8 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeCaller:   base.EncodeCaller,
 				EncodeName:     capitalNameEncoder,
 			},
-			expectedJSON:    `{"L":"info","T":0,"N":"MAIN","C":"foo.go:42","M":"hello","S":"fake-stack"}` + "\n",
-			expectedConsole: "0\tinfo\tMAIN\tfoo.go:42\thello\nfake-stack\n",
+			expectedJSON:    `{"L":"info","T":0,"N":"MAIN","C":"foo.go:42","F":"foo.Foo","M":"hello","S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tMAIN\tfoo.go:42\tfoo.Foo\thello\nfake-stack\n",
 		},
 		{
 			desc: "close all open namespaces",
@@ -325,6 +350,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
+				FunctionKey:    "F",
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
@@ -338,8 +364,8 @@ func TestEncoderConfiguration(t *testing.T) {
 				enc.AddString("foo", "bar")
 				enc.OpenNamespace("innermost")
 			},
-			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","outer":{"inner":{"foo":"bar","innermost":{}}},"S":"fake-stack"}` + "\n",
-			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\t" +
+			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","outer":{"inner":{"foo":"bar","innermost":{}}},"S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\t" +
 				`{"outer": {"inner": {"foo": "bar", "innermost": {}}}}` +
 				"\nfake-stack\n",
 		},
@@ -351,6 +377,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
+				FunctionKey:    "F",
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
 				EncodeTime:     func(time.Time, PrimitiveArrayEncoder) {},
@@ -359,8 +386,8 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeCaller:   base.EncodeCaller,
 			},
 			extra:           func(enc Encoder) { enc.AddTime("sometime", time.Unix(0, 100)) },
-			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","sometime":100,"S":"fake-stack"}` + "\n",
-			expectedConsole: "info\tmain\tfoo.go:42\thello\t" + `{"sometime": 100}` + "\nfake-stack\n",
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","sometime":100,"S":"fake-stack"}` + "\n",
+			expectedConsole: "info\tmain\tfoo.go:42\tfoo.Foo\thello\t" + `{"sometime": 100}` + "\nfake-stack\n",
 		},
 		{
 			desc: "handle no-op EncodeDuration",
@@ -370,6 +397,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
+				FunctionKey:    "F",
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
@@ -378,8 +406,8 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeCaller:   base.EncodeCaller,
 			},
 			extra:           func(enc Encoder) { enc.AddDuration("someduration", time.Microsecond) },
-			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","someduration":1000,"S":"fake-stack"}` + "\n",
-			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\t" + `{"someduration": 1000}` + "\nfake-stack\n",
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","someduration":1000,"S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\t" + `{"someduration": 1000}` + "\nfake-stack\n",
 		},
 		{
 			desc: "handle no-op EncodeLevel",
@@ -389,6 +417,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
+				FunctionKey:    "F",
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
@@ -396,8 +425,8 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeLevel:    func(Level, PrimitiveArrayEncoder) {},
 				EncodeCaller:   base.EncodeCaller,
 			},
-			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}` + "\n",
-			expectedConsole: "0\tmain\tfoo.go:42\thello\nfake-stack\n",
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tmain\tfoo.go:42\tfoo.Foo\thello\nfake-stack\n",
 		},
 		{
 			desc: "handle no-op EncodeCaller",
@@ -407,6 +436,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
+				FunctionKey:    "F",
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
@@ -414,8 +444,8 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   func(EntryCaller, PrimitiveArrayEncoder) {},
 			},
-			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}` + "\n",
-			expectedConsole: "0\tinfo\tmain\thello\nfake-stack\n",
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tmain\tfoo.Foo\thello\nfake-stack\n",
 		},
 		{
 			desc: "handle no-op EncodeName",
@@ -425,6 +455,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
+				FunctionKey:    "F",
 				StacktraceKey:  "S",
 				LineEnding:     base.LineEnding,
 				EncodeTime:     base.EncodeTime,
@@ -433,8 +464,8 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeCaller:   base.EncodeCaller,
 				EncodeName:     func(string, PrimitiveArrayEncoder) {},
 			},
-			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}` + "\n",
-			expectedConsole: "0\tinfo\tfoo.go:42\thello\nfake-stack\n",
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","S":"fake-stack"}` + "\n",
+			expectedConsole: "0\tinfo\tfoo.go:42\tfoo.Foo\thello\nfake-stack\n",
 		},
 		{
 			desc: "use custom line separator",
@@ -444,6 +475,7 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
+				FunctionKey:    "F",
 				StacktraceKey:  "S",
 				LineEnding:     "\r\n",
 				EncodeTime:     base.EncodeTime,
@@ -451,8 +483,8 @@ func TestEncoderConfiguration(t *testing.T) {
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
-			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}` + "\r\n",
-			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\nfake-stack\r\n",
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","S":"fake-stack"}` + "\r\n",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\nfake-stack\r\n",
 		},
 		{
 			desc: "omit line separator definition - fall back to default",
@@ -462,14 +494,15 @@ func TestEncoderConfiguration(t *testing.T) {
 				MessageKey:     "M",
 				NameKey:        "N",
 				CallerKey:      "C",
+				FunctionKey:    "F",
 				StacktraceKey:  "S",
 				EncodeTime:     base.EncodeTime,
 				EncodeDuration: base.EncodeDuration,
 				EncodeLevel:    base.EncodeLevel,
 				EncodeCaller:   base.EncodeCaller,
 			},
-			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","M":"hello","S":"fake-stack"}` + DefaultLineEnding,
-			expectedConsole: "0\tinfo\tmain\tfoo.go:42\thello\nfake-stack" + DefaultLineEnding,
+			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","S":"fake-stack"}` + DefaultLineEnding,
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\nfake-stack" + DefaultLineEnding,
 		},
 	}
 
@@ -531,25 +564,65 @@ func TestLevelEncoders(t *testing.T) {
 func TestTimeEncoders(t *testing.T) {
 	moment := time.Unix(100, 50005000).UTC()
 	tests := []struct {
-		name     string
+		yamlDoc  string
 		expected interface{} // output of serializing moment
 	}{
-		{"iso8601", "1970-01-01T00:01:40.050Z"},
-		{"ISO8601", "1970-01-01T00:01:40.050Z"},
-		{"millis", 100050.005},
-		{"nanos", int64(100050005000)},
-		{"", 100.050005},
-		{"something-random", 100.050005},
+		{"timeEncoder: iso8601", "1970-01-01T00:01:40.050Z"},
+		{"timeEncoder: ISO8601", "1970-01-01T00:01:40.050Z"},
+		{"timeEncoder: millis", 100050.005},
+		{"timeEncoder: nanos", int64(100050005000)},
+		{"timeEncoder: {layout: 06/01/02 03:04pm}", "70/01/01 12:01am"},
+		{"timeEncoder: ''", 100.050005},
+		{"timeEncoder: something-random", 100.050005},
+		{"timeEncoder: rfc3339", "1970-01-01T00:01:40Z"},
+		{"timeEncoder: RFC3339", "1970-01-01T00:01:40Z"},
+		{"timeEncoder: rfc3339nano", "1970-01-01T00:01:40.050005Z"},
+		{"timeEncoder: RFC3339Nano", "1970-01-01T00:01:40.050005Z"},
 	}
 
 	for _, tt := range tests {
-		var te TimeEncoder
-		require.NoError(t, te.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+		cfg := EncoderConfig{}
+		require.NoError(t, yaml.Unmarshal([]byte(tt.yamlDoc), &cfg), "Unexpected error unmarshaling %q.", tt.yamlDoc)
+		require.NotNil(t, cfg.EncodeTime, "Unmashalled timeEncoder is nil for %q.", tt.yamlDoc)
 		assertAppended(
 			t,
 			tt.expected,
-			func(arr ArrayEncoder) { te(moment, arr) },
-			"Unexpected output serializing %v with %q.", moment, tt.name,
+			func(arr ArrayEncoder) { cfg.EncodeTime(moment, arr) },
+			"Unexpected output serializing %v with %q.", moment, tt.yamlDoc,
+		)
+	}
+}
+
+func TestTimeEncodersWrongYAML(t *testing.T) {
+	tests := []string{
+		"timeEncoder: [1, 2, 3]", // wrong type
+		"timeEncoder: {foo:bar",  // broken yaml
+	}
+	for _, tt := range tests {
+		cfg := EncoderConfig{}
+		assert.Error(t, yaml.Unmarshal([]byte(tt), &cfg), "Expected unmarshaling %q to become error, but not.", tt)
+	}
+}
+
+func TestTimeEncodersParseFromJSON(t *testing.T) {
+	moment := time.Unix(100, 50005000).UTC()
+	tests := []struct {
+		jsonDoc  string
+		expected interface{} // output of serializing moment
+	}{
+		{`{"timeEncoder": "iso8601"}`, "1970-01-01T00:01:40.050Z"},
+		{`{"timeEncoder": {"layout": "06/01/02 03:04pm"}}`, "70/01/01 12:01am"},
+	}
+
+	for _, tt := range tests {
+		cfg := EncoderConfig{}
+		require.NoError(t, json.Unmarshal([]byte(tt.jsonDoc), &cfg), "Unexpected error unmarshaling %q.", tt.jsonDoc)
+		require.NotNil(t, cfg.EncodeTime, "Unmashalled timeEncoder is nil for %q.", tt.jsonDoc)
+		assertAppended(
+			t,
+			tt.expected,
+			func(arr ArrayEncoder) { cfg.EncodeTime(moment, arr) },
+			"Unexpected output serializing %v with %q.", moment, tt.jsonDoc,
 		)
 	}
 }
@@ -562,6 +635,7 @@ func TestDurationEncoders(t *testing.T) {
 	}{
 		{"string", "1.0000005s"},
 		{"nanos", int64(1000000500)},
+		{"ms", int64(1000)},
 		{"", 1.0000005},
 		{"something-random", 1.0000005},
 	}

@@ -19,7 +19,7 @@
 // THE SOFTWARE.
 
 // Package observer provides a zapcore.Core that keeps an in-memory,
-// encoding-agnostic repesentation of log entries. It's useful for
+// encoding-agnostic representation of log entries. It's useful for
 // applications that want to unit test their log output without tying their
 // tests to a particular output encoding.
 package observer // import "go.uber.org/zap/zaptest/observer"
@@ -78,23 +78,30 @@ func (o *ObservedLogs) AllUntimed() []LoggedEntry {
 	return ret
 }
 
+// FilterLevelExact filters entries to those logged at exactly the given level.
+func (o *ObservedLogs) FilterLevelExact(level zapcore.Level) *ObservedLogs {
+	return o.Filter(func(e LoggedEntry) bool {
+		return e.Level == level
+	})
+}
+
 // FilterMessage filters entries to those that have the specified message.
 func (o *ObservedLogs) FilterMessage(msg string) *ObservedLogs {
-	return o.filter(func(e LoggedEntry) bool {
+	return o.Filter(func(e LoggedEntry) bool {
 		return e.Message == msg
 	})
 }
 
 // FilterMessageSnippet filters entries to those that have a message containing the specified snippet.
 func (o *ObservedLogs) FilterMessageSnippet(snippet string) *ObservedLogs {
-	return o.filter(func(e LoggedEntry) bool {
+	return o.Filter(func(e LoggedEntry) bool {
 		return strings.Contains(e.Message, snippet)
 	})
 }
 
 // FilterField filters entries to those that have the specified field.
 func (o *ObservedLogs) FilterField(field zapcore.Field) *ObservedLogs {
-	return o.filter(func(e LoggedEntry) bool {
+	return o.Filter(func(e LoggedEntry) bool {
 		for _, ctxField := range e.Context {
 			if ctxField.Equals(field) {
 				return true
@@ -104,13 +111,27 @@ func (o *ObservedLogs) FilterField(field zapcore.Field) *ObservedLogs {
 	})
 }
 
-func (o *ObservedLogs) filter(match func(LoggedEntry) bool) *ObservedLogs {
+// FilterFieldKey filters entries to those that have the specified key.
+func (o *ObservedLogs) FilterFieldKey(key string) *ObservedLogs {
+	return o.Filter(func(e LoggedEntry) bool {
+		for _, ctxField := range e.Context {
+			if ctxField.Key == key {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+// Filter returns a copy of this ObservedLogs containing only those entries
+// for which the provided function returns true.
+func (o *ObservedLogs) Filter(keep func(LoggedEntry) bool) *ObservedLogs {
 	o.mu.RLock()
 	defer o.mu.RUnlock()
 
 	var filtered []LoggedEntry
 	for _, entry := range o.logs {
-		if match(entry) {
+		if keep(entry) {
 			filtered = append(filtered, entry)
 		}
 	}

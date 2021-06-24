@@ -27,6 +27,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
+	"go.uber.org/zap/zapcore"
 )
 
 func TestConfig(t *testing.T) {
@@ -50,7 +52,7 @@ func TestConfig(t *testing.T) {
 			expectRe: "DEBUG\tzap/config_test.go:" + `\d+` + "\tdebug\t" + `{"k": "v", "z": "zz"}` + "\n" +
 				"INFO\tzap/config_test.go:" + `\d+` + "\tinfo\t" + `{"k": "v", "z": "zz"}` + "\n" +
 				"WARN\tzap/config_test.go:" + `\d+` + "\twarn\t" + `{"k": "v", "z": "zz"}` + "\n" +
-				`testing.\w+`,
+				`go.uber.org/zap.TestConfig.\w+`,
 		},
 	}
 
@@ -105,4 +107,107 @@ func TestConfigWithInvalidPaths(t *testing.T) {
 			assert.Error(t, err, "Expected an error opening a non-existent directory.")
 		})
 	}
+}
+
+func TestConfigWithMissingAttributes(t *testing.T) {
+	tests := []struct {
+		desc      string
+		cfg       Config
+		expectErr string
+	}{
+		{
+			desc: "missing level",
+			cfg: Config{
+				Encoding: "json",
+			},
+			expectErr: "missing Level",
+		},
+		{
+			desc: "missing encoder time in encoder config",
+			cfg: Config{
+				Level:    NewAtomicLevelAt(zapcore.InfoLevel),
+				Encoding: "json",
+				EncoderConfig: zapcore.EncoderConfig{
+					MessageKey: "msg",
+					TimeKey:    "ts",
+				},
+			},
+			expectErr: "missing EncodeTime in EncoderConfig",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			cfg := tt.cfg
+			_, err := cfg.Build()
+			require.Error(t, err)
+			assert.Equal(t, tt.expectErr, err.Error())
+		})
+	}
+}
+
+func makeSamplerCountingHook() (h func(zapcore.Entry, zapcore.SamplingDecision),
+	dropped, sampled *atomic.Int64) {
+	dropped = new(atomic.Int64)
+	sampled = new(atomic.Int64)
+	h = func(_ zapcore.Entry, dec zapcore.SamplingDecision) {
+		if dec&zapcore.LogDropped > 0 {
+			dropped.Inc()
+		} else if dec&zapcore.LogSampled > 0 {
+			sampled.Inc()
+		}
+	}
+	return h, dropped, sampled
+}
+
+func TestConfigWithSamplingHook(t *testing.T) {
+	shook, dcount, scount := makeSamplerCountingHook()
+	cfg := Config{
+		Level:       NewAtomicLevelAt(InfoLevel),
+		Development: false,
+		Sampling: &SamplingConfig{
+			Initial:    100,
+			Thereafter: 100,
+			Hook:       shook,
+		},
+		Encoding:         "json",
+		EncoderConfig:    NewProductionEncoderConfig(),
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+	}
+	expectRe := `{"level":"info","caller":"zap/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
+		`{"level":"warn","caller":"zap/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n"
+	expectDropped := 99  // 200 - 100 initial - 1 thereafter
+	expectSampled := 103 // 2 from initial + 100 + 1 thereafter
+
+	temp, err := ioutil.TempFile("", "zap-prod-config-test")
+	require.NoError(t, err, "Failed to create temp file.")
+	defer func() {
+		err := os.Remove(temp.Name())
+		if err != nil {
+			return
+		}
+	}()
+
+	cfg.OutputPaths = []string{temp.Name()}
+	cfg.EncoderConfig.TimeKey = "" // no timestamps in tests
+	cfg.InitialFields = map[string]interface{}{"z": "zz", "k": "v"}
+
+	logger, err := cfg.Build()
+	require.NoError(t, err, "Unexpected error constructing logger.")
+
+	logger.Debug("debug")
+	logger.Info("info")
+	logger.Warn("warn")
+
+	byteContents, err := ioutil.ReadAll(temp)
+	require.NoError(t, err, "Couldn't read log contents from temp file.")
+	logs := string(byteContents)
+	assert.Regexp(t, expectRe, logs, "Unexpected log output.")
+
+	for i := 0; i < 200; i++ {
+		logger.Info("sampling")
+	}
+	assert.Equal(t, int64(expectDropped), dcount.Load())
+	assert.Equal(t, int64(expectSampled), scount.Load())
 }

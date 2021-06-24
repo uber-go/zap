@@ -36,13 +36,13 @@ func TestSugarWith(t *testing.T) {
 	// Convenience functions to create expected error logs.
 	ignored := func(msg interface{}) observer.LoggedEntry {
 		return observer.LoggedEntry{
-			Entry:   zapcore.Entry{Level: DPanicLevel, Message: _oddNumberErrMsg},
+			Entry:   zapcore.Entry{Level: ErrorLevel, Message: _oddNumberErrMsg},
 			Context: []Field{Any("ignored", msg)},
 		}
 	}
 	nonString := func(pairs ...invalidPair) observer.LoggedEntry {
 		return observer.LoggedEntry{
-			Entry:   zapcore.Entry{Level: DPanicLevel, Message: _nonStringKeyErrMsg},
+			Entry:   zapcore.Entry{Level: ErrorLevel, Message: _nonStringKeyErrMsg},
 			Context: []Field{Array("invalid", invalidPairs(pairs))},
 		}
 	}
@@ -158,10 +158,6 @@ func TestSugarFieldsInvalidPairs(t *testing.T) {
 		}, enc.Fields["invalid"], "Unexpected output when logging invalid key-value pairs.")
 	})
 }
-
-type stringerF func() string
-
-func (f stringerF) String() string { return f() }
 
 func TestSugarStructuredLogging(t *testing.T) {
 	tests := []struct {
@@ -370,5 +366,13 @@ func TestSugarAddCallerFail(t *testing.T) {
 			logs.AllUntimed()[0].Entry.Message,
 			"Failure.",
 			"Expected original message to survive failures in runtime.Caller.")
+	})
+}
+
+func BenchmarkSugarSingleStrArg(b *testing.B) {
+	withSugar(b, InfoLevel, nil /* opts* */, func(log *SugaredLogger, logs *observer.ObservedLogs) {
+		for i := 0; i < b.N; i++ {
+			log.Info("hello world")
+		}
 	})
 }
