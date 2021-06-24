@@ -48,6 +48,8 @@ func TestBufferWrites(t *testing.T) {
 		{"AppendFloat32", func() { buf.AppendFloat(float64(float32(3.14)), 32) }, "3.14"},
 		{"AppendWrite", func() { buf.Write([]byte("foo")) }, "foo"},
 		{"AppendTime", func() { buf.AppendTime(time.Date(2000, 1, 2, 3, 4, 5, 6, time.UTC), time.RFC3339) }, "2000-01-02T03:04:05Z"},
+		{"WriteByte", func() { buf.WriteByte('v') }, "v"},
+		{"WriteString", func() { buf.WriteString("foo") }, "foo"},
 	}
 
 	for _, tt := range tests {
