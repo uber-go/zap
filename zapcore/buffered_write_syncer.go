@@ -179,6 +179,7 @@ func (s *BufferedWriteSyncer) Stop() (err error) {
 		<-s.done      // and wait until it has
 	}()
 
+	// Don't call Sync on consecutive Stops.
 	if !stopped {
 		err = s.Sync()
 	}
