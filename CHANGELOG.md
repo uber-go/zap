@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.18.1 (28 Jun 2021)
+
+Bugfixes:
+* [#974][]: Fix nil dereference in logger constructed by `zap.NewNop`.
+
+[#974]: https://github.com/uber-go/zap/pull/974
+
 ## 1.18.0 (28 Jun 2021)
 
 Enhancements:
