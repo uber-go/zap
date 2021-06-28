@@ -87,6 +87,7 @@ func NewNop() *Logger {
 		core:        zapcore.NewNopCore(),
 		errorOutput: zapcore.AddSync(ioutil.Discard),
 		addStack:    zapcore.FatalLevel + 1,
+		clock:       zapcore.DefaultClock,
 	}
 }
 
