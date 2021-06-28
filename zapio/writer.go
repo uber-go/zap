@@ -29,12 +29,34 @@ import (
 )
 
 // Writer is an io.Writer that writes to the provided Zap logger, splitting log
-// messages on line boundaries.
+// messages on line boundaries. The Writer will buffer writes in memory until
+// it encounters a newline, or the caller calls Sync or Close.
+//
+// Use the Writer with packages like os/exec where an io.Writer is required,
+// and you want to log the output using your existing logger configuration. For
+// example,
+//
+//   writer := &zapio.Writer{Log: logger, Level: zap.DebugLevel}
+//   defer writer.Close()
+//
+//   cmd := exec.CommandContext(ctx, ...)
+//   cmd.Stdout = writer
+//   cmd.Stderr = writer
+//   if err := cmd.Run(); err != nil {
+//       return err
+//   }
 //
 // Writer must be closed when finished to flush buffered data to the logger.
 type Writer struct {
-	Log   *zap.Logger   // log to write to
-	Level zapcore.Level // log level to write at
+	// Log specifies the logger to which the Writer will write messages.
+	//
+	// The Writer will panic if Log is unspecified.
+	Log *zap.Logger
+
+	// Log level for the messages written to the provided logger.
+	//
+	// If unspecifies, defaults to Info.
+	Level zapcore.Level
 
 	buff bytes.Buffer
 }
@@ -46,6 +68,9 @@ var (
 
 // Write writes the provided bytes to the underlying logger at the configured
 // log level and returns the length of the bytes.
+//
+// Write will split the input on newlines and post each line as a new log entry
+// to the logger.
 func (w *Writer) Write(bs []byte) (n int, err error) {
 	// Skip all checks if the level isn't enabled.
 	if !w.Log.Core().Enabled(w.Level) {
@@ -90,12 +115,15 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 }
 
 // Close closes the writer, flushing any buffered data in the process.
+//
+// Always call Close once you're done with the Writer to ensure that it flushes
+// all data.
 func (w *Writer) Close() error {
 	return w.Sync()
 }
 
-// Sync flushes the buffered data from the writer, even if it doesn't end with
-// a newline.
+// Sync flushes buffered data to the logger as a new log entry even if it
+// doesn't contain a newline.
 func (w *Writer) Sync() error {
 	// Don't allow empty messages on explicit Sync calls or on Close
 	// because we don't want an extraneous empty message at the end of the
