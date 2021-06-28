@@ -556,7 +556,6 @@ func TestLoggerCustomOnFatal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.msg, func(t *testing.T) {
 			withLogger(t, InfoLevel, opts(OnFatal(tt.onFatal)), func(logger *Logger, logs *observer.ObservedLogs) {
-
 				var finished bool
 				recovered := make(chan interface{})
 				go func() {
@@ -578,6 +577,27 @@ func TestLoggerCustomOnFatal(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestNopLogger(t *testing.T) {
+	logger := NewNop()
+
+	t.Run("basic levels", func(t *testing.T) {
+		logger.Debug("foo", String("k", "v"))
+		logger.Info("bar", Int("x", 42))
+		logger.Warn("baz", Strings("ks", []string{"a", "b"}))
+		logger.Error("qux", Error(errors.New("great sadness")))
+	})
+
+	t.Run("DPanic", func(t *testing.T) {
+		logger.With(String("component", "whatever")).DPanic("stuff")
+	})
+
+	t.Run("Panic", func(t *testing.T) {
+		assert.Panics(t, func() {
+			logger.Panic("great sadness")
+		}, "Nop logger should still cause panics.")
+	})
 }
 
 func infoLog(logger *Logger, msg string, fields ...Field) {
