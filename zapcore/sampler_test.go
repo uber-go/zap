@@ -224,3 +224,9 @@ func TestSamplerRaces(t *testing.T) {
 	close(start)
 	wg.Wait()
 }
+
+func TestSamplerBounds(t *testing.T) {
+	// Prove that out-of-bounds levels don't crash.
+	sampler, _ := fakeSampler(DebugLevel-1, time.Minute, 2, 3)
+	writeSequence(sampler, 1, DebugLevel-1)
+}
