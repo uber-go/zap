@@ -224,3 +224,23 @@ func TestSamplerRaces(t *testing.T) {
 	close(start)
 	wg.Wait()
 }
+
+func TestSamplerUnknownLevels(t *testing.T) {
+	// Prove that out-of-bounds levels don't panic.
+	unknownLevels := []Level{
+		DebugLevel - 1,
+		FatalLevel + 1,
+	}
+
+	for _, lvl := range unknownLevels {
+		t.Run(lvl.String(), func(t *testing.T) {
+			sampler, logs := fakeSampler(lvl, time.Minute, 2, 3)
+			for i := 1; i < 10; i++ {
+				writeSequence(sampler, i, lvl)
+			}
+
+			// Expect no sampling for unknown levels.
+			assertSequence(t, logs.TakeAll(), lvl, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+		})
+	}
+}
