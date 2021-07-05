@@ -55,7 +55,7 @@ type Writer struct {
 
 	// Log level for the messages written to the provided logger.
 	//
-	// If unspecifies, defaults to Info.
+	// If unspecified, defaults to Info.
 	Level zapcore.Level
 
 	buff bytes.Buffer

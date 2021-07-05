@@ -44,7 +44,7 @@ func TestBufferWrites(t *testing.T) {
 		{"AppendUint", func() { buf.AppendUint(42) }, "42"},
 		{"AppendBool", func() { buf.AppendBool(true) }, "true"},
 		{"AppendFloat64", func() { buf.AppendFloat(3.14, 64) }, "3.14"},
-		// Intenationally introduce some floating-point error.
+		// Intentionally introduce some floating-point error.
 		{"AppendFloat32", func() { buf.AppendFloat(float64(float32(3.14)), 32) }, "3.14"},
 		{"AppendWrite", func() { buf.Write([]byte("foo")) }, "foo"},
 		{"AppendTime", func() { buf.AppendTime(time.Date(2000, 1, 2, 3, 4, 5, 6, time.UTC), time.RFC3339) }, "2000-01-02T03:04:05Z"},
