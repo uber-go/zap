@@ -28,6 +28,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"syscall"
 
 	"go.uber.org/zap/zapcore"
 )
@@ -58,9 +59,25 @@ type Sink interface {
 	io.Closer
 }
 
-type nopCloserSink struct{ zapcore.WriteSyncer }
+type nopCloserSink struct{
+	ws zapcore.WriteSyncer
+	fd uintptr
+}
 
-func (nopCloserSink) Close() error { return nil }
+func (nopCloserSink) Close() error {return nil }
+
+func (s nopCloserSink) Write(b []byte) (int, error) {
+	return s.ws.Write(b)
+}
+
+func (s nopCloserSink) Sync() error {
+	err := syscall.Fsync(int(s.fd))
+	// Ignore "invalid argument" error
+	if err == syscall.Errno(0x16) { // EINVAL
+		return nil
+	}
+	return err
+}
 
 type errSinkNotFound struct {
 	scheme string
@@ -132,9 +149,9 @@ func newFileSink(u *url.URL) (Sink, error) {
 	}
 	switch u.Path {
 	case "stdout":
-		return nopCloserSink{os.Stdout}, nil
+		return nopCloserSink{os.Stdout, os.Stdout.Fd()}, nil
 	case "stderr":
-		return nopCloserSink{os.Stderr}, nil
+		return nopCloserSink{os.Stderr, os.Stderr.Fd()}, nil
 	}
 	return os.OpenFile(u.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 }
