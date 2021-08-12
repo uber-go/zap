@@ -396,10 +396,12 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 		final.AddString(final.StacktraceKey, ent.Stack)
 	}
 	final.buf.AppendByte('}')
-	if final.LineEnding != "" {
-		final.buf.AppendString(final.LineEnding)
-	} else {
-		final.buf.AppendString(DefaultLineEnding)
+	if !final.SkipLineEnding {
+		if final.LineEnding != "" {
+			final.buf.AppendString(final.LineEnding)
+		} else {
+			final.buf.AppendString(DefaultLineEnding)
+		}
 	}
 
 	ret := final.buf
