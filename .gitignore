@@ -30,3 +30,6 @@ _testmain.go
 /bin
 cover.out
 cover.html
+
+# Intellij IDE folder
+.idea
