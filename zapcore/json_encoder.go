@@ -228,7 +228,11 @@ func (enc *jsonEncoder) AppendComplex128(val complex128) {
 	// Because we're always in a quoted string, we can use strconv without
 	// special-casing NaN and +/-Inf.
 	enc.buf.AppendFloat(r, 64)
-	enc.buf.AppendByte('+')
+	// If imaginary part is less than 0, minus (-) sign is added by default
+	// by AppendFloat.
+	if i >= 0 {
+		enc.buf.AppendByte('+')
+	}
 	enc.buf.AppendFloat(i, 64)
 	enc.buf.AppendByte('i')
 	enc.buf.AppendByte('"')
