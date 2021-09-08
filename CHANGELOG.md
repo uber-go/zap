@@ -5,7 +5,7 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 ## Unreleased
 ### Fixed
-* [#1001][]: Fix complex number encoding with negative imaginary part. Thanks to @hemantjadon.
+* [#1001][]: JSON: Fix complex number encoding with negative imaginary part. Thanks to @hemantjadon.
 * [#1003][]: Fix float32 encoding.
 
 [#1001]: https://github.com/uber-go/zap/pull/1001
