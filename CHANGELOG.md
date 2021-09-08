@@ -4,7 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Fixed
+* [#1001][]: Fix complex number encoding with negative imaginary part. Thanks to @hemantjadon.
+* [#1003][]: Fix float32 encoding.
 
+[#1001]: https://github.com/uber-go/zap/pull/1001
+[#1003]: https://github.com/uber-go/zap/pull/1003
 
 ## 1.19.0 (9 Aug 2021)
 
