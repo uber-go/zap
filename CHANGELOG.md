@@ -3,7 +3,8 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 1.19.1 (8 Sep 2021)
+
 ### Fixed
 * [#1001][]: JSON: Fix complex number encoding with negative imaginary part. Thanks to @hemantjadon.
 * [#1003][]: JSON: Fix inaccurate precision when encoding float32.
