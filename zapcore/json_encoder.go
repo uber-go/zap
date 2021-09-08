@@ -128,6 +128,11 @@ func (enc *jsonEncoder) AddFloat64(key string, val float64) {
 	enc.AppendFloat64(val)
 }
 
+func (enc *jsonEncoder) AddFloat32(key string, val float32) {
+	enc.addKey(key)
+	enc.AppendFloat32(val)
+}
+
 func (enc *jsonEncoder) AddInt64(key string, val int64) {
 	enc.addKey(key)
 	enc.AppendInt64(val)
@@ -297,7 +302,6 @@ func (enc *jsonEncoder) AppendUint64(val uint64) {
 }
 
 func (enc *jsonEncoder) AddComplex64(k string, v complex64) { enc.AddComplex128(k, complex128(v)) }
-func (enc *jsonEncoder) AddFloat32(k string, v float32)     { enc.AddFloat64(k, float64(v)) }
 func (enc *jsonEncoder) AddInt(k string, v int)             { enc.AddInt64(k, int64(v)) }
 func (enc *jsonEncoder) AddInt32(k string, v int32)         { enc.AddInt64(k, int64(v)) }
 func (enc *jsonEncoder) AddInt16(k string, v int16)         { enc.AddInt64(k, int64(v)) }
