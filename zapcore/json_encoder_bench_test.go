@@ -38,6 +38,16 @@ func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
 	}
 }
 
+func BenchmarkZapJSONFloat32AndComplex64(b *testing.B) {
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			enc := NewJSONEncoder(testEncoderConfig())
+			enc.AddFloat32("float32", 3.14)
+			enc.AddComplex64("complex64", 2.71+3.14i)
+		}
+	})
+}
+
 func BenchmarkZapJSON(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
