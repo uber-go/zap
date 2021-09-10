@@ -22,6 +22,7 @@ package zapcore_test
 
 import (
 	"fmt"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -158,50 +159,80 @@ func TestSamplerConcurrent(t *testing.T) {
 		numMessages   = 5
 		numTicks      = 25
 		numGoroutines = 10
+		tick          = 10 * time.Millisecond
+
+		// We'll make a total of,
+		// (numGoroutines * numTicks * logsPerTick * 2) log attempts
+		// with numMessages unique messages.
+		numLogAttempts = numGoroutines * logsPerTick * numTicks * 2
+		// Of those, we'll accept (logsPerTick * numTicks) entries
+		// for each unique message.
 		expectedCount = numMessages * logsPerTick * numTicks
+		// The rest will be dropped.
+		expectedDropped = numLogAttempts - expectedCount
 	)
 
-	tick := ztest.Timeout(10 * time.Millisecond)
+	clock := ztest.NewMockClock()
+
 	cc := &countingCore{}
-	sampler := NewSamplerWithOptions(cc, tick, logsPerTick, 100000)
 
-	var (
-		done atomic.Bool
-		wg   sync.WaitGroup
-	)
+	hook, dropped, sampled := makeSamplerCountingHook()
+	sampler := NewSamplerWithOptions(cc, tick, logsPerTick, 100000, SamplerHook(hook))
+
+	stop := make(chan struct{})
+	var wg sync.WaitGroup
 	for i := 0; i < numGoroutines; i++ {
 		wg.Add(1)
-		go func(i int) {
+		go func(i int, ticker *time.Ticker) {
 			defer wg.Done()
+			defer ticker.Stop()
 
 			for {
-				if done.Load() {
+				select {
+				case <-stop:
 					return
-				}
-				msg := fmt.Sprintf("msg%v", i%numMessages)
-				ent := Entry{Level: DebugLevel, Message: msg, Time: time.Now()}
-				if ce := sampler.Check(ent, nil); ce != nil {
-					ce.Write()
-				}
 
-				// Give a chance for other goroutines to run.
-				time.Sleep(time.Microsecond)
+				case <-ticker.C:
+					for j := 0; j < logsPerTick*2; j++ {
+						msg := fmt.Sprintf("msg%v", i%numMessages)
+						ent := Entry{
+							Level:   DebugLevel,
+							Message: msg,
+							Time:    clock.Now(),
+						}
+						if ce := sampler.Check(ent, nil); ce != nil {
+							ce.Write()
+						}
+
+						// Give a chance for other goroutines to run.
+						runtime.Gosched()
+					}
+				}
 			}
-		}(i)
+		}(i, clock.NewTicker(tick))
 	}
 
-	time.AfterFunc(numTicks*tick, func() {
-		done.Store(true)
-	})
+	clock.Add(tick * numTicks)
+	close(stop)
 	wg.Wait()
 
-	assert.InDelta(
+	assert.Equal(
 		t,
 		expectedCount,
-		cc.logs.Load(),
-		expectedCount/10,
+		int(cc.logs.Load()),
 		"Unexpected number of logs",
 	)
+	assert.Equal(t,
+		expectedCount,
+		int(sampled.Load()),
+		"Unexpected number of logs sampled",
+	)
+	assert.Equal(t,
+		expectedDropped,
+		int(dropped.Load()),
+		"Unexpected number of logs dropped",
+	)
+
 }
 
 func TestSamplerRaces(t *testing.T) {
