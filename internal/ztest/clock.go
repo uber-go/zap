@@ -18,27 +18,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package ztest
 
 import (
-	"testing"
 	"time"
 
-	"go.uber.org/zap/internal/ztest"
+	"github.com/benbjohnson/clock"
 )
 
-// Verify that the mock clock satisfies the Clock interface.
-var _ Clock = (*ztest.MockClock)(nil)
+// MockClock provides control over the time.
+type MockClock struct{ m *clock.Mock }
 
-func TestSystemClock_NewTicker(t *testing.T) {
-	want := 3
+// NewMockClock builds a new mock clock that provides control of time.
+func NewMockClock() *MockClock {
+	return &MockClock{clock.NewMock()}
+}
 
-	var n int
-	timer := DefaultClock.NewTicker(time.Millisecond)
-	for range timer.C {
-		n++
-		if n == want {
-			return
-		}
-	}
+// Now reports the current time.
+func (c *MockClock) Now() time.Time {
+	return c.m.Now()
+}
+
+// NewTicker returns a time.Ticker that ticks at the specified frequency.
+func (c *MockClock) NewTicker(d time.Duration) *time.Ticker {
+	return &time.Ticker{C: c.m.Ticker(d).C}
+}
+
+// Add progresses time by the given duration.
+func (c *MockClock) Add(d time.Duration) {
+	c.m.Add(d)
 }

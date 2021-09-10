@@ -18,27 +18,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package ztest
 
 import (
 	"testing"
 	"time"
 
-	"go.uber.org/zap/internal/ztest"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 )
 
-// Verify that the mock clock satisfies the Clock interface.
-var _ Clock = (*ztest.MockClock)(nil)
+func TestMockClock_NewTicker(t *testing.T) {
+	var n atomic.Int32
+	clock := NewMockClock()
 
-func TestSystemClock_NewTicker(t *testing.T) {
-	want := 3
+	done := make(chan struct{})
+	defer func() { <-done }() // wait for end
 
-	var n int
-	timer := DefaultClock.NewTicker(time.Millisecond)
-	for range timer.C {
-		n++
-		if n == want {
-			return
+	quit := make(chan struct{})
+	// Create a channel to increment every microsecond.
+	go func(ticker *time.Ticker) {
+		defer close(done)
+		for {
+			select {
+			case <-quit:
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				n.Inc()
+			}
 		}
-	}
+	}(clock.NewTicker(time.Microsecond))
+
+	// Move clock forward.
+	clock.Add(2 * time.Microsecond)
+	assert.Equal(t, int32(2), n.Load())
+	close(quit)
 }
