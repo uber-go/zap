@@ -107,7 +107,7 @@ func TestBufferWriter(t *testing.T) {
 
 	t.Run("flush timer", func(t *testing.T) {
 		buf := &bytes.Buffer{}
-		clock := newControlledClock()
+		clock := ztest.NewMockClock()
 		ws := &BufferedWriteSyncer{
 			WS:            AddSync(buf),
 			Size:          6,
