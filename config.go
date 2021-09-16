@@ -117,8 +117,8 @@ func NewProductionEncoderConfig() zapcore.EncoderConfig {
 //
 // It uses a JSON encoder, writes to standard error, and enables sampling.
 // Stacktraces are automatically included on logs of ErrorLevel and above.
-func NewProductionConfig() Config {
-	return Config{
+func NewProductionConfig(opts ...ConfOptionHandler) Config {
+	c := Config{
 		Level:       NewAtomicLevelAt(InfoLevel),
 		Development: false,
 		Sampling: &SamplingConfig{
@@ -130,6 +130,12 @@ func NewProductionConfig() Config {
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
+	// option
+	for _, opt := range opts {
+		opt(&c)
+	}
+	return c
+
 }
 
 // NewDevelopmentEncoderConfig returns an opinionated EncoderConfig for
@@ -158,8 +164,8 @@ func NewDevelopmentEncoderConfig() zapcore.EncoderConfig {
 // It enables development mode (which makes DPanicLevel logs panic), uses a
 // console encoder, writes to standard error, and disables sampling.
 // Stacktraces are automatically included on logs of WarnLevel and above.
-func NewDevelopmentConfig() Config {
-	return Config{
+func NewDevelopmentConfig(opts ...ConfOptionHandler) Config {
+	c := Config{
 		Level:            NewAtomicLevelAt(DebugLevel),
 		Development:      true,
 		Encoding:         "console",
@@ -167,6 +173,11 @@ func NewDevelopmentConfig() Config {
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
+	// option
+	for _, opt := range opts {
+		opt(&c)
+	}
+	return c
 }
 
 // Build constructs a logger from the Config and Options.
