@@ -274,10 +274,12 @@ func BenchmarkSampler_CheckWithHook(b *testing.B) {
 					}
 				}
 			})
+			// We expect to see 1000 dropped messages for every sampled per settings,
+			// with a delta due to less 1000 messages getting dropped after initial one
+			// is sampled.
+			assert.Greater(b, dropped.Load()/1000, sampled.Load()-1000)
+			dropped.Store(0)
+			sampled.Store(0)
 		})
 	}
-	// We expect to see 1000 dropped messages for every sampled per settings,
-	// with a delta due to less 1000 messages getting dropped after initial one
-	// is sampled.
-	assert.Greater(b, dropped.Load()/1000, sampled.Load()-1000)
 }
