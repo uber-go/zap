@@ -20,32 +20,5 @@
 
 package grpc
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zapgrpc"
-	"go.uber.org/zap/zaptest/observer"
-	"google.golang.org/grpc/grpclog"
-)
-
-func TestLoggerV2(t *testing.T) {
-	core, observedLogs := observer.New(zapcore.InfoLevel)
-	zlog := zap.New(core)
-
-	grpclog.SetLoggerV2(zapgrpc.NewLogger(zlog))
-
-	grpclog.Info("hello from grpc")
-
-	logs := observedLogs.TakeAll()
-	require.Len(t, logs, 1, "Expected one log entry.")
-	entry := logs[0]
-
-	assert.Equal(t, zapcore.InfoLevel, entry.Level,
-		"Log entry level did not match.")
-	assert.Equal(t, "hello from grpc", entry.Message,
-		"Log entry message did not match.")
-}
+// This file exists to treat this directory as a valid package with at least
+// one non-test file.
