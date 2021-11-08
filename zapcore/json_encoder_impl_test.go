@@ -261,6 +261,20 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 				e.AddString("not-obj", "should-be-outside-obj")
 			},
 		},
+		{
+			desc:     "multiple open namespaces",
+			expected: `"k":{"foo":1,"middle":{"foo":2,"inner":{"foo":3}}}`,
+			f: func(e Encoder) {
+				e.AddObject("k", ObjectMarshalerFunc(func(enc ObjectEncoder) error {
+					e.AddInt("foo", 1)
+					e.OpenNamespace("middle")
+					e.AddInt("foo", 2)
+					e.OpenNamespace("inner")
+					e.AddInt("foo", 3)
+					return nil
+				}))
+			},
+		},
 	}
 
 	for _, tt := range tests {
