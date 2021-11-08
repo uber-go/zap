@@ -211,10 +211,16 @@ func (enc *jsonEncoder) AppendArray(arr ArrayMarshaler) error {
 }
 
 func (enc *jsonEncoder) AppendObject(obj ObjectMarshaler) error {
+	// Close ONLY new openNamespaces that are created during
+	// AppendObject().
+	old := enc.openNamespaces
+	enc.openNamespaces = 0
 	enc.addElementSeparator()
 	enc.buf.AppendByte('{')
 	err := obj.MarshalLogObject(enc)
 	enc.buf.AppendByte('}')
+	enc.closeOpenNamespaces()
+	enc.openNamespaces = old
 	return err
 }
 
@@ -431,6 +437,7 @@ func (enc *jsonEncoder) closeOpenNamespaces() {
 	for i := 0; i < enc.openNamespaces; i++ {
 		enc.buf.AppendByte('}')
 	}
+	enc.openNamespaces = 0
 }
 
 func (enc *jsonEncoder) addKey(key string) {

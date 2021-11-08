@@ -214,6 +214,37 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "object (no nested namespace) then string",
+			f: func(e ObjectEncoder) {
+				e.OpenNamespace("k")
+				e.AddObject("obj", maybeNamespace{false})
+				e.AddString("not-obj", "should-be-outside-obj")
+			},
+			expected: map[string]interface{}{
+				"obj": map[string]interface{}{
+					"obj-out": "obj-outside-namespace",
+				},
+				"not-obj": "should-be-outside-obj",
+			},
+		},
+		{
+			desc: "object (with nested namespace) then string",
+			f: func(e ObjectEncoder) {
+				e.OpenNamespace("k")
+				e.AddObject("obj", maybeNamespace{true})
+				e.AddString("not-obj", "should-be-outside-obj")
+			},
+			expected: map[string]interface{}{
+				"obj": map[string]interface{}{
+					"obj-out": "obj-outside-namespace",
+					"obj-namespace": map[string]interface{}{
+						"obj-in": "obj-inside-namespace",
+					},
+				},
+				"not-obj": "should-be-outside-obj",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -267,6 +298,41 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 				}))
 			},
 			expected: []interface{}{true, false},
+		},
+		{
+			desc: "object (no nested namespace) then string",
+			f: func(e ArrayEncoder) {
+				e.AppendArray(ArrayMarshalerFunc(func(inner ArrayEncoder) error {
+					inner.AppendObject(maybeNamespace{false})
+					inner.AppendString("should-be-outside-obj")
+					return nil
+				}))
+			},
+			expected: []interface{}{
+				map[string]interface{}{
+					"obj-out": "obj-outside-namespace",
+				},
+				"should-be-outside-obj",
+			},
+		},
+		{
+			desc: "object (with nested namespace) then string",
+			f: func(e ArrayEncoder) {
+				e.AppendArray(ArrayMarshalerFunc(func(inner ArrayEncoder) error {
+					inner.AppendObject(maybeNamespace{true})
+					inner.AppendString("should-be-outside-obj")
+					return nil
+				}))
+			},
+			expected: []interface{}{
+				map[string]interface{}{
+					"obj-out": "obj-outside-namespace",
+					"obj-namespace": map[string]interface{}{
+						"obj-in": "obj-inside-namespace",
+					},
+				},
+				"should-be-outside-obj",
+			},
 		},
 	}
 
