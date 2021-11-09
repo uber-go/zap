@@ -9,7 +9,7 @@ Enhancements:
 * [#989][]: `zapcore.EncoderConfig` provides a flag `SkipLineEnding` that can be used to skip adding a newline character to logs. Thanks to @lruggieri.
 
 Bugfixes:
-* [#1011][]: JSON: Fix inaccurate precision when encoding float64.
+* [#1011][]: JSON: Fix inaccurate precision when encoding complex64.
 
 [#1011]: https://github.com/uber-go/zap/pull/1011
 [#989]: https://github.com/uber-go/zap/pull/989
