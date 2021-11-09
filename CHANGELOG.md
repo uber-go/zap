@@ -11,8 +11,12 @@ Enhancements:
 Bugfixes:
 * [#1011][]: JSON: Fix inaccurate precision when encoding complex64.
 
+Other changes:
+* [#1028][]: Drop support for Go < 1.15.
+
 [#1011]: https://github.com/uber-go/zap/pull/1011
 [#989]: https://github.com/uber-go/zap/pull/989
+[#1028]: https://github.com/uber-go/zap/pull/1028
 
 ## 1.19.1 (8 Sep 2021)
 
