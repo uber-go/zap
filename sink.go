@@ -26,6 +26,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -96,11 +97,38 @@ func RegisterSink(scheme string, factory func(*url.URL) (Sink, error)) error {
 }
 
 func newSink(rawURL string) (Sink, error) {
-	u, err := url.Parse(rawURL)
+	// Before we attempt to parse this as a URL,
+	// ensure that file separators have been replaced with "/".
+	// Unix systems will be unaffected, and on Windows, this will turn,
+	//   C:\foo\bar
+	// To,
+	//   C:/foo/bar
+	// Which will parse as,
+	//   URL{Scheme: "c", Path: "/foo/bar"}
+	// Note that Scheme is case-insensitive; it's always lower case.
+	u, err := url.Parse(filepath.ToSlash(rawURL))
 	if err != nil {
 		return nil, fmt.Errorf("can't parse %q as a URL: %v", rawURL, err)
 	}
-	if u.Scheme == "" {
+
+	// Volume name is the "C:" of "C:\foo\bar" on Windows,
+	// and an empty string on other systems.
+	volumeName := filepath.VolumeName(rawURL)
+	switch u.Scheme {
+	case "":
+		// Unix:
+		// Naked paths like "/foo/bar" will
+		// parse to an empty scheme.
+		u.Scheme = schemeFile
+
+	case strings.ToLower(strings.TrimSuffix(volumeName, ":")): // scheme is lower case
+		// Windows:
+		// Naked paths like "C:\foo\bar" will
+		// parse to "c" as the scheme (lower case)
+		// after ToSlash normalization above.
+		//
+		// Convert it back to C:\foo\bar.
+		u.Path = filepath.Join(volumeName, filepath.FromSlash(u.Path))
 		u.Scheme = schemeFile
 	}
 
