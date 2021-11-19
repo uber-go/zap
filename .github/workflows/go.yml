@@ -47,6 +47,3 @@ jobs:
 
     - name: Upload coverage to codecov.io
       uses: codecov/codecov-action@v1
-
-    - name: Benchmark
-      run: make bench
