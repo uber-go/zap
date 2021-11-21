@@ -111,29 +111,30 @@ func newSink(rawURL string) (Sink, error) {
 		return nil, fmt.Errorf("can't parse %q as a URL: %v", rawURL, err)
 	}
 
-	// Volume name is the "C:" of "C:\foo\bar" on Windows,
-	// and an empty string on other systems.
-	volumeName := filepath.VolumeName(rawURL)
-	switch u.Scheme {
-	case "":
+	if u.Scheme == "" {
 		// Unix:
 		// Naked paths like "/foo/bar" will
 		// parse to an empty scheme.
-		u.Scheme = schemeFile
-
-	case strings.ToLower(strings.TrimSuffix(volumeName, ":")): // scheme is lower case
-		// Windows:
-		// Naked paths like "C:\foo\bar" will
-		// parse to "c" as the scheme (lower case)
-		// after ToSlash normalization above.
-		//
-		// Convert it back to C:\foo\bar.
-		u.Path = filepath.Join(volumeName, filepath.FromSlash(u.Path))
 		u.Scheme = schemeFile
 	}
 
 	_sinkMutex.RLock()
 	factory, ok := _sinkFactories[u.Scheme]
+	if !ok {
+		// On Windows, the scheme ("c") is part of the path
+		// ("c:\foo\bar"). Try again with the file scheme.
+
+		// Volume name is the "C:" of "C:\foo\bar" on Windows,
+		// and an empty string on other systems.
+		// Scheme is "c" (lower case).
+		volumeName := filepath.VolumeName(rawURL)
+		if u.Scheme+":" == strings.ToLower(volumeName) {
+			// Convert back to C:\foo\bar.
+			u.Path = filepath.Join(volumeName, filepath.FromSlash(u.Path))
+			u.Scheme = schemeFile
+			factory, ok = _sinkFactories[u.Scheme]
+		}
+	}
 	_sinkMutex.RUnlock()
 	if !ok {
 		return nil, &errSinkNotFound{u.Scheme}
