@@ -275,3 +275,42 @@ func TestSamplerUnknownLevels(t *testing.T) {
 		})
 	}
 }
+
+func TestSamplerWithZeroThereafter(t *testing.T) {
+	var counter countingCore
+
+	// Logs two messages per second.
+	sampler := NewSamplerWithOptions(&counter, time.Second, 2, 0)
+
+	now := time.Now()
+
+	for i := 0; i < 1000; i++ {
+		ent := Entry{
+			Level:   InfoLevel,
+			Message: "msg",
+			Time:    now,
+		}
+		if ce := sampler.Check(ent, nil); ce != nil {
+			ce.Write()
+		}
+	}
+
+	assert.Equal(t, 2, int(counter.logs.Load()),
+		"Unexpected number of logs")
+
+	now = now.Add(time.Second)
+
+	for i := 0; i < 1000; i++ {
+		ent := Entry{
+			Level:   InfoLevel,
+			Message: "msg",
+			Time:    now,
+		}
+		if ce := sampler.Check(ent, nil); ce != nil {
+			ce.Write()
+		}
+	}
+
+	assert.Equal(t, 4, int(counter.logs.Load()),
+		"Unexpected number of logs")
+}
