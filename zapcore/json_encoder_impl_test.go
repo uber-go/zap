@@ -509,6 +509,7 @@ func assertJSON(t *testing.T, expected string, enc *jsonEncoder) {
 
 func assertOutput(t testing.TB, cfg EncoderConfig, expected string, f func(Encoder)) {
 	enc := &jsonEncoder{buf: bufferpool.Get(), EncoderConfig: &cfg}
+	enc.NewReflectedEncoder = defaultReflectedEncoder()
 	f(enc)
 	assert.Equal(t, expected, enc.buf.String(), "Unexpected encoder output after adding.")
 

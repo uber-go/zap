@@ -22,7 +22,6 @@ package zapcore
 
 import (
 	"encoding/base64"
-	"io"
 	"math"
 	"sync"
 	"time"
