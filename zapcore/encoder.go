@@ -334,7 +334,7 @@ type EncoderConfig struct {
 	EncodeName NameEncoder `json:"nameEncoder" yaml:"nameEncoder"`
 	// Configure the encoder for interface{} type objects
 	// If not provided, objects are encoded using json.Encoder
-	NewReflectedEncoder func(io.Writer) ReflectedEncoder `json:"newReflectedEncoder" yaml:"newReflectedEncoder"`
+	NewReflectedEncoder func(io.Writer) ReflectedEncoder `json:"-" yaml:"-"`
 	// Configures the field separator used by the console encoder. Defaults
 	// to tab.
 	ConsoleSeparator string `json:"consoleSeparator" yaml:"consoleSeparator"`

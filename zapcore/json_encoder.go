@@ -88,6 +88,11 @@ func newJSONEncoder(cfg EncoderConfig, spaced bool) *jsonEncoder {
 		cfg.LineEnding = DefaultLineEnding
 	}
 
+	// If no EncoderConfig.NewReflectedEncoder is provided by the user, then use default
+	if cfg.NewReflectedEncoder == nil {
+		cfg.NewReflectedEncoder = defaultReflectedEncoder()
+	}
+
 	return &jsonEncoder{
 		EncoderConfig: &cfg,
 		buf:           bufferpool.Get(),
@@ -152,14 +157,7 @@ func (enc *jsonEncoder) AddInt64(key string, val int64) {
 func (enc *jsonEncoder) resetReflectBuf() {
 	if enc.reflectBuf == nil {
 		enc.reflectBuf = bufferpool.Get()
-		// If no EncoderConfig.NewReflectedEncoder is provided by the user, then use default
-		var newReflectedEncoder func(io.Writer) ReflectedEncoder
-		if enc.NewReflectedEncoder == nil {
-			newReflectedEncoder = GetDefaultReflectedEncoder()
-		} else {
-			newReflectedEncoder = enc.NewReflectedEncoder
-		}
-		enc.reflectEnc = newReflectedEncoder(enc.reflectBuf)
+		enc.reflectEnc = enc.NewReflectedEncoder(enc.reflectBuf)
 	} else {
 		enc.reflectBuf.Reset()
 	}
