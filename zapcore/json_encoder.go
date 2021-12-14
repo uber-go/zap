@@ -89,7 +89,7 @@ func newJSONEncoder(cfg EncoderConfig, spaced bool) *jsonEncoder {
 
 	// If no EncoderConfig.NewReflectedEncoder is provided by the user, then use default
 	if cfg.NewReflectedEncoder == nil {
-		cfg.NewReflectedEncoder = defaultReflectedEncoder()
+		cfg.NewReflectedEncoder = defaultReflectedEncoder
 	}
 
 	return &jsonEncoder{

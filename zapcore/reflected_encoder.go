@@ -25,28 +25,17 @@ import (
 	"io"
 )
 
-// A ReflectedEncoder handles the serialization of Field which have FieldType = ReflectType and writes them to the underlying data stream
-// The underlying data stream is provided by Zap during initialization. See EncoderConfig.NewReflectedEncoder.
+// ReflectedEncoder serializes log fields that can't be serialized with Zap's
+// JSON encoder. These have the ReflectType field type.
+// Use EncoderConfig.NewReflectedEncoder to set this.
 type ReflectedEncoder interface {
 	// Encode encodes and writes to the underlying data stream.
 	Encode(interface{}) error
 }
 
-func defaultReflectedEncoder() func(writer io.Writer) ReflectedEncoder {
-	return func(writer io.Writer) ReflectedEncoder {
-		stdJsonEncoder := json.NewEncoder(writer)
-		// For consistency with our custom JSON encoder.
-		stdJsonEncoder.SetEscapeHTML(false)
-		return &stdReflectedEncoder{
-			encoder: stdJsonEncoder,
-		}
-	}
-}
-
-type stdReflectedEncoder struct {
-	encoder *json.Encoder
-}
-
-func (enc *stdReflectedEncoder) Encode(obj interface{}) error {
-	return enc.encoder.Encode(obj)
+func defaultReflectedEncoder(w io.Writer) ReflectedEncoder {
+	enc := json.NewEncoder(w)
+	// For consistency with our custom JSON encoder.
+	enc.SetEscapeHTML(false)
+	return enc
 }
