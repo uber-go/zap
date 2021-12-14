@@ -22,7 +22,7 @@ package zapcore
 
 import (
 	"encoding/base64"
-	"encoding/json"
+	"io"
 	"math"
 	"sync"
 	"time"
@@ -64,7 +64,7 @@ type jsonEncoder struct {
 
 	// for encoding generic values by reflection
 	reflectBuf *buffer.Buffer
-	reflectEnc *json.Encoder
+	reflectEnc ReflectedEncoder
 }
 
 // NewJSONEncoder creates a fast, low-allocation JSON encoder. The encoder
@@ -152,10 +152,14 @@ func (enc *jsonEncoder) AddInt64(key string, val int64) {
 func (enc *jsonEncoder) resetReflectBuf() {
 	if enc.reflectBuf == nil {
 		enc.reflectBuf = bufferpool.Get()
-		enc.reflectEnc = json.NewEncoder(enc.reflectBuf)
-
-		// For consistency with our custom JSON encoder.
-		enc.reflectEnc.SetEscapeHTML(false)
+		// If no EncoderConfig.NewReflectedEncoder is provided by the user, then use default
+		var newReflectedEncoder func(io.Writer) ReflectedEncoder
+		if enc.NewReflectedEncoder == nil {
+			newReflectedEncoder = GetDefaultReflectedEncoder()
+		} else {
+			newReflectedEncoder = enc.NewReflectedEncoder
+		}
+		enc.reflectEnc = newReflectedEncoder(enc.reflectBuf)
 	} else {
 		enc.reflectBuf.Reset()
 	}
