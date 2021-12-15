@@ -183,7 +183,7 @@ func (enc *emptyReflectedEncoder) Encode(obj interface{}) error {
 	return err
 }
 
-func TestJSONCustomReflectionEncoder(t *testing.T) {
+func TestJSONCustomReflectedEncoder(t *testing.T) {
 	tests := []struct {
 		name     string
 		field    zapcore.Field
