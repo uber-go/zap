@@ -21,6 +21,7 @@
 package zapcore_test
 
 import (
+	"io"
 	"testing"
 	"time"
 
@@ -167,6 +168,71 @@ func TestJSONEmptyConfig(t *testing.T) {
 				assert.JSONEq(t, tt.expected, buf.String(), "Incorrect encoded JSON entry.")
 			}
 
+			buf.Free()
+		})
+	}
+}
+
+// Encodes any object into empty json '{}'
+type emptyReflectedEncoder struct {
+	writer io.Writer
+}
+
+func (enc *emptyReflectedEncoder) Encode(obj interface{}) error {
+	_, err := enc.writer.Write([]byte("{}"))
+	return err
+}
+
+func TestJSONCustomReflectedEncoder(t *testing.T) {
+	tests := []struct {
+		name     string
+		field    zapcore.Field
+		expected string
+	}{
+		{
+			name: "encode custom map object",
+			field: zapcore.Field{
+				Key:  "data",
+				Type: zapcore.ReflectType,
+				Interface: map[string]interface{}{
+					"foo": "hello",
+					"bar": 1111,
+				},
+			},
+			expected: `{"data":{}}`,
+		},
+		{
+			name: "encode nil object",
+			field: zapcore.Field{
+				Key:  "data",
+				Type: zapcore.ReflectType,
+			},
+			expected: `{"data":null}`,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+				NewReflectedEncoder: func(writer io.Writer) zapcore.ReflectedEncoder {
+					return &emptyReflectedEncoder{
+						writer: writer,
+					}
+				},
+			})
+
+			buf, err := enc.EncodeEntry(zapcore.Entry{
+				Level:      zapcore.DebugLevel,
+				Time:       time.Now(),
+				LoggerName: "logger",
+				Message:    "things happened",
+			}, []zapcore.Field{tt.field})
+			if assert.NoError(t, err, "Unexpected JSON encoding error.") {
+				assert.JSONEq(t, tt.expected, buf.String(), "Incorrect encoded JSON entry.")
+			}
 			buf.Free()
 		})
 	}
