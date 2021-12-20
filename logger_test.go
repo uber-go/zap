@@ -194,6 +194,32 @@ func TestLoggerLeveledMethods(t *testing.T) {
 	})
 }
 
+func TestLoggerLeveledFuncMethods(t *testing.T) {
+	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
+		tests := []struct {
+			method        func(string, ...FieldsFunc)
+			expectedLevel zapcore.Level
+		}{
+			{logger.FDebug, DebugLevel},
+			{logger.FInfo, InfoLevel},
+			{logger.FWarn, WarnLevel},
+			{logger.FError, ErrorLevel},
+			{logger.FDPanic, DPanicLevel},
+		}
+		for i, tt := range tests {
+			tt.method("")
+			output := logs.AllUntimed()
+			assert.Equal(t, i+1, len(output), "Unexpected number of logs.")
+			assert.Equal(t, 0, len(output[i].Context), "Unexpected context on first log.")
+			assert.Equal(
+				t,
+				zapcore.Entry{Level: tt.expectedLevel},
+				output[i].Entry,
+				"Unexpected output from %s-level logger method.", tt.expectedLevel)
+		}
+	})
+}
+
 func TestLoggerAlwaysPanics(t *testing.T) {
 	// Users can disable writing out panic-level logs, but calls to logger.Panic()
 	// should still call panic().
@@ -597,6 +623,42 @@ func TestNopLogger(t *testing.T) {
 		assert.Panics(t, func() {
 			logger.Panic("great sadness")
 		}, "Nop logger should still cause panics.")
+	})
+}
+
+func TestFieldsFuncCalls(t *testing.T) {
+	withLogger(t, InfoLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
+		var (
+			debugFuncWasCalled bool
+			infoFuncWasCalled  bool
+		)
+
+		debugFields := func() []Field {
+			debugFuncWasCalled = true
+			return []Field{
+				String("string", "debug"),
+			}
+		}
+
+		infoFields := func() []Field {
+			infoFuncWasCalled = true
+			return []Field{
+				String("string", "info"),
+			}
+		}
+
+		logger.FDebug("", debugFields)
+		logger.FInfo("", infoFields)
+		output := logs.AllUntimed()
+		require.Equal(t, 1, len(output), "Unexpected number of logs.")
+		assert.Equal(
+			t,
+			zapcore.Entry{Level: InfoLevel},
+			output[0].Entry,
+			"Unexpected output from %s-level logger method.", InfoLevel)
+
+		assert.False(t, debugFuncWasCalled)
+		assert.True(t, infoFuncWasCalled)
 	})
 }
 
