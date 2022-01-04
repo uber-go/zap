@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## 1.20.0 (4 Jan 2021)
+## 1.20.0 (4 Jan 2022)
 
 Enhancements:
 * [#989][]: Add `EncoderConfig.SkipLineEnding` flag to disable adding newline
