@@ -38,7 +38,9 @@ jobs:
     - name: Download Dependencies
       run: |
         go mod download
-        cd tools && go mod download
+        cd tools && go mod download && cd -
+        cd benchmarks && go mod download && cd -
+        cd zapgrpc/internal/test && go mod download && cd -
 
     - name: Lint
       if: matrix.latest
