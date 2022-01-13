@@ -55,19 +55,16 @@ const (
 	_maxLevel = FatalLevel
 )
 
-// UnmarshalLevel unmarshals a level based on the lower-case or all-caps ASCII
+// ParseLevel parses a level based on the lower-case or all-caps ASCII
 // representation of the log level. If the provided ASCII representation is
 // invalid an error is returned.
 //
 // This is particularly useful when dealing with text input to configure log
 // levels.
-func UnmarshalLevel(text string) (Level, error) {
-	level := DebugLevel
+func ParseLevel(text string) (Level, error) {
+	var level Level
 	err := level.UnmarshalText([]byte(text))
-	if err != nil {
-		return level, err
-	}
-	return level, nil
+	return level, err
 }
 
 // String returns a lower-case ASCII representation of the log level.
