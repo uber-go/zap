@@ -23,7 +23,6 @@ package zapcore
 import (
 	"bytes"
 	"flag"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -81,16 +80,21 @@ func TestParseLevel(t *testing.T) {
 	tests := []struct {
 		text  string
 		level Level
-		err   error
+		err   string
 	}{
-		{"info", InfoLevel, nil},
-		{"DEBUG", DebugLevel, nil},
-		{"FOO", 0, fmt.Errorf("unrecognized level: \"FOO\"")},
+		{"info", InfoLevel, ""},
+		{"DEBUG", DebugLevel, ""},
+		{"FOO", 0, `unrecognized level: "FOO"`},
 	}
 	for _, tt := range tests {
 		parsedLevel, err := ParseLevel(tt.text)
-		assert.Equal(t, tt.level, parsedLevel)
-		assert.Equal(t, tt.err, err)
+		if len(tt.err) == 0 {
+			assert.NoError(t, err)
+			assert.Equal(t, tt.level, parsedLevel)
+		} else {
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.err)
+		}
 	}
 }
 
