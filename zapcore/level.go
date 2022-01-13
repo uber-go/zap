@@ -26,10 +26,7 @@ import (
 	"fmt"
 )
 
-var (
-	errUnmarshalNilLevel = errors.New("can't unmarshal a nil *Level")
-	errInvalidLevel      = errors.New("invalid level")
-)
+var errUnmarshalNilLevel = errors.New("can't unmarshal a nil *Level")
 
 // A Level is a logging priority. Higher levels are more important.
 type Level int8
@@ -58,30 +55,19 @@ const (
 	_maxLevel = FatalLevel
 )
 
-// LevelFromString returns a level based on the lower-case or all-caps ASCII
-// representation of the log level.
+// UnmarshalLevel unmarshals a level based on the lower-case or all-caps ASCII
+// representation of the log level. If the provided ASCII representation is
+// invalid an error is returned.
 //
 // This is particularly useful when dealing with text input to configure log
 // levels.
-func LevelFromString(text string) (Level, error) {
-	switch text {
-	case "debug", "DEBUG":
-		return DebugLevel, nil
-	case "info", "INFO", "": // make the zero value useful
-		return InfoLevel, nil
-	case "warn", "WARN":
-		return WarnLevel, nil
-	case "error", "ERROR":
-		return ErrorLevel, nil
-	case "dpanic", "DPANIC":
-		return DPanicLevel, nil
-	case "panic", "PANIC":
-		return PanicLevel, nil
-	case "fatal", "FATAL":
-		return FatalLevel, nil
-	default:
-		return -2, errInvalidLevel
+func UnmarshalLevel(text string) (Level, error) {
+	level := DebugLevel
+	err := level.UnmarshalText([]byte(text))
+	if err != nil {
+		return level, err
 	}
+	return level, nil
 }
 
 // String returns a lower-case ASCII representation of the log level.
