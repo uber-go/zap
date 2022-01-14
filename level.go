@@ -86,7 +86,7 @@ func NewAtomicLevelAt(l zapcore.Level) AtomicLevel {
 	return a
 }
 
-// ParseAtomicLevel parses a level based on the lower-case or all-caps ASCII
+// ParseAtomicLevel parses an AtomicLevel based on a lowercase or all-caps ASCII
 // representation of the log level. If the provided ASCII representation is
 // invalid an error is returned.
 //
