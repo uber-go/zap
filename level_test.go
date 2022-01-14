@@ -57,6 +57,29 @@ func TestNewAtomicLevel(t *testing.T) {
 	assert.Equal(t, WarnLevel, lvl.Level(), "Unexpected level after SetLevel.")
 }
 
+func TestParseAtomicLevel(t *testing.T) {
+	tests := []struct {
+		text  string
+		level AtomicLevel
+		err   string
+	}{
+		{"info", NewAtomicLevel(), ""},
+		{"DEBUG", NewAtomicLevelAt(DebugLevel), ""},
+		{"FOO", NewAtomicLevel(), `unrecognized level: "FOO"`},
+	}
+
+	for _, tt := range tests {
+		parsedAtomicLevel, err := ParseAtomicLevel(tt.text)
+		if len(tt.err) == 0 {
+			assert.NoError(t, err)
+			assert.Equal(t, tt.level, parsedAtomicLevel)
+		} else {
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.err)
+		}
+	}
+}
+
 func TestAtomicLevelMutation(t *testing.T) {
 	lvl := NewAtomicLevel()
 	lvl.SetLevel(WarnLevel)
