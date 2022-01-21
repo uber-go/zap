@@ -284,7 +284,7 @@ func TestLoggerNames(t *testing.T) {
 			}
 			log.Info("")
 			require.Equal(t, 1, logs.Len(), "Expected only one log entry to be written.")
-			assert.Equal(t, tt.expected, logs.AllUntimed()[0].Entry.LoggerName, "Unexpected logger name.")
+			assert.Equal(t, tt.expected, logs.AllUntimed()[0].LoggerName, "Unexpected logger name.")
 		})
 		withSugar(t, DebugLevel, nil, func(log *SugaredLogger, logs *observer.ObservedLogs) {
 			for _, n := range tt.names {
@@ -292,7 +292,7 @@ func TestLoggerNames(t *testing.T) {
 			}
 			log.Infow("")
 			require.Equal(t, 1, logs.Len(), "Expected only one log entry to be written.")
-			assert.Equal(t, tt.expected, logs.AllUntimed()[0].Entry.LoggerName, "Unexpected logger name.")
+			assert.Equal(t, tt.expected, logs.AllUntimed()[0].LoggerName, "Unexpected logger name.")
 		})
 	}
 }
@@ -359,7 +359,7 @@ func TestLoggerAddCaller(t *testing.T) {
 			assert.Regexp(
 				t,
 				tt.pat,
-				output[0].Entry.Caller,
+				output[0].Caller,
 				"Expected to find package name and file name in output.",
 			)
 		})
@@ -432,14 +432,14 @@ func TestLoggerAddCallerFunction(t *testing.T) {
 				assert.Regexp(
 					t,
 					tt.loggerFunction,
-					entry.Entry.Caller.Function,
+					entry.Caller.Function,
 					"Expected to find function name in output.",
 				)
 			}
 			assert.Regexp(
 				t,
 				tt.sugaredFunction,
-				entries[1].Entry.Caller.Function,
+				entries[1].Caller.Function,
 				"Expected to find function name in output.",
 			)
 		})
@@ -458,12 +458,12 @@ func TestLoggerAddCallerFail(t *testing.T) {
 		)
 		assert.Equal(
 			t,
-			logs.AllUntimed()[0].Entry.Message,
+			logs.AllUntimed()[0].Message,
 			"Failure.",
 			"Expected original message to survive failures in runtime.Caller.")
 		assert.Equal(
 			t,
-			logs.AllUntimed()[0].Entry.Caller.Function,
+			logs.AllUntimed()[0].Caller.Function,
 			"",
 			"Expected function name to be empty string.")
 	})
@@ -489,7 +489,7 @@ func TestLoggerIncreaseLevel(t *testing.T) {
 		require.Equal(t, 2, logs.Len(), "expected only warn + error logs due to IncreaseLevel.")
 		assert.Equal(
 			t,
-			logs.AllUntimed()[0].Entry.Message,
+			logs.AllUntimed()[0].Message,
 			"logger.Warn",
 			"Expected first logged message to be warn level message",
 		)
