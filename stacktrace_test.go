@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
@@ -67,8 +68,39 @@ func TestTakeStacktraceWithSkipInnerFunc(t *testing.T) {
 	)
 }
 
+func TestTakeStacktraceDeepStack(t *testing.T) {
+	const (
+		N                  = 500
+		withStackDepthName = "go.uber.org/zap.withStackDepth"
+	)
+	withStackDepth(N, func() {
+		trace := takeStacktrace(0)
+		for found := 0; found < N; found++ {
+			i := strings.Index(trace, withStackDepthName)
+			if i < 0 {
+				t.Fatalf(`expected %v occurrences of %q, found %d`,
+					N, withStackDepthName, found)
+			}
+			trace = trace[i+len(withStackDepthName):]
+		}
+	})
+}
+
 func BenchmarkTakeStacktrace(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		takeStacktrace(0)
 	}
+}
+
+func withStackDepth(depth int, f func()) {
+	var recurse func(rune) rune
+	recurse = func(r rune) rune {
+		if r > 0 {
+			bytes.Map(recurse, []byte(string([]rune{r - 1})))
+		} else {
+			f()
+		}
+		return 0
+	}
+	recurse(rune(depth))
 }
