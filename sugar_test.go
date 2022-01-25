@@ -344,7 +344,7 @@ func TestSugarAddCaller(t *testing.T) {
 			assert.Regexp(
 				t,
 				tt.pat,
-				output[0].Entry.Caller,
+				output[0].Caller,
 				"Expected to find package name and file name in output.",
 			)
 		})
@@ -363,7 +363,7 @@ func TestSugarAddCallerFail(t *testing.T) {
 		)
 		assert.Equal(
 			t,
-			logs.AllUntimed()[0].Entry.Message,
+			logs.AllUntimed()[0].Message,
 			"Failure.",
 			"Expected original message to survive failures in runtime.Caller.")
 	})

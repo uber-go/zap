@@ -314,7 +314,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 			log.errorOutput.Sync()
 		}
 
-		ce.Entry.Caller = zapcore.EntryCaller{
+		ce.Caller = zapcore.EntryCaller{
 			Defined:  defined,
 			PC:       frame.PC,
 			File:     frame.File,
@@ -322,8 +322,8 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 			Function: frame.Function,
 		}
 	}
-	if log.addStack.Enabled(ce.Entry.Level) {
-		ce.Entry.Stack = StackSkip("", log.callerSkip+callerSkipOffset).String
+	if log.addStack.Enabled(ce.Level) {
+		ce.Stack = StackSkip("", log.callerSkip+callerSkipOffset).String
 	}
 
 	return ce
