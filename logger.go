@@ -332,7 +332,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 		return ce
 	}
 
-	frame := stack.First()
+	frame, more := stack.Next()
 
 	if log.addCaller {
 		ce.Caller = zapcore.EntryCaller{
@@ -349,7 +349,13 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 		defer buffer.Free()
 
 		stackfmt := newStackFormatter(buffer)
-		stackfmt.FormatStack(stack)
+
+		// We've already extracted the first frame, so format that
+		// separately and defer to stackfmt for the rest.
+		stackfmt.FormatFrame(frame)
+		if more {
+			stackfmt.FormatStack(stack)
+		}
 		ce.Stack = buffer.String()
 	}
 
