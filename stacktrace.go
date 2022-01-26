@@ -37,8 +37,7 @@ var _stacktracePool = sync.Pool{
 }
 
 type stacktrace struct {
-	pcs    []uintptr // program counters; always a subslice of storage
-	frames *runtime.Frames
+	pcs []uintptr // program counters; always a subslice of storage
 
 	// The size of pcs varies depending on requirements:
 	// it will be one if the only the first frame was requested,
@@ -103,14 +102,12 @@ func captureStacktrace(skip int, depth stacktraceDepth) *stacktrace {
 		stack.pcs = stack.pcs[:numFrames]
 	}
 
-	stack.frames = runtime.CallersFrames(stack.pcs)
 	return stack
 }
 
 // Free releases resources associated with this stacktrace
 // and returns it back to the pool.
 func (st *stacktrace) Free() {
-	st.frames = nil
 	st.pcs = nil
 	_stacktracePool.Put(st)
 }
@@ -121,10 +118,10 @@ func (st *stacktrace) Count() int {
 	return len(st.pcs)
 }
 
-// Next returns the next frame in the stack trace,
-// and a boolean indicating whether there are more after it.
-func (st *stacktrace) Next() (_ runtime.Frame, more bool) {
-	return st.frames.Next()
+// First returns the first frame captured as part of the stacktrace.
+func (st *stacktrace) First() runtime.Frame {
+	frame, _ := runtime.CallersFrames(st.pcs).Next()
+	return frame
 }
 
 func takeStacktrace(skip int) string {
@@ -150,13 +147,14 @@ func newStackFormatter(b *buffer.Buffer) stackFormatter {
 	return stackFormatter{b: b}
 }
 
-// FormatStack formats all remaining frames in the provided stacktrace -- minus
+// FormatStack formats all frames in the provided stacktrace -- minus
 // the final runtime.main/runtime.goexit frame.
 func (sf *stackFormatter) FormatStack(stack *stacktrace) {
 	// Note: On the last iteration, frames.Next() returns false, with a valid
 	// frame, but we ignore this frame. The last frame is a a runtime frame which
 	// adds noise, since it's only either runtime.main or runtime.goexit.
-	for frame, more := stack.Next(); more; frame, more = stack.Next() {
+	frames := runtime.CallersFrames(stack.pcs)
+	for frame, more := frames.Next(); more; frame, more = frames.Next() {
 		sf.FormatFrame(frame)
 	}
 }
