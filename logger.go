@@ -261,7 +261,7 @@ func (log *Logger) clone() *Logger {
 func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	// Logger.check must always be called directly by a method in the
 	// Logger interface (e.g., Check, Info, Fatal).
-	// This skipps Logger.check and the Info/Fatal/Check/etc. method that
+	// This skips Logger.check and the Info/Fatal/Check/etc. method that
 	// called it.
 	const callerSkipOffset = 2
 
