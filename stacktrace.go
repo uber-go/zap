@@ -141,8 +141,8 @@ func takeStacktrace(skip int) string {
 
 // stackFormatter formats a stack trace into a readable string representation.
 type stackFormatter struct {
-	i int // number of frames already written
-	b *buffer.Buffer
+	b        *buffer.Buffer
+	nonEmpty bool // whehther we've written at least one frame already
 }
 
 // newStackFormatter builds a new stackFormatter.
@@ -163,10 +163,10 @@ func (sf *stackFormatter) FormatStack(stack *stacktrace) {
 
 // FormatFrame formats the given frame.
 func (sf *stackFormatter) FormatFrame(frame runtime.Frame) {
-	if sf.i != 0 {
+	if sf.nonEmpty {
 		sf.b.AppendByte('\n')
 	}
-	sf.i++
+	sf.nonEmpty = true
 	sf.b.AppendString(frame.Function)
 	sf.b.AppendByte('\n')
 	sf.b.AppendByte('\t')
