@@ -137,7 +137,6 @@ func TestJSONEncodeEntry(t *testing.T) {
 }
 
 func TestNoEncodeLevelSupplied(t *testing.T) {
-
 	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
 		MessageKey:     "M",
 		LevelKey:       "L",
