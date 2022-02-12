@@ -28,7 +28,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,7 +51,7 @@ func TestOpenNoPaths(t *testing.T) {
 func TestOpen(t *testing.T) {
 	tempName := tempFileName("", "zap-open-test")
 	assert.False(t, fileExists(tempName))
-	require.True(t, strings.HasPrefix(tempName, "/"), "Expected absolute temp file path.")
+	require.True(t, filepath.IsAbs(tempName), "Expected absolute temp file path.")
 
 	tests := []struct {
 		paths []string

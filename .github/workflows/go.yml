@@ -10,13 +10,16 @@ on:
 jobs:
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         go: ["1.15.x", "1.16.x", "1.17.x"]
+        os: ["ubuntu-latest", "windows-latest"]
         include:
         - go: 1.17.x
+          os: ubuntu-latest
           latest: true
+          # Lint only on Ubuntu with the latest Go.
 
     steps:
     - name: Setup Go
