@@ -50,9 +50,7 @@ func (o *ObservedLogs) Len() int {
 func (o *ObservedLogs) All() []LoggedEntry {
 	o.mu.RLock()
 	ret := make([]LoggedEntry, len(o.logs))
-	for i := range o.logs {
-		ret[i] = o.logs[i]
-	}
+	copy(ret, o.logs)
 	o.mu.RUnlock()
 	return ret
 }
