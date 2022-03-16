@@ -26,11 +26,9 @@ import (
 	"github.com/rs/zerolog"
 )
 
-
 func newZerolog() zerolog.Logger {
 	return zerolog.New(ioutil.Discard).With().Timestamp().Logger()
 }
-
 
 func newDisabledZerolog() zerolog.Logger {
 	return newZerolog().Level(zerolog.Disabled)
