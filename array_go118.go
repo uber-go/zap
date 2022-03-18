@@ -108,14 +108,14 @@ func ObjectValues[T any, P objectMarshalerPtr[T]](key string, values []T) Field 
 type objectValues[T any, P objectMarshalerPtr[T]] []T
 
 func (os objectValues[T, P]) MarshalLogArray(arr zapcore.ArrayEncoder) error {
-	for _, o := range os {
+	for i := range os {
 		// It is necessary for us to explicitly reference the "P" type.
-		// We cannot simply pass "&o" to AppendObject because its type
+		// We cannot simply pass "&os[i]" to AppendObject because its type
 		// is "*T", which the type system does not consider as
 		// implementing ObjectMarshaler.
 		// Only the type "P" satisfies ObjectMarshaler, which we have
 		// to convert "*T" to explicitly.
-		var p P = &o
+		var p P = &os[i]
 		if err := arr.AppendObject(p); err != nil {
 			return err
 		}
