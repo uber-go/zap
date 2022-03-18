@@ -28,16 +28,35 @@ import "go.uber.org/zap/zapcore"
 // Objects constructs a field with the given key, holding a list of the
 // provided objects that can be marshaled by Zap.
 //
-// For example, given a struct User that can be marshaled with zap.Object,
+// Note that these objects must implement zapcore.ObjectMarshaler directly.
+// That is, if you're trying to marshal a []Request, the MarshalLogObject
+// method must be declared on the Request type, not its pointer (*Request).
+// If it's on the pointer, use ObjectValues.
 //
-//  type User struct{ ... }
+// Given an object that implements MarshalLogObject on the value receiver, you
+// can log a slice of those objects with Objects like so:
 //
-//  func (u *User) MarshalLogObject(enc zapcore.ObjectEncoder) error
+//  type Author struct{ ... }
+//  func (a Author) MarshalLogObject(enc zapcore.ObjectEncoder) error
 //
-// Use Objects like so:
+//  var authors []Author = ...
+//  logger.Info("loading article", zap.Objects("authors", authors))
 //
-//  logger.Info("found users",
-//    zapmarshal.Objects("users", []*User{u1, u2, u3}))
+// Similarly, given a type that implements MarshalLogObject on its pointer
+// receiver, you can log a slice of pointers to that object with Objects like
+// so:
+//
+//  type Request struct{ ... }
+//  func (r *Request) MarshalLogObject(enc zapcore.ObjectEncoder) error
+//
+//  var requests []*Request = ...
+//  logger.Info("sending requests", zap.Objects("requests", requests))
+//
+// If instead, you have a slice of values of such an object, use the
+// ObjectValues constructor.
+//
+//  var requests []Request = ...
+//  logger.Info("sending requests", zap.ObjectValues("requests", requests))
 func Objects[T zapcore.ObjectMarshaler](key string, values []T) Field {
 	return Array(key, objects[T](values))
 }
@@ -47,6 +66,57 @@ type objects[T zapcore.ObjectMarshaler] []T
 func (os objects[T]) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	for _, o := range os {
 		if err := arr.AppendObject(o); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// objectMarshalerPtr is a constraint that specifies that the given type
+// implements zapcore.ObjectMarshaler on a pointer receiver.
+type objectMarshalerPtr[T any] interface {
+	*T
+	zapcore.ObjectMarshaler
+}
+
+// ObjectValues constructs a field with the given key, holding a list of the
+// provided objects, where pointers to these objects can be marshaled by Zap.
+//
+// Note that pointers to these objects must implement zapcore.ObjectMarshaler.
+// That is, if you're trying to marshal a []Request, the MarshalLogObject
+// method must be declared on the *Request type, not the value (Request).
+// If it's on the value, use Objects.
+//
+// Given an object that implements MarshalLogObject on the pointer receiver,
+// you can log a slice of those objects with ObjectValues like so:
+//
+//  type Request struct{ ... }
+//  func (r *Request) MarshalLogObject(enc zapcore.ObjectEncoder) error
+//
+//  var requests []Request = ...
+//  logger.Info("sending requests", zap.ObjectValues("requests", requests))
+//
+// If instead, you have a slice of pointers of such an object, use the Objects
+// field constructor.
+//
+//  var requests []*Request = ...
+//  logger.Info("sending requests", zap.Objects("requests", requests))
+func ObjectValues[T any, P objectMarshalerPtr[T]](key string, values []T) Field {
+	return Array(key, objectValues[T, P](values))
+}
+
+type objectValues[T any, P objectMarshalerPtr[T]] []T
+
+func (os objectValues[T, P]) MarshalLogArray(arr zapcore.ArrayEncoder) error {
+	for _, o := range os {
+		// It is necessary for us to explicitly reference the "P" type.
+		// We cannot simply pass "&o" to AppendObject because its type
+		// is "*T", which the type system does not consider as
+		// implementing ObjectMarshaler.
+		// Only the type "P" satisfies ObjectMarshaler, which we have
+		// to convert "*T" to explicitly.
+		var p P = &o
+		if err := arr.AppendObject(p); err != nil {
 			return err
 		}
 	}

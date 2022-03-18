@@ -32,7 +32,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func TestObjects(t *testing.T) {
+func TestObjectsAndObjectValues(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -41,18 +41,23 @@ func TestObjects(t *testing.T) {
 		want []any
 	}{
 		{
-			desc: "nil slice",
+			desc: "Objects/nil slice",
 			give: Objects[*emptyObject]("", nil),
 			want: []any{},
 		},
 		{
-			desc: "empty slice",
-			give: Objects("", []*emptyObject{}),
+			desc: "ObjectValues/nil slice",
+			give: ObjectValues[emptyObject]("", nil),
 			want: []any{},
 		},
 		{
-			desc: "single item",
-			give: Objects("", []*emptyObject{
+			desc: "ObjectValues/empty slice",
+			give: ObjectValues("", []emptyObject{}),
+			want: []any{},
+		},
+		{
+			desc: "ObjectValues/single item",
+			give: ObjectValues("", []emptyObject{
 				{},
 			}),
 			want: []any{
@@ -60,25 +65,29 @@ func TestObjects(t *testing.T) {
 			},
 		},
 		{
-			desc: "multiple different objects",
-			give: Objects("", []zapcore.ObjectMarshalerFunc{
-				func(enc zapcore.ObjectEncoder) error {
-					enc.AddString("foo", "bar")
-					return nil
-				},
-				func(enc zapcore.ObjectEncoder) error {
-					enc.AddInt("baz", 42)
-					return nil
-				},
-				func(enc zapcore.ObjectEncoder) error {
-					enc.AddBool("qux", true)
-					return nil
-				},
+			desc: "Objects/multiple different objects",
+			give: Objects("", []*fakeObject{
+				{value: "foo"},
+				{value: "bar"},
+				{value: "baz"},
 			}),
 			want: []any{
-				map[string]any{"foo": "bar"},
-				map[string]any{"baz": 42},
-				map[string]any{"qux": true},
+				map[string]any{"value": "foo"},
+				map[string]any{"value": "bar"},
+				map[string]any{"value": "baz"},
+			},
+		},
+		{
+			desc: "ObjectValues/multiple different objects",
+			give: ObjectValues("", []fakeObject{
+				{value: "foo"},
+				{value: "bar"},
+				{value: "baz"},
+			}),
+			want: []any{
+				map[string]any{"value": "foo"},
+				map[string]any{"value": "bar"},
+				map[string]any{"value": "baz"},
 			},
 		},
 	}
@@ -103,36 +112,70 @@ func (*emptyObject) MarshalLogObject(zapcore.ObjectEncoder) error {
 	return nil
 }
 
-func TestObjects_marshalError(t *testing.T) {
+type fakeObject struct {
+	value string
+	err   error // marshaling error, if any
+}
+
+func (o *fakeObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("value", o.value)
+	return o.err
+}
+
+func TestObjectsAndObjectValues_marshalError(t *testing.T) {
 	t.Parallel()
 
-	enc := zapcore.NewMapObjectEncoder()
-	Objects("k", []zapcore.ObjectMarshalerFunc{
-		func(enc zapcore.ObjectEncoder) error {
-			enc.AddString("foo", "bar")
-			return nil
+	tests := []struct {
+		desc    string
+		give    Field
+		want    []any
+		wantErr string
+	}{
+		{
+			desc: "Objects",
+			give: Objects("", []*fakeObject{
+				{value: "foo"},
+				{value: "bar", err: errors.New("great sadness")},
+				{value: "baz"}, // does not get marshaled
+			}),
+			want: []any{
+				map[string]any{"value": "foo"},
+				map[string]any{"value": "bar"},
+			},
+			wantErr: "great sadness",
 		},
-		func(enc zapcore.ObjectEncoder) error {
-			enc.AddString("baz", "qux")
-			return errors.New("great sadness")
+		{
+			desc: "ObjectValues",
+			give: ObjectValues("", []fakeObject{
+				{value: "foo"},
+				{value: "bar", err: errors.New("stuff failed")},
+				{value: "baz"}, // does not get marshaled
+			}),
+			want: []any{
+				map[string]any{"value": "foo"},
+				map[string]any{"value": "bar"},
+			},
+			wantErr: "stuff failed",
 		},
-		func(enc zapcore.ObjectEncoder) error {
-			t.Fatal("this item should not be encoded")
-			return nil
-		},
-	}).AddTo(enc)
+	}
 
-	require.Contains(t, enc.Fields, "k")
-	assert.Equal(t,
-		[]any{
-			map[string]any{"foo": "bar"},
-			map[string]any{"baz": "qux"},
-		},
-		enc.Fields["k"])
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
 
-	// AddTo puts the error in a "%vError" field based on the name of the
-	// original field.
-	require.Contains(t, enc.Fields, "kError")
-	assert.Equal(t, "great sadness", enc.Fields["kError"],
-		"error should get encoded")
+			tt.give.Key = "k"
+
+			enc := zapcore.NewMapObjectEncoder()
+			tt.give.AddTo(enc)
+
+			require.Contains(t, enc.Fields, "k")
+			assert.Equal(t, tt.want, enc.Fields["k"])
+
+			// AddTo puts the error in a "%vError" field based on the name of the
+			// original field.
+			require.Contains(t, enc.Fields, "kError")
+			assert.Equal(t, tt.wantErr, enc.Fields["kError"])
+		})
+	}
 }

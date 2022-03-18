@@ -29,6 +29,8 @@ func ExampleObjects() {
 	logger := zap.NewExample()
 	defer logger.Sync()
 
+	// Use the Objects field constructor when you have a list of objects,
+	// all of which implement zapcore.ObjectMarshaler.
 	logger.Debug("opening connections",
 		zap.Objects("addrs", []addr{
 			{IP: "123.45.67.89", Port: 4040},
@@ -37,4 +39,28 @@ func ExampleObjects() {
 		}))
 	// Output:
 	// {"level":"debug","msg":"opening connections","addrs":[{"ip":"123.45.67.89","port":4040},{"ip":"127.0.0.1","port":4041},{"ip":"192.168.0.1","port":4042}]}
+}
+
+func ExampleObjectValues() {
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	// Use the ObjectValues field constructor when you have a list of
+	// objects that do not implement zapcore.ObjectMarshaler directly,
+	// but on their pointer receivers.
+	logger.Debug("starting tunnels",
+		zap.ObjectValues("addrs", []request{
+			{
+				URL:    "/foo",
+				Listen: addr{"127.0.0.1", 8080},
+				Remote: addr{"123.45.67.89", 4040},
+			},
+			{
+				URL:    "/bar",
+				Listen: addr{"127.0.0.1", 8080},
+				Remote: addr{"127.0.0.1", 31200},
+			},
+		}))
+	// Output:
+	// {"level":"debug","msg":"starting tunnels","addrs":[{"url":"/foo","ip":"127.0.0.1","port":8080,"remote":{"ip":"123.45.67.89","port":4040}},{"url":"/bar","ip":"127.0.0.1","port":8080,"remote":{"ip":"127.0.0.1","port":31200}}]}
 }
