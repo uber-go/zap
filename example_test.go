@@ -182,7 +182,7 @@ func (a addr) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-func (r request) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+func (r *request) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("url", r.URL)
 	zap.Inline(r.Listen).AddTo(enc)
 	return enc.AddObject("remote", r.Remote)
