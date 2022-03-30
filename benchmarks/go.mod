@@ -24,5 +24,4 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/goleak v1.1.12 // indirect
 	golang.org/x/sys v0.0.0-20211103235746-7861aae1554b // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
