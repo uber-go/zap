@@ -369,6 +369,22 @@ func TestSugarAddCallerFail(t *testing.T) {
 	})
 }
 
+func TestSugarWithOptionsIncreaseLevel(t *testing.T) {
+	withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+		logger = logger.WithOptions(IncreaseLevel(WarnLevel))
+		logger.Info("logger.Info")
+		logger.Warn("logger.Warn")
+		logger.Error("logger.Error")
+		require.Equal(t, 2, logs.Len(), "expected only warn + error logs due to IncreaseLevel.")
+		assert.Equal(
+			t,
+			logs.AllUntimed()[0].Message,
+			"logger.Warn",
+			"Expected first logged message to be warn level message",
+		)
+	})
+}
+
 func BenchmarkSugarSingleStrArg(b *testing.B) {
 	withSugar(b, InfoLevel, nil /* opts* */, func(log *SugaredLogger, logs *observer.ObservedLogs) {
 		for i := 0; i < b.N; i++ {
