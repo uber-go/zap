@@ -61,8 +61,8 @@ func (s *SugaredLogger) Named(name string) *SugaredLogger {
 	return &SugaredLogger{base: s.base.Named(name)}
 }
 
-// WithOptions clones the base Logger, applies the supplied Options, wraps
-// the resulting Logger, and returns it. It's safe to use concurrently.
+// WithOptions clones the current SugaredLogger, applies the supplied Options,
+// and returns the result. It's safe to use concurrently.
 func (s *SugaredLogger) WithOptions(opts ...Option) *SugaredLogger {
 	base := s.base.clone()
 	for _, opt := range opts {
