@@ -61,6 +61,16 @@ func (s *SugaredLogger) Named(name string) *SugaredLogger {
 	return &SugaredLogger{base: s.base.Named(name)}
 }
 
+// WithOptions clones the base Logger, applies the supplied Options, wraps
+// the resulting Logger, and returns it. It's safe to use concurrently.
+func (s *SugaredLogger) WithOptions(opts ...Option) *SugaredLogger {
+	base := s.base.clone()
+	for _, opt := range opts {
+		opt.apply(base)
+	}
+	return &SugaredLogger{base: base}
+}
+
 // With adds a variadic number of fields to the logging context. It accepts a
 // mix of strongly-typed Field objects and loosely-typed key-value pairs. When
 // processing pairs, the first element of the pair is used as the field key
