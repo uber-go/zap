@@ -261,6 +261,42 @@ func TestSugarTemplatedLogging(t *testing.T) {
 	}
 }
 
+func TestSugarLnLogging(t *testing.T) {
+	tests := []struct {
+		args   []interface{}
+		expect string
+	}{
+		{nil, ""},
+		{[]interface{}{}, ""},
+		{[]interface{}{""}, ""},
+		{[]interface{}{"foo"}, "foo"},
+		{[]interface{}{"foo", "bar"}, "foo bar"},
+	}
+
+	// Common to all test cases.
+	context := []interface{}{"foo", "bar"}
+	expectedFields := []Field{String("foo", "bar")}
+
+	for _, tt := range tests {
+		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+			logger.With(context...).Debugln(tt.args...)
+			logger.With(context...).Infoln(tt.args...)
+			logger.With(context...).Warnln(tt.args...)
+			logger.With(context...).Errorln(tt.args...)
+			logger.With(context...).DPanicln(tt.args...)
+
+			expected := make([]observer.LoggedEntry, 5)
+			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+				expected[i] = observer.LoggedEntry{
+					Entry:   zapcore.Entry{Message: tt.expect, Level: lvl},
+					Context: expectedFields,
+				}
+			}
+			assert.Equal(t, expected, logs.AllUntimed(), "Unexpected log output.")
+		})
+	}
+}
+
 func TestSugarPanicLogging(t *testing.T) {
 	tests := []struct {
 		loggerLevel zapcore.Level
@@ -276,6 +312,9 @@ func TestSugarPanicLogging(t *testing.T) {
 		{FatalLevel, func(s *SugaredLogger) { s.Panicw("foo") }, ""},
 		{PanicLevel, func(s *SugaredLogger) { s.Panicw("foo") }, "foo"},
 		{DebugLevel, func(s *SugaredLogger) { s.Panicw("foo") }, "foo"},
+		{FatalLevel, func(s *SugaredLogger) { s.Panicln("foo") }, ""},
+		{PanicLevel, func(s *SugaredLogger) { s.Panicln("foo") }, "foo"},
+		{DebugLevel, func(s *SugaredLogger) { s.Panicln("foo") }, "foo"},
 	}
 
 	for _, tt := range tests {
@@ -308,6 +347,9 @@ func TestSugarFatalLogging(t *testing.T) {
 		{FatalLevel + 1, func(s *SugaredLogger) { s.Fatalw("foo") }, ""},
 		{FatalLevel, func(s *SugaredLogger) { s.Fatalw("foo") }, "foo"},
 		{DebugLevel, func(s *SugaredLogger) { s.Fatalw("foo") }, "foo"},
+		{FatalLevel + 1, func(s *SugaredLogger) { s.Fatalln("foo") }, ""},
+		{FatalLevel, func(s *SugaredLogger) { s.Fatalln("foo") }, "foo"},
+		{DebugLevel, func(s *SugaredLogger) { s.Fatalln("foo") }, "foo"},
 	}
 
 	for _, tt := range tests {
@@ -385,10 +427,34 @@ func TestSugarWithOptionsIncreaseLevel(t *testing.T) {
 	})
 }
 
+func TestSugarLnWithOptionsIncreaseLevel(t *testing.T) {
+	withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+		logger = logger.WithOptions(IncreaseLevel(WarnLevel))
+		logger.Infoln("logger.Infoln")
+		logger.Warnln("logger.Warnln")
+		logger.Errorln("logger.Errorln")
+		require.Equal(t, 2, logs.Len(), "expected only warn + error logs due to IncreaseLevel.")
+		assert.Equal(
+			t,
+			logs.AllUntimed()[0].Message,
+			"logger.Warnln",
+			"Expected first logged message to be warn level message",
+		)
+	})
+}
+
 func BenchmarkSugarSingleStrArg(b *testing.B) {
 	withSugar(b, InfoLevel, nil /* opts* */, func(log *SugaredLogger, logs *observer.ObservedLogs) {
 		for i := 0; i < b.N; i++ {
 			log.Info("hello world")
+		}
+	})
+}
+
+func BenchmarkLnSugarSingleStrArg(b *testing.B) {
+	withSugar(b, InfoLevel, nil /* opts* */, func(log *SugaredLogger, logs *observer.ObservedLogs) {
+		for i := 0; i < b.N; i++ {
+			log.Infoln("hello world")
 		}
 	})
 }
