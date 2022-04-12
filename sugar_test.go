@@ -297,6 +297,13 @@ func TestSugarLnLogging(t *testing.T) {
 	}
 }
 
+func TestSugarLnLoggingIgnored(t *testing.T) {
+	withSugar(t, WarnLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+		logger.Infoln("hello")
+		assert.Zero(t, logs.Len(), "Expected zero log statements.")
+	})
+}
+
 func TestSugarPanicLogging(t *testing.T) {
 	tests := []struct {
 		loggerLevel zapcore.Level
