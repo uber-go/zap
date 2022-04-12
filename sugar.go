@@ -38,10 +38,19 @@ const (
 // method.
 //
 // Unlike the Logger, the SugaredLogger doesn't insist on structured logging.
-// For each log level, it exposes three methods: one for loosely-typed
-// structured logging, one for println-style formatting, and one for
-// printf-style formatting. For example, SugaredLoggers can produce InfoLevel
-// output with Infow ("info with" structured context), Info, or Infof.
+// For each log level, it exposes four methods:
+//
+//  - methods named after the log level for log.Print-style logging
+//  - methods ending in "w" for loosely-typed structured logging
+//  - methods ending in "f" for log.Printf-style logging
+//  - methods ending in "ln" for log.Println-style logging
+//
+// For example, the methods for InfoLevel are:
+//
+//  Info(...any)           Print-style logging
+//  Infow(...any)          Structured logging (read as "info with")
+//  Infof(string, ...any)  Printf-style logging
+//  Infoln(...any)         Println-style logging
 type SugaredLogger struct {
 	base *Logger
 }
