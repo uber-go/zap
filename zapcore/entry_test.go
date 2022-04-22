@@ -64,7 +64,7 @@ func TestPutNilEntry(t *testing.T) {
 			assert.NotNil(t, ce, "Expected only non-nil CheckedEntries in pool.")
 			assert.False(t, ce.dirty, "Unexpected dirty bit set.")
 			assert.Nil(t, ce.ErrorOutput, "Non-nil ErrorOutput.")
-			assert.Equal(t, WriteThenNoop, ce.should, "Unexpected terminal behavior.")
+			assert.Nil(t, ce.should, "Unexpected terminal behavior.")
 			assert.Equal(t, 0, len(ce.cores), "Expected empty slice of cores.")
 			assert.True(t, cap(ce.cores) > 0, "Expected pooled CheckedEntries to pre-allocate slice of Cores.")
 		}
@@ -128,5 +128,26 @@ func TestCheckedEntryWrite(t *testing.T) {
 			ce.Write()
 		})
 		assert.True(t, stub.Exited, "Expected to exit when WriteThenFatal is set.")
+		assert.Equal(t, 1, stub.Code, "Expected to exit when WriteThenFatal is set.")
+	})
+
+	t.Run("WriteThenPosixExitCode", func(t *testing.T) {
+		var ce *CheckedEntry
+		ce = ce.Should(Entry{Message: "foo"}, WriteThenPosixExitCode)
+		stub := exit.WithStub(func() {
+			ce.Write()
+		})
+		assert.True(t, stub.Exited, "Expected to exit when WriteThenPosixExitCode is set.")
+		assert.Equal(t, 38, stub.Code, "Expected to exit with specific code when WriteThenPosixExitCode is set.")
+	})
+
+	t.Run("Custom", func(t *testing.T) {
+		var called bool
+		var ce *CheckedEntry
+		ce = ce.Should(Entry{}, func(entry *CheckedEntry, fields []Field) {
+			called = true
+		})
+		ce.Write()
+		assert.True(t, called, "Expected to call custom action after Write.")
 	})
 }

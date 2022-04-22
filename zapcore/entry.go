@@ -22,6 +22,7 @@ package zapcore
 
 import (
 	"fmt"
+	"hash/crc32"
 	"runtime"
 	"strings"
 	"sync"
@@ -154,18 +155,30 @@ type Entry struct {
 
 // CheckWriteAction indicates what action to take after a log entry is
 // processed. Actions are ordered in increasing severity.
-type CheckWriteAction uint8
+type CheckWriteAction func(*CheckedEntry, []Field)
 
-const (
+var (
 	// WriteThenNoop indicates that nothing special needs to be done. It's the
 	// default behavior.
-	WriteThenNoop CheckWriteAction = iota
+	WriteThenNoop CheckWriteAction
 	// WriteThenGoexit runs runtime.Goexit after Write.
-	WriteThenGoexit
+	WriteThenGoexit CheckWriteAction = func(ce *CheckedEntry, fields []Field) {
+		runtime.Goexit()
+	}
 	// WriteThenPanic causes a panic after Write.
-	WriteThenPanic
-	// WriteThenFatal causes a fatal os.Exit after Write.
-	WriteThenFatal
+	WriteThenPanic CheckWriteAction = func(ce *CheckedEntry, fields []Field) {
+		panic(ce.Message)
+	}
+	// WriteThenFatal causes a fatal os.Exit(1) after Write.
+	WriteThenFatal CheckWriteAction = func(ce *CheckedEntry, fields []Field) {
+		exit.With(1)
+	}
+	// WriteThenPosixExitCode causes an os.Exit(code) after Write. The code is
+	// calculated deterministically from the message, or from attached error
+	// Field.
+	WriteThenPosixExitCode CheckWriteAction = func(ce *CheckedEntry, fields []Field) {
+		exit.With(retcode(ce, fields))
+	}
 )
 
 // CheckedEntry is an Entry together with a collection of Cores that have
@@ -186,7 +199,9 @@ func (ce *CheckedEntry) reset() {
 	ce.Entry = Entry{}
 	ce.ErrorOutput = nil
 	ce.dirty = false
-	ce.should = WriteThenNoop
+	if ce.should != nil {
+		ce.should = WriteThenNoop
+	}
 	for i := range ce.cores {
 		// don't keep references to cores
 		ce.cores[i] = nil
@@ -224,16 +239,11 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 		ce.ErrorOutput.Sync()
 	}
 
-	should, msg := ce.should, ce.Message
 	putCheckedEntry(ce)
 
-	switch should {
-	case WriteThenPanic:
-		panic(msg)
-	case WriteThenFatal:
-		exit.Exit()
-	case WriteThenGoexit:
-		runtime.Goexit()
+	// Terminal operation
+	if ce.should != nil {
+		ce.should(ce, fields)
 	}
 }
 
@@ -259,4 +269,15 @@ func (ce *CheckedEntry) Should(ent Entry, should CheckWriteAction) *CheckedEntry
 	}
 	ce.should = should
 	return ce
+}
+
+func retcode(ce *CheckedEntry, fields []Field) int {
+	msg := ce.Message
+	for _, field := range fields {
+		if field.Type == ErrorType {
+			msg = field.Interface.(error).Error()
+			break
+		}
+	}
+	return int(crc32.ChecksumIEEE([]byte(msg)))%254 + 1
 }
