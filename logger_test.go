@@ -345,8 +345,8 @@ func TestLoggerAddCaller(t *testing.T) {
 		{opts(AddCaller(), WithCaller(false)), `^undefined$`},
 		{opts(WithCaller(true)), `.+/logger_test.go:[\d]+$`},
 		{opts(WithCaller(true), WithCaller(false)), `^undefined$`},
-		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(-1)), `.+/zap/logger_test.go:[\d]+$`},
-		{opts(AddCaller(), AddCallerSkip(1)), `.+/zap/common_test.go:[\d]+$`},
+		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(-1)), `.+/logger_test.go:[\d]+$`},
+		{opts(AddCaller(), AddCallerSkip(1)), `.+/common_test.go:[\d]+$`},
 		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(3)), `.+/src/runtime/.*:[\d]+$`},
 	}
 	for _, tt := range tests {
