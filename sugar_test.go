@@ -381,8 +381,8 @@ func TestSugarAddCaller(t *testing.T) {
 		pat     string
 	}{
 		{opts(AddCaller()), `.+/sugar_test.go:[\d]+$`},
-		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(-1)), `.+/zap/sugar_test.go:[\d]+$`},
-		{opts(AddCaller(), AddCallerSkip(1)), `.+/zap/common_test.go:[\d]+$`},
+		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(-1)), `.+/sugar_test.go:[\d]+$`},
+		{opts(AddCaller(), AddCallerSkip(1)), `.+/common_test.go:[\d]+$`},
 		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(5)), `.+/src/runtime/.*:[\d]+$`},
 	}
 	for _, tt := range tests {
