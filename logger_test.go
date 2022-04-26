@@ -22,6 +22,7 @@ package zap
 
 import (
 	"errors"
+	"os"
 	"sync"
 	"testing"
 
@@ -213,15 +214,8 @@ func TestLoggerAlwaysFatals(t *testing.T) {
 	// Users can disable writing out fatal-level logs, but calls to logger.Fatal()
 	// should still terminate the process.
 	withLogger(t, FatalLevel+1, nil, func(logger *Logger, logs *observer.ObservedLogs) {
-		stub := exit.WithStub(func() { logger.Fatal("foo") })
+		stub := exit.WithStub(func() { logger.Fatal("") })
 		assert.True(t, stub.Exited, "Expected calls to logger.Fatal to terminate process.")
-		assert.Equal(t, 1, stub.Code, "Expected calls to logger.Fatal to terminate process with predictable retcode.")
-
-		logger = logger.WithOptions(OnFatal(zapcore.WriteThenPosixExit))
-		err := errors.New("bar")
-		stub = exit.WithStub(func() { logger.Fatal("foo", Error(err)) })
-		assert.True(t, stub.Exited, "Expected calls to logger.Fatal to terminate process.")
-		assert.Equal(t, 129, stub.Code, "Expected calls to logger.Fatal to terminate process with predictable retcode.")
 
 		stub = exit.WithStub(func() {
 			if ce := logger.Check(FatalLevel, ""); ce != nil {
@@ -229,7 +223,6 @@ func TestLoggerAlwaysFatals(t *testing.T) {
 			}
 		})
 		assert.True(t, stub.Exited, "Expected calls to logger.Check(FatalLevel, ...) to terminate process.")
-		assert.Equal(t, 1, stub.Code, "Expected calls to logger.Check(FatalLevel, ...) to terminate process with predictable retcode.")
 
 		assert.Equal(t, 0, logs.Len(), "Shouldn't write out logs when fatal-level logging is disabled.")
 	})
@@ -585,6 +578,21 @@ func TestLoggerCustomOnFatal(t *testing.T) {
 			})
 		})
 	}
+}
+
+type customWriteHook struct{}
+
+func (h *customWriteHook) OnWrite(_ *zapcore.CheckedEntry, _ []Field) {
+	os.Exit(100)
+}
+
+func TestLoggerWithFatalHook(t *testing.T) {
+	h := &customWriteHook{}
+	withLogger(t, InfoLevel, opts(WithFatalHook(h)), func(logger *Logger, logs *observer.ObservedLogs) {
+		stub := exit.WithStub(func() { logger.Fatal("") })
+		assert.True(t, stub.Exited, "Expected calls to logger.Fatal to terminate process.")
+		assert.Equal(t, 100, stub.Code, "Expected the custom FatalHook to set the exit code.")
+	})
 }
 
 func TestNopLogger(t *testing.T) {
