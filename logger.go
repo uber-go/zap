@@ -42,7 +42,7 @@ type Logger struct {
 
 	development bool
 	addCaller   bool
-	onFatal     zapcore.CheckWriteAction // default is WriteThenFatal
+	onFatal     zapcore.CheckWriteHook // default is WriteThenFatal
 
 	name        string
 	errorOutput zapcore.WriteSyncer

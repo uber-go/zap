@@ -131,23 +131,29 @@ func TestCheckedEntryWrite(t *testing.T) {
 		assert.Equal(t, 1, stub.Code, "Expected to exit when WriteThenFatal is set.")
 	})
 
-	t.Run("WriteThenPosixExitCode", func(t *testing.T) {
+	t.Run("WriteThenPosixExit", func(t *testing.T) {
 		var ce *CheckedEntry
-		ce = ce.Should(Entry{Message: "foo"}, WriteThenPosixExitCode)
+		ce = ce.Should(Entry{Message: "foo"}, WriteThenPosixExit)
 		stub := exit.WithStub(func() {
 			ce.Write()
 		})
-		assert.True(t, stub.Exited, "Expected to exit when WriteThenPosixExitCode is set.")
-		assert.Equal(t, 38, stub.Code, "Expected to exit with specific code when WriteThenPosixExitCode is set.")
+		assert.True(t, stub.Exited, "Expected to exit when WriteThenPosixExit is set.")
+		assert.Equal(t, 38, stub.Code, "Expected to exit with specific code when WriteThenPosixExit is set.")
 	})
 
 	t.Run("Custom", func(t *testing.T) {
-		var called bool
 		var ce *CheckedEntry
-		ce = ce.Should(Entry{}, func(entry *CheckedEntry, fields []Field) {
-			called = true
-		})
+		hook := &customHook{}
+		ce = ce.Should(Entry{}, hook)
 		ce.Write()
-		assert.True(t, called, "Expected to call custom action after Write.")
+		assert.True(t, hook.called, "Expected to call custom action after Write.")
 	})
+}
+
+type customHook struct {
+	called bool
+}
+
+func (c *customHook) OnWrite(_ *CheckedEntry, _ []Field) {
+	c.called = true
 }

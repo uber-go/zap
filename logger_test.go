@@ -217,7 +217,7 @@ func TestLoggerAlwaysFatals(t *testing.T) {
 		assert.True(t, stub.Exited, "Expected calls to logger.Fatal to terminate process.")
 		assert.Equal(t, 1, stub.Code, "Expected calls to logger.Fatal to terminate process with predictable retcode.")
 
-		logger = logger.WithOptions(OnFatal(zapcore.WriteThenPosixExitCode))
+		logger = logger.WithOptions(OnFatal(zapcore.WriteThenPosixExit))
 		err := errors.New("bar")
 		stub = exit.WithStub(func() { logger.Fatal("foo", Error(err)) })
 		assert.True(t, stub.Exited, "Expected calls to logger.Fatal to terminate process.")

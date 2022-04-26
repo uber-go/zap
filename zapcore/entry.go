@@ -28,10 +28,9 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap/internal/bufferpool"
 	"go.uber.org/zap/internal/exit"
-
-	"go.uber.org/multierr"
 )
 
 var (
@@ -153,33 +152,44 @@ type Entry struct {
 	Stack      string
 }
 
+// CheckWriteHook allows to customize the action to take after a Fatal log entry
+// is processed.
+type CheckWriteHook interface {
+	OnWrite(*CheckedEntry, []Field)
+}
+
 // CheckWriteAction indicates what action to take after a log entry is
 // processed. Actions are ordered in increasing severity.
-type CheckWriteAction func(*CheckedEntry, []Field)
+type CheckWriteAction uint8
 
-var (
+const (
 	// WriteThenNoop indicates that nothing special needs to be done. It's the
 	// default behavior.
-	WriteThenNoop CheckWriteAction
+	WriteThenNoop CheckWriteAction = iota
 	// WriteThenGoexit runs runtime.Goexit after Write.
-	WriteThenGoexit CheckWriteAction = func(ce *CheckedEntry, fields []Field) {
-		runtime.Goexit()
-	}
+	WriteThenGoexit
 	// WriteThenPanic causes a panic after Write.
-	WriteThenPanic CheckWriteAction = func(ce *CheckedEntry, fields []Field) {
+	WriteThenPanic
+	// WriteThenFatal causes an os.Exit(1) after Write.
+	WriteThenFatal
+	// WriteThenPosixExit causes an os.Exit(code) after Write. The exit code is
+	// calculated deterministically from the Fatal message, or from error Field
+	// if given.
+	WriteThenPosixExit
+)
+
+func (a CheckWriteAction) OnWrite(ce *CheckedEntry, fields []Field) {
+	switch a {
+	case WriteThenGoexit:
+		runtime.Goexit()
+	case WriteThenPanic:
 		panic(ce.Message)
-	}
-	// WriteThenFatal causes a fatal os.Exit(1) after Write.
-	WriteThenFatal CheckWriteAction = func(ce *CheckedEntry, fields []Field) {
+	case WriteThenFatal:
 		exit.With(1)
-	}
-	// WriteThenPosixExitCode causes an os.Exit(code) after Write. The code is
-	// calculated deterministically from the message, or from attached error
-	// Field.
-	WriteThenPosixExitCode CheckWriteAction = func(ce *CheckedEntry, fields []Field) {
+	case WriteThenPosixExit:
 		exit.With(retcode(ce, fields))
 	}
-)
+}
 
 // CheckedEntry is an Entry together with a collection of Cores that have
 // already agreed to log it.
@@ -191,7 +201,7 @@ type CheckedEntry struct {
 	Entry
 	ErrorOutput WriteSyncer
 	dirty       bool // best-effort detection of pool misuse
-	should      CheckWriteAction
+	should      CheckWriteHook
 	cores       []Core
 }
 
@@ -243,7 +253,7 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 
 	// Terminal operation
 	if ce.should != nil {
-		ce.should(ce, fields)
+		ce.should.OnWrite(ce, fields)
 	}
 }
 
@@ -259,10 +269,10 @@ func (ce *CheckedEntry) AddCore(ent Entry, core Core) *CheckedEntry {
 	return ce
 }
 
-// Should sets this CheckedEntry's CheckWriteAction, which controls whether a
+// Should sets this CheckedEntry's CheckWriteHook, which controls whether a
 // Core will panic or fatal after writing this log entry. Like AddCore, it's
 // safe to call on nil CheckedEntry references.
-func (ce *CheckedEntry) Should(ent Entry, should CheckWriteAction) *CheckedEntry {
+func (ce *CheckedEntry) Should(ent Entry, should CheckWriteHook) *CheckedEntry {
 	if ce == nil {
 		ce = getCheckedEntry()
 		ce.Entry = ent
