@@ -187,10 +187,7 @@ func (a CheckWriteAction) OnWrite(ce *CheckedEntry, _ []Field) {
 	}
 }
 
-var _ CheckWriteHook = WriteThenNoop
-var _ CheckWriteHook = WriteThenGoexit
-var _ CheckWriteHook = WriteThenPanic
-var _ CheckWriteHook = WriteThenFatal
+var _ CheckWriteHook = CheckWriteAction(0)
 
 // CheckedEntry is an Entry together with a collection of Cores that have
 // already agreed to log it.
