@@ -33,12 +33,10 @@ func TestStub(t *testing.T) {
 		code int
 	}
 	tests := []struct {
-		f func()
-		want
+		f    func()
+		want want
 	}{
-		{func() {
-			exit.With(42)
-		}, want{exit: true, code: 42}},
+		{func() { exit.With(42) }, want{exit: true, code: 42}},
 		{exit.Exit, want{exit: true, code: 1}},
 		{func() {}, want{}},
 	}
