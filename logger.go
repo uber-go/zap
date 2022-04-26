@@ -42,7 +42,7 @@ type Logger struct {
 
 	development bool
 	addCaller   bool
-	onFatal     zapcore.CheckWriteAction // default is WriteThenFatal
+	onFatal     zapcore.CheckWriteHook // default is WriteThenFatal
 
 	name        string
 	errorOutput zapcore.WriteSyncer
@@ -288,12 +288,12 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 		ce = ce.Should(ent, zapcore.WriteThenPanic)
 	case zapcore.FatalLevel:
 		onFatal := log.onFatal
-		// Noop is the default value for CheckWriteAction, and it leads to
+		// nil is the default value for CheckWriteAction, and it leads to
 		// continued execution after a Fatal which is unexpected.
-		if onFatal == zapcore.WriteThenNoop {
+		if onFatal == nil {
 			onFatal = zapcore.WriteThenFatal
 		}
-		ce = ce.Should(ent, onFatal)
+		ce = ce.After(ent, onFatal)
 	case zapcore.DPanicLevel:
 		if log.development {
 			ce = ce.Should(ent, zapcore.WriteThenPanic)

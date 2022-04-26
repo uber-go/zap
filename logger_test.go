@@ -579,6 +579,23 @@ func TestLoggerCustomOnFatal(t *testing.T) {
 	}
 }
 
+type customWriteHook struct {
+	called bool
+}
+
+func (h *customWriteHook) OnWrite(_ *zapcore.CheckedEntry, _ []Field) {
+	h.called = true
+}
+
+func TestLoggerWithFatalHook(t *testing.T) {
+	var h customWriteHook
+	withLogger(t, InfoLevel, opts(WithFatalHook(&h)), func(logger *Logger, logs *observer.ObservedLogs) {
+		logger.Fatal("great sadness")
+		assert.True(t, h.called)
+		assert.Equal(t, 1, logs.FilterLevelExact(FatalLevel).Len())
+	})
+}
+
 func TestNopLogger(t *testing.T) {
 	logger := NewNop()
 

@@ -64,7 +64,7 @@ func TestPutNilEntry(t *testing.T) {
 			assert.NotNil(t, ce, "Expected only non-nil CheckedEntries in pool.")
 			assert.False(t, ce.dirty, "Unexpected dirty bit set.")
 			assert.Nil(t, ce.ErrorOutput, "Non-nil ErrorOutput.")
-			assert.Equal(t, WriteThenNoop, ce.should, "Unexpected terminal behavior.")
+			assert.Nil(t, ce.after, "Unexpected terminal behavior.")
 			assert.Equal(t, 0, len(ce.cores), "Expected empty slice of cores.")
 			assert.True(t, cap(ce.cores) > 0, "Expected pooled CheckedEntries to pre-allocate slice of Cores.")
 		}
@@ -128,5 +128,22 @@ func TestCheckedEntryWrite(t *testing.T) {
 			ce.Write()
 		})
 		assert.True(t, stub.Exited, "Expected to exit when WriteThenFatal is set.")
+		assert.Equal(t, 1, stub.Code, "Expected to exit when WriteThenFatal is set.")
 	})
+
+	t.Run("After", func(t *testing.T) {
+		var ce *CheckedEntry
+		hook := &customHook{}
+		ce = ce.After(Entry{}, hook)
+		ce.Write()
+		assert.True(t, hook.called, "Expected to call custom action after Write.")
+	})
+}
+
+type customHook struct {
+	called bool
+}
+
+func (c *customHook) OnWrite(_ *CheckedEntry, _ []Field) {
+	c.called = true
 }
