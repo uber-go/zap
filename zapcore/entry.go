@@ -22,7 +22,6 @@ package zapcore
 
 import (
 	"fmt"
-	"hash/crc32"
 	"runtime"
 	"strings"
 	"sync"
@@ -155,6 +154,7 @@ type Entry struct {
 // CheckWriteHook allows to customize the action to take after a Fatal log entry
 // is processed.
 type CheckWriteHook interface {
+	// OnWrite gets invoked when an entry is written
 	OnWrite(*CheckedEntry, []Field)
 }
 
@@ -172,24 +172,25 @@ const (
 	WriteThenPanic
 	// WriteThenFatal causes an os.Exit(1) after Write.
 	WriteThenFatal
-	// WriteThenPosixExit causes an os.Exit(code) after Write. The exit code is
-	// calculated deterministically from the Fatal message, or from error Field
-	// if given.
-	WriteThenPosixExit
 )
 
-func (a CheckWriteAction) OnWrite(ce *CheckedEntry, fields []Field) {
+// OnWrite implements the OnWrite method to keep CheckWriteAction compatible
+// with the new CheckWriteHook interface which deprecates CheckWriteAction.
+func (a CheckWriteAction) OnWrite(ce *CheckedEntry, _ []Field) {
 	switch a {
 	case WriteThenGoexit:
 		runtime.Goexit()
 	case WriteThenPanic:
 		panic(ce.Message)
 	case WriteThenFatal:
-		exit.With(1)
-	case WriteThenPosixExit:
-		exit.With(retcode(ce, fields))
+		exit.Exit()
 	}
 }
+
+var _ CheckWriteHook = WriteThenNoop
+var _ CheckWriteHook = WriteThenGoexit
+var _ CheckWriteHook = WriteThenPanic
+var _ CheckWriteHook = WriteThenFatal
 
 // CheckedEntry is an Entry together with a collection of Cores that have
 // already agreed to log it.
@@ -201,7 +202,7 @@ type CheckedEntry struct {
 	Entry
 	ErrorOutput WriteSyncer
 	dirty       bool // best-effort detection of pool misuse
-	should      CheckWriteHook
+	after       CheckWriteHook
 	cores       []Core
 }
 
@@ -209,9 +210,7 @@ func (ce *CheckedEntry) reset() {
 	ce.Entry = Entry{}
 	ce.ErrorOutput = nil
 	ce.dirty = false
-	if ce.should != nil {
-		ce.should = WriteThenNoop
-	}
+	ce.after = nil
 	for i := range ce.cores {
 		// don't keep references to cores
 		ce.cores[i] = nil
@@ -249,12 +248,11 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 		ce.ErrorOutput.Sync()
 	}
 
-	putCheckedEntry(ce)
-
-	// Terminal operation
-	if ce.should != nil {
-		ce.should.OnWrite(ce, fields)
+	hook := ce.after
+	if hook != nil {
+		hook.OnWrite(ce, fields)
 	}
+	putCheckedEntry(ce)
 }
 
 // AddCore adds a Core that has agreed to log this CheckedEntry. It's intended to be
@@ -269,25 +267,22 @@ func (ce *CheckedEntry) AddCore(ent Entry, core Core) *CheckedEntry {
 	return ce
 }
 
-// Should sets this CheckedEntry's CheckWriteHook, which controls whether a
+// Should sets this CheckedEntry's CheckWriteAction, which controls whether a
 // Core will panic or fatal after writing this log entry. Like AddCore, it's
 // safe to call on nil CheckedEntry references.
-func (ce *CheckedEntry) Should(ent Entry, should CheckWriteHook) *CheckedEntry {
+// Deprecated: Use After(ent Entry, after CheckWriteHook) instead.
+func (ce *CheckedEntry) Should(ent Entry, should CheckWriteAction) *CheckedEntry {
+	return ce.After(ent, should)
+}
+
+// After sets this CheckEntry's CheckWriteHook, which will be called after this
+// log entry has been written. It's safe to call this on nil CheckedEntry
+// references.
+func (ce *CheckedEntry) After(ent Entry, hook CheckWriteHook) *CheckedEntry {
 	if ce == nil {
 		ce = getCheckedEntry()
 		ce.Entry = ent
 	}
-	ce.should = should
+	ce.after = hook
 	return ce
-}
-
-func retcode(ce *CheckedEntry, fields []Field) int {
-	msg := ce.Message
-	for _, field := range fields {
-		if field.Type == ErrorType {
-			msg = field.Interface.(error).Error()
-			break
-		}
-	}
-	return int(crc32.ChecksumIEEE([]byte(msg)))%254 + 1
 }
