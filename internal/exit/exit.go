@@ -24,7 +24,7 @@ package exit
 
 import "os"
 
-var realFn = func(code int) { os.Exit(code) }
+var _exit = os.Exit
 
 // Exit normally terminates the process by calling os.Exit(1). If the package
 // is stubbed, it instead records a call in the testing spy.
@@ -36,7 +36,7 @@ func Exit() {
 // With terminates the process by calling os.Exit(code). If the package is
 // stubbed, it instead records a call in the testing spy.
 func With(code int) {
-	realFn(code)
+	_exit(code)
 }
 
 // A StubbedExit is a testing fake for os.Exit.
@@ -48,8 +48,8 @@ type StubbedExit struct {
 
 // Stub substitutes a fake for the call to os.Exit(1).
 func Stub() *StubbedExit {
-	s := &StubbedExit{prev: realFn}
-	realFn = s.exit
+	s := &StubbedExit{prev: _exit}
+	_exit = s.exit
 	return s
 }
 
@@ -64,7 +64,7 @@ func WithStub(f func()) *StubbedExit {
 
 // Unstub restores the previous exit function.
 func (se *StubbedExit) Unstub() {
-	realFn = se.prev
+	_exit = se.prev
 }
 
 func (se *StubbedExit) exit(code int) {
