@@ -32,12 +32,14 @@ import (
 	"go.uber.org/zap/internal/exit"
 )
 
-var _cePool = sync.Pool{New: func() interface{} {
-	// Pre-allocate some space for cores.
-	return &CheckedEntry{
-		cores: make([]Core, 4),
-	}
-}}
+var (
+	_cePool = sync.Pool{New: func() interface{} {
+		// Pre-allocate some space for cores.
+		return &CheckedEntry{
+			cores: make([]Core, 4),
+		}
+	}}
+)
 
 func getCheckedEntry() *CheckedEntry {
 	ce := _cePool.Get().(*CheckedEntry)
