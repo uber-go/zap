@@ -535,6 +535,17 @@ func TestLoggerConcurrent(t *testing.T) {
 	})
 }
 
+func TestLoggerFatalOnNoop(t *testing.T) {
+	exitStub := exit.Stub()
+	defer exitStub.Unstub()
+	core, _ := observer.New(InfoLevel)
+
+	// We don't allow a no-op fatal hook.
+	New(core, WithFatalHook(zapcore.WriteThenNoop)).Fatal("great sadness")
+	assert.True(t, exitStub.Exited, "must exit for WriteThenNoop")
+	assert.Equal(t, 1, exitStub.Code, "must exit with status 1 for WriteThenNoop")
+}
+
 func TestLoggerCustomOnFatal(t *testing.T) {
 	tests := []struct {
 		msg          string

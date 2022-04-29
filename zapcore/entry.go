@@ -32,14 +32,12 @@ import (
 	"go.uber.org/zap/internal/exit"
 )
 
-var (
-	_cePool = sync.Pool{New: func() interface{} {
-		// Pre-allocate some space for cores.
-		return &CheckedEntry{
-			cores: make([]Core, 4),
-		}
-	}}
-)
+var _cePool = sync.Pool{New: func() interface{} {
+	// Pre-allocate some space for cores.
+	return &CheckedEntry{
+		cores: make([]Core, 4),
+	}
+}}
 
 func getCheckedEntry() *CheckedEntry {
 	ce := _cePool.Get().(*CheckedEntry)
@@ -151,10 +149,24 @@ type Entry struct {
 	Stack      string
 }
 
-// CheckWriteHook allows to customize the action to take after a Fatal log entry
-// is processed.
+// CheckWriteHook is a custom action that may be executed after an entry is
+// written.
+//
+// Register one on a CheckedEntry with the After method.
+//
+//  if ce := logger.Check(...); ce != nil {
+//    ce = ce.After(hook)
+//    ce.Write(...)
+//  }
+//
+// You can configure the hook for Fatal log statements at the logger level with
+// the zap.WithFatalHook option.
 type CheckWriteHook interface {
-	// OnWrite gets invoked when an entry is written
+	// OnWrite is invoked with the CheckedEntry that was written and a list
+	// of fields added with that entry.
+	//
+	// The list of fields DOES NOT include fields that were already added
+	// to the logger with the With method.
 	OnWrite(*CheckedEntry, []Field)
 }
 
