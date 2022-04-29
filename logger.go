@@ -288,9 +288,18 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 		ce = ce.Should(ent, zapcore.WriteThenPanic)
 	case zapcore.FatalLevel:
 		onFatal := log.onFatal
-		// nil is the default value for CheckWriteAction, and it leads to
-		// continued execution after a Fatal which is unexpected.
-		if onFatal == nil {
+		// nil or WriteThenNoop will lead to continued execution after
+		// a Fatal log entry, which is unexpected. For example,
+		//
+		//   f, err := os.Open(..)
+		//   if err != nil {
+		//     log.Fatal("cannot open", zap.Error(err))
+		//   }
+		//   fmt.Println(f.Name())
+		//
+		// The f.Name() will panic if we continue execution after the
+		// log.Fatal.
+		if onFatal == nil || onFatal == zapcore.WriteThenNoop {
 			onFatal = zapcore.WriteThenFatal
 		}
 		ce = ce.After(ent, onFatal)
