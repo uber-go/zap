@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"testing"
@@ -625,6 +626,86 @@ func TestNopLogger(t *testing.T) {
 		assert.Panics(t, func() {
 			logger.Panic("great sadness")
 		}, "Nop logger should still cause panics.")
+	})
+}
+
+func TestRequestContext(t *testing.T) {
+	type key string
+
+	const (
+		CorrelationID key = "Correlation-ID"
+	)
+
+	t.Run("Context option use while logger create", func(t *testing.T) {
+		t.Run("Context is not nil", func(t *testing.T) {
+			requestContextOption := Context(func(ctx context.Context) []Field {
+				var fields []Field
+
+				if ctxRequestPath, ok := ctx.Value(CorrelationID).(string); ok {
+					fields = append(fields, String(string(CorrelationID), ctxRequestPath))
+				}
+
+				return fields
+			})
+			logger, _ := NewProduction(requestContextOption)
+
+			ctx := context.TODO()
+			ctx = context.WithValue(ctx, CorrelationID, "e9718aab-aa1a-4ad8-b1e6-690f6c43bd15")
+
+			logMessage := "Hello Zap Logger Community !!!"
+
+			logger.InfoCtx(ctx, logMessage)
+			logger.DebugCtx(ctx, logMessage)
+			logger.ErrorCtx(ctx, logMessage)
+			logger.WarnCtx(ctx, logMessage)
+			logger.DPanicCtx(ctx, logMessage)
+
+			assert.Panics(t, func() { logger.PanicCtx(ctx, logMessage) }, logMessage)
+			stub := exit.WithStub(func() { logger.FatalCtx(ctx, logMessage) })
+			assert.True(t, stub.Exited, "Expected calls to logger.Fatal to terminate process.")
+		})
+	})
+
+	t.Run("Context option not use while logger create", func(t *testing.T) {
+		t.Run("Context is not nil", func(t *testing.T) {
+			logger, _ := NewProduction()
+
+			ctx := context.TODO()
+			ctx = context.WithValue(ctx, CorrelationID, "e9718aab-aa1a-4ad8-b1e6-690f6c43bd15")
+
+			logMessage := "Hello Zap Logger Community !!!"
+
+			logger.InfoCtx(ctx, logMessage)
+			logger.DebugCtx(ctx, logMessage)
+			logger.ErrorCtx(ctx, logMessage)
+			logger.WarnCtx(ctx, logMessage)
+			logger.DPanicCtx(ctx, logMessage)
+
+			assert.Panics(t, func() { logger.PanicCtx(ctx, logMessage) }, logMessage)
+			stub := exit.WithStub(func() { logger.FatalCtx(ctx, logMessage) })
+			assert.True(t, stub.Exited, "Expected calls to logger.Fatal to terminate process.")
+		})
+	})
+
+	t.Run("Context option not use while logger create for development", func(t *testing.T) {
+		t.Run("Context is not nil", func(t *testing.T) {
+			logger, _ := NewDevelopment()
+
+			ctx := context.TODO()
+			ctx = context.WithValue(ctx, CorrelationID, "e9718aab-aa1a-4ad8-b1e6-690f6c43bd15")
+
+			logMessage := "Hello Zap Logger Community !!!"
+
+			logger.InfoCtx(ctx, logMessage)
+			logger.DebugCtx(ctx, logMessage)
+			logger.ErrorCtx(ctx, logMessage)
+			logger.WarnCtx(ctx, logMessage)
+
+			assert.Panics(t, func() { logger.PanicCtx(ctx, logMessage) }, logMessage)
+			assert.Panics(t, func() { logger.DPanicCtx(ctx, logMessage) }, logMessage)
+			stub := exit.WithStub(func() { logger.FatalCtx(ctx, logMessage) })
+			assert.True(t, stub.Exited, "Expected calls to logger.Fatal to terminate process.")
+		})
 	})
 }
 

@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"context"
 	"fmt"
 
 	"go.uber.org/zap/zapcore"
@@ -83,6 +84,15 @@ func ErrorOutput(w zapcore.WriteSyncer) Option {
 func Development() Option {
 	return optionFunc(func(log *Logger) {
 		log.development = true
+	})
+}
+
+// Context It is used to decide which of the values in the context will
+// be used as the base log field. It takes a function as a parameter and
+// this function does this job.
+func Context(contextFunc func(ctx context.Context) []Field) Option {
+	return optionFunc(func(log *Logger) {
+		log.contextFunc = contextFunc
 	})
 }
 

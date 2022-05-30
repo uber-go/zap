@@ -21,13 +21,13 @@
 package zap
 
 import (
+	"context"
 	"fmt"
+	"go.uber.org/zap/internal/bufferpool"
+	"go.uber.org/zap/zapcore"
 	"io/ioutil"
 	"os"
 	"strings"
-
-	"go.uber.org/zap/internal/bufferpool"
-	"go.uber.org/zap/zapcore"
 )
 
 // A Logger provides fast, leveled, structured logging. All methods are safe
@@ -52,6 +52,8 @@ type Logger struct {
 	callerSkip int
 
 	clock zapcore.Clock
+
+	contextFunc func(ctx context.Context) []Field
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
@@ -242,6 +244,78 @@ func (log *Logger) Fatal(msg string, fields ...Field) {
 	}
 }
 
+// InfoCtx logs a message at InfoLevel. The message includes any request context's fields
+// and any fields passed at the log site, as well as any fields accumulated on the logger.
+func (log *Logger) InfoCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(InfoLevel, msg); ce != nil {
+		generatedFields := log.generateFields(ctx, fields...)
+		ce.Write(generatedFields...)
+	}
+}
+
+// WarnCtx logs a message at WarnLevel. The message includes any request context's fields
+// and any fields passed at the log site, as well as any fields accumulated on the logger.
+func (log *Logger) WarnCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(WarnLevel, msg); ce != nil {
+		generatedFields := log.generateFields(ctx, fields...)
+		ce.Write(generatedFields...)
+	}
+}
+
+// ErrorCtx logs a message at ErrorLevel. The message includes any request context's fields
+// and any fields passed at the log site, as well as any fields accumulated on the logger.
+func (log *Logger) ErrorCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(ErrorLevel, msg); ce != nil {
+		generatedFields := log.generateFields(ctx, fields...)
+		ce.Write(generatedFields...)
+	}
+}
+
+// DPanicCtx logs a message at DPanicLevel. The message includes any request context's fields
+// and any fields passed at the log site, as well as any fields accumulated on the logger.
+//
+// If the logger is in development mode, it then panics (DPanic means
+// "development panic"). This is useful for catching errors that are
+// recoverable, but shouldn't ever happen.
+func (log *Logger) DPanicCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(DPanicLevel, msg); ce != nil {
+		generatedFields := log.generateFields(ctx, fields...)
+		ce.Write(generatedFields...)
+	}
+}
+
+// PanicCtx logs a message at PanicLevel. The message includes any request context's fields
+// and any fields passed at the log site, as well as any fields accumulated on the logger.
+//
+// The logger then panics, even if logging at PanicLevel is disabled.
+func (log *Logger) PanicCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(PanicLevel, msg); ce != nil {
+		generatedFields := log.generateFields(ctx, fields...)
+		ce.Write(generatedFields...)
+	}
+}
+
+// FatalCtx logs a message at FatalLevel. The message includes any request context's fields
+// and fields passed at the log site, as well as any fields accumulated on the logger.
+//
+// The logger then calls os.Exit(1), even if logging at FatalLevel is
+// disabled.
+func (log *Logger) FatalCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(FatalLevel, msg); ce != nil {
+		generatedFields := log.generateFields(ctx, fields...)
+		ce.Write(generatedFields...)
+	}
+}
+
+// DebugCtx logs a message at DebugLevel. The message includes any request context's fields
+// and any fields passed at the log site, as well as any fields accumulated on the logger.
+func (log *Logger) DebugCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(DebugLevel, msg); ce != nil {
+		generatedFields := log.generateFields(ctx, fields...)
+		ce.Write(generatedFields...)
+	}
+}
+
 // Sync calls the underlying Core's Sync method, flushing any buffered log
 // entries. Applications should take care to call Sync before exiting.
 func (log *Logger) Sync() error {
@@ -369,4 +443,12 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	}
 
 	return ce
+}
+
+func (log *Logger) generateFields(ctx context.Context, fields ...Field) []Field {
+	if ctx != nil && log.contextFunc != nil {
+		contextFields := log.contextFunc(ctx)
+		return append(contextFields, fields...)
+	}
+	return nil
 }
