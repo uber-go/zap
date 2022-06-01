@@ -21,7 +21,7 @@
 package benchmarks
 
 import (
-	"io/ioutil"
+	"io"
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/json"
@@ -29,14 +29,14 @@ import (
 
 func newDisabledApexLog() *log.Logger {
 	return &log.Logger{
-		Handler: json.New(ioutil.Discard),
+		Handler: json.New(io.Discard),
 		Level:   log.ErrorLevel,
 	}
 }
 
 func newApexLog() *log.Logger {
 	return &log.Logger{
-		Handler: json.New(ioutil.Discard),
+		Handler: json.New(io.Discard),
 		Level:   log.DebugLevel,
 	}
 }

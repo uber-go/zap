@@ -21,7 +21,7 @@
 package benchmarks
 
 import (
-	"io/ioutil"
+	"io"
 
 	"github.com/sirupsen/logrus"
 )
@@ -34,7 +34,7 @@ func newDisabledLogrus() *logrus.Logger {
 
 func newLogrus() *logrus.Logger {
 	return &logrus.Logger{
-		Out:       ioutil.Discard,
+		Out:       io.Discard,
 		Formatter: new(logrus.JSONFormatter),
 		Hooks:     make(logrus.LevelHooks),
 		Level:     logrus.DebugLevel,

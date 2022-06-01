@@ -22,7 +22,6 @@ package zapcore_test
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -68,7 +67,7 @@ func TestNopCore(t *testing.T) {
 }
 
 func TestIOCore(t *testing.T) {
-	temp, err := ioutil.TempFile("", "zapcore-test-iocore")
+	temp, err := os.CreateTemp("", "zapcore-test-iocore")
 	require.NoError(t, err, "Failed to create temp file.")
 	defer os.Remove(temp.Name())
 
@@ -94,7 +93,7 @@ func TestIOCore(t *testing.T) {
 		ce.Write(makeInt64Field("k", 4))
 	}
 
-	logged, err := ioutil.ReadFile(temp.Name())
+	logged, err := os.ReadFile(temp.Name())
 	require.NoError(t, err, "Failed to read from temp file.")
 	require.Equal(
 		t,
