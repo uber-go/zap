@@ -21,13 +21,13 @@
 package benchmarks
 
 import (
-	"io/ioutil"
+	"io"
 
 	"github.com/rs/zerolog"
 )
 
 func newZerolog() zerolog.Logger {
-	return zerolog.New(ioutil.Discard).With().Timestamp().Logger()
+	return zerolog.New(io.Discard).With().Timestamp().Logger()
 }
 
 func newDisabledZerolog() zerolog.Logger {

@@ -21,7 +21,7 @@
 package zap
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -58,7 +58,7 @@ func TestConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			temp, err := ioutil.TempFile("", "zap-prod-config-test")
+			temp, err := os.CreateTemp("", "zap-prod-config-test")
 			require.NoError(t, err, "Failed to create temp file.")
 			defer os.Remove(temp.Name())
 
@@ -74,7 +74,7 @@ func TestConfig(t *testing.T) {
 			logger.Info("info")
 			logger.Warn("warn")
 
-			byteContents, err := ioutil.ReadAll(temp)
+			byteContents, err := io.ReadAll(temp)
 			require.NoError(t, err, "Couldn't read log contents from temp file.")
 			logs := string(byteContents)
 			assert.Regexp(t, tt.expectRe, logs, "Unexpected log output.")
@@ -180,7 +180,7 @@ func TestConfigWithSamplingHook(t *testing.T) {
 	expectDropped := 99  // 200 - 100 initial - 1 thereafter
 	expectSampled := 103 // 2 from initial + 100 + 1 thereafter
 
-	temp, err := ioutil.TempFile("", "zap-prod-config-test")
+	temp, err := os.CreateTemp("", "zap-prod-config-test")
 	require.NoError(t, err, "Failed to create temp file.")
 	defer func() {
 		err := os.Remove(temp.Name())
@@ -200,7 +200,7 @@ func TestConfigWithSamplingHook(t *testing.T) {
 	logger.Info("info")
 	logger.Warn("warn")
 
-	byteContents, err := ioutil.ReadAll(temp)
+	byteContents, err := io.ReadAll(temp)
 	require.NoError(t, err, "Couldn't read log contents from temp file.")
 	logs := string(byteContents)
 	assert.Regexp(t, expectRe, logs, "Unexpected log output.")
