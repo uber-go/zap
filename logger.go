@@ -107,6 +107,19 @@ func NewDevelopment(options ...Option) (*Logger, error) {
 	return NewDevelopmentConfig().Build(options...)
 }
 
+// Must is a helper that wraps a call to a function returning (*Logger, error)
+// and panics if the error is non-nil. It is intended for use in variable
+// initialization such as:
+//
+//     var logger := zap.Must(zap.NewProduction())
+func Must(logger *Logger, err error) *Logger {
+	if err != nil {
+		panic(err)
+	}
+
+	return logger
+}
+
 // NewExample builds a Logger that's designed for use in zap's testable
 // examples. It writes DebugLevel and above logs to standard out as JSON, but
 // omits the timestamp and calling function to keep example output

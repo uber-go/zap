@@ -628,6 +628,16 @@ func TestNopLogger(t *testing.T) {
 	})
 }
 
+func TestMust(t *testing.T) {
+	t.Run("must without an error does not panic", func(t *testing.T) {
+		assert.NotPanics(t, func() { Must(NewNop(), nil) }, "must paniced with no error")
+	})
+
+	t.Run("must with an error panics", func(t *testing.T) {
+		assert.Panics(t, func() { Must(nil, errors.New("an error")) }, "must did not panic with an error")
+	})
+}
+
 func infoLog(logger *Logger, msg string, fields ...Field) {
 	logger.Info(msg, fields...)
 }
