@@ -82,7 +82,7 @@ func TestGlobalsConcurrentUse(t *testing.T) {
 		}()
 		go func() {
 			for !stop.Load() {
-				L().With(Int("foo", 42)).Named("main").WithOptions(Development()).Info("")
+				L().CloneWith(Int("foo", 42)).Named("main").WithOptions(Development()).Info("")
 				S().Info("")
 			}
 			wg.Done()

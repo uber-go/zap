@@ -60,7 +60,7 @@ type SugaredLogger struct {
 // both Loggers and SugaredLoggers, converting between them on the boundaries
 // of performance-sensitive code.
 func (s *SugaredLogger) Desugar() *Logger {
-	base := s.base.clone()
+	base := s.base.Clone()
 	base.callerSkip -= 2
 	return base
 }
@@ -73,7 +73,7 @@ func (s *SugaredLogger) Named(name string) *SugaredLogger {
 // WithOptions clones the current SugaredLogger, applies the supplied Options,
 // and returns the result. It's safe to use concurrently.
 func (s *SugaredLogger) WithOptions(opts ...Option) *SugaredLogger {
-	base := s.base.clone()
+	base := s.base.Clone()
 	for _, opt := range opts {
 		opt.apply(base)
 	}
@@ -108,7 +108,15 @@ func (s *SugaredLogger) WithOptions(opts ...Option) *SugaredLogger {
 // and execution continues. Passing an orphaned key triggers similar behavior:
 // panics in development and errors in production.
 func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
-	return &SugaredLogger{base: s.base.With(s.sweetenFields(args)...)}
+	s.base.With(s.sweetenFields(args)...)
+	return s
+}
+
+// CloneWith is a convenience function for Clone() followed by With(). It
+// creates and returns a child SugaredLogger with the added fields. Fields
+// added to the child don't affect the parent, and vice versa.
+func (s *SugaredLogger) CloneWith(args ...interface{}) *SugaredLogger {
+	return s.Clone().With(args...)
 }
 
 // Debug uses fmt.Sprint to construct and log a message.
@@ -268,6 +276,11 @@ func (s *SugaredLogger) Fatalln(args ...interface{}) {
 // Sync flushes any buffered log entries.
 func (s *SugaredLogger) Sync() error {
 	return s.base.Sync()
+}
+
+// Clone creates and returns a clone of the SugaredLogger.
+func (s *SugaredLogger) Clone() *SugaredLogger {
+	return &SugaredLogger{base: s.base.Clone()}
 }
 
 // log message with Sprint, Sprintf, or neither.

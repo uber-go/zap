@@ -97,12 +97,26 @@ func TestLoggerInitialFields(t *testing.T) {
 }
 
 func TestLoggerWith(t *testing.T) {
+	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
+		logger.With(String("one", "two")).Info("")
+		logger.With(String("three", "four")).Info("")
+		logger.Info("")
+
+		assert.Equal(t, []observer.LoggedEntry{
+			{Context: []Field{String("one", "two")}},
+			{Context: []Field{String("one", "two"), String("three", "four")}},
+			{Context: []Field{String("one", "two"), String("three", "four")}},
+		}, logs.AllUntimed(), "With failed to add fields to Logger")
+	})
+}
+
+func TestLoggerCloneWith(t *testing.T) {
 	fieldOpts := opts(Fields(Int("foo", 42)))
 	withLogger(t, DebugLevel, fieldOpts, func(logger *Logger, logs *observer.ObservedLogs) {
 		// Child loggers should have copy-on-write semantics, so two children
 		// shouldn't stomp on each other's fields or affect the parent's fields.
-		logger.With(String("one", "two")).Info("")
-		logger.With(String("three", "four")).Info("")
+		logger.CloneWith(String("one", "two")).Info("")
+		logger.CloneWith(String("three", "four")).Info("")
 		logger.Info("")
 
 		assert.Equal(t, []observer.LoggedEntry{
@@ -507,7 +521,7 @@ func TestLoggerHooks(t *testing.T) {
 
 func TestLoggerConcurrent(t *testing.T) {
 	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
-		child := logger.With(String("foo", "bar"))
+		child := logger.CloneWith(String("foo", "bar"))
 
 		wg := &sync.WaitGroup{}
 		runConcurrently(5, 10, wg, func() {
