@@ -111,19 +111,19 @@ func TestCheckedEntryWrite(t *testing.T) {
 
 	t.Run("WriteThenPanic", func(t *testing.T) {
 		var ce *CheckedEntry
-		ce = ce.Should(Entry{}, WriteThenPanic)
+		ce = ce.After(Entry{}, WriteThenPanic)
 		assert.Panics(t, func() { ce.Write() }, "Expected to panic when WriteThenPanic is set.")
 	})
 
 	t.Run("WriteThenGoexit", func(t *testing.T) {
 		var ce *CheckedEntry
-		ce = ce.Should(Entry{}, WriteThenGoexit)
+		ce = ce.After(Entry{}, WriteThenGoexit)
 		assertGoexit(t, func() { ce.Write() })
 	})
 
 	t.Run("WriteThenFatal", func(t *testing.T) {
 		var ce *CheckedEntry
-		ce = ce.Should(Entry{}, WriteThenFatal)
+		ce = ce.After(Entry{}, WriteThenFatal)
 		stub := exit.WithStub(func() {
 			ce.Write()
 		})

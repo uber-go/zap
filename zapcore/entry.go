@@ -206,7 +206,7 @@ var _ CheckWriteHook = CheckWriteAction(0)
 // CheckedEntry is an Entry together with a collection of Cores that have
 // already agreed to log it.
 //
-// CheckedEntry references should be created by calling AddCore or Should on a
+// CheckedEntry references should be created by calling AddCore or After on a
 // nil *CheckedEntry. References are returned to a pool after Write, and MUST
 // NOT be retained after calling their Write method.
 type CheckedEntry struct {
