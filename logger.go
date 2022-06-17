@@ -298,7 +298,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	// Set up any required terminal behavior.
 	switch ent.Level {
 	case zapcore.PanicLevel:
-		ce = ce.Should(ent, zapcore.WriteThenPanic)
+		ce = ce.After(ent, zapcore.WriteThenPanic)
 	case zapcore.FatalLevel:
 		onFatal := log.onFatal
 		// nil or WriteThenNoop will lead to continued execution after
@@ -318,7 +318,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 		ce = ce.After(ent, onFatal)
 	case zapcore.DPanicLevel:
 		if log.development {
-			ce = ce.Should(ent, zapcore.WriteThenPanic)
+			ce = ce.After(ent, zapcore.WriteThenPanic)
 		}
 	}
 
