@@ -119,8 +119,8 @@ func TestLoggerLogPanic(t *testing.T) {
 		should   bool
 		expected string
 	}{
-		{func(logger *Logger) { logger.Check(PanicLevel, "bar").Write() }, true, "bar"},
-		{func(logger *Logger) { logger.Log(PanicLevel, "baz") }, true, "baz"},
+		{func(logger *Logger) { logger.Check(PanicLevel, "foo").Write() }, true, "foo"},
+		{func(logger *Logger) { logger.Log(PanicLevel, "bar") }, true, "bar"},
 		{func(logger *Logger) { logger.Panic("baz") }, true, "baz"},
 	} {
 		withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
@@ -148,7 +148,7 @@ func TestLoggerLogFatal(t *testing.T) {
 		do       func(*Logger)
 		expected string
 	}{
-		{func(logger *Logger) { logger.Check(FatalLevel, "bar").Write() }, "bar"},
+		{func(logger *Logger) { logger.Check(FatalLevel, "foo").Write() }, "foo"},
 		{func(logger *Logger) { logger.Log(FatalLevel, "bar") }, "bar"},
 		{func(logger *Logger) { logger.Fatal("baz") }, "baz"},
 	} {
