@@ -190,6 +190,14 @@ func (log *Logger) Check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	return log.check(lvl, msg)
 }
 
+// Log logs a message at the specified level. The message includes any fields
+// passed at the log site, as well as any fields accumulated on the logger.
+func (log *Logger) Log(lvl zapcore.Level, msg string, fields ...Field) {
+	if ce := log.check(lvl, msg); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
 // Debug logs a message at DebugLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Debug(msg string, fields ...Field) {

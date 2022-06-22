@@ -120,6 +120,7 @@ func TestLoggerLogPanic(t *testing.T) {
 		expected string
 	}{
 		{func(logger *Logger) { logger.Check(PanicLevel, "bar").Write() }, true, "bar"},
+		{func(logger *Logger) { logger.Log(PanicLevel, "baz") }, true, "baz"},
 		{func(logger *Logger) { logger.Panic("baz") }, true, "baz"},
 	} {
 		withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
@@ -148,6 +149,7 @@ func TestLoggerLogFatal(t *testing.T) {
 		expected string
 	}{
 		{func(logger *Logger) { logger.Check(FatalLevel, "bar").Write() }, "bar"},
+		{func(logger *Logger) { logger.Log(FatalLevel, "bar") }, "bar"},
 		{func(logger *Logger) { logger.Fatal("baz") }, "baz"},
 	} {
 		withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
@@ -194,12 +196,36 @@ func TestLoggerLeveledMethods(t *testing.T) {
 	})
 }
 
+func TestLoggerLogLevels(t *testing.T) {
+	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
+		levels := []zapcore.Level{
+			DebugLevel,
+			InfoLevel,
+			WarnLevel,
+			ErrorLevel,
+			DPanicLevel,
+		}
+		for i, level := range levels {
+			logger.Log(level, "")
+			output := logs.AllUntimed()
+			assert.Equal(t, i+1, len(output), "Unexpected number of logs.")
+			assert.Equal(t, 0, len(output[i].Context), "Unexpected context on first log.")
+			assert.Equal(
+				t,
+				zapcore.Entry{Level: level},
+				output[i].Entry,
+				"Unexpected output from %s-level logger method.", level)
+		}
+	})
+}
+
 func TestLoggerAlwaysPanics(t *testing.T) {
 	// Users can disable writing out panic-level logs, but calls to logger.Panic()
 	// should still call panic().
 	withLogger(t, FatalLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		msg := "Even if output is disabled, logger.Panic should always panic."
 		assert.Panics(t, func() { logger.Panic("foo") }, msg)
+		assert.Panics(t, func() { logger.Log(PanicLevel, "foo") }, msg)
 		assert.Panics(t, func() {
 			if ce := logger.Check(PanicLevel, "foo"); ce != nil {
 				ce.Write()
@@ -214,6 +240,9 @@ func TestLoggerAlwaysFatals(t *testing.T) {
 	// should still terminate the process.
 	withLogger(t, FatalLevel+1, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		stub := exit.WithStub(func() { logger.Fatal("") })
+		assert.True(t, stub.Exited, "Expected calls to logger.Fatal to terminate process.")
+
+		stub = exit.WithStub(func() { logger.Log(FatalLevel, "") })
 		assert.True(t, stub.Exited, "Expected calls to logger.Fatal to terminate process.")
 
 		stub = exit.WithStub(func() {

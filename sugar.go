@@ -279,9 +279,7 @@ func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interf
 	}
 
 	msg := getMessage(template, fmtArgs)
-	if ce := s.base.Check(lvl, msg); ce != nil {
-		ce.Write(s.sweetenFields(context)...)
-	}
+	s.base.Log(lvl, msg, s.sweetenFields(context)...)
 }
 
 // logln message with Sprintln
@@ -291,9 +289,7 @@ func (s *SugaredLogger) logln(lvl zapcore.Level, template string, fmtArgs []inte
 	}
 
 	msg := getMessageln(fmtArgs)
-	if ce := s.base.Check(lvl, msg); ce != nil {
-		ce.Write(s.sweetenFields(context)...)
-	}
+	s.base.Log(lvl, msg, s.sweetenFields(context)...)
 }
 
 // getMessage format with Sprint, Sprintf, or neither.
