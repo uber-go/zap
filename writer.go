@@ -78,7 +78,7 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	}
 	if openErr != nil {
 		close()
-		return writers, nil, openErr
+		return nil, nil, openErr
 	}
 
 	return writers, close, nil
