@@ -21,43 +21,55 @@
 package benchmarks
 
 import (
-	"io/ioutil"
+	"io"
 
 	"github.com/rs/zerolog"
 )
 
 func newZerolog() zerolog.Logger {
-	return zerolog.New(ioutil.Discard).With().Timestamp().Logger()
+	return zerolog.New(io.Discard).With().Timestamp().Logger()
 }
 
 func newDisabledZerolog() zerolog.Logger {
 	return newZerolog().Level(zerolog.Disabled)
 }
 
+func (u *user) MarshalZerologObject(e *zerolog.Event) {
+	e.Str("name", u.Name).
+		Str("email", u.Email).
+		Int64("createdAt", u.CreatedAt.UnixNano())
+}
+
+func (uu users) MarshalZerologArray(a *zerolog.Array) {
+	for _, u := range uu {
+		a.Object(u)
+	}
+}
+
 func fakeZerologFields(e *zerolog.Event) *zerolog.Event {
 	return e.
 		Int("int", _tenInts[0]).
-		Interface("ints", _tenInts).
+		Ints("ints", _tenInts).
 		Str("string", _tenStrings[0]).
-		Interface("strings", _tenStrings).
+		Strs("strings", _tenStrings).
 		Time("time", _tenTimes[0]).
-		Interface("times", _tenTimes).
-		Interface("user1", _oneUser).
-		Interface("user2", _oneUser).
-		Interface("users", _tenUsers).
+		Times("times", _tenTimes).
+		Object("user1", _oneUser).
+		Object("user2", _oneUser).
+		Array("users", _tenUsers).
 		Err(errExample)
 }
 
 func fakeZerologContext(c zerolog.Context) zerolog.Context {
 	return c.
 		Int("int", _tenInts[0]).
-		Interface("ints", _tenInts).
+		Ints("ints", _tenInts).
 		Str("string", _tenStrings[0]).
-		Interface("strings", _tenStrings).
+		Strs("strings", _tenStrings).
 		Time("time", _tenTimes[0]).
-		Interface("times", _tenTimes).
-		Interface("user1", _oneUser).
-		Interface("user2", _oneUser).
-		Interface("users", _tenUsers).
+		Times("times", _tenTimes).
+		Object("user1", _oneUser).
+		Object("user2", _oneUser).
+		Array("users", _tenUsers).
 		Err(errExample)
 }

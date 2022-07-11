@@ -3,20 +3,53 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 1.21.0 (7 Feb 2022)
 
 Enhancements:
-* [#989][]: `zapcore.EncoderConfig` provides a flag `SkipLineEnding` that can be used to skip adding a newline character to logs. Thanks to @lruggieri.
+*  [#1047][]: Add `zapcore.ParseLevel` to parse a `Level` from a string.
+*  [#1048][]: Add `zap.ParseAtomicLevel` to parse an `AtomicLevel` from a
+   string.
 
 Bugfixes:
-* [#1011][]: JSON: Fix inaccurate precision when encoding complex64.
+* [#1058][]: Fix panic in JSON encoder when `EncodeLevel` is unset.
+
+Other changes:
+* [#1052][]: Improve encoding performance when the `AddCaller` and
+  `AddStacktrace` options are used together.
+
+[#1047]: https://github.com/uber-go/zap/pull/1047
+[#1048]: https://github.com/uber-go/zap/pull/1048
+[#1052]: https://github.com/uber-go/zap/pull/1052
+[#1058]: https://github.com/uber-go/zap/pull/1058
+
+Thanks to @aerosol and @Techassi for their contributions to this release.
+
+## 1.20.0 (4 Jan 2022)
+
+Enhancements:
+* [#989][]: Add `EncoderConfig.SkipLineEnding` flag to disable adding newline
+  characters between log statements.
+* [#1039][]: Add `EncoderConfig.NewReflectedEncoder` field to customize JSON
+  encoding of reflected log fields.
+
+Bugfixes:
+* [#1011][]: Fix inaccurate precision when encoding complex64 as JSON.
+* [#554][], [#1017][]: Close JSON namespaces opened in `MarshalLogObject`
+  methods when the methods return.
+* [#1033][]: Avoid panicking in Sampler core if `thereafter` is zero.
 
 Other changes:
 * [#1028][]: Drop support for Go < 1.15.
 
-[#1011]: https://github.com/uber-go/zap/pull/1011
+[#554]: https://github.com/uber-go/zap/pull/554
 [#989]: https://github.com/uber-go/zap/pull/989
+[#1011]: https://github.com/uber-go/zap/pull/1011
+[#1017]: https://github.com/uber-go/zap/pull/1017
 [#1028]: https://github.com/uber-go/zap/pull/1028
+[#1033]: https://github.com/uber-go/zap/pull/1033
+[#1039]: https://github.com/uber-go/zap/pull/1039
+
+Thanks to @psrajat, @lruggieri, @sammyrnycreal for their contributions to this release.
 
 ## 1.19.1 (8 Sep 2021)
 

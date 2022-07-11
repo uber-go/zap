@@ -76,6 +76,28 @@ func TestLevelText(t *testing.T) {
 	}
 }
 
+func TestParseLevel(t *testing.T) {
+	tests := []struct {
+		text  string
+		level Level
+		err   string
+	}{
+		{"info", InfoLevel, ""},
+		{"DEBUG", DebugLevel, ""},
+		{"FOO", 0, `unrecognized level: "FOO"`},
+	}
+	for _, tt := range tests {
+		parsedLevel, err := ParseLevel(tt.text)
+		if len(tt.err) == 0 {
+			assert.NoError(t, err)
+			assert.Equal(t, tt.level, parsedLevel)
+		} else {
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.err)
+		}
+	}
+}
+
 func TestCapitalLevelsParse(t *testing.T) {
 	tests := []struct {
 		text  string

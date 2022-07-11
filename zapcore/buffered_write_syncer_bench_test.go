@@ -21,7 +21,6 @@
 package zapcore
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -31,7 +30,7 @@ import (
 
 func BenchmarkBufferedWriteSyncer(b *testing.B) {
 	b.Run("write file with buffer", func(b *testing.B) {
-		file, err := ioutil.TempFile("", "log")
+		file, err := os.CreateTemp("", "log")
 		require.NoError(b, err)
 
 		defer func() {

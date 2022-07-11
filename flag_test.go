@@ -22,7 +22,7 @@ package zap
 
 import (
 	"flag"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"go.uber.org/zap/zapcore"
@@ -39,7 +39,7 @@ type flagTestCase struct {
 func (tc flagTestCase) runImplicitSet(t testing.TB) {
 	origCommandLine := flag.CommandLine
 	flag.CommandLine = flag.NewFlagSet("test", flag.ContinueOnError)
-	flag.CommandLine.SetOutput(ioutil.Discard)
+	flag.CommandLine.SetOutput(io.Discard)
 	defer func() { flag.CommandLine = origCommandLine }()
 
 	level := LevelFlag("level", InfoLevel, "")
@@ -89,7 +89,7 @@ func TestLevelFlag(t *testing.T) {
 func TestLevelFlagsAreIndependent(t *testing.T) {
 	origCommandLine := flag.CommandLine
 	flag.CommandLine = flag.NewFlagSet("test", flag.ContinueOnError)
-	flag.CommandLine.SetOutput(ioutil.Discard)
+	flag.CommandLine.SetOutput(io.Discard)
 	defer func() { flag.CommandLine = origCommandLine }()
 
 	// Make sure that these two flags are independent.

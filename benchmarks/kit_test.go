@@ -21,11 +21,11 @@
 package benchmarks
 
 import (
-	"io/ioutil"
+	"io"
 
-	"github.com/go-kit/kit/log"
+	"github.com/go-kit/log"
 )
 
 func newKitLog(fields ...interface{}) log.Logger {
-	return log.With(log.NewJSONLogger(ioutil.Discard), fields...)
+	return log.With(log.NewJSONLogger(io.Discard), fields...)
 }

@@ -171,7 +171,7 @@ func TestRedirectStdLogCaller(t *testing.T) {
 		log.Print("redirected")
 		entries := logs.All()
 		require.Len(t, entries, 1, "Unexpected number of logs.")
-		assert.Contains(t, entries[0].Entry.Caller.File, "global_test.go", "Unexpected caller annotation.")
+		assert.Contains(t, entries[0].Caller.File, "global_test.go", "Unexpected caller annotation.")
 	})
 }
 
@@ -210,7 +210,7 @@ func TestRedirectStdLogAtCaller(t *testing.T) {
 			log.Print("redirected")
 			entries := logs.All()
 			require.Len(t, entries, 1, "Unexpected number of logs.")
-			assert.Contains(t, entries[0].Entry.Caller.File, "global_test.go", "Unexpected caller annotation.")
+			assert.Contains(t, entries[0].Caller.File, "global_test.go", "Unexpected caller annotation.")
 		})
 	}
 }
@@ -270,11 +270,11 @@ func checkStdLogMessage(t *testing.T, msg string, logs *observer.ObservedLogs) {
 	require.Equal(t, 1, logs.Len(), "Expected exactly one entry to be logged")
 	entry := logs.AllUntimed()[0]
 	assert.Equal(t, []Field{}, entry.Context, "Unexpected entry context.")
-	assert.Equal(t, "redirected", entry.Entry.Message, "Unexpected entry message.")
+	assert.Equal(t, "redirected", entry.Message, "Unexpected entry message.")
 	assert.Regexp(
 		t,
 		`/global_test.go:\d+$`,
-		entry.Entry.Caller.String(),
+		entry.Caller.String(),
 		"Unexpected caller annotation.",
 	)
 }

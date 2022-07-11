@@ -23,7 +23,6 @@ package zap_test
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -161,7 +160,7 @@ func verifyNoZap(t *testing.T, logs string) {
 }
 
 func withGoPath(t *testing.T, f func(goPath string)) {
-	goPath, err := ioutil.TempDir("", "gopath")
+	goPath, err := os.MkdirTemp("", "gopath")
 	require.NoError(t, err, "Failed to create temporary directory for GOPATH")
 	//defer os.RemoveAll(goPath)
 

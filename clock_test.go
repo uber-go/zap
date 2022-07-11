@@ -42,6 +42,6 @@ func TestWithClock(t *testing.T) {
 	withLogger(t, DebugLevel, []Option{WithClock(clock)}, func(log *Logger, logs *observer.ObservedLogs) {
 		log.Info("")
 		require.Equal(t, 1, logs.Len(), "Expected only one log entry to be written.")
-		assert.Equal(t, date, logs.All()[0].Entry.Time, "Unexpected entry time.")
+		assert.Equal(t, date, logs.All()[0].Time, "Unexpected entry time.")
 	})
 }

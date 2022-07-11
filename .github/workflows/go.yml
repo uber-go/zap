@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.15.x", "1.16.x", "1.17.x"]
+        go: ["1.17.x", "1.18.x"]
         include:
-        - go: 1.17.x
+        - go: 1.18.x
           latest: true
 
     steps:
@@ -36,7 +36,11 @@ jobs:
           ${{ runner.os }}-go-
 
     - name: Download Dependencies
-      run: go mod download
+      run: |
+        go mod download
+        (cd tools && go mod download)
+        (cd benchmarks && go mod download)
+        (cd zapgrpc/internal/test && go mod download)
 
     - name: Lint
       if: matrix.latest

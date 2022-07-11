@@ -18,25 +18,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package exit
+package exit_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/internal/exit"
 )
 
 func TestStub(t *testing.T) {
+	type want struct {
+		exit bool
+		code int
+	}
 	tests := []struct {
 		f    func()
-		want bool
+		want want
 	}{
-		{Exit, true},
-		{func() {}, false},
+		{func() { exit.With(42) }, want{exit: true, code: 42}},
+		{exit.Exit, want{exit: true, code: 1}},
+		{func() {}, want{}},
 	}
 
 	for _, tt := range tests {
-		s := WithStub(tt.f)
-		assert.Equal(t, tt.want, s.Exited, "Stub captured unexpected exit value.")
+		s := exit.WithStub(tt.f)
+		assert.Equal(t, tt.want.exit, s.Exited, "Stub captured unexpected exit value.")
+		assert.Equal(t, tt.want.code, s.Code, "Stub captured unexpected exit value.")
 	}
 }

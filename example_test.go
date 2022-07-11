@@ -22,7 +22,7 @@ package zap_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -91,10 +91,7 @@ func Example_basicConfiguration() {
 	if err := json.Unmarshal(rawJSON, &cfg); err != nil {
 		panic(err)
 	}
-	logger, err := cfg.Build()
-	if err != nil {
-		panic(err)
-	}
+	logger := zap.Must(cfg.Build())
 	defer logger.Sync()
 
 	logger.Info("logger construction succeeded")
@@ -125,8 +122,8 @@ func Example_advancedConfiguration() {
 	// implement io.Writer, we can use zapcore.AddSync to add a no-op Sync
 	// method. If they're not safe for concurrent use, we can add a protecting
 	// mutex with zapcore.Lock.)
-	topicDebugging := zapcore.AddSync(ioutil.Discard)
-	topicErrors := zapcore.AddSync(ioutil.Discard)
+	topicDebugging := zapcore.AddSync(io.Discard)
+	topicErrors := zapcore.AddSync(io.Discard)
 
 	// High-priority output should also go to standard error, and low-priority
 	// output should also go to standard out.
@@ -182,7 +179,7 @@ func (a addr) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-func (r request) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+func (r *request) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("url", r.URL)
 	zap.Inline(r.Listen).AddTo(enc)
 	return enc.AddObject("remote", r.Remote)
@@ -278,10 +275,7 @@ func ExampleAtomicLevel_config() {
 	if err := json.Unmarshal(rawJSON, &cfg); err != nil {
 		panic(err)
 	}
-	logger, err := cfg.Build()
-	if err != nil {
-		panic(err)
-	}
+	logger := zap.Must(cfg.Build())
 	defer logger.Sync()
 
 	logger.Info("info logging enabled")

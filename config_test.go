@@ -21,7 +21,7 @@
 package zap
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -42,23 +42,23 @@ func TestConfig(t *testing.T) {
 			desc:    "production",
 			cfg:     NewProductionConfig(),
 			expectN: 2 + 100 + 1, // 2 from initial logs, 100 initial sampled logs, 1 from off-by-one in sampler
-			expectRe: `{"level":"info","caller":"zap/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
-				`{"level":"warn","caller":"zap/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n",
+			expectRe: `{"level":"info","caller":"[a-z0-9_-]+/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
+				`{"level":"warn","caller":"[a-z0-9_-]+/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n",
 		},
 		{
 			desc:    "development",
 			cfg:     NewDevelopmentConfig(),
 			expectN: 3 + 200, // 3 initial logs, all 200 subsequent logs
-			expectRe: "DEBUG\tzap/config_test.go:" + `\d+` + "\tdebug\t" + `{"k": "v", "z": "zz"}` + "\n" +
-				"INFO\tzap/config_test.go:" + `\d+` + "\tinfo\t" + `{"k": "v", "z": "zz"}` + "\n" +
-				"WARN\tzap/config_test.go:" + `\d+` + "\twarn\t" + `{"k": "v", "z": "zz"}` + "\n" +
+			expectRe: "DEBUG\t[a-z0-9_-]+/config_test.go:" + `\d+` + "\tdebug\t" + `{"k": "v", "z": "zz"}` + "\n" +
+				"INFO\t[a-z0-9_-]+/config_test.go:" + `\d+` + "\tinfo\t" + `{"k": "v", "z": "zz"}` + "\n" +
+				"WARN\t[a-z0-9_-]+/config_test.go:" + `\d+` + "\twarn\t" + `{"k": "v", "z": "zz"}` + "\n" +
 				`go.uber.org/zap.TestConfig.\w+`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			temp, err := ioutil.TempFile("", "zap-prod-config-test")
+			temp, err := os.CreateTemp("", "zap-prod-config-test")
 			require.NoError(t, err, "Failed to create temp file.")
 			defer os.Remove(temp.Name())
 
@@ -74,7 +74,7 @@ func TestConfig(t *testing.T) {
 			logger.Info("info")
 			logger.Warn("warn")
 
-			byteContents, err := ioutil.ReadAll(temp)
+			byteContents, err := io.ReadAll(temp)
 			require.NoError(t, err, "Couldn't read log contents from temp file.")
 			logs := string(byteContents)
 			assert.Regexp(t, tt.expectRe, logs, "Unexpected log output.")
@@ -175,12 +175,12 @@ func TestConfigWithSamplingHook(t *testing.T) {
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
-	expectRe := `{"level":"info","caller":"zap/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
-		`{"level":"warn","caller":"zap/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n"
+	expectRe := `{"level":"info","caller":"[a-z0-9_-]+/config_test.go:\d+","msg":"info","k":"v","z":"zz"}` + "\n" +
+		`{"level":"warn","caller":"[a-z0-9_-]+/config_test.go:\d+","msg":"warn","k":"v","z":"zz"}` + "\n"
 	expectDropped := 99  // 200 - 100 initial - 1 thereafter
 	expectSampled := 103 // 2 from initial + 100 + 1 thereafter
 
-	temp, err := ioutil.TempFile("", "zap-prod-config-test")
+	temp, err := os.CreateTemp("", "zap-prod-config-test")
 	require.NoError(t, err, "Failed to create temp file.")
 	defer func() {
 		err := os.Remove(temp.Name())
@@ -200,7 +200,7 @@ func TestConfigWithSamplingHook(t *testing.T) {
 	logger.Info("info")
 	logger.Warn("warn")
 
-	byteContents, err := ioutil.ReadAll(temp)
+	byteContents, err := io.ReadAll(temp)
 	require.NoError(t, err, "Couldn't read log contents from temp file.")
 	logs := string(byteContents)
 	assert.Regexp(t, expectRe, logs, "Unexpected log output.")
