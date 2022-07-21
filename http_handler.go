@@ -22,6 +22,7 @@ package zap
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -108,7 +109,7 @@ func decodePutRequest(contentType string, r *http.Request) (zapcore.Level, error
 func decodePutURL(r *http.Request) (zapcore.Level, error) {
 	lvl := r.FormValue("level")
 	if lvl == "" {
-		return 0, fmt.Errorf("must specify logging level")
+		return 0, errors.New("must specify logging level")
 	}
 	var l zapcore.Level
 	if err := l.UnmarshalText([]byte(lvl)); err != nil {
@@ -125,7 +126,7 @@ func decodePutJSON(body io.Reader) (zapcore.Level, error) {
 		return 0, fmt.Errorf("malformed request body: %v", err)
 	}
 	if pld.Level == nil {
-		return 0, fmt.Errorf("must specify logging level")
+		return 0, errors.New("must specify logging level")
 	}
 	return *pld.Level, nil
 
