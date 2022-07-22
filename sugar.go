@@ -231,38 +231,38 @@ func (s *SugaredLogger) Fatalw(msg string, keysAndValues ...interface{}) {
 
 // Debugln uses fmt.Sprintln to construct and log a message.
 func (s *SugaredLogger) Debugln(args ...interface{}) {
-	s.logln(DebugLevel, "", args, nil)
+	s.logln(DebugLevel, args, nil)
 }
 
 // Infoln uses fmt.Sprintln to construct and log a message.
 func (s *SugaredLogger) Infoln(args ...interface{}) {
-	s.logln(InfoLevel, "", args, nil)
+	s.logln(InfoLevel, args, nil)
 }
 
 // Warnln uses fmt.Sprintln to construct and log a message.
 func (s *SugaredLogger) Warnln(args ...interface{}) {
-	s.logln(WarnLevel, "", args, nil)
+	s.logln(WarnLevel, args, nil)
 }
 
 // Errorln uses fmt.Sprintln to construct and log a message.
 func (s *SugaredLogger) Errorln(args ...interface{}) {
-	s.logln(ErrorLevel, "", args, nil)
+	s.logln(ErrorLevel, args, nil)
 }
 
 // DPanicln uses fmt.Sprintln to construct and log a message. In development, the
 // logger then panics. (See DPanicLevel for details.)
 func (s *SugaredLogger) DPanicln(args ...interface{}) {
-	s.logln(DPanicLevel, "", args, nil)
+	s.logln(DPanicLevel, args, nil)
 }
 
 // Panicln uses fmt.Sprintln to construct and log a message, then panics.
 func (s *SugaredLogger) Panicln(args ...interface{}) {
-	s.logln(PanicLevel, "", args, nil)
+	s.logln(PanicLevel, args, nil)
 }
 
 // Fatalln uses fmt.Sprintln to construct and log a message, then calls os.Exit.
 func (s *SugaredLogger) Fatalln(args ...interface{}) {
-	s.logln(FatalLevel, "", args, nil)
+	s.logln(FatalLevel, args, nil)
 }
 
 // Sync flushes any buffered log entries.
@@ -285,7 +285,7 @@ func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interf
 }
 
 // logln message with Sprintln
-func (s *SugaredLogger) logln(lvl zapcore.Level, template string, fmtArgs []interface{}, context []interface{}) {
+func (s *SugaredLogger) logln(lvl zapcore.Level, fmtArgs []interface{}, context []interface{}) {
 	if lvl < DPanicLevel && !s.base.Core().Enabled(lvl) {
 		return
 	}
