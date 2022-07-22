@@ -206,6 +206,14 @@ func (log *Logger) Debug(msg string, fields ...Field) {
 	}
 }
 
+// DebugField adds field available at debug logger level
+func (log *Logger) DebugField(f Field) Field {
+	if log.core.Enabled(DebugLevel) {
+		return f
+	}
+	return Skip()
+}
+
 // Info logs a message at InfoLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Info(msg string, fields ...Field) {

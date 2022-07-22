@@ -674,3 +674,20 @@ func infoLog(logger *Logger, msg string, fields ...Field) {
 func infoLogSugared(logger *SugaredLogger, args ...interface{}) {
 	logger.Info(args...)
 }
+
+func TestLogger_DebugField(t *testing.T) {
+	t.Run("debug level", func(t *testing.T) {
+		withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
+			logger.Info("test", logger.DebugField(String("key", "value")))
+			log := logs.FilterFieldKey("key").All()
+			require.Equal(t, 1, len(log))
+			assert.Equal(t, "value", log[0].Context[0].String)
+		})
+	})
+	t.Run("info level with debug fields", func(t *testing.T) {
+		withLogger(t, InfoLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
+			logger.Info("test", logger.DebugField(String("key", "value")))
+			assert.Equal(t, 0, len(logs.FilterFieldKey("key").All()))
+		})
+	})
+}
