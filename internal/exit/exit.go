@@ -26,13 +26,6 @@ import "os"
 
 var _exit = os.Exit
 
-// Exit normally terminates the process by calling os.Exit(1). If the package
-// is stubbed, it instead records a call in the testing spy.
-// Deprecated: use With() instead.
-func Exit() {
-	With(1)
-}
-
 // With terminates the process by calling os.Exit(code). If the package is
 // stubbed, it instead records a call in the testing spy.
 func With(code int) {

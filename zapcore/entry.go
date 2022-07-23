@@ -197,7 +197,7 @@ func (a CheckWriteAction) OnWrite(ce *CheckedEntry, _ []Field) {
 	case WriteThenPanic:
 		panic(ce.Message)
 	case WriteThenFatal:
-		exit.Exit()
+		exit.With(1)
 	}
 }
 
