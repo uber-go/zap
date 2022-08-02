@@ -111,7 +111,7 @@ func NewDevelopment(options ...Option) (*Logger, error) {
 // and panics if the error is non-nil. It is intended for use in variable
 // initialization such as:
 //
-//     var logger = zap.Must(zap.NewProduction())
+//	var logger = zap.Must(zap.NewProduction())
 func Must(logger *Logger, err error) *Logger {
 	if err != nil {
 		panic(err)

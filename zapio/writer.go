@@ -36,15 +36,15 @@ import (
 // and you want to log the output using your existing logger configuration. For
 // example,
 //
-//   writer := &zapio.Writer{Log: logger, Level: zap.DebugLevel}
-//   defer writer.Close()
+//	writer := &zapio.Writer{Log: logger, Level: zap.DebugLevel}
+//	defer writer.Close()
 //
-//   cmd := exec.CommandContext(ctx, ...)
-//   cmd.Stdout = writer
-//   cmd.Stderr = writer
-//   if err := cmd.Run(); err != nil {
-//       return err
-//   }
+//	cmd := exec.CommandContext(ctx, ...)
+//	cmd.Stdout = writer
+//	cmd.Stderr = writer
+//	if err := cmd.Run(); err != nil {
+//	    return err
+//	}
 //
 // Writer must be closed when finished to flush buffered data to the logger.
 type Writer struct {

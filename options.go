@@ -145,7 +145,7 @@ func OnFatal(action zapcore.CheckWriteAction) Option {
 // goroutine after writing a fatal log message, but it will not exit the
 // program.
 //
-//   zap.New(core, zap.WithFatalHook(zapcore.WriteThenGoexit))
+//	zap.New(core, zap.WithFatalHook(zapcore.WriteThenGoexit))
 //
 // It is important that the provided CheckWriteHook stops the control flow at
 // the current statement to meet expectations of callers of the logger.

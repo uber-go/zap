@@ -15,7 +15,7 @@ jobs:
       matrix:
         go: ["1.17.x", "1.18.x", "1.19.x"]
         include:
-        - go: 1.18.x
+        - go: 1.19.x
           latest: true
 
     steps:

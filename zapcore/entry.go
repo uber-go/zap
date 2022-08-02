@@ -156,10 +156,10 @@ type Entry struct {
 //
 // Register one on a CheckedEntry with the After method.
 //
-//  if ce := logger.Check(...); ce != nil {
-//    ce = ce.After(hook)
-//    ce.Write(...)
-//  }
+//	if ce := logger.Check(...); ce != nil {
+//	  ce = ce.After(hook)
+//	  ce.Write(...)
+//	}
 //
 // You can configure the hook for Fatal log statements at the logger level with
 // the zap.WithFatalHook option.

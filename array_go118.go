@@ -36,27 +36,27 @@ import "go.uber.org/zap/zapcore"
 // Given an object that implements MarshalLogObject on the value receiver, you
 // can log a slice of those objects with Objects like so:
 //
-//  type Author struct{ ... }
-//  func (a Author) MarshalLogObject(enc zapcore.ObjectEncoder) error
+//	type Author struct{ ... }
+//	func (a Author) MarshalLogObject(enc zapcore.ObjectEncoder) error
 //
-//  var authors []Author = ...
-//  logger.Info("loading article", zap.Objects("authors", authors))
+//	var authors []Author = ...
+//	logger.Info("loading article", zap.Objects("authors", authors))
 //
 // Similarly, given a type that implements MarshalLogObject on its pointer
 // receiver, you can log a slice of pointers to that object with Objects like
 // so:
 //
-//  type Request struct{ ... }
-//  func (r *Request) MarshalLogObject(enc zapcore.ObjectEncoder) error
+//	type Request struct{ ... }
+//	func (r *Request) MarshalLogObject(enc zapcore.ObjectEncoder) error
 //
-//  var requests []*Request = ...
-//  logger.Info("sending requests", zap.Objects("requests", requests))
+//	var requests []*Request = ...
+//	logger.Info("sending requests", zap.Objects("requests", requests))
 //
 // If instead, you have a slice of values of such an object, use the
 // ObjectValues constructor.
 //
-//  var requests []Request = ...
-//  logger.Info("sending requests", zap.ObjectValues("requests", requests))
+//	var requests []Request = ...
+//	logger.Info("sending requests", zap.ObjectValues("requests", requests))
 func Objects[T zapcore.ObjectMarshaler](key string, values []T) Field {
 	return Array(key, objects[T](values))
 }
@@ -90,17 +90,17 @@ type objectMarshalerPtr[T any] interface {
 // Given an object that implements MarshalLogObject on the pointer receiver,
 // you can log a slice of those objects with ObjectValues like so:
 //
-//  type Request struct{ ... }
-//  func (r *Request) MarshalLogObject(enc zapcore.ObjectEncoder) error
+//	type Request struct{ ... }
+//	func (r *Request) MarshalLogObject(enc zapcore.ObjectEncoder) error
 //
-//  var requests []Request = ...
-//  logger.Info("sending requests", zap.ObjectValues("requests", requests))
+//	var requests []Request = ...
+//	logger.Info("sending requests", zap.ObjectValues("requests", requests))
 //
 // If instead, you have a slice of pointers of such an object, use the Objects
 // field constructor.
 //
-//  var requests []*Request = ...
-//  logger.Info("sending requests", zap.Objects("requests", requests))
+//	var requests []*Request = ...
+//	logger.Info("sending requests", zap.Objects("requests", requests))
 func ObjectValues[T any, P objectMarshalerPtr[T]](key string, values []T) Field {
 	return Array(key, objectValues[T, P](values))
 }
