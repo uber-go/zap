@@ -49,17 +49,17 @@ const (
 // BufferedWriteSyncer, and defer a Stop() call for when you no longer need the
 // object.
 //
-//   func main() {
-//     ws := ... // your log destination
-//     bws := &zapcore.BufferedWriteSyncer{WS: ws}
-//     defer bws.Stop()
+//	 func main() {
+//	   ws := ... // your log destination
+//	   bws := &zapcore.BufferedWriteSyncer{WS: ws}
+//	   defer bws.Stop()
 //
-//     // ...
-//     core := zapcore.NewCore(enc, bws, lvl)
-//     logger := zap.New(core)
+//	   // ...
+//	   core := zapcore.NewCore(enc, bws, lvl)
+//	   logger := zap.New(core)
 //
-//     // ...
-//  }
+//	   // ...
+//	}
 //
 // By default, a BufferedWriteSyncer will buffer up to 256 kilobytes of logs,
 // waiting at most 30 seconds between flushes.
@@ -68,12 +68,12 @@ const (
 // For example, the following buffers up to 512 kB of logs before flushing them
 // to Stderr, with a maximum of one minute between each flush.
 //
-//   ws := &BufferedWriteSyncer{
-//     WS:            os.Stderr,
-//     Size:          512 * 1024, // 512 kB
-//     FlushInterval: time.Minute,
-//   }
-//   defer ws.Stop()
+//	ws := &BufferedWriteSyncer{
+//	  WS:            os.Stderr,
+//	  Size:          512 * 1024, // 512 kB
+//	  FlushInterval: time.Minute,
+//	}
+//	defer ws.Stop()
 type BufferedWriteSyncer struct {
 	// WS is the WriteSyncer around which BufferedWriteSyncer will buffer
 	// writes.
