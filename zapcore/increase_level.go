@@ -45,6 +45,10 @@ func (c *levelFilterCore) Enabled(lvl Level) bool {
 	return c.level.Enabled(lvl)
 }
 
+func (c *levelFilterCore) Level() Level {
+	return c.core.Level()
+}
+
 func (c *levelFilterCore) With(fields []Field) Core {
 	return &levelFilterCore{c.core.With(fields), c.level}
 }

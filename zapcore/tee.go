@@ -57,6 +57,13 @@ func (mc multiCore) Enabled(lvl Level) bool {
 	return false
 }
 
+func (mc multiCore) Level() Level {
+	if len(mc) != 0 {
+		return mc[0].Level()
+	}
+	return DebugLevel
+}
+
 func (mc multiCore) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	for i := range mc {
 		ce = mc[i].Check(ent, ce)

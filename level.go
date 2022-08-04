@@ -57,6 +57,9 @@ type LevelEnablerFunc func(zapcore.Level) bool
 // Enabled calls the wrapped function.
 func (f LevelEnablerFunc) Enabled(lvl zapcore.Level) bool { return f(lvl) }
 
+// Level returns default level
+func (f LevelEnablerFunc) Level() zapcore.Level { return zapcore.DebugLevel }
+
 // An AtomicLevel is an atomically changeable, dynamic logging level. It lets
 // you safely change the log level of a tree of loggers (the root logger and
 // any children created by adding context) at runtime.

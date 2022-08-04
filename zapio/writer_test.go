@@ -238,6 +238,7 @@ func BenchmarkWriter(b *testing.B) {
 type partiallyNopCore struct{}
 
 func (*partiallyNopCore) Enabled(zapcore.Level) bool { return true }
+func (*partiallyNopCore) Level() zapcore.Level       { return zapcore.DebugLevel }
 
 func (c *partiallyNopCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
 	return ce.AddCore(ent, c)

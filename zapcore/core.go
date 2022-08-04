@@ -49,6 +49,7 @@ type nopCore struct{}
 // NewNopCore returns a no-op Core.
 func NewNopCore() Core                                        { return nopCore{} }
 func (nopCore) Enabled(Level) bool                            { return false }
+func (nopCore) Level() Level                                  { return DebugLevel }
 func (n nopCore) With([]Field) Core                           { return n }
 func (nopCore) Check(_ Entry, ce *CheckedEntry) *CheckedEntry { return ce }
 func (nopCore) Write(Entry, []Field) error                    { return nil }

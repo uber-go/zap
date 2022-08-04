@@ -172,6 +172,11 @@ func (l Level) Enabled(lvl Level) bool {
 	return lvl >= l
 }
 
+// Level returns true if the given level is at or above this level.
+func (l Level) Level() Level {
+	return l
+}
+
 // LevelEnabler decides whether a given logging level is enabled when logging a
 // message.
 //
@@ -184,4 +189,5 @@ func (l Level) Enabled(lvl Level) bool {
 // FatalLevel, but return false for InfoLevel and DebugLevel.
 type LevelEnabler interface {
 	Enabled(Level) bool
+	Level() Level
 }
