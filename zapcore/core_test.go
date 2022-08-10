@@ -82,6 +82,10 @@ func TestIOCore(t *testing.T) {
 	).With([]Field{makeInt64Field("k", 1)})
 	defer assert.NoError(t, core.Sync(), "Expected Syncing a temp file to succeed.")
 
+	t.Run("LevelOf", func(t *testing.T) {
+		assert.Equal(t, InfoLevel, LevelOf(core), "Incorrect Core Level")
+	})
+
 	if ce := core.Check(Entry{Level: DebugLevel, Message: "debug"}, nil); ce != nil {
 		ce.Write(makeInt64Field("k", 2))
 	}

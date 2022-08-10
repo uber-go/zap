@@ -49,6 +49,41 @@ func TestTeeUnusualInput(t *testing.T) {
 	})
 }
 
+func TestLevelOfTee(t *testing.T) {
+	debugLogger, _ := observer.New(DebugLevel)
+	warnLogger, _ := observer.New(WarnLevel)
+
+	tests := []struct {
+		desc string
+		give []Core
+		want Level
+	}{
+		{desc: "empty", want: UnknownLevel},
+		{
+			desc: "debug",
+			give: []Core{debugLogger},
+			want: DebugLevel,
+		},
+		{
+			desc: "warn",
+			give: []Core{warnLogger},
+			want: WarnLevel,
+		},
+		{
+			desc: "debug and warn",
+			give: []Core{warnLogger, debugLogger},
+			want: DebugLevel,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			core := NewTee(tt.give...)
+			assert.Equal(t, tt.want, LevelOf(core), "Level of Tee core did not match.")
+		})
+	}
+}
+
 func TestTeeCheck(t *testing.T) {
 	withTee(func(tee Core, debugLogs, warnLogs *observer.ObservedLogs) {
 		debugEntry := Entry{Level: DebugLevel, Message: "log-at-debug"}
