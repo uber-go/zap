@@ -45,8 +45,7 @@ func TestHooks(t *testing.T) {
 		fac, logs := observer.New(tt.coreLevel)
 
 		// sanity check
-		require.Equal(t, tt.coreLevel, LevelOf(fac),
-			"Original logger has the wrong level")
+		require.Equal(t, tt.coreLevel, LevelOf(fac), "Original logger has the wrong level")
 
 		intField := makeInt64Field("foo", 42)
 		ent := Entry{Message: "bar", Level: tt.entryLevel}
@@ -64,8 +63,7 @@ func TestHooks(t *testing.T) {
 		}
 
 		t.Run("LevelOf", func(t *testing.T) {
-			assert.Equal(t, tt.coreLevel, LevelOf(h),
-				"Wrapped logger has the wrong log level")
+			assert.Equal(t, tt.coreLevel, LevelOf(h), "Wrapped logger has the wrong log level")
 		})
 
 		if tt.expectCall {

@@ -42,8 +42,7 @@ func TestObserver(t *testing.T) {
 	assertEmpty(t, logs)
 
 	t.Run("LevelOf", func(t *testing.T) {
-		assert.Equal(t, zap.InfoLevel, zapcore.LevelOf(observer),
-			"Observer reported the wrong log level.")
+		assert.Equal(t, zap.InfoLevel, zapcore.LevelOf(observer), "Observer reported the wrong log level.")
 	})
 
 	assert.NoError(t, observer.Sync(), "Unexpected failure in no-op Sync")
