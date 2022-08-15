@@ -21,10 +21,8 @@
 package zap
 
 import (
-	"encoding/hex"
 	"errors"
 	"io"
-	"math/rand"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -50,7 +48,7 @@ func TestOpenNoPaths(t *testing.T) {
 }
 
 func TestOpen(t *testing.T) {
-	tempName := tempFileName("", "zap-open-test")
+	tempName := filepath.Join(t.TempDir(), "test.log")
 	assert.False(t, fileExists(tempName))
 	require.True(t, strings.HasPrefix(tempName, "/"), "Expected absolute temp file path.")
 
@@ -169,12 +167,6 @@ func TestCombineWriteSyncers(t *testing.T) {
 	tw := &testWriter{"test", t}
 	w := CombineWriteSyncers(tw)
 	w.Write([]byte("test"))
-}
-
-func tempFileName(prefix, suffix string) string {
-	randBytes := make([]byte, 16)
-	rand.Read(randBytes)
-	return filepath.Join(os.TempDir(), prefix+hex.EncodeToString(randBytes)+suffix)
 }
 
 func fileExists(name string) bool {

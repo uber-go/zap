@@ -24,7 +24,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/internal/ztest"
 )
 
@@ -76,10 +76,8 @@ func BenchmarkMultiWriteSyncer(b *testing.B) {
 
 func BenchmarkWriteSyncer(b *testing.B) {
 	b.Run("write file with no buffer", func(b *testing.B) {
-		file, err := os.CreateTemp("", "log")
-		assert.NoError(b, err)
-		defer file.Close()
-		defer os.Remove(file.Name())
+		file, err := os.CreateTemp(b.TempDir(), "test.log")
+		require.NoError(b, err)
 
 		w := AddSync(file)
 		b.ResetTimer()

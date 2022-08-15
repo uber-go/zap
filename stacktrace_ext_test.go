@@ -160,12 +160,8 @@ func verifyNoZap(t *testing.T, logs string) {
 }
 
 func withGoPath(t *testing.T, f func(goPath string)) {
-	goPath, err := os.MkdirTemp("", "gopath")
-	require.NoError(t, err, "Failed to create temporary directory for GOPATH")
-	//defer os.RemoveAll(goPath)
-
-	os.Setenv("GOPATH", goPath)
-	defer os.Setenv("GOPATH", os.Getenv("GOPATH"))
+	goPath := filepath.Join(t.TempDir(), "gopath")
+	t.Setenv("GOPATH", goPath)
 
 	f(goPath)
 }
