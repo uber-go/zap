@@ -139,6 +139,35 @@ func TestSugarWith(t *testing.T) {
 	}
 }
 
+func TestSugaredLoggerLevel(t *testing.T) {
+	levels := []zapcore.Level{
+		DebugLevel,
+		InfoLevel,
+		WarnLevel,
+		ErrorLevel,
+		DPanicLevel,
+		PanicLevel,
+		FatalLevel,
+	}
+
+	for _, lvl := range levels {
+		lvl := lvl
+		t.Run(lvl.String(), func(t *testing.T) {
+			t.Parallel()
+
+			core, _ := observer.New(lvl)
+			log := New(core).Sugar()
+			assert.Equal(t, lvl, log.Level())
+		})
+	}
+
+	t.Run("Nop", func(t *testing.T) {
+		t.Parallel()
+
+		assert.Equal(t, zapcore.InvalidLevel, NewNop().Sugar().Level())
+	})
+}
+
 func TestSugarFieldsInvalidPairs(t *testing.T) {
 	withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
 		logger.With(42, "foo", []string{"bar"}, "baz").Info("")
