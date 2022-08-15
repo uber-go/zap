@@ -39,7 +39,7 @@ func TestLevelString(t *testing.T) {
 		PanicLevel:   "panic",
 		FatalLevel:   "fatal",
 		Level(-42):   "Level(-42)",
-		UnknownLevel: "Level(6)", // UnknownLevel does not have a name
+		InvalidLevel: "Level(6)", // InvalidLevel does not have a name
 	}
 
 	for lvl, stringLevel := range tests {
@@ -234,7 +234,7 @@ func TestLevelOf(t *testing.T) {
 		{
 			desc: "noop",
 			give: NewNopCore(), // always disabled
-			want: UnknownLevel,
+			want: InvalidLevel,
 		},
 	}
 

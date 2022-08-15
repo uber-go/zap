@@ -58,7 +58,7 @@ func TestLevelOfTee(t *testing.T) {
 		give []Core
 		want Level
 	}{
-		{desc: "empty", want: UnknownLevel},
+		{desc: "empty", want: InvalidLevel},
 		{
 			desc: "debug",
 			give: []Core{debugLogger},

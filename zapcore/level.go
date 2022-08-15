@@ -54,10 +54,10 @@ const (
 	_minLevel = DebugLevel
 	_maxLevel = FatalLevel
 
-	// UnknownLevel is an invalid value for Level.
+	// InvalidLevel is an invalid value for Level.
 	//
 	// Core implementations may panic if they see messages of this level.
-	UnknownLevel = _maxLevel + 1
+	InvalidLevel = _maxLevel + 1
 )
 
 // ParseLevel parses a level based on the lower-case or all-caps ASCII
@@ -79,7 +79,7 @@ type leveledEnabler interface {
 }
 
 // LevelOf reports the minimum enabled log level for the given LevelEnabler
-// from Zap's supported log levels, or [UnknownLevel] if none of them are
+// from Zap's supported log levels, or [InvalidLevel] if none of them are
 // enabled.
 //
 // A LevelEnabler may implement a 'Level() Level' method to override the
@@ -106,7 +106,7 @@ func LevelOf(enab LevelEnabler) Level {
 		}
 	}
 
-	return UnknownLevel
+	return InvalidLevel
 }
 
 // String returns a lower-case ASCII representation of the log level.
