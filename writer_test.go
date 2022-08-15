@@ -23,14 +23,15 @@ package zap
 import (
 	"errors"
 	"io"
+	"io/fs"
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/multierr"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -50,49 +51,106 @@ func TestOpenNoPaths(t *testing.T) {
 func TestOpen(t *testing.T) {
 	tempName := filepath.Join(t.TempDir(), "test.log")
 	assert.False(t, fileExists(tempName))
-	require.True(t, strings.HasPrefix(tempName, "/"), "Expected absolute temp file path.")
+	require.True(t, filepath.IsAbs(tempName), "Expected absolute temp file path.")
 
 	tests := []struct {
-		paths []string
-		errs  []string
+		msg               string
+		paths             []string
+		wantNotFoundPaths []string
+		wantOtherErr      string
 	}{
-		{[]string{"stdout"}, nil},
-		{[]string{"stderr"}, nil},
-		{[]string{tempName}, nil},
-		{[]string{"file://" + tempName}, nil},
-		{[]string{"file://localhost" + tempName}, nil},
-		{[]string{"/foo/bar/baz"}, []string{"open /foo/bar/baz: no such file or directory"}},
-		{[]string{"file://localhost/foo/bar/baz"}, []string{"open /foo/bar/baz: no such file or directory"}},
 		{
+			msg:   "stdout",
+			paths: []string{"stdout"},
+		},
+		{
+			msg:   "stderr",
+			paths: []string{"stderr"},
+		},
+		{
+			msg:   "temp file path only",
+			paths: []string{tempName},
+		},
+		{
+			msg:   "temp file file scheme",
+			paths: []string{"file://" + tempName},
+		},
+		{
+			msg:   "temp file with file scheme and host localhost",
+			paths: []string{"file://localhost" + tempName},
+		},
+		{
+			msg:               "missing path",
+			paths:             []string{"/foo/bar/baz"},
+			wantNotFoundPaths: []string{"/foo/bar/baz"},
+		},
+		{
+			msg:               "missing file scheme url with host localhost",
+			paths:             []string{"file://localhost/foo/bar/baz"},
+			wantNotFoundPaths: []string{"/foo/bar/baz"},
+		},
+		{
+			msg:   "multiple paths",
 			paths: []string{"stdout", "/foo/bar/baz", tempName, "file:///baz/quux"},
-			errs: []string{
-				"open /foo/bar/baz: no such file or directory",
-				"open /baz/quux: no such file or directory",
+			wantNotFoundPaths: []string{
+				"/foo/bar/baz",
+				"/baz/quux",
 			},
 		},
-		{[]string{"file:///stderr"}, []string{"open /stderr:"}},
-		{[]string{"file:///stdout"}, []string{"open /stdout:"}},
-		{[]string{"file://host01.test.com" + tempName}, []string{"empty or use localhost"}},
-		{[]string{"file://rms@localhost" + tempName}, []string{"user and password not allowed"}},
-		{[]string{"file://localhost" + tempName + "#foo"}, []string{"fragments not allowed"}},
-		{[]string{"file://localhost" + tempName + "?foo=bar"}, []string{"query parameters not allowed"}},
-		{[]string{"file://localhost:8080" + tempName}, []string{"ports not allowed"}},
+		{
+			msg:          "file with unexpected host",
+			paths:        []string{"file://host01.test.com" + tempName},
+			wantOtherErr: "empty or use localhost",
+		},
+		{
+			msg:          "file with user on localhost",
+			paths:        []string{"file://rms@localhost" + tempName},
+			wantOtherErr: "user and password not allowed",
+		},
+		{
+			msg:          "file url with fragment",
+			paths:        []string{"file://localhost" + tempName + "#foo"},
+			wantOtherErr: "fragments not allowed",
+		},
+		{
+			msg:          "file url with query",
+			paths:        []string{"file://localhost" + tempName + "?foo=bar"},
+			wantOtherErr: "query parameters not allowed",
+		},
+		{
+			msg:          "file with port",
+			paths:        []string{"file://localhost:8080" + tempName},
+			wantOtherErr: "ports not allowed",
+		},
 	}
 
 	for _, tt := range tests {
-		_, cleanup, err := Open(tt.paths...)
-		if err == nil {
-			defer cleanup()
-		}
-
-		if len(tt.errs) == 0 {
-			assert.NoError(t, err, "Unexpected error opening paths %v.", tt.paths)
-		} else {
-			msg := err.Error()
-			for _, expect := range tt.errs {
-				assert.Contains(t, msg, expect, "Unexpected error opening paths %v.", tt.paths)
+		t.Run(tt.msg, func(t *testing.T) {
+			_, cleanup, err := Open(tt.paths...)
+			if err == nil {
+				defer cleanup()
 			}
-		}
+
+			if len(tt.wantNotFoundPaths) == 0 && tt.wantOtherErr == "" {
+				assert.NoError(t, err, "Unexpected error opening paths %v.", tt.paths)
+				return
+			}
+
+			require.Error(t, err)
+			if len(tt.wantNotFoundPaths) > 0 {
+				errs := multierr.Errors(err)
+				require.Len(t, errs, len(tt.wantNotFoundPaths))
+				for i, err := range errs {
+					assert.ErrorIs(t, err, fs.ErrNotExist)
+					assert.Contains(t, err.Error(), tt.wantNotFoundPaths[i], "missing path in error")
+				}
+			}
+
+			if tt.wantOtherErr != "" {
+				msg := err.Error()
+				assert.Contains(t, msg, tt.wantOtherErr, "Unexpected error opening paths %v.", tt.paths)
+			}
+		})
 	}
 
 	assert.True(t, fileExists(tempName))

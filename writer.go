@@ -70,7 +70,7 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	for _, path := range paths {
 		sink, err := newSink(path)
 		if err != nil {
-			openErr = multierr.Append(openErr, fmt.Errorf("couldn't open sink %q: %v", path, err))
+			openErr = multierr.Append(openErr, fmt.Errorf("couldn't open sink %q: %w", path, err))
 			continue
 		}
 		writers = append(writers, sink)
