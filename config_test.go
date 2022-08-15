@@ -21,8 +21,8 @@
 package zap
 
 import (
-	"io"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -58,11 +58,9 @@ func TestConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			temp, err := os.CreateTemp("", "zap-prod-config-test")
-			require.NoError(t, err, "Failed to create temp file.")
-			defer os.Remove(temp.Name())
+			logOut := filepath.Join(t.TempDir(), "test.log")
 
-			tt.cfg.OutputPaths = []string{temp.Name()}
+			tt.cfg.OutputPaths = []string{logOut}
 			tt.cfg.EncoderConfig.TimeKey = "" // no timestamps in tests
 			tt.cfg.InitialFields = map[string]interface{}{"z": "zz", "k": "v"}
 
@@ -74,7 +72,7 @@ func TestConfig(t *testing.T) {
 			logger.Info("info")
 			logger.Warn("warn")
 
-			byteContents, err := io.ReadAll(temp)
+			byteContents, err := os.ReadFile(logOut)
 			require.NoError(t, err, "Couldn't read log contents from temp file.")
 			logs := string(byteContents)
 			assert.Regexp(t, tt.expectRe, logs, "Unexpected log output.")
@@ -180,16 +178,8 @@ func TestConfigWithSamplingHook(t *testing.T) {
 	expectDropped := 99  // 200 - 100 initial - 1 thereafter
 	expectSampled := 103 // 2 from initial + 100 + 1 thereafter
 
-	temp, err := os.CreateTemp("", "zap-prod-config-test")
-	require.NoError(t, err, "Failed to create temp file.")
-	defer func() {
-		err := os.Remove(temp.Name())
-		if err != nil {
-			return
-		}
-	}()
-
-	cfg.OutputPaths = []string{temp.Name()}
+	logOut := filepath.Join(t.TempDir(), "test.log")
+	cfg.OutputPaths = []string{logOut}
 	cfg.EncoderConfig.TimeKey = "" // no timestamps in tests
 	cfg.InitialFields = map[string]interface{}{"z": "zz", "k": "v"}
 
@@ -200,7 +190,7 @@ func TestConfigWithSamplingHook(t *testing.T) {
 	logger.Info("info")
 	logger.Warn("warn")
 
-	byteContents, err := io.ReadAll(temp)
+	byteContents, err := os.ReadFile(logOut)
 	require.NoError(t, err, "Couldn't read log contents from temp file.")
 	logs := string(byteContents)
 	assert.Regexp(t, expectRe, logs, "Unexpected log output.")

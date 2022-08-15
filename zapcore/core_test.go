@@ -67,9 +67,8 @@ func TestNopCore(t *testing.T) {
 }
 
 func TestIOCore(t *testing.T) {
-	temp, err := os.CreateTemp("", "zapcore-test-iocore")
-	require.NoError(t, err, "Failed to create temp file.")
-	defer os.Remove(temp.Name())
+	temp, err := os.CreateTemp(t.TempDir(), "test.log")
+	require.NoError(t, err)
 
 	// Drop timestamps for simpler assertions (timestamp encoding is tested
 	// elsewhere).
