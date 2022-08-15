@@ -91,7 +91,10 @@ func TestSampler(t *testing.T) {
 func TestLevelOfSampler(t *testing.T) {
 	levels := []Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel, PanicLevel, FatalLevel}
 	for _, lvl := range levels {
+		lvl := lvl
 		t.Run(lvl.String(), func(t *testing.T) {
+			t.Parallel()
+
 			sampler, _ := fakeSampler(lvl, time.Minute, 2, 3)
 			assert.Equal(t, lvl, LevelOf(sampler), "Sampler level did not match.")
 		})

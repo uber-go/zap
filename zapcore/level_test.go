@@ -239,7 +239,10 @@ func TestLevelOf(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			assert.Equal(t, tt.want, LevelOf(tt.give), "Reported level did not match.")
 		})
 	}

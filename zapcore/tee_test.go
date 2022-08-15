@@ -77,7 +77,10 @@ func TestLevelOfTee(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			core := NewTee(tt.give...)
 			assert.Equal(t, tt.want, LevelOf(core), "Level of Tee core did not match.")
 		})
