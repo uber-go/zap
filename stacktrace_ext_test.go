@@ -161,7 +161,7 @@ func verifyNoZap(t *testing.T, logs string) {
 
 func withGoPath(t *testing.T, f func(goPath string)) {
 	goPath := filepath.Join(t.TempDir(), "gopath")
-	t.Setenv(goPath)
+	t.Setenv("GOPATH", goPath)
 
 	f(goPath)
 }
