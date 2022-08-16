@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHooks(t *testing.T) {
@@ -42,6 +43,10 @@ func TestHooks(t *testing.T) {
 
 	for _, tt := range tests {
 		fac, logs := observer.New(tt.coreLevel)
+
+		// sanity check
+		require.Equal(t, tt.coreLevel, LevelOf(fac), "Original logger has the wrong level")
+
 		intField := makeInt64Field("foo", 42)
 		ent := Entry{Message: "bar", Level: tt.entryLevel}
 
@@ -56,6 +61,10 @@ func TestHooks(t *testing.T) {
 		if ce := h.With([]Field{intField}).Check(ent, nil); ce != nil {
 			ce.Write()
 		}
+
+		t.Run("LevelOf", func(t *testing.T) {
+			assert.Equal(t, tt.coreLevel, LevelOf(h), "Wrapped logger has the wrong log level")
+		})
 
 		if tt.expectCall {
 			assert.Equal(t, 1, called, "Expected to call hook once.")

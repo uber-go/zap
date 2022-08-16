@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Uber Technologies, Inc.
+// Copyright (c) 2016-2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,6 +40,10 @@ func assertEmpty(t testing.TB, logs *ObservedLogs) {
 func TestObserver(t *testing.T) {
 	observer, logs := New(zap.InfoLevel)
 	assertEmpty(t, logs)
+
+	t.Run("LevelOf", func(t *testing.T) {
+		assert.Equal(t, zap.InfoLevel, zapcore.LevelOf(observer), "Observer reported the wrong log level.")
+	})
 
 	assert.NoError(t, observer.Sync(), "Unexpected failure in no-op Sync")
 
