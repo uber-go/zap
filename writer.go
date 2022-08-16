@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Uber Technologies, Inc.
+// Copyright (c) 2016-2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -70,7 +70,7 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	for _, path := range paths {
 		sink, err := newSink(path)
 		if err != nil {
-			openErr = multierr.Append(openErr, fmt.Errorf("couldn't open sink %q: %v", path, err))
+			openErr = multierr.Append(openErr, fmt.Errorf("open sink %q: %w", path, err))
 			continue
 		}
 		writers = append(writers, sink)

@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Uber Technologies, Inc.
+// Copyright (c) 2016-2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,14 +23,15 @@ package zap
 import (
 	"errors"
 	"io"
+	"io/fs"
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/multierr"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -50,53 +51,93 @@ func TestOpenNoPaths(t *testing.T) {
 func TestOpen(t *testing.T) {
 	tempName := filepath.Join(t.TempDir(), "test.log")
 	assert.False(t, fileExists(tempName))
-	require.True(t, strings.HasPrefix(tempName, "/"), "Expected absolute temp file path.")
+	require.True(t, filepath.IsAbs(tempName), "Expected absolute temp file path.")
 
 	tests := []struct {
+		msg   string
 		paths []string
-		errs  []string
 	}{
-		{[]string{"stdout"}, nil},
-		{[]string{"stderr"}, nil},
-		{[]string{tempName}, nil},
-		{[]string{"file://" + tempName}, nil},
-		{[]string{"file://localhost" + tempName}, nil},
-		{[]string{"/foo/bar/baz"}, []string{"open /foo/bar/baz: no such file or directory"}},
-		{[]string{"file://localhost/foo/bar/baz"}, []string{"open /foo/bar/baz: no such file or directory"}},
 		{
-			paths: []string{"stdout", "/foo/bar/baz", tempName, "file:///baz/quux"},
-			errs: []string{
-				"open /foo/bar/baz: no such file or directory",
-				"open /baz/quux: no such file or directory",
-			},
+			msg:   "stdout",
+			paths: []string{"stdout"},
 		},
-		{[]string{"file:///stderr"}, []string{"open /stderr:"}},
-		{[]string{"file:///stdout"}, []string{"open /stdout:"}},
-		{[]string{"file://host01.test.com" + tempName}, []string{"empty or use localhost"}},
-		{[]string{"file://rms@localhost" + tempName}, []string{"user and password not allowed"}},
-		{[]string{"file://localhost" + tempName + "#foo"}, []string{"fragments not allowed"}},
-		{[]string{"file://localhost" + tempName + "?foo=bar"}, []string{"query parameters not allowed"}},
-		{[]string{"file://localhost:8080" + tempName}, []string{"ports not allowed"}},
+		{
+			msg:   "stderr",
+			paths: []string{"stderr"},
+		},
+		{
+			msg:   "temp file path only",
+			paths: []string{tempName},
+		},
+		{
+			msg:   "temp file file scheme",
+			paths: []string{"file://" + tempName},
+		},
+		{
+			msg:   "temp file with file scheme and host localhost",
+			paths: []string{"file://localhost" + tempName},
+		},
 	}
 
 	for _, tt := range tests {
-		_, cleanup, err := Open(tt.paths...)
-		if err == nil {
-			defer cleanup()
-		}
-
-		if len(tt.errs) == 0 {
-			assert.NoError(t, err, "Unexpected error opening paths %v.", tt.paths)
-		} else {
-			msg := err.Error()
-			for _, expect := range tt.errs {
-				assert.Contains(t, msg, expect, "Unexpected error opening paths %v.", tt.paths)
+		t.Run(tt.msg, func(t *testing.T) {
+			_, cleanup, err := Open(tt.paths...)
+			if err == nil {
+				defer cleanup()
 			}
-		}
+
+			assert.NoError(t, err, "Unexpected error opening paths %v.", tt.paths)
+		})
 	}
 
 	assert.True(t, fileExists(tempName))
 	os.Remove(tempName)
+}
+
+func TestOpenPathsNotFound(t *testing.T) {
+	tempName := filepath.Join(t.TempDir(), "test.log")
+
+	tests := []struct {
+		msg               string
+		paths             []string
+		wantNotFoundPaths []string
+	}{
+		{
+			msg:               "missing path",
+			paths:             []string{"/foo/bar/baz"},
+			wantNotFoundPaths: []string{"/foo/bar/baz"},
+		},
+		{
+			msg:               "missing file scheme url with host localhost",
+			paths:             []string{"file://localhost/foo/bar/baz"},
+			wantNotFoundPaths: []string{"/foo/bar/baz"},
+		},
+		{
+			msg:   "multiple paths",
+			paths: []string{"stdout", "/foo/bar/baz", tempName, "file:///baz/quux"},
+			wantNotFoundPaths: []string{
+				"/foo/bar/baz",
+				"/baz/quux",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			_, cleanup, err := Open(tt.paths...)
+			if !assert.Error(t, err, "Open must fail.") {
+				cleanup()
+				return
+			}
+
+			errs := multierr.Errors(err)
+			require.Len(t, errs, len(tt.wantNotFoundPaths))
+			for i, err := range errs {
+				assert.ErrorIs(t, err, fs.ErrNotExist)
+				assert.ErrorContains(t, err, tt.wantNotFoundPaths[i], "missing path in error")
+			}
+		})
+	}
 }
 
 func TestOpenRelativePath(t *testing.T) {
@@ -133,6 +174,54 @@ func TestOpenFails(t *testing.T) {
 		_, cleanup, err := Open(tt.paths...)
 		require.Nil(t, cleanup, "Cleanup function should never be nil")
 		assert.Error(t, err, "Open with invalid URL should fail.")
+	}
+}
+
+func TestOpenOtherErrors(t *testing.T) {
+	tempName := filepath.Join(t.TempDir(), "test.log")
+
+	tests := []struct {
+		msg     string
+		paths   []string
+		wantErr string
+	}{
+		{
+			msg:     "file with unexpected host",
+			paths:   []string{"file://host01.test.com" + tempName},
+			wantErr: "empty or use localhost",
+		},
+		{
+			msg:     "file with user on localhost",
+			paths:   []string{"file://rms@localhost" + tempName},
+			wantErr: "user and password not allowed",
+		},
+		{
+			msg:     "file url with fragment",
+			paths:   []string{"file://localhost" + tempName + "#foo"},
+			wantErr: "fragments not allowed",
+		},
+		{
+			msg:     "file url with query",
+			paths:   []string{"file://localhost" + tempName + "?foo=bar"},
+			wantErr: "query parameters not allowed",
+		},
+		{
+			msg:     "file with port",
+			paths:   []string{"file://localhost:8080" + tempName},
+			wantErr: "ports not allowed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			_, cleanup, err := Open(tt.paths...)
+			if !assert.Error(t, err, "Open must fail.") {
+				cleanup()
+				return
+			}
+
+			assert.ErrorContains(t, err, tt.wantErr, "Unexpected error opening paths %v.", tt.paths)
+		})
 	}
 }
 

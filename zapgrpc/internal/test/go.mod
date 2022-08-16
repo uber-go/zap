@@ -3,7 +3,7 @@ module go.uber.org/zap/zapgrpc/internal/test
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.0
 	go.uber.org/zap v1.16.0
 	google.golang.org/grpc v1.42.0
 )
