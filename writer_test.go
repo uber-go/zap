@@ -142,13 +142,12 @@ func TestOpen(t *testing.T) {
 				require.Len(t, errs, len(tt.wantNotFoundPaths))
 				for i, err := range errs {
 					assert.ErrorIs(t, err, fs.ErrNotExist)
-					assert.Contains(t, err.Error(), tt.wantNotFoundPaths[i], "missing path in error")
+					assert.ErrorContains(t, err, tt.wantNotFoundPaths[i], "missing path in error")
 				}
 			}
 
 			if tt.wantOtherErr != "" {
-				msg := err.Error()
-				assert.Contains(t, msg, tt.wantOtherErr, "Unexpected error opening paths %v.", tt.paths)
+				assert.ErrorContains(t, err, tt.wantOtherErr, "Unexpected error opening paths %v.", tt.paths)
 			}
 		})
 	}
