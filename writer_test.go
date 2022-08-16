@@ -54,10 +54,8 @@ func TestOpen(t *testing.T) {
 	require.True(t, filepath.IsAbs(tempName), "Expected absolute temp file path.")
 
 	tests := []struct {
-		msg               string
-		paths             []string
-		wantNotFoundPaths []string
-		wantOtherErr      string
+		msg   string
+		paths []string
 	}{
 		{
 			msg:   "stdout",
@@ -79,6 +77,31 @@ func TestOpen(t *testing.T) {
 			msg:   "temp file with file scheme and host localhost",
 			paths: []string{"file://localhost" + tempName},
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			_, cleanup, err := Open(tt.paths...)
+			if err == nil {
+				defer cleanup()
+			}
+
+			assert.NoError(t, err, "Unexpected error opening paths %v.", tt.paths)
+		})
+	}
+
+	assert.True(t, fileExists(tempName))
+	os.Remove(tempName)
+}
+
+func TestOpenPathsNotFound(t *testing.T) {
+	tempName := filepath.Join(t.TempDir(), "test.log")
+
+	tests := []struct {
+		msg               string
+		paths             []string
+		wantNotFoundPaths []string
+	}{
 		{
 			msg:               "missing path",
 			paths:             []string{"/foo/bar/baz"},
@@ -97,63 +120,24 @@ func TestOpen(t *testing.T) {
 				"/baz/quux",
 			},
 		},
-		{
-			msg:          "file with unexpected host",
-			paths:        []string{"file://host01.test.com" + tempName},
-			wantOtherErr: "empty or use localhost",
-		},
-		{
-			msg:          "file with user on localhost",
-			paths:        []string{"file://rms@localhost" + tempName},
-			wantOtherErr: "user and password not allowed",
-		},
-		{
-			msg:          "file url with fragment",
-			paths:        []string{"file://localhost" + tempName + "#foo"},
-			wantOtherErr: "fragments not allowed",
-		},
-		{
-			msg:          "file url with query",
-			paths:        []string{"file://localhost" + tempName + "?foo=bar"},
-			wantOtherErr: "query parameters not allowed",
-		},
-		{
-			msg:          "file with port",
-			paths:        []string{"file://localhost:8080" + tempName},
-			wantOtherErr: "ports not allowed",
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.msg, func(t *testing.T) {
 			_, cleanup, err := Open(tt.paths...)
-			if err == nil {
-				defer cleanup()
-			}
-
-			if len(tt.wantNotFoundPaths) == 0 && tt.wantOtherErr == "" {
-				assert.NoError(t, err, "Unexpected error opening paths %v.", tt.paths)
+			if !assert.Error(t, err, "Open must fail.") {
+				cleanup()
 				return
 			}
 
-			require.Error(t, err)
-			if len(tt.wantNotFoundPaths) > 0 {
-				errs := multierr.Errors(err)
-				require.Len(t, errs, len(tt.wantNotFoundPaths))
-				for i, err := range errs {
-					assert.ErrorIs(t, err, fs.ErrNotExist)
-					assert.ErrorContains(t, err, tt.wantNotFoundPaths[i], "missing path in error")
-				}
-			}
-
-			if tt.wantOtherErr != "" {
-				assert.ErrorContains(t, err, tt.wantOtherErr, "Unexpected error opening paths %v.", tt.paths)
+			errs := multierr.Errors(err)
+			require.Len(t, errs, len(tt.wantNotFoundPaths))
+			for i, err := range errs {
+				assert.ErrorIs(t, err, fs.ErrNotExist)
+				assert.ErrorContains(t, err, tt.wantNotFoundPaths[i], "missing path in error")
 			}
 		})
 	}
-
-	assert.True(t, fileExists(tempName))
-	os.Remove(tempName)
 }
 
 func TestOpenRelativePath(t *testing.T) {
@@ -190,6 +174,54 @@ func TestOpenFails(t *testing.T) {
 		_, cleanup, err := Open(tt.paths...)
 		require.Nil(t, cleanup, "Cleanup function should never be nil")
 		assert.Error(t, err, "Open with invalid URL should fail.")
+	}
+}
+
+func TestOpenOtherErrors(t *testing.T) {
+	tempName := filepath.Join(t.TempDir(), "test.log")
+
+	tests := []struct {
+		msg     string
+		paths   []string
+		wantErr string
+	}{
+		{
+			msg:     "file with unexpected host",
+			paths:   []string{"file://host01.test.com" + tempName},
+			wantErr: "empty or use localhost",
+		},
+		{
+			msg:     "file with user on localhost",
+			paths:   []string{"file://rms@localhost" + tempName},
+			wantErr: "user and password not allowed",
+		},
+		{
+			msg:     "file url with fragment",
+			paths:   []string{"file://localhost" + tempName + "#foo"},
+			wantErr: "fragments not allowed",
+		},
+		{
+			msg:     "file url with query",
+			paths:   []string{"file://localhost" + tempName + "?foo=bar"},
+			wantErr: "query parameters not allowed",
+		},
+		{
+			msg:     "file with port",
+			paths:   []string{"file://localhost:8080" + tempName},
+			wantErr: "ports not allowed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			_, cleanup, err := Open(tt.paths...)
+			if !assert.Error(t, err, "Open must fail.") {
+				cleanup()
+				return
+			}
+
+			assert.ErrorContains(t, err, tt.wantErr, "Unexpected error opening paths %v.", tt.paths)
+		})
 	}
 }
 
