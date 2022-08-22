@@ -23,7 +23,11 @@
 
 package zap
 
-import "go.uber.org/zap/zapcore"
+import (
+	"fmt"
+
+	"go.uber.org/zap/zapcore"
+)
 
 // Objects constructs a field with the given key, holding a list of the
 // provided objects that can be marshaled by Zap.
@@ -119,6 +123,34 @@ func (os objectValues[T, P]) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 		if err := arr.AppendObject(p); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// Stringers constructs a field with the given key, holding a list of the
+// output provided by the value's String method
+//
+// Given an object that implements String on the value receiver, you
+// can log a slice of those objects with Objects like so:
+//
+//	type Request struct{ ... }
+//	func (a Request) String() string
+//
+//	var requests []Request = ...
+//	logger.Info("sending requests", zap.Stringers("requests", requests))
+//
+// Note that these objects must implement fmt.Stringer directly.
+// That is, if you're trying to marshal a []Request, the String method
+// must be declared on the Request type, not its pointer (*Request).
+func Stringers[T fmt.Stringer](key string, values []T) Field {
+	return Array(key, stringers[T](values))
+}
+
+type stringers[T fmt.Stringer] []T
+
+func (os stringers[T]) MarshalLogArray(arr zapcore.ArrayEncoder) error {
+	for _, o := range os {
+		arr.AppendString(o.String())
 	}
 	return nil
 }
