@@ -25,6 +25,7 @@ package zap
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -176,6 +177,64 @@ func TestObjectsAndObjectValues_marshalError(t *testing.T) {
 			// original field.
 			require.Contains(t, enc.Fields, "kError")
 			assert.Equal(t, tt.wantErr, enc.Fields["kError"])
+		})
+	}
+}
+
+type stringerObject struct {
+	value string
+}
+
+func (s stringerObject) String() string {
+	return s.value
+}
+
+func TestStringers(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc string
+		give Field
+		want []any
+	}{
+		{
+			desc: "Stringers",
+			give: Stringers("", []stringerObject{
+				{value: "foo"},
+				{value: "bar"},
+				{value: "baz"},
+			}),
+			want: []any{
+				"foo",
+				"bar",
+				"baz",
+			},
+		},
+		{
+			desc: "Stringers with []fmt.Stringer",
+			give: Stringers("", []fmt.Stringer{
+				stringerObject{value: "foo"},
+				stringerObject{value: "bar"},
+				stringerObject{value: "baz"},
+			}),
+			want: []any{
+				"foo",
+				"bar",
+				"baz",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			tt.give.Key = "k"
+
+			enc := zapcore.NewMapObjectEncoder()
+			tt.give.AddTo(enc)
+			assert.Equal(t, tt.want, enc.Fields["k"])
 		})
 	}
 }
