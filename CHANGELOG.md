@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## 1.23.0 (24 Aug 2022)
+
+Enhancements:
+* [#1147][]: Add a `zapcore.LevelOf` function to determine the level of a
+  `LevelEnabler` or `Core`.
+* [#1155][]: Add `zap.Stringers` field constructor to log arrays of objects
+  that implement `String() string`.
+
+[#1147]: https://github.com/uber-go/zap/pull/1147
+[#1155]: https://github.com/uber-go/zap/pull/1155
+
+
 ## 1.22.0 (8 Aug 2022)
 
 Enhancements:
