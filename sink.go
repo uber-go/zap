@@ -26,6 +26,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -89,6 +90,14 @@ func (sr *sinkRegistry) RegisterSink(scheme string, factory func(*url.URL) (Sink
 }
 
 func (sr *sinkRegistry) newSink(rawURL string) (Sink, error) {
+	// URL parsing doesn't work well for Windows paths such as `c:\log.txt`, as scheme is set to
+	// the drive, and path is unset unless `c:/log.txt` is used.
+	// To avoid Windows-specific URL handling, we instead check IsAbs to open as a file.
+	// filepath.IsAbs is OS-specific, so IsAbs('c:/log.txt') is false outside of Windows.
+	if filepath.IsAbs(rawURL) {
+		return sr.newFileSinkFromPath(rawURL)
+	}
+
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, fmt.Errorf("can't parse %q as a URL: %v", rawURL, err)
