@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLevelEnablerFunc(t *testing.T) {
@@ -71,11 +72,10 @@ func TestParseAtomicLevel(t *testing.T) {
 	for _, tt := range tests {
 		parsedAtomicLevel, err := ParseAtomicLevel(tt.text)
 		if len(tt.err) == 0 {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.level, parsedAtomicLevel)
 		} else {
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), tt.err)
+			assert.ErrorContains(t, err, tt.err)
 		}
 	}
 }

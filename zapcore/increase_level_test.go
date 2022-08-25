@@ -87,8 +87,7 @@ func TestIncreaseLevel(t *testing.T) {
 
 			filteredLogger, err := NewIncreaseLevelCore(logger, tt.increaseLevel)
 			if tt.wantErr {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), "invalid increase level")
+				assert.ErrorContains(t, err, "invalid increase level")
 				return
 			}
 

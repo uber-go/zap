@@ -138,8 +138,7 @@ func TestConfigWithMissingAttributes(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			cfg := tt.cfg
 			_, err := cfg.Build()
-			require.Error(t, err)
-			assert.Equal(t, tt.expectErr, err.Error())
+			assert.EqualError(t, err, tt.expectErr)
 		})
 	}
 }

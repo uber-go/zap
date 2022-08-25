@@ -249,7 +249,7 @@ func TestOpenWithErroringSinkFactory(t *testing.T) {
 
 	assert.NoError(t, RegisterSink("test", factory), "Failed to register sink factory.")
 	_, _, err := Open("test://some/path")
-	assert.Contains(t, err.Error(), msg, "Unexpected error.")
+	assert.ErrorContains(t, err, msg)
 }
 
 func TestCombineWriteSyncers(t *testing.T) {

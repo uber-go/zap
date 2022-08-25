@@ -93,8 +93,7 @@ func TestParseLevel(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tt.level, parsedLevel)
 		} else {
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), tt.err)
+			assert.ErrorContains(t, err, tt.err)
 		}
 	}
 }
@@ -170,7 +169,7 @@ func TestLevelNils(t *testing.T) {
 func TestLevelUnmarshalUnknownText(t *testing.T) {
 	var l Level
 	err := l.UnmarshalText([]byte("foo"))
-	assert.Contains(t, err.Error(), "unrecognized level", "Expected unmarshaling arbitrary text to fail.")
+	assert.ErrorContains(t, err, "unrecognized level", "Expected unmarshaling arbitrary text to fail.")
 }
 
 func TestLevelAsFlagValue(t *testing.T) {
