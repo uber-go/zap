@@ -45,6 +45,7 @@ type Sink interface {
 type sinkRegistry struct {
 	mu        sync.Mutex
 	factories map[string]func(*url.URL) (Sink, error) // keyed by scheme
+	openFile  func(string, int, os.FileMode) (*os.File, error)
 }
 
 type errSinkNotFound struct {
@@ -62,6 +63,7 @@ func (nopCloserSink) Close() error { return nil }
 func newSinkRegistry() *sinkRegistry {
 	sr := &sinkRegistry{
 		factories: make(map[string]func(*url.URL) (Sink, error)),
+		openFile:  os.OpenFile,
 	}
 	sr.RegisterSink(schemeFile, sr.newFileSinkFromURL)
 	return sr
@@ -143,7 +145,7 @@ func (sr *sinkRegistry) newFileSinkFromPath(path string) (Sink, error) {
 	case "stderr":
 		return nopCloserSink{os.Stderr}, nil
 	}
-	return os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+	return sr.openFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 }
 
 func normalizeScheme(s string) (string, error) {
