@@ -92,9 +92,7 @@ func TestRegisterSinkErrors(t *testing.T) {
 			defer resetSinkRegistry()
 
 			err := RegisterSink(tt.scheme, nopFactory)
-			if assert.Error(t, err, "expected error") {
-				assert.Contains(t, err.Error(), tt.err, "unexpected error")
-			}
+			assert.ErrorContains(t, err, tt.err)
 		})
 	}
 }

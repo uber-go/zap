@@ -143,8 +143,7 @@ func TestNewStdLogAtFatal(t *testing.T) {
 
 func TestNewStdLogAtInvalid(t *testing.T) {
 	_, err := NewStdLogAt(NewNop(), zapcore.Level(99))
-	assert.Error(t, err, "Expected to get error.")
-	assert.Contains(t, err.Error(), "99", "Expected level code in error message")
+	assert.ErrorContains(t, err, "99", "Expected level code in error message")
 }
 
 func TestRedirectStdLog(t *testing.T) {
@@ -262,8 +261,7 @@ func TestRedirectStdLogAtInvalid(t *testing.T) {
 			restore()
 		}
 	}()
-	require.Error(t, err, "Expected to get error.")
-	assert.Contains(t, err.Error(), "99", "Expected level code in error message")
+	assert.ErrorContains(t, err, "99", "Expected level code in error message")
 }
 
 func checkStdLogMessage(t *testing.T, msg string, logs *observer.ObservedLogs) {
