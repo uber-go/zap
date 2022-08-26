@@ -88,7 +88,10 @@ func TestRegisterSinkErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run("scheme-"+tt.scheme, func(t *testing.T) {
+			t.Parallel()
+
 			defer resetSinkRegistry()
 
 			err := RegisterSink(tt.scheme, nopFactory)

@@ -66,8 +66,11 @@ func TestConsoleSeparator(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		console := NewConsoleEncoder(encoderTestEncoderConfig(tt.separator))
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			entry := testEntry
 			consoleOut, err := console.EncodeEntry(entry, nil)
 			if !assert.NoError(t, err) {

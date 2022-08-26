@@ -53,7 +53,10 @@ func TestBufferWrites(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			buf.Reset()
 			tt.f()
 			assert.Equal(t, tt.want, buf.String(), "Unexpected buffer.String().")

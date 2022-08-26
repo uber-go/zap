@@ -527,34 +527,39 @@ func TestEncoderConfiguration(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		json := NewJSONEncoder(tt.cfg)
-		console := NewConsoleEncoder(tt.cfg)
-		if tt.extra != nil {
-			tt.extra(json)
-			tt.extra(console)
-		}
-		entry := _testEntry
-		if tt.amendEntry != nil {
-			entry = tt.amendEntry(_testEntry)
-		}
-		jsonOut, jsonErr := json.EncodeEntry(entry, nil)
-		if assert.NoError(t, jsonErr, "Unexpected error JSON-encoding entry in case #%d.", i) {
-			assert.Equal(
-				t,
-				tt.expectedJSON,
-				jsonOut.String(),
-				"Unexpected JSON output: expected to %v.", tt.desc,
-			)
-		}
-		consoleOut, consoleErr := console.EncodeEntry(entry, nil)
-		if assert.NoError(t, consoleErr, "Unexpected error console-encoding entry in case #%d.", i) {
-			assert.Equal(
-				t,
-				tt.expectedConsole,
-				consoleOut.String(),
-				"Unexpected console output: expected to %v.", tt.desc,
-			)
-		}
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			json := NewJSONEncoder(tt.cfg)
+			console := NewConsoleEncoder(tt.cfg)
+			if tt.extra != nil {
+				tt.extra(json)
+				tt.extra(console)
+			}
+			entry := _testEntry
+			if tt.amendEntry != nil {
+				entry = tt.amendEntry(_testEntry)
+			}
+			jsonOut, jsonErr := json.EncodeEntry(entry, nil)
+			if assert.NoError(t, jsonErr, "Unexpected error JSON-encoding entry in case #%d.", i) {
+				assert.Equal(
+					t,
+					tt.expectedJSON,
+					jsonOut.String(),
+					"Unexpected JSON output: expected to %v.", tt.desc,
+				)
+			}
+			consoleOut, consoleErr := console.EncodeEntry(entry, nil)
+			if assert.NoError(t, consoleErr, "Unexpected error console-encoding entry in case #%d.", i) {
+				assert.Equal(
+					t,
+					tt.expectedConsole,
+					consoleOut.String(),
+					"Unexpected console output: expected to %v.", tt.desc,
+				)
+			}
+		})
 	}
 }
 
@@ -570,14 +575,19 @@ func TestLevelEncoders(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		var le LevelEncoder
-		require.NoError(t, le.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
-		assertAppended(
-			t,
-			tt.expected,
-			func(arr ArrayEncoder) { le(InfoLevel, arr) },
-			"Unexpected output serializing InfoLevel with %q.", tt.name,
-		)
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var le LevelEncoder
+			require.NoError(t, le.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+			assertAppended(
+				t,
+				tt.expected,
+				func(arr ArrayEncoder) { le(InfoLevel, arr) },
+				"Unexpected output serializing InfoLevel with %q.", tt.name,
+			)
+		})
 	}
 }
 
@@ -661,14 +671,19 @@ func TestDurationEncoders(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		var de DurationEncoder
-		require.NoError(t, de.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
-		assertAppended(
-			t,
-			tt.expected,
-			func(arr ArrayEncoder) { de(elapsed, arr) },
-			"Unexpected output serializing %v with %q.", elapsed, tt.name,
-		)
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var de DurationEncoder
+			require.NoError(t, de.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+			assertAppended(
+				t,
+				tt.expected,
+				func(arr ArrayEncoder) { de(elapsed, arr) },
+				"Unexpected output serializing %v with %q.", elapsed, tt.name,
+			)
+		})
 	}
 }
 
@@ -685,14 +700,19 @@ func TestCallerEncoders(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		var ce CallerEncoder
-		require.NoError(t, ce.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
-		assertAppended(
-			t,
-			tt.expected,
-			func(arr ArrayEncoder) { ce(caller, arr) },
-			"Unexpected output serializing file name as %v with %q.", tt.expected, tt.name,
-		)
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var ce CallerEncoder
+			require.NoError(t, ce.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+			assertAppended(
+				t,
+				tt.expected,
+				func(arr ArrayEncoder) { ce(caller, arr) },
+				"Unexpected output serializing file name as %v with %q.", tt.expected, tt.name,
+			)
+		})
 	}
 }
 
@@ -707,14 +727,19 @@ func TestNameEncoders(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		var ne NameEncoder
-		require.NoError(t, ne.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
-		assertAppended(
-			t,
-			tt.expected,
-			func(arr ArrayEncoder) { ne("main", arr) },
-			"Unexpected output serializing logger name with %q.", tt.name,
-		)
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var ne NameEncoder
+			require.NoError(t, ne.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+			assertAppended(
+				t,
+				tt.expected,
+				func(arr ArrayEncoder) { ne("main", arr) },
+				"Unexpected output serializing logger name with %q.", tt.name,
+			)
+		})
 	}
 }
 

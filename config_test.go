@@ -57,7 +57,10 @@ func TestConfig(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			logOut := filepath.Join(t.TempDir(), "test.log")
 
 			tt.cfg.OutputPaths = []string{logOut}
@@ -97,7 +100,10 @@ func TestConfigWithInvalidPaths(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			cfg := NewProductionConfig()
 			cfg.OutputPaths = []string{tt.output}
 			cfg.ErrorOutputPaths = []string{tt.errOutput}
@@ -135,7 +141,10 @@ func TestConfigWithMissingAttributes(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			cfg := tt.cfg
 			_, err := cfg.Build()
 			assert.EqualError(t, err, tt.expectErr)

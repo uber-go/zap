@@ -80,7 +80,10 @@ func TestOpen(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.msg, func(t *testing.T) {
+			t.Parallel()
+
 			_, cleanup, err := Open(tt.paths...)
 			if err == nil {
 				defer cleanup()
@@ -123,7 +126,10 @@ func TestOpenPathsNotFound(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.msg, func(t *testing.T) {
+			t.Parallel()
+
 			_, cleanup, err := Open(tt.paths...)
 			if !assert.Error(t, err, "Open must fail.") {
 				cleanup()
@@ -213,7 +219,10 @@ func TestOpenOtherErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.msg, func(t *testing.T) {
+			t.Parallel()
+
 			_, cleanup, err := Open(tt.paths...)
 			if !assert.Error(t, err, "Open must fail.") {
 				cleanup()

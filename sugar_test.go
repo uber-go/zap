@@ -125,16 +125,21 @@ func TestSugarWith(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
-			logger.With(tt.args...).Info("")
-			output := logs.AllUntimed()
-			if len(tt.errLogs) > 0 {
-				for i := range tt.errLogs {
-					assert.Equal(t, tt.errLogs[i], output[i], "Unexpected error log at position %d for scenario %s.", i, tt.desc)
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+				logger.With(tt.args...).Info("")
+				output := logs.AllUntimed()
+				if len(tt.errLogs) > 0 {
+					for i := range tt.errLogs {
+						assert.Equal(t, tt.errLogs[i], output[i], "Unexpected error log at position %d for scenario %s.", i, tt.desc)
+					}
 				}
-			}
-			assert.Equal(t, len(tt.errLogs)+1, len(output), "Expected only one non-error message to be logged in scenario %s.", tt.desc)
-			assert.Equal(t, tt.expected, output[len(tt.errLogs)].Context, "Unexpected message context in scenario %s.", tt.desc)
+				assert.Equal(t, len(tt.errLogs)+1, len(output), "Expected only one non-error message to be logged in scenario %s.", tt.desc)
+				assert.Equal(t, tt.expected, output[len(tt.errLogs)].Context, "Unexpected message context in scenario %s.", tt.desc)
+			})
 		})
 	}
 }

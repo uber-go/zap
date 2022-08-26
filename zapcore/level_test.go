@@ -63,17 +63,22 @@ func TestLevelText(t *testing.T) {
 		{"fatal", FatalLevel},
 	}
 	for _, tt := range tests {
-		if tt.text != "" {
-			lvl := tt.level
-			marshaled, err := lvl.MarshalText()
-			assert.NoError(t, err, "Unexpected error marshaling level %v to text.", &lvl)
-			assert.Equal(t, tt.text, string(marshaled), "Marshaling level %v to text yielded unexpected result.", &lvl)
-		}
+		tt := tt
+		t.Run(tt.text, func(t *testing.T) {
+			t.Parallel()
 
-		var unmarshaled Level
-		err := unmarshaled.UnmarshalText([]byte(tt.text))
-		assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, tt.text)
-		assert.Equal(t, tt.level, unmarshaled, `Text %q unmarshaled to an unexpected level.`, tt.text)
+			if tt.text != "" {
+				lvl := tt.level
+				marshaled, err := lvl.MarshalText()
+				assert.NoError(t, err, "Unexpected error marshaling level %v to text.", &lvl)
+				assert.Equal(t, tt.text, string(marshaled), "Marshaling level %v to text yielded unexpected result.", &lvl)
+			}
+
+			var unmarshaled Level
+			err := unmarshaled.UnmarshalText([]byte(tt.text))
+			assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, tt.text)
+			assert.Equal(t, tt.level, unmarshaled, `Text %q unmarshaled to an unexpected level.`, tt.text)
+		})
 	}
 }
 
@@ -88,13 +93,18 @@ func TestParseLevel(t *testing.T) {
 		{"FOO", 0, `unrecognized level: "FOO"`},
 	}
 	for _, tt := range tests {
-		parsedLevel, err := ParseLevel(tt.text)
-		if len(tt.err) == 0 {
-			assert.NoError(t, err)
-			assert.Equal(t, tt.level, parsedLevel)
-		} else {
-			assert.ErrorContains(t, err, tt.err)
-		}
+		tt := tt
+		t.Run(tt.text, func(t *testing.T) {
+			t.Parallel()
+
+			parsedLevel, err := ParseLevel(tt.text)
+			if len(tt.err) == 0 {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.level, parsedLevel)
+			} else {
+				assert.ErrorContains(t, err, tt.err)
+			}
+		})
 	}
 }
 
@@ -112,10 +122,15 @@ func TestCapitalLevelsParse(t *testing.T) {
 		{"FATAL", FatalLevel},
 	}
 	for _, tt := range tests {
-		var unmarshaled Level
-		err := unmarshaled.UnmarshalText([]byte(tt.text))
-		assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, tt.text)
-		assert.Equal(t, tt.level, unmarshaled, `Text %q unmarshaled to an unexpected level.`, tt.text)
+		tt := tt
+		t.Run(tt.text, func(t *testing.T) {
+			t.Parallel()
+
+			var unmarshaled Level
+			err := unmarshaled.UnmarshalText([]byte(tt.text))
+			assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, tt.text)
+			assert.Equal(t, tt.level, unmarshaled, `Text %q unmarshaled to an unexpected level.`, tt.text)
+		})
 	}
 }
 
@@ -143,10 +158,15 @@ func TestWeirdLevelsParse(t *testing.T) {
 		{"FaTaL", FatalLevel},
 	}
 	for _, tt := range tests {
-		var unmarshaled Level
-		err := unmarshaled.UnmarshalText([]byte(tt.text))
-		assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, tt.text)
-		assert.Equal(t, tt.level, unmarshaled, `Text %q unmarshaled to an unexpected level.`, tt.text)
+		tt := tt
+		t.Run(tt.text, func(t *testing.T) {
+			t.Parallel()
+
+			var unmarshaled Level
+			err := unmarshaled.UnmarshalText([]byte(tt.text))
+			assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, tt.text)
+			assert.Equal(t, tt.level, unmarshaled, `Text %q unmarshaled to an unexpected level.`, tt.text)
+		})
 	}
 }
 
