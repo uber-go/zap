@@ -83,6 +83,33 @@ func TestLoggerAtomicLevel(t *testing.T) {
 	})
 }
 
+func TestLoggerLevel(t *testing.T) {
+	levels := []zapcore.Level{
+		DebugLevel,
+		InfoLevel,
+		WarnLevel,
+		ErrorLevel,
+		DPanicLevel,
+		PanicLevel,
+		FatalLevel,
+	}
+
+	for _, lvl := range levels {
+		lvl := lvl
+		t.Run(lvl.String(), func(t *testing.T) {
+			t.Parallel()
+
+			core, _ := observer.New(lvl)
+			log := New(core)
+			assert.Equal(t, lvl, log.Level())
+		})
+	}
+
+	t.Run("Nop", func(t *testing.T) {
+		assert.Equal(t, zapcore.InvalidLevel, NewNop().Level())
+	})
+}
+
 func TestLoggerInitialFields(t *testing.T) {
 	fieldOpts := opts(Fields(Int("foo", 42), String("bar", "baz")))
 	withLogger(t, DebugLevel, fieldOpts, func(logger *Logger, logs *observer.ObservedLogs) {
