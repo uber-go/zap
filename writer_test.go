@@ -240,7 +240,7 @@ func (w *testWriter) Sync() error {
 }
 
 func TestOpenWithErroringSinkFactory(t *testing.T) {
-	defer resetSinkRegistry()
+	stubSinkRegistry(t)
 
 	msg := "expected factory error"
 	factory := func(_ *url.URL) (Sink, error) {
