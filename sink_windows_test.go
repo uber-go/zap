@@ -30,14 +30,6 @@ import (
 )
 
 func TestWindowsPaths(t *testing.T) {
-	sr := newSinkRegistry()
-
-	var openFilename string
-	sr.openFile = func(filename string, _ int, _ os.FileMode) (*os.File, error) {
-		openFilename = filename
-		return nil, assert.AnError
-	}
-
 	// See https://docs.microsoft.com/en-us/dotnet/standard/io/file-path-formats
 	tests := []struct {
 		msg  string
@@ -63,7 +55,13 @@ func TestWindowsPaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.msg, func(t *testing.T) {
-			openFilename = "<not called>"
+			sr := newSinkRegistry()
+
+			openFilename := "<not called>"
+			sr.openFile = func(filename string, _ int, _ os.FileMode) (*os.File, error) {
+				openFilename = filename
+				return nil, assert.AnError
+			}
 
 			_, err := sr.newSink(tt.path)
 			assert.Equal(t, assert.AnError, err, "expect stub error from OpenFile")

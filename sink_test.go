@@ -98,9 +98,9 @@ func TestRegisterSinkErrors(t *testing.T) {
 		{"http*", "not a valid scheme"},
 	}
 
-	r := newSinkRegistry()
 	for _, tt := range tests {
 		t.Run("scheme-"+tt.scheme, func(t *testing.T) {
+			r := newSinkRegistry()
 			err := r.RegisterSink(tt.scheme, nopFactory)
 			assert.ErrorContains(t, err, tt.err)
 		})
