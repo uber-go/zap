@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"errors"
 	"testing"
 
 	"go.uber.org/zap/internal/exit"
@@ -198,9 +199,10 @@ func TestSugarStructuredLogging(t *testing.T) {
 	}
 
 	// Common to all test cases.
+	err := errors.New("qux")
 	context := []interface{}{"foo", "bar"}
-	extra := []interface{}{"baz", false}
-	expectedFields := []Field{String("foo", "bar"), Bool("baz", false)}
+	extra := []interface{}{"baz", false, err}
+	expectedFields := []Field{String("foo", "bar"), Bool("baz", false), Error(err)}
 
 	for _, tt := range tests {
 		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
