@@ -201,8 +201,8 @@ func TestSugarStructuredLogging(t *testing.T) {
 	// Common to all test cases.
 	err := errors.New("qux")
 	context := []interface{}{"foo", "bar"}
-	extra := []interface{}{"baz", false, err}
-	expectedFields := []Field{String("foo", "bar"), Bool("baz", false), Error(err)}
+	extra := []interface{}{err, "baz", false}
+	expectedFields := []Field{String("foo", "bar"), Error(err), Bool("baz", false)}
 
 	for _, tt := range tests {
 		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {

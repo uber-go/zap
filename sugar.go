@@ -349,14 +349,14 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []Field {
 			continue
 		}
 
-		// If it is an error.
+		// If it is an error, consume it and move on.
 		if err, ok := args[i].(error); ok {
 			fields = append(fields, Error(err))
 			i++
 			continue
 		}
 
-		// If it is not a singular error, make sure this element isn't a dangling key.
+		// Make sure this element isn't a dangling key.
 		if i == len(args)-1 {
 			s.base.Error(_oddNumberErrMsg, Any("ignored", args[i]))
 			break
