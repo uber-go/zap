@@ -47,6 +47,12 @@ func TestSugarWith(t *testing.T) {
 			Context: []Field{Array("invalid", invalidPairs(pairs))},
 		}
 	}
+	ignoredError := func(err error) observer.LoggedEntry {
+		return observer.LoggedEntry{
+			Entry:   zapcore.Entry{Level: ErrorLevel, Message: _multipleErrMsg},
+			Context: []Field{Error(err)},
+		}
+	}
 
 	tests := []struct {
 		desc     string
@@ -121,6 +127,15 @@ func TestSugarWith(t *testing.T) {
 			errLogs: []observer.LoggedEntry{
 				ignored("dangling"),
 				nonString(invalidPair{2, true, "bar"}, invalidPair{5, 42, "reversed"}),
+			},
+		},
+		{
+			desc:     "multiple errors",
+			args:     []interface{}{errors.New("first"), errors.New("second"), errors.New("third")},
+			expected: []Field{Error(errors.New("first"))},
+			errLogs: []observer.LoggedEntry{
+				ignoredError(errors.New("second")),
+				ignoredError(errors.New("third")),
 			},
 		},
 	}
