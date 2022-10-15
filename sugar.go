@@ -31,6 +31,7 @@ import (
 const (
 	_oddNumberErrMsg    = "Ignored key without a value."
 	_nonStringKeyErrMsg = "Ignored key-value pairs with non-string keys."
+	_multipleErrMsg     = "Multiple errors without a key."
 )
 
 // A SugaredLogger wraps the base Logger functionality in a slower, but less
@@ -336,15 +337,30 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []Field {
 		return nil
 	}
 
-	// Allocate enough space for the worst case; if users pass only structured
-	// fields, we shouldn't penalize them with extra allocations.
-	fields := make([]Field, 0, len(args))
-	var invalid invalidPairs
+	var (
+		// Allocate enough space for the worst case; if users pass only structured
+		// fields, we shouldn't penalize them with extra allocations.
+		fields    = make([]Field, 0, len(args))
+		invalid   invalidPairs
+		seenError bool
+	)
 
 	for i := 0; i < len(args); {
 		// This is a strongly-typed field. Consume it and move on.
 		if f, ok := args[i].(Field); ok {
 			fields = append(fields, f)
+			i++
+			continue
+		}
+
+		// If it is an error, consume it and move on.
+		if err, ok := args[i].(error); ok {
+			if !seenError {
+				seenError = true
+				fields = append(fields, Error(err))
+			} else {
+				s.base.Error(_multipleErrMsg, Error(err))
+			}
 			i++
 			continue
 		}
