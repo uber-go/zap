@@ -337,11 +337,13 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []Field {
 		return nil
 	}
 
-	// Allocate enough space for the worst case; if users pass only structured
-	// fields, we shouldn't penalize them with extra allocations.
-	fields := make([]Field, 0, len(args))
-	var invalid invalidPairs
-	var seenError bool
+	var (
+		// Allocate enough space for the worst case; if users pass only structured
+		// fields, we shouldn't penalize them with extra allocations.
+		fields    = make([]Field, 0, len(args))
+		invalid   invalidPairs
+		seenError bool
+	)
 
 	for i := 0; i < len(args); {
 		// This is a strongly-typed field. Consume it and move on.
