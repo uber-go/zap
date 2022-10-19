@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 var errUnmarshalNilLevel = errors.New("can't unmarshal a nil *Level")
@@ -135,24 +136,7 @@ func (l Level) String() string {
 func (l Level) CapitalString() string {
 	// Printing levels in all-caps is common enough that we should export this
 	// functionality.
-	switch l {
-	case DebugLevel:
-		return "DEBUG"
-	case InfoLevel:
-		return "INFO"
-	case WarnLevel:
-		return "WARN"
-	case ErrorLevel:
-		return "ERROR"
-	case DPanicLevel:
-		return "DPANIC"
-	case PanicLevel:
-		return "PANIC"
-	case FatalLevel:
-		return "FATAL"
-	default:
-		return fmt.Sprintf("LEVEL(%d)", l)
-	}
+	return strings.ToUpper(l.String())
 }
 
 // MarshalText marshals the Level to text. Note that the text representation
