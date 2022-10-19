@@ -85,6 +85,7 @@ func TestEncoderConfiguration(t *testing.T) {
 		expectedJSON    string
 		expectedConsole string
 	}{
+
 		{
 			desc: "messages to be escaped",
 			cfg:  base,
@@ -292,7 +293,7 @@ func TestEncoderConfiguration(t *testing.T) {
 			},
 			expectedJSON: `{"L":"info","T":"1970-01-01 00:00:00 +0000 UTC","N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","extra":"1970-01-01 00:00:00 +0000 UTC","extras":["1970-01-01 00:00:00 +0000 UTC"],"S":"fake-stack"}` + "\n",
 			expectedConsole: "1970-01-01 00:00:00 +0000 UTC\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\t" + // plain-text preamble
-				`{"extra": "1970-01-01 00:00:00 +0000 UTC", "extras": ["1970-01-01 00:00:00 +0000 UTC"]}` + // JSON context
+				`extra="1970-01-01 00:00:00 +0000 UTC"	extras=["1970-01-01 00:00:00 +0000 UTC"]` + // JSON context
 				"\nfake-stack\n", // stacktrace after newline
 		},
 		{
@@ -320,7 +321,7 @@ func TestEncoderConfiguration(t *testing.T) {
 			},
 			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","extra":"1s","extras":["1m0s"],"S":"fake-stack"}` + "\n",
 			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\t" + // preamble
-				`{"extra": "1s", "extras": ["1m0s"]}` + // context
+				`extra="1s"	extras=["1m0s"]` + // context
 				"\nfake-stack\n", // stacktrace
 		},
 		{
@@ -386,7 +387,7 @@ func TestEncoderConfiguration(t *testing.T) {
 			},
 			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","outer":{"inner":{"foo":"bar","innermost":{}}},"S":"fake-stack"}` + "\n",
 			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\t" +
-				`{"outer": {"inner": {"foo": "bar", "innermost": {}}}}` +
+				`outer={"inner":{"foo":"bar","innermost":{}}}` +
 				"\nfake-stack\n",
 		},
 		{
@@ -407,7 +408,7 @@ func TestEncoderConfiguration(t *testing.T) {
 			},
 			extra:           func(enc Encoder) { enc.AddTime("sometime", time.Unix(0, 100)) },
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","sometime":100,"S":"fake-stack"}` + "\n",
-			expectedConsole: "info\tmain\tfoo.go:42\tfoo.Foo\thello\t" + `{"sometime": 100}` + "\nfake-stack\n",
+			expectedConsole: "info\tmain\tfoo.go:42\tfoo.Foo\thello\t" + `sometime=100` + "\nfake-stack\n",
 		},
 		{
 			desc: "handle no-op EncodeDuration",
@@ -427,7 +428,7 @@ func TestEncoderConfiguration(t *testing.T) {
 			},
 			extra:           func(enc Encoder) { enc.AddDuration("someduration", time.Microsecond) },
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","someduration":1000,"S":"fake-stack"}` + "\n",
-			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\t" + `{"someduration": 1000}` + "\nfake-stack\n",
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\t" + `someduration=1000` + "\nfake-stack\n",
 		},
 		{
 			desc: "handle no-op EncodeLevel",

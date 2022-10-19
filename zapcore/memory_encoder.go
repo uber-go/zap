@@ -20,7 +20,9 @@
 
 package zapcore
 
-import "time"
+import (
+	"time"
+)
 
 // MapObjectEncoder is an ObjectEncoder backed by a simple
 // map[string]interface{}. It's not fast enough for production use, but it's
@@ -130,6 +132,17 @@ func (m *MapObjectEncoder) OpenNamespace(k string) {
 	ns := make(map[string]interface{})
 	m.cur[k] = ns
 	m.cur = ns
+}
+
+func (m *MapObjectEncoder) clone() *MapObjectEncoder {
+	clone := NewMapObjectEncoder()
+	for key, value := range m.Fields {
+		clone.Fields[key] = value
+	}
+	for key, value := range m.cur {
+		clone.cur[key] = value
+	}
+	return clone
 }
 
 // sliceArrayEncoder is an ArrayEncoder backed by a simple []interface{}. Like

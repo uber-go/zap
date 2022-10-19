@@ -21,11 +21,15 @@
 package zapcore
 
 import (
+	"encoding/json"
 	"fmt"
-	"sync"
-
 	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/internal/bufferpool"
+	"reflect"
+	"sort"
+	"strings"
+	"sync"
+	"time"
 )
 
 var _sliceEncoderPool = sync.Pool{
@@ -44,13 +48,14 @@ func putSliceEncoder(e *sliceArrayEncoder) {
 }
 
 type consoleEncoder struct {
-	*jsonEncoder
+	*EncoderConfig
+	*MapObjectEncoder
 }
 
 // NewConsoleEncoder creates an encoder whose output is designed for human -
 // rather than machine - consumption. It serializes the core log entry data
 // (message, level, timestamp, etc.) in a plain-text format and leaves the
-// structured context as JSON.
+// structured context as key value pairs.
 //
 // Note that although the console encoder doesn't use the keys specified in the
 // encoder configuration, it will omit any element whose key is set to the empty
@@ -60,11 +65,18 @@ func NewConsoleEncoder(cfg EncoderConfig) Encoder {
 		// Use a default delimiter of '\t' for backwards compatibility
 		cfg.ConsoleSeparator = "\t"
 	}
-	return consoleEncoder{newJSONEncoder(cfg, true)}
+
+	if cfg.SkipLineEnding {
+		cfg.LineEnding = ""
+	} else if cfg.LineEnding == "" {
+		cfg.LineEnding = DefaultLineEnding
+	}
+
+	return consoleEncoder{EncoderConfig: &cfg, MapObjectEncoder: NewMapObjectEncoder()}
 }
 
 func (c consoleEncoder) Clone() Encoder {
-	return consoleEncoder{c.jsonEncoder.Clone().(*jsonEncoder)}
+	return consoleEncoder{EncoderConfig: c.EncoderConfig, MapObjectEncoder: c.MapObjectEncoder.clone()}
 }
 
 func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, error) {
@@ -130,24 +142,76 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 }
 
 func (c consoleEncoder) writeContext(line *buffer.Buffer, extra []Field) {
-	context := c.jsonEncoder.Clone().(*jsonEncoder)
-	defer func() {
-		// putJSONEncoder assumes the buffer is still used, but we write out the buffer so
-		// we can free it.
-		context.buf.Free()
-		putJSONEncoder(context)
-	}()
-
+	context := c.MapObjectEncoder.clone()
 	addFields(context, extra)
-	context.closeOpenNamespaces()
-	if context.buf.Len() == 0 {
+
+	if len(context.Fields) == 0 {
 		return
 	}
 
+	var pairs []string
+	for key, value := range context.Fields {
+		pairs = append(pairs, fmt.Sprintf("%s=%v", key, c.formatValue(value)))
+	}
+
+	sort.Slice(pairs, func(i, j int) bool {
+		return pairs[i] < pairs[j]
+	})
+
 	c.addSeparatorIfNecessary(line)
-	line.AppendByte('{')
-	line.Write(context.buf.Bytes())
-	line.AppendByte('}')
+	line.WriteString(strings.Join(pairs, c.ConsoleSeparator))
+}
+
+func (c consoleEncoder) formatValue(v interface{}) interface{} {
+	switch t := v.(type) {
+	case time.Time:
+		if enc := c.EncodeTime; enc != nil {
+			arr := getSliceEncoder()
+			defer putSliceEncoder(arr)
+
+			enc(t, arr)
+			if len(arr.elems) == 0 {
+				return t.UnixNano()
+			}
+			return fmt.Sprintf("%q", arr.elems[0])
+		}
+		return t.String()
+	case time.Duration:
+		if enc := c.EncodeDuration; enc != nil {
+			arr := getSliceEncoder()
+			defer putSliceEncoder(arr)
+
+			enc(t, arr)
+			if len(arr.elems) == 0 {
+				return int64(t)
+			}
+			return fmt.Sprintf("%q", arr.elems[0])
+		}
+		return t.String()
+	case string:
+		return fmt.Sprintf("%q", t)
+	case fmt.Stringer:
+		return fmt.Sprintf("%q", t.String())
+	}
+
+	switch rt := reflect.TypeOf(v); rt.Kind() {
+	case reflect.Slice:
+		asSlice, ok := v.([]interface{})
+		if !ok {
+			break
+		}
+
+		var out []interface{}
+		for i := 0; i < len(asSlice); i++ {
+			out = append(out, c.formatValue(asSlice[i]))
+		}
+		return out
+	case reflect.Map:
+		encoded, _ := json.Marshal(v)
+		return string(encoded)
+	}
+
+	return v
 }
 
 func (c consoleEncoder) addSeparatorIfNecessary(line *buffer.Buffer) {

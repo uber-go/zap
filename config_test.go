@@ -49,9 +49,9 @@ func TestConfig(t *testing.T) {
 			desc:    "development",
 			cfg:     NewDevelopmentConfig(),
 			expectN: 3 + 200, // 3 initial logs, all 200 subsequent logs
-			expectRe: "DEBUG\t[a-z0-9_-]+/config_test.go:" + `\d+` + "\tdebug\t" + `{"k": "v", "z": "zz"}` + "\n" +
-				"INFO\t[a-z0-9_-]+/config_test.go:" + `\d+` + "\tinfo\t" + `{"k": "v", "z": "zz"}` + "\n" +
-				"WARN\t[a-z0-9_-]+/config_test.go:" + `\d+` + "\twarn\t" + `{"k": "v", "z": "zz"}` + "\n" +
+			expectRe: "DEBUG\t[a-z0-9_-]+/config_test.go:" + `\d+` + "\tdebug\t" + `k="v"` + "\t" + `z="zz"` + "\n" +
+				"INFO\t[a-z0-9_-]+/config_test.go:" + `\d+` + "\tinfo\t" + `k="v"` + "\t" + `z="zz"` + "\n" +
+				"WARN\t[a-z0-9_-]+/config_test.go:" + `\d+` + "\twarn\t" + `k="v"` + "\t" + `z="zz"` + "\n" +
 				`go.uber.org/zap.TestConfig.\w+`,
 		},
 	}
