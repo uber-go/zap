@@ -220,7 +220,7 @@ func TestSugarStructuredLogging(t *testing.T) {
 		extra          = []interface{}{err, "baz", false}
 		expectedFields = []Field{String("foo", "bar"), Error(err), Bool("baz", false)}
 	)
-	
+
 	for _, tt := range tests {
 		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
 			logger.With(context...).Debugw(tt.msg, extra...)
