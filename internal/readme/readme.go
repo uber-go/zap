@@ -140,7 +140,7 @@ func getBenchmarkRow(
 	if len(split) < 5 {
 		return nil, fmt.Errorf("unknown benchmark line: %s", line)
 	}
-	duration, err := time.ParseDuration(strings.Replace(strings.TrimSuffix(strings.TrimSpace(split[2]), "/op"), " ", "", -1))
+	duration, err := time.ParseDuration(strings.ReplaceAll(strings.TrimSuffix(strings.TrimSpace(split[2]), "/op"), " ", ""))
 	if err != nil {
 		return nil, err
 	}
