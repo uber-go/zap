@@ -200,3 +200,17 @@ func TestConfigWithSamplingHook(t *testing.T) {
 	assert.Equal(t, int64(expectDropped), dcount.Load())
 	assert.Equal(t, int64(expectSampled), scount.Load())
 }
+
+func TestPreDefinedConfigMustBuildWithSuccess(t *testing.T) {
+	testCases := map[string]Config{
+		"Production":  NewProductionConfig(),
+		"Development": NewDevelopmentConfig(),
+	}
+	for name, cfg := range testCases {
+		t.Run(name, func(t *testing.T) {
+			logger, err := cfg.Build()
+			assert.NotNil(t, logger)
+			assert.NoError(t, err)
+		})
+	}
+}
