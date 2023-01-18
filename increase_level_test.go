@@ -78,10 +78,10 @@ func TestIncreaseLevel(t *testing.T) {
 		errorLogger.Warn("ignored warn log")
 		errorLogger.Error("increase level error log")
 
-		withFields := errorLogger.With(String("k", "v"))
-		withFields.Debug("ignored debug log with fields")
-		withFields.Warn("ignored warn log with fields")
-		withFields.Error("increase level error log with fields")
+		errorLogger.With(String("k", "v"))
+		errorLogger.Debug("ignored debug log with fields")
+		errorLogger.Warn("ignored warn log with fields")
+		errorLogger.Error("increase level error log with fields")
 
 		assert.Equal(t, []observer.LoggedEntry{
 			newLoggedEntry(WarnLevel, "original warn log"),
