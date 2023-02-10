@@ -72,7 +72,7 @@ func (c *counter) IncCheckReset(t time.Time, tick time.Duration) uint64 {
 	c.counter.Store(1)
 
 	newResetAfter := tn + tick.Nanoseconds()
-	if !c.resetAt.CAS(resetAfter, newResetAfter) {
+	if !c.resetAt.CompareAndSwap(resetAfter, newResetAfter) {
 		// We raced with another goroutine trying to reset, and it also reset
 		// the counter to 1, so we need to reincrement the counter.
 		return c.counter.Inc()
