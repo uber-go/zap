@@ -525,7 +525,7 @@ func (enc *jsonEncoder) tryAddRuneSelf(b byte) bool {
 	if b >= utf8.RuneSelf {
 		return false
 	}
-	if 0x20 <= b && b != '\\' && b != '"' {
+	if b >= 0x20 && b != '\\' && b != '"' {
 		enc.buf.AppendByte(b)
 		return true
 	}
