@@ -13,27 +13,21 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.17.x", "1.18.x", "1.19.x"]
+        go: ["1.19.x", "1.20.x"]
         include:
-        - go: 1.19.x
+        - go: 1.20.x
           latest: true
 
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
     - name: Setup Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go }}
-
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Load cached dependencies
-      uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+        cache: true
+        cache-dependency-path: '**/go.sum'
 
     - name: Download Dependencies
       run: |
@@ -50,4 +44,4 @@ jobs:
       run: make cover
 
     - name: Upload coverage to codecov.io
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
