@@ -46,3 +46,5 @@ golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8T
 golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 honnef.co/go/tools v0.4.0 h1:lyXVV1c8wUBJRKqI8JgIpT8TW1VDagfYYaxbKa/HoL8=
 honnef.co/go/tools v0.4.0/go.mod h1:36ZgoUOrqOk1GxwHhyryEkq8FQWkUO2xGuSMhUCcdvA=
+honnef.co/go/tools v0.4.2 h1:6qXr+R5w+ktL5UkwEbPp+fEvfyoMPche6GkOpGHZcLc=
+honnef.co/go/tools v0.4.2/go.mod h1:36ZgoUOrqOk1GxwHhyryEkq8FQWkUO2xGuSMhUCcdvA=

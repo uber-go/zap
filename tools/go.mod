@@ -2,7 +2,7 @@ module go.uber.org/zap/tools
 
 require (
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
-	honnef.co/go/tools v0.4.0
+	honnef.co/go/tools v0.4.2
 )
 
 require (
