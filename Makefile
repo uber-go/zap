@@ -78,5 +78,5 @@ tidy:
 	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && go mod tidy) &&) true
 
 .PHONY: vulncheck
-vulncheck:
+vulncheck: $(GOVULNCHECK)
 	$(GOVULNCHECK) ./...
