@@ -8,7 +8,7 @@ jobs:
     if: github.repository_owner == 'uber-go'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: FOSSA analysis
         uses: fossas/fossa-action@v1
