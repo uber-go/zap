@@ -1,6 +1,6 @@
 export GOBIN ?= $(shell pwd)/bin
 
-GOLINT = $(GOBIN)/golint
+REVIVE = $(GOBIN)/revive
 STATICCHECK = $(GOBIN)/staticcheck
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 
@@ -18,14 +18,15 @@ GO_FILES := $(shell \
 all: lint test
 
 .PHONY: lint
-lint: $(GOLINT) $(STATICCHECK)
+lint: $(REVIVE) $(STATICCHECK)
 	@rm -rf lint.log
 	@echo "Checking formatting..."
 	@gofmt -d -s $(GO_FILES) 2>&1 | tee lint.log
 	@echo "Checking vet..."
 	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && go vet ./... 2>&1) &&) true | tee -a lint.log
 	@echo "Checking lint..."
-	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && $(GOLINT) ./... 2>&1) &&) true | tee -a lint.log
+	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && \
+		$(REVIVE) -set_exit_status ./... 2>&1) &&) true | tee -a lint.log
 	@echo "Checking staticcheck..."
 	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && $(STATICCHECK) ./... 2>&1) &&) true | tee -a lint.log
 	@echo "Checking for unresolved FIXMEs..."
@@ -40,8 +41,8 @@ lint: $(GOLINT) $(STATICCHECK)
 		git --no-pager diff; \
 	fi
 
-$(GOLINT):
-	cd tools && go install golang.org/x/lint/golint
+$(REVIVE):
+	cd tools && go install github.com/mgechev/revive
 
 $(STATICCHECK):
 	cd tools && go install honnef.co/go/tools/cmd/staticcheck

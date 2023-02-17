@@ -67,25 +67,25 @@ func TestFieldConstructors(t *testing.T) {
 
 	// Helpful values for use in constructing pointers to primitives below.
 	var (
-		boolVal       bool          = true
-		complex128Val complex128    = complex(0, 0)
-		complex64Val  complex64     = complex(0, 0)
-		durationVal   time.Duration = time.Second
-		float64Val    float64       = 1.0
-		float32Val    float32       = 1.0
-		intVal        int           = 1
-		int64Val      int64         = 1
-		int32Val      int32         = 1
-		int16Val      int16         = 1
-		int8Val       int8          = 1
-		stringVal     string        = "hello"
-		timeVal       time.Time     = time.Unix(100000, 0)
-		uintVal       uint          = 1
-		uint64Val     uint64        = 1
-		uint32Val     uint32        = 1
-		uint16Val     uint16        = 1
-		uint8Val      uint8         = 1
-		uintptrVal    uintptr       = 1
+		boolVal       = bool(true)
+		complex128Val = complex128(complex(0, 0))
+		complex64Val  = complex64(complex(0, 0))
+		durationVal   = time.Duration(time.Second)
+		float64Val    = float64(1.0)
+		float32Val    = float32(1.0)
+		intVal        = int(1)
+		int64Val      = int64(1)
+		int32Val      = int32(1)
+		int16Val      = int16(1)
+		int8Val       = int8(1)
+		stringVal     = string("hello")
+		timeVal       = time.Unix(100000, 0)
+		uintVal       = uint(1)
+		uint64Val     = uint64(1)
+		uint32Val     = uint32(1)
+		uint16Val     = uint16(1)
+		uint8Val      = uint8(1)
+		uintptrVal    = uintptr(1)
 	)
 
 	tests := []struct {
