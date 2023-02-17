@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// Package grpc tests Zap's zapgrpc package without requring a dependency on
+// grpc from Zap itself.
 package grpc
 
 // This file exists to treat this directory as a valid package with at least
