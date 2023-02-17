@@ -2,6 +2,7 @@ export GOBIN ?= $(shell pwd)/bin
 
 REVIVE = $(GOBIN)/revive
 STATICCHECK = $(GOBIN)/staticcheck
+GOVULNCHECK = $(GOBIN)/govulncheck
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 
 # Directories containing independent Go modules.
@@ -44,6 +45,9 @@ lint: $(REVIVE) $(STATICCHECK)
 $(REVIVE):
 	cd tools && go install github.com/mgechev/revive
 
+$(GOVULNCHECK):
+	cd tools && go install golang.org/x/vuln/cmd/govulncheck
+
 $(STATICCHECK):
 	cd tools && go install honnef.co/go/tools/cmd/staticcheck
 
@@ -72,3 +76,7 @@ updatereadme:
 .PHONY: tidy
 tidy:
 	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && go mod tidy) &&) true
+
+.PHONY: vulncheck
+vulncheck:
+	$(GOVULNCHECK) ./...

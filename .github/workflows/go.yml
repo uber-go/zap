@@ -45,3 +45,6 @@ jobs:
 
     - name: Upload coverage to codecov.io
       uses: codecov/codecov-action@v3
+
+    - name: vulncheck
+      run: make vulncheck
