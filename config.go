@@ -101,11 +101,13 @@ type Config struct {
 //
 //   - "level": The logging level (e.g. "info", "error").
 //   - "ts": The current time in number of seconds since the Unix epoch.
-//   - "caller": A short path to the file and line number where the log
-//     statement was issued. This will not be added if DisableCaller is true.
-//   - "stacktrace": A stacktrace if the log level is high enough to capture
-//     one. This will not be added if DisableStacktrace is true.
 //   - "msg": The message passed to the log statement.
+//   - "caller": If available, a short path to the file and line number
+//     where the log statement was issued.
+//     The logger configuration determines whether this field is captured.
+//   - "stacktrace": If available, a stack trace from the line
+//     where the log statement was issued.
+//     The logger configuration determines whether this field is captured.
 //
 // By default, the following formats are used for different types:
 //
@@ -176,11 +178,13 @@ func NewProductionConfig() Config {
 //
 //   - The log level (e.g. "INFO", "ERROR").
 //   - The time in ISO8601 format (e.g. "2017-01-01T12:00:00Z").
-//   - A short path to the file and line number where the log statement was
-//     issued. This will not be added if DisableCaller is true.
-//   - A stacktrace if the log level is high enough to capture one. This will
-//     not be added if DisableStacktrace is true.
 //   - The message passed to the log statement.
+//   - If available, a short path to the file and line number
+//     where the log statement was issued.
+//     The logger configuration determines whether this field is captured.
+//   - If available, a stacktrace from the line
+//     where the log statement was issued.
+//     The logger configuration determines whether this field is captured.
 //
 // By default, the following formats are used for different types:
 //
