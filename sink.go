@@ -159,21 +159,29 @@ func (sr *sinkRegistry) newFileSinkFromPath(path string) (Sink, error) {
 
 func normalizeScheme(s string) (string, error) {
 	// https://tools.ietf.org/html/rfc3986#section-3.1
-	s = strings.ToLower(s)
-	if first := s[0]; 'a' > first || 'z' < first {
+	var b strings.Builder
+	b.Grow(len(s))
+	if first := s[0]; 'A' > first || 'z' < first || ('Z' < first && 'a' < first) {
 		return "", errors.New("must start with a letter")
 	}
-	for i := 1; i < len(s); i++ { // iterate over bytes, not runes
+	for i := 0; i < len(s); i++ { // iterate over bytes, not runes
 		c := s[i]
 		switch {
 		case 'a' <= c && c <= 'z':
+			b.WriteByte(c)
+			continue
+		case 'A' <= c && c <= 'Z':
+			c += 'a' - 'A'
+			b.WriteByte(c)
 			continue
 		case '0' <= c && c <= '9':
+			b.WriteByte(c)
 			continue
 		case c == '.' || c == '+' || c == '-':
+			b.WriteByte(c)
 			continue
 		}
 		return "", fmt.Errorf("may not contain %q", c)
 	}
-	return s, nil
+	return b.String(), nil
 }
