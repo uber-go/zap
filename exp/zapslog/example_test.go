@@ -42,10 +42,11 @@ func Example_slog() {
 	defer logger.Sync()
 
 	sl := zapslog.New(logger)
+	ctx := context.Background()
 
 	sl.Info("user", "name", "Al", "secret", Password("secret"))
 	sl.Error("oops", net.ErrClosed, "status", 500)
-	sl.LogAttrs(context.TODO(), slog.LevelError, "oops",
+	sl.LogAttrs(ctx, slog.LevelError, "oops",
 		slog.Any("err", net.ErrClosed), slog.Int("status", 500))
 	sl.Info("message",
 		slog.Group("group",
@@ -53,10 +54,10 @@ func Example_slog() {
 			slog.Duration("1min", time.Minute),
 		),
 	)
-	sl.WithGroup("s").LogAttrs(context.TODO(), slog.LevelWarn, "warn", slog.Uint64("u", 1), slog.Any("m", map[string]any{
+	sl.WithGroup("s").LogAttrs(ctx, slog.LevelWarn, "warn", slog.Uint64("u", 1), slog.Any("m", map[string]any{
 		"foo": "bar",
 	}))
-	sl.LogAttrs(context.TODO(), slog.LevelDebug, "not show up")
+	sl.LogAttrs(ctx, slog.LevelDebug, "not show up")
 
 	// Output:
 	// {"level":"info","msg":"user","name":"Al","secret":"REDACTED"}
