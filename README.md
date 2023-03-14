@@ -66,41 +66,41 @@ Log a message and 10 fields:
 
 | Package | Time | Time % to zap | Objects Allocated |
 | :------ | :--: | :-----------: | :---------------: |
-| :zap: zap | 794 ns/op | +0% | 5 allocs/op
-| :zap: zap (sugared) | 1087 ns/op | +37% | 10 allocs/op
-| zerolog | 375 ns/op | -53% | 1 allocs/op
-| slog | 2350 ns/op | +196% | 40 allocs/op
-| go-kit | 2439 ns/op | +207% | 57 allocs/op
-| apex/log | 10738 ns/op | +1252% | 63 allocs/op
-| log15 | 11910 ns/op | +1400% | 74 allocs/op
-| logrus | 12492 ns/op | +1473% | 79 allocs/op
+| :zap: zap | 2012 ns/op | +0% | 5 allocs/op
+| :zap: zap (sugared) | 2500 ns/op | +24% | 10 allocs/op
+| zerolog | 1254 ns/op | -38% | 1 allocs/op
+| slog | 5711 ns/op | +184% | 40 allocs/op
+| go-kit | 6329 ns/op | +215% | 57 allocs/op
+| apex/log | 19714 ns/op | +880% | 63 allocs/op
+| log15 | 25503 ns/op | +1168% | 74 allocs/op
+| logrus | 25816 ns/op | +1183% | 79 allocs/op
 
 Log a message with a logger that already has 10 fields of context:
 
 | Package | Time | Time % to zap | Objects Allocated |
 | :------ | :--: | :-----------: | :---------------: |
-| :zap: zap | 95 ns/op | +0% | 0 allocs/op
-| :zap: zap (sugared) | 125 ns/op | +32% | 1 allocs/op
-| zerolog | 36 ns/op | -62% | 0 allocs/op
-| slog | 202 ns/op | +113% | 0 allocs/op
-| go-kit | 2725 ns/op | +2768% | 56 allocs/op
-| log15 | 9635 ns/op | +10042% | 70 allocs/op
-| apex/log | 10089 ns/op | +10520% | 53 allocs/op
-| logrus | 11508 ns/op | +12014% | 68 allocs/op
+| :zap: zap (sugared) | 265 ns/op | -31% | 1 allocs/op
+| :zap: zap | 386 ns/op | +0% | 0 allocs/op
+| zerolog | 97 ns/op | -75% | 0 allocs/op
+| slog | 367 ns/op | -5% | 0 allocs/op
+| go-kit | 7123 ns/op | +1745% | 56 allocs/op
+| log15 | 18822 ns/op | +4776% | 70 allocs/op
+| apex/log | 19135 ns/op | +4857% | 53 allocs/op
+| logrus | 21716 ns/op | +5526% | 68 allocs/op
 
 Log a static string, without any context or `printf`-style templating:
 
 | Package | Time | Time % to zap | Objects Allocated |
 | :------ | :--: | :-----------: | :---------------: |
-| :zap: zap | 96 ns/op | +0% | 0 allocs/op
-| :zap: zap (sugared) | 104 ns/op | +8% | 1 allocs/op
-| standard library | 8 ns/op | -92% | 1 allocs/op
-| zerolog | 34 ns/op | -65% | 0 allocs/op
-| slog | 196 ns/op | +104% | 0 allocs/op
-| go-kit | 221 ns/op | +130% | 9 allocs/op
-| apex/log | 757 ns/op | +689% | 5 allocs/op
-| logrus | 1401 ns/op | +1359% | 23 allocs/op
-| log15 | 1958 ns/op | +1940% | 20 allocs/op
+| :zap: zap | 201 ns/op | +0% | 0 allocs/op
+| :zap: zap (sugared) | 253 ns/op | +26% | 1 allocs/op
+| zerolog | 101 ns/op | -50% | 0 allocs/op
+| slog | 339 ns/op | +69% | 0 allocs/op
+| standard library | 457 ns/op | +127% | 2 allocs/op
+| go-kit | 479 ns/op | +138% | 9 allocs/op
+| apex/log | 1519 ns/op | +656% | 5 allocs/op
+| logrus | 3677 ns/op | +1729% | 23 allocs/op
+| log15 | 3823 ns/op | +1802% | 20 allocs/op
 
 ## Development Status: Stable
 
