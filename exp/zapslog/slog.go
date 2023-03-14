@@ -34,13 +34,11 @@ type handler struct {
 
 var _ slog.Handler = (*handler)(nil)
 
-// group holds all the Attrs saved in a slog.GroupValue.
-type group struct {
-	attrs []slog.Attr
-}
+// groupObject holds all the Attrs saved in a slog.GroupValue.
+type groupObject []slog.Attr
 
-func (g *group) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	for _, attr := range g.attrs {
+func (gs groupObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	for _, attr := range gs {
 		convertAttrToField(attr).AddTo(enc)
 	}
 	return nil
@@ -63,10 +61,11 @@ func convertAttrToField(attr slog.Attr) zapcore.Field {
 	case slog.KindUint64:
 		return zap.Uint64(attr.Key, attr.Value.Uint64())
 	case slog.KindGroup:
-		return zap.Object(attr.Key, &group{attrs: attr.Value.Group()})
+		return zap.Object(attr.Key, groupObject(attr.Value.Group()))
 	case slog.KindLogValuer:
 		return convertAttrToField(slog.Attr{
-			Key:   attr.Key,
+			Key: attr.Key,
+			// FIXME(knight42): resolve the value in a lazy way
 			Value: attr.Value.Resolve(),
 		})
 	default:
