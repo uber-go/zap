@@ -21,11 +21,11 @@
 package benchmarks
 
 import (
-	"io"
 	"log"
 	"testing"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/internal/ztest"
 )
 
 func BenchmarkDisabledWithoutFields(b *testing.B) {
@@ -346,7 +346,7 @@ func BenchmarkWithoutFields(b *testing.B) {
 		})
 	})
 	b.Run("stdlib.Println", func(b *testing.B) {
-		logger := log.New(io.Discard, "", log.LstdFlags)
+		logger := log.New(&ztest.Discarder{}, "", log.LstdFlags)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
@@ -355,7 +355,7 @@ func BenchmarkWithoutFields(b *testing.B) {
 		})
 	})
 	b.Run("stdlib.Printf", func(b *testing.B) {
-		logger := log.New(io.Discard, "", log.LstdFlags)
+		logger := log.New(&ztest.Discarder{}, "", log.LstdFlags)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
