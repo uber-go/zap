@@ -1,4 +1,4 @@
-module go.uber.org/zap/exp/zapslog
+module go.uber.org/zap/exp
 
 go 1.19
 
