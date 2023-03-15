@@ -28,11 +28,12 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-type handler struct {
-	logger *zap.Logger
+// Handler implements the slog.Handler by writing to a zap Core.
+type Handler struct {
+	core zapcore.Core
 }
 
-var _ slog.Handler = (*handler)(nil)
+var _ slog.Handler = (*Handler)(nil)
 
 // groupObject holds all the Attrs saved in a slog.GroupValue.
 type groupObject []slog.Attr
@@ -89,41 +90,56 @@ func convertSlogLevel(l slog.Level) zapcore.Level {
 	}
 }
 
-func (h *handler) Enabled(ctx context.Context, level slog.Level) bool {
-	return h.logger.Core().Enabled(convertSlogLevel(level))
+func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
+	return h.core.Enabled(convertSlogLevel(level))
 }
 
-func (h *handler) Handle(ctx context.Context, record slog.Record) error {
+func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
+	ent := zapcore.Entry{
+		Level:   convertSlogLevel(record.Level),
+		Time:    record.Time,
+		Message: record.Message,
+		// FIXME: do we need to set the following fields?
+		// LoggerName:
+		// Caller:
+		// Stack:
+	}
+	ce := h.core.Check(ent, nil)
+	if ce == nil {
+		return nil
+	}
+
 	fields := make([]zapcore.Field, 0, record.NumAttrs())
 	record.Attrs(func(attr slog.Attr) {
 		fields = append(fields, convertAttrToField(attr))
 	})
-	h.logger.Log(convertSlogLevel(record.Level), record.Message, fields...)
+	ce.Write(fields...)
 	return nil
 }
 
-func (h *handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	fields := make([]zapcore.Field, len(attrs))
 	for i, attr := range attrs {
 		fields[i] = convertAttrToField(attr)
 	}
-	return &handler{
-		logger: h.logger.With(fields...),
-	}
+	return h.withFields(fields...)
 
 }
 
-func (h *handler) WithGroup(name string) slog.Handler {
-	return &handler{
-		logger: h.logger.With(zap.Namespace(name)),
+func (h *Handler) WithGroup(group string) slog.Handler {
+	return h.withFields(zap.Namespace(group))
+}
+
+// withFields returns a cloned Handler with the given fields.
+func (h *Handler) withFields(fields ...zapcore.Field) *Handler {
+	return &Handler{
+		core: h.core.With(fields),
 	}
 }
 
-// New returns a *slog.Logger which writes to the supplied zap Logger.
-func New(logger *zap.Logger) *slog.Logger {
-	const slogCallerDepth = 1
-	const loggerWriterDepth = 2
-	return slog.New(&handler{
-		logger: logger.WithOptions(zap.AddCallerSkip(slogCallerDepth + loggerWriterDepth)),
-	})
+// NewHandler returns a *Handler which writes to the supplied zap Core.
+func NewHandler(core zapcore.Core) *Handler {
+	return &Handler{
+		core: core,
+	}
 }
