@@ -21,11 +21,11 @@
 package benchmarks
 
 import (
-	"io"
 	"log"
 	"testing"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/internal/ztest"
 )
 
 func BenchmarkDisabledWithoutFields(b *testing.B) {
@@ -95,6 +95,16 @@ func BenchmarkDisabledWithoutFields(b *testing.B) {
 			}
 		})
 	})
+	b.Run("slog", func(b *testing.B) {
+		logger := newDisabledSlog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info(getMessage(0))
+			}
+		})
+	})
+
 }
 
 func BenchmarkDisabledAccumulatedContext(b *testing.B) {
@@ -164,6 +174,16 @@ func BenchmarkDisabledAccumulatedContext(b *testing.B) {
 			}
 		})
 	})
+	b.Run("slog", func(b *testing.B) {
+		logger := newDisabledSlog(fakeSlogFields()...)
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info(getMessage(0))
+			}
+		})
+	})
+
 }
 
 func BenchmarkDisabledAddingFields(b *testing.B) {
@@ -224,6 +244,16 @@ func BenchmarkDisabledAddingFields(b *testing.B) {
 			}
 		})
 	})
+	b.Run("slog", func(b *testing.B) {
+		logger := newSlog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info(getMessage(0), fakeSlogFields())
+			}
+		})
+	})
+
 }
 
 func BenchmarkWithoutFields(b *testing.B) {
@@ -316,7 +346,7 @@ func BenchmarkWithoutFields(b *testing.B) {
 		})
 	})
 	b.Run("stdlib.Println", func(b *testing.B) {
-		logger := log.New(io.Discard, "", log.LstdFlags)
+		logger := log.New(&ztest.Discarder{}, "", log.LstdFlags)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
@@ -325,7 +355,7 @@ func BenchmarkWithoutFields(b *testing.B) {
 		})
 	})
 	b.Run("stdlib.Printf", func(b *testing.B) {
-		logger := log.New(io.Discard, "", log.LstdFlags)
+		logger := log.New(&ztest.Discarder{}, "", log.LstdFlags)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
@@ -362,6 +392,16 @@ func BenchmarkWithoutFields(b *testing.B) {
 			}
 		})
 	})
+	b.Run("slog", func(b *testing.B) {
+		logger := newSlog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info(getMessage(0))
+			}
+		})
+	})
+
 }
 
 func BenchmarkAccumulatedContext(b *testing.B) {
@@ -482,6 +522,16 @@ func BenchmarkAccumulatedContext(b *testing.B) {
 			}
 		})
 	})
+	b.Run("slog", func(b *testing.B) {
+		logger := newSlog(fakeSlogFields()...)
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info(getMessage(0))
+			}
+		})
+	})
+
 }
 
 func BenchmarkAddingFields(b *testing.B) {
@@ -584,4 +634,14 @@ func BenchmarkAddingFields(b *testing.B) {
 			}
 		})
 	})
+	b.Run("slog", func(b *testing.B) {
+		logger := newSlog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info(getMessage(0), fakeSlogFields())
+			}
+		})
+	})
+
 }

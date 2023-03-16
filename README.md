@@ -54,7 +54,7 @@ and make many small allocations. Put differently, using `encoding/json` and
 Zap takes a different approach. It includes a reflection-free, zero-allocation
 JSON encoder, and the base `Logger` strives to avoid serialization overhead
 and allocations wherever possible. By building the high-level `SugaredLogger`
-on that foundation, zap lets users _choose_ when they need to count every
+on that foundation, zap lets users *choose* when they need to count every
 allocation and when they'd prefer a more familiar, loosely typed API.
 
 As measured by its own [benchmarking suite][], not only is zap more performant
@@ -64,42 +64,43 @@ id="anchor-versions">[1](#footnote-versions)</sup>
 
 Log a message and 10 fields:
 
-| Package             |    Time     | Time % to zap | Objects Allocated |
-| :------------------ | :---------: | :-----------: | :---------------: |
-| zerolog             |   389 ns/op |     -53%      |    1 allocs/op    |
-| :zap: zap           |   830 ns/op |      +0%      |    5 allocs/op    |
-| :zap: zap (sugared) |  1377 ns/op |     +66%      |   10 allocs/op    |
-| go-kit              |  4311 ns/op |     +419%     |   57 allocs/op    |
-| apex/log            | 29235 ns/op |    +3422%     |   63 allocs/op    |
-| logrus              | 31084 ns/op |    +3645%     |   79 allocs/op    |
-| log15               | 31085 ns/op |    +3645%     |   74 allocs/op    |
+| Package | Time | Time % to zap | Objects Allocated |
+| :------ | :--: | :-----------: | :---------------: |
+| :zap: zap | 1744 ns/op | +0% | 5 allocs/op
+| :zap: zap (sugared) | 2483 ns/op | +42% | 10 allocs/op
+| zerolog | 918 ns/op | -47% | 1 allocs/op
+| go-kit | 5590 ns/op | +221% | 57 allocs/op
+| slog | 5640 ns/op | +223% | 40 allocs/op
+| apex/log | 21184 ns/op | +1115% | 63 allocs/op
+| logrus | 24338 ns/op | +1296% | 79 allocs/op
+| log15 | 26054 ns/op | +1394% | 74 allocs/op
 
 Log a message with a logger that already has 10 fields of context:
 
-| Package             |    Time     | Time % to zap | Objects Allocated |
-| :------------------ | :---------: | :-----------: | :---------------: |
-| zerolog             |    32 ns/op |     -27%      |    0 allocs/op    |
-| :zap: zap           |    44 ns/op |      +0%      |    0 allocs/op    |
-| :zap: zap (sugared) |    74 ns/op |     +68%      |    1 allocs/op    |
-| go-kit              |  5072 ns/op |   +11427%     |   56 allocs/op    |
-| log15               | 22634 ns/op |   +51341%     |   70 allocs/op    |
-| apex/log            | 28775 ns/op |   +65298%     |   53 allocs/op    |
-| logrus              | 29047 ns/op |   +65916%     |   68 allocs/op    |
+| Package | Time | Time % to zap | Objects Allocated |
+| :------ | :--: | :-----------: | :---------------: |
+| :zap: zap | 193 ns/op | +0% | 0 allocs/op
+| :zap: zap (sugared) | 227 ns/op | +18% | 1 allocs/op
+| zerolog | 81 ns/op | -58% | 0 allocs/op
+| slog | 322 ns/op | +67% | 0 allocs/op
+| go-kit | 5377 ns/op | +2686% | 56 allocs/op
+| apex/log | 19518 ns/op | +10013% | 53 allocs/op
+| log15 | 19812 ns/op | +10165% | 70 allocs/op
+| logrus | 21997 ns/op | +11297% | 68 allocs/op
 
 Log a static string, without any context or `printf`-style templating:
 
-| Package             |    Time    | Time % to zap | Objects Allocated |
-| :------------------ | :--------: | :-----------: | :---------------: |
-| standard library    |   10 ns/op |     -76%      |    1 allocs/op    |
-| zerolog             |   31 ns/op |     -26%      |    0 allocs/op    |
-| :zap: zap           |   42 ns/op |      +0%      |    0 allocs/op    |
-| :zap: zap (sugared) |   67 ns/op |     +60%      |    1 allocs/op    |
-| go-kit              |  354 ns/op |     +743%     |    9 allocs/op    |
-| apex/log            | 1982 ns/op |    +4619%     |    6 allocs/op    |
-| logrus              | 3451 ns/op |    +8117%     |   23 allocs/op    |
-| log15               | 4744 ns/op |   +11195%     |   20 allocs/op    |
-
-These benchmarks were ran on an AWS EC2 `m5.8xlarge` instance in November 2022.
+| Package | Time | Time % to zap | Objects Allocated |
+| :------ | :--: | :-----------: | :---------------: |
+| :zap: zap | 165 ns/op | +0% | 0 allocs/op
+| :zap: zap (sugared) | 212 ns/op | +28% | 1 allocs/op
+| zerolog | 95 ns/op | -42% | 0 allocs/op
+| slog | 296 ns/op | +79% | 0 allocs/op
+| go-kit | 415 ns/op | +152% | 9 allocs/op
+| standard library | 422 ns/op | +156% | 2 allocs/op
+| apex/log | 1601 ns/op | +870% | 5 allocs/op
+| logrus | 3017 ns/op | +1728% | 23 allocs/op
+| log15 | 3469 ns/op | +2002% | 20 allocs/op
 
 ## Development Status: Stable
 
@@ -133,3 +134,4 @@ pinned in the [benchmarks/go.mod][] file. [↩](#anchor-versions)
 [cov]: https://codecov.io/gh/uber-go/zap
 [benchmarking suite]: https://github.com/uber-go/zap/tree/master/benchmarks
 [benchmarks/go.mod]: https://github.com/uber-go/zap/blob/master/benchmarks/go.mod
+
