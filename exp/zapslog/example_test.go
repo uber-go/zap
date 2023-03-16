@@ -45,7 +45,7 @@ func Example_slog() {
 	ctx := context.Background()
 
 	sl.Info("user", "name", "Al", "secret", Password("secret"))
-	sl.Error("oops", net.ErrClosed, "status", 500)
+	sl.Error("oops", "err", net.ErrClosed, "status", 500)
 	sl.LogAttrs(ctx, slog.LevelError, "oops",
 		slog.Any("err", net.ErrClosed), slog.Int("status", 500))
 	sl.Info("message",

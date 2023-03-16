@@ -22,6 +22,7 @@ package zapslog
 
 import (
 	"context"
+	"runtime"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -30,8 +31,9 @@ import (
 
 // Handler implements the slog.Handler by writing to a zap Core.
 type Handler struct {
-	core zapcore.Core
-	name string // logger name
+	core      zapcore.Core
+	name      string // logger name
+	addSource bool
 }
 
 // HandlerOptions are options for a Zap-based [slog.Handler].
@@ -40,14 +42,21 @@ type HandlerOptions struct {
 	//
 	// Defaults to empty.
 	LoggerName string
+
+	// AddSource configures the handler to annotate each message with the filename,
+	// line number, and function name.
+	// AddSource is false by default to skip the cost of computing
+	// this information.
+	AddSource bool
 }
 
 // New builds a [Handler] that writes to the supplied [zapcore.Core].
 // This handler may be supplied to [slog.New] to create a new [slog.Logger].
 func (opts HandlerOptions) New(core zapcore.Core) *Handler {
 	return &Handler{
-		core: core,
-		name: opts.LoggerName,
+		core:      core,
+		name:      opts.LoggerName,
+		addSource: opts.AddSource,
 	}
 }
 
@@ -128,12 +137,22 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 		Message:    record.Message,
 		LoggerName: h.name,
 		// FIXME: do we need to set the following fields?
-		// Caller:
 		// Stack:
 	}
 	ce := h.core.Check(ent, nil)
 	if ce == nil {
 		return nil
+	}
+
+	if h.addSource {
+		frame, _ := runtime.CallersFrames([]uintptr{record.PC}).Next()
+		ce.Entry.Caller = zapcore.EntryCaller{
+			Defined:  true,
+			PC:       frame.PC,
+			File:     frame.File,
+			Line:     frame.Line,
+			Function: frame.Function,
+		}
 	}
 
 	fields := make([]zapcore.Field, 0, record.NumAttrs())
