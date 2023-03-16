@@ -115,10 +115,12 @@ func convertSlogLevel(l slog.Level) zapcore.Level {
 	}
 }
 
+// Enabled reports whether the handler handles records at the given level.
 func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
 	return h.core.Enabled(convertSlogLevel(level))
 }
 
+// Handle handles the Record.
 func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	ent := zapcore.Entry{
 		Level:      convertSlogLevel(record.Level),
@@ -142,6 +144,8 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	return nil
 }
 
+// WithAttrs returns a new Handler whose attributes consist of
+// both the receiver's attributes and the arguments.
 func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	fields := make([]zapcore.Field, len(attrs))
 	for i, attr := range attrs {
@@ -150,13 +154,15 @@ func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return h.withFields(fields...)
 }
 
+// WithGroup returns a new Handler with the given group appended to
+// the receiver's existing groups.
 func (h *Handler) WithGroup(group string) slog.Handler {
 	return h.withFields(zap.Namespace(group))
 }
 
 // withFields returns a cloned Handler with the given fields.
 func (h *Handler) withFields(fields ...zapcore.Field) *Handler {
-	return &Handler{
-		core: h.core.With(fields),
-	}
+	cloned := *h
+	cloned.core = h.core.With(fields)
+	return &cloned
 }
