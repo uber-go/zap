@@ -31,6 +31,31 @@ import (
 // Handler implements the slog.Handler by writing to a zap Core.
 type Handler struct {
 	core zapcore.Core
+	name string // logger name
+}
+
+// HandlerOptions are options for a Zap-based [slog.Handler].
+type HandlerOptions struct {
+	// LoggerName is used for log entries received from slog.
+	//
+	// Defaults to empty.
+	LoggerName string
+}
+
+// New builds a [Handler] that writes to the supplied [zapcore.Core].
+// This handler may be supplied to [slog.New] to create a new [slog.Logger].
+func (opts HandlerOptions) New(core zapcore.Core) *Handler {
+	return &Handler{
+		core: core,
+		name: opts.LoggerName,
+	}
+}
+
+// NewHandler builds a [Handler] that writes to the supplied [zapcore.Core]
+// with the default options.
+func NewHandler(core zapcore.Core) *Handler {
+	var opts HandlerOptions
+	return opts.New(core)
 }
 
 var _ slog.Handler = (*Handler)(nil)
@@ -96,11 +121,11 @@ func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
 
 func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	ent := zapcore.Entry{
-		Level:   convertSlogLevel(record.Level),
-		Time:    record.Time,
-		Message: record.Message,
+		Level:      convertSlogLevel(record.Level),
+		Time:       record.Time,
+		Message:    record.Message,
+		LoggerName: h.name,
 		// FIXME: do we need to set the following fields?
-		// LoggerName:
 		// Caller:
 		// Stack:
 	}
@@ -123,7 +148,6 @@ func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		fields[i] = convertAttrToField(attr)
 	}
 	return h.withFields(fields...)
-
 }
 
 func (h *Handler) WithGroup(group string) slog.Handler {
@@ -134,12 +158,5 @@ func (h *Handler) WithGroup(group string) slog.Handler {
 func (h *Handler) withFields(fields ...zapcore.Field) *Handler {
 	return &Handler{
 		core: h.core.With(fields),
-	}
-}
-
-// NewHandler returns a *Handler which writes to the supplied zap Core.
-func NewHandler(core zapcore.Core) *Handler {
-	return &Handler{
-		core: core,
 	}
 }
