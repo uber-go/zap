@@ -358,3 +358,23 @@ func ExampleWrapCore_wrap() {
 	// {"level":"info","msg":"doubled"}
 	// {"level":"info","msg":"doubled"}
 }
+
+func ExampleDebugField() {
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	logger.Info(".Info call filters out the debug field",
+		zap.Int("IntKey", 1),
+		zap.DebugField(zap.String("Key", "value")),
+		zap.Duration("DurationKey", time.Second),
+	)
+	logger.Debug(".Debug call does NOT filter out the debug field",
+		zap.Int("IntKey", 1),
+		zap.DebugField(zap.String("Key", "value")),
+		zap.Duration("DurationKey", time.Second),
+	)
+
+	// Output:
+	// {"level":"info","msg":".Info call filters out the debug field","IntKey":1,"DurationKey":"1s"}
+	// {"level":"debug","msg":".Debug call does NOT filter out the debug field","IntKey":1,"Key":"value","DurationKey":"1s"}
+}
