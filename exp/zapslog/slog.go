@@ -100,7 +100,7 @@ func convertAttrToField(attr slog.Attr) zapcore.Field {
 	case slog.KindLogValuer:
 		return convertAttrToField(slog.Attr{
 			Key: attr.Key,
-			// FIXME(knight42): resolve the value in a lazy way
+			// TODO: resolve the value in a lazy way
 			Value: attr.Value.Resolve(),
 		})
 	default:
@@ -136,7 +136,7 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 		Time:       record.Time,
 		Message:    record.Message,
 		LoggerName: h.name,
-		// FIXME: do we need to set the following fields?
+		// TODO: do we need to set the following fields?
 		// Stack:
 	}
 	ce := h.core.Check(ent, nil)
@@ -146,7 +146,7 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 
 	if h.addSource {
 		frame, _ := runtime.CallersFrames([]uintptr{record.PC}).Next()
-		ce.Entry.Caller = zapcore.EntryCaller{
+		ce.Caller = zapcore.EntryCaller{
 			Defined:  true,
 			PC:       frame.PC,
 			File:     frame.File,
