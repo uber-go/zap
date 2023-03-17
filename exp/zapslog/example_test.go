@@ -26,9 +26,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"golang.org/x/exp/slog"
-
 	"go.uber.org/zap/exp/zapslog"
+	"golang.org/x/exp/slog"
 )
 
 type Password string
@@ -46,17 +45,27 @@ func Example_slog() {
 
 	sl.Info("user", "name", "Al", "secret", Password("secret"))
 	sl.Error("oops", "err", net.ErrClosed, "status", 500)
-	sl.LogAttrs(ctx, slog.LevelError, "oops",
-		slog.Any("err", net.ErrClosed), slog.Int("status", 500))
+	sl.LogAttrs(
+		ctx,
+		slog.LevelError,
+		"oops",
+		slog.Any("err", net.ErrClosed),
+		slog.Int("status", 500),
+	)
 	sl.Info("message",
 		slog.Group("group",
 			slog.Float64("pi", 3.14),
 			slog.Duration("1min", time.Minute),
 		),
 	)
-	sl.WithGroup("s").LogAttrs(ctx, slog.LevelWarn, "warn", slog.Uint64("u", 1), slog.Any("m", map[string]any{
-		"foo": "bar",
-	}))
+	sl.WithGroup("s").LogAttrs(
+		ctx,
+		slog.LevelWarn,
+		"warn msg", // message
+		slog.Uint64("u", 1),
+		slog.Any("m", map[string]any{
+			"foo": "bar",
+		}))
 	sl.LogAttrs(ctx, slog.LevelDebug, "not show up")
 
 	// Output:
@@ -64,5 +73,5 @@ func Example_slog() {
 	// {"level":"error","msg":"oops","err":"use of closed network connection","status":500}
 	// {"level":"error","msg":"oops","err":"use of closed network connection","status":500}
 	// {"level":"info","msg":"message","group":{"pi":3.14,"1min":"1m0s"}}
-	// {"level":"warn","msg":"warn","s":{"u":1,"m":{"foo":"bar"}}}
+	// {"level":"warn","msg":"warn msg","s":{"u":1,"m":{"foo":"bar"}}}
 }
