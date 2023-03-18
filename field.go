@@ -36,13 +36,13 @@ var (
 	_minTimeInt64 = time.Unix(0, math.MinInt64)
 	_maxTimeInt64 = time.Unix(0, math.MaxInt64)
 
-	DebugLevelField = zapcore.DebugLevel
+	debugLevelField = zapcore.DebugLevel
 )
 
 // DebugField wraps a field so that DebugLevel log displays it.
 // See https://github.com/uber-go/zap/issues/1078 for motivation.
 func DebugField(f Field) Field {
-	f.Level = &DebugLevelField
+	f.Level = &debugLevelField
 	return f
 }
 
