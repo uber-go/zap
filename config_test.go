@@ -23,11 +23,11 @@ package zap
 import (
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -144,14 +144,15 @@ func TestConfigWithMissingAttributes(t *testing.T) {
 }
 
 func makeSamplerCountingHook() (h func(zapcore.Entry, zapcore.SamplingDecision),
-	dropped, sampled *atomic.Int64) {
+	dropped, sampled *atomic.Int64,
+) {
 	dropped = new(atomic.Int64)
 	sampled = new(atomic.Int64)
 	h = func(_ zapcore.Entry, dec zapcore.SamplingDecision) {
 		if dec&zapcore.LogDropped > 0 {
-			dropped.Inc()
+			dropped.Add(1)
 		} else if dec&zapcore.LogSampled > 0 {
-			sampled.Inc()
+			sampled.Add(1)
 		}
 	}
 	return h, dropped, sampled

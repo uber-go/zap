@@ -23,6 +23,7 @@ package zap
 import (
 	"errors"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"go.uber.org/zap/internal/exit"
@@ -32,13 +33,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 )
 
 func makeCountingHook() (func(zapcore.Entry) error, *atomic.Int64) {
 	count := &atomic.Int64{}
 	h := func(zapcore.Entry) error {
-		count.Inc()
+		count.Add(1)
 		return nil
 	}
 	return h, count

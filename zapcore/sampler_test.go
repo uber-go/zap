@@ -24,10 +24,10 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
-	"go.uber.org/atomic"
 	"go.uber.org/zap/internal/ztest"
 	. "go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -158,7 +158,7 @@ func (c *countingCore) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 }
 
 func (c *countingCore) Write(Entry, []Field) error {
-	c.logs.Inc()
+	c.logs.Add(1)
 	return nil
 }
 

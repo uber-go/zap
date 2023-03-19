@@ -6,9 +6,8 @@ require (
 	github.com/benbjohnson/clock v1.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.1
-	go.uber.org/atomic v1.10.0
 	go.uber.org/goleak v1.2.0
-	go.uber.org/multierr v1.9.0
+	go.uber.org/multierr v1.10.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
