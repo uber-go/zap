@@ -23,6 +23,7 @@ package zap
 import (
 	"log"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -34,7 +35,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 )
 
 func TestReplaceGlobals(t *testing.T) {
@@ -90,7 +90,10 @@ func TestGlobalsConcurrentUse(t *testing.T) {
 	}
 
 	ztest.Sleep(100 * time.Millisecond)
-	stop.Toggle()
+	// CAS loop to toggle the current value.
+	for old := stop.Load(); !stop.CompareAndSwap(old, !old); {
+		old = stop.Load()
+	}
 	wg.Wait()
 }
 

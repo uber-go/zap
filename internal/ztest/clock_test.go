@@ -21,11 +21,11 @@
 package ztest
 
 import (
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/atomic"
 )
 
 func TestMockClock_NewTicker(t *testing.T) {
@@ -45,7 +45,7 @@ func TestMockClock_NewTicker(t *testing.T) {
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				n.Inc()
+				n.Add(1)
 			}
 		}
 	}(clock.NewTicker(time.Microsecond))
