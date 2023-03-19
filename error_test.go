@@ -22,11 +22,11 @@ package zap
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"go.uber.org/zap/zapcore"
 
-	richErrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -79,7 +79,7 @@ func TestErrorArrayConstructor(t *testing.T) {
 }
 
 func TestErrorsArraysHandleRichErrors(t *testing.T) {
-	errs := []error{richErrors.New("egad")}
+	errs := []error{fmt.Errorf("egad")}
 
 	enc := zapcore.NewMapObjectEncoder()
 	Errors("k", errs).AddTo(enc)
@@ -94,6 +94,4 @@ func TestErrorsArraysHandleRichErrors(t *testing.T) {
 	errMap, ok := serialized.(map[string]interface{})
 	require.True(t, ok, "Expected serialized error to be a map, got %T.", serialized)
 	assert.Equal(t, "egad", errMap["error"], "Unexpected standard error string.")
-	assert.Contains(t, errMap["errorVerbose"], "egad", "Verbose error string should be a superset of standard error.")
-	assert.Contains(t, errMap["errorVerbose"], "TestErrorsArraysHandleRichErrors", "Verbose error string should contain a stacktrace.")
 }

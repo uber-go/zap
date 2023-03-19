@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	github.com/benbjohnson/clock v1.3.0
-	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.1
 	go.uber.org/goleak v1.2.0
 	go.uber.org/multierr v1.10.0
