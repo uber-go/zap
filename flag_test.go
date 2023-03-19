@@ -49,6 +49,7 @@ func (tc flagTestCase) runImplicitSet(t testing.TB) {
 func (tc flagTestCase) runExplicitSet(t testing.TB) {
 	var lvl zapcore.Level
 	set := flag.NewFlagSet("test", flag.ContinueOnError)
+	set.SetOutput(io.Discard)
 	set.Var(&lvl, "level", "minimum enabled logging level")
 	tc.run(t, set, &lvl)
 }
