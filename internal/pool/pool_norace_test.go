@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Uber Technologies, Inc.
+// Copyright (c) 2023 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,36 +18,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package buffer
+//go:build !race
+
+package pool_test
 
 import (
+	"bytes"
+	"runtime/debug"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/internal/pool"
 )
 
-// A Pool is a type-safe wrapper around a sync.Pool.
-type Pool struct {
-	p *pool.Pool[*Buffer]
-}
+func TestNew(t *testing.T) {
+	// n.b. Disable GC to avoid the victim cache during the test.
+	defer debug.SetGCPercent(debug.SetGCPercent(-1))
 
-// NewPool constructs a new Pool.
-func NewPool() Pool {
-	return Pool{
-		p: pool.New(func() *Buffer {
-			return &Buffer{
-				bs: make([]byte, 0, _size),
-			}
-		}),
+	p := pool.New(func() *bytes.Buffer {
+		return bytes.NewBuffer([]byte("new"))
+	})
+	p.Put(bytes.NewBuffer([]byte(t.Name())))
+
+	// Ensure that we always get the expected value.
+	for i := 0; i < 1_000; i++ {
+		func() {
+			buf := p.Get()
+			defer p.Put(buf)
+			require.Equal(t, t.Name(), buf.String())
+		}()
 	}
-}
 
-// Get retrieves a Buffer from the pool, creating one if necessary.
-func (p Pool) Get() *Buffer {
-	buf := p.p.Get()
-	buf.Reset()
-	buf.pool = p
-	return buf
-}
-
-func (p Pool) put(buf *Buffer) {
-	p.p.Put(buf)
+	// Depool an extra object to ensure that the constructor is called and
+	// produces an expected value.
+	require.Equal(t, t.Name(), p.Get().String())
+	require.Equal(t, "new", p.Get().String())
 }

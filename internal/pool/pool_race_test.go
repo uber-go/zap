@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Uber Technologies, Inc.
+// Copyright (c) 2023 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,36 +18,52 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package buffer
+//go:build race
+
+package pool_test
 
 import (
+	"sync"
+	"testing"
+
 	"go.uber.org/zap/internal/pool"
 )
 
-// A Pool is a type-safe wrapper around a sync.Pool.
-type Pool struct {
-	p *pool.Pool[*Buffer]
+type pooledValue struct {
+	n int64
 }
 
-// NewPool constructs a new Pool.
-func NewPool() Pool {
-	return Pool{
-		p: pool.New(func() *Buffer {
-			return &Buffer{
-				bs: make([]byte, 0, _size),
+func TestNew(t *testing.T) {
+	// n.b. [sync.Pool] will randomly drop re-pooled objects when race is
+	//      enabled, so rather than testing nondeterminsitic behavior, we use
+	//      this test solely to prove that there are no races. See pool_test.go
+	//      for correctness testing.
+
+	var (
+		p = pool.New(func() *pooledValue {
+			return &pooledValue{
+				n: -1,
 			}
-		}),
+		})
+		wg sync.WaitGroup
+	)
+
+	defer wg.Wait()
+
+	for i := int64(0); i < 1_000; i++ {
+		i := i
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			x := p.Get()
+			defer p.Put(x)
+
+			// n.b. Must read and write the field.
+			if n := x.n; n >= -1 {
+				x.n = int64(i)
+			}
+		}()
 	}
-}
-
-// Get retrieves a Buffer from the pool, creating one if necessary.
-func (p Pool) Get() *Buffer {
-	buf := p.p.Get()
-	buf.Reset()
-	buf.pool = p
-	return buf
-}
-
-func (p Pool) put(buf *Buffer) {
-	p.p.Put(buf)
 }
