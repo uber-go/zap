@@ -26,7 +26,6 @@ import (
 	"io"
 	"testing"
 
-	richErrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
 	"go.uber.org/multierr"
@@ -113,34 +112,28 @@ func TestErrorEncoding(t *testing.T) {
 		},
 		{
 			k:     "k",
-			iface: richErrors.WithMessage(errors.New("egad"), "failed"),
+			iface: fmt.Errorf("failed: %w", errors.New("egad")),
 			want: map[string]interface{}{
-				"k":        "failed: egad",
-				"kVerbose": "egad\nfailed",
+				"k": "failed: egad",
 			},
 		},
 		{
 			k: "error",
 			iface: multierr.Combine(
-				richErrors.WithMessage(
+				fmt.Errorf("hello: %w",
 					multierr.Combine(errors.New("foo"), errors.New("bar")),
-					"hello",
 				),
 				errors.New("baz"),
-				richErrors.WithMessage(errors.New("qux"), "world"),
+				fmt.Errorf("world: %w", errors.New("qux")),
 			),
 			want: map[string]interface{}{
 				"error": "hello: foo; bar; baz; world: qux",
 				"errorCauses": []interface{}{
 					map[string]interface{}{
 						"error": "hello: foo; bar",
-						"errorVerbose": "the following errors occurred:\n" +
-							" -  foo\n" +
-							" -  bar\n" +
-							"hello",
 					},
 					map[string]interface{}{"error": "baz"},
-					map[string]interface{}{"error": "world: qux", "errorVerbose": "qux\nworld"},
+					map[string]interface{}{"error": "world: qux"},
 				},
 			},
 		},
@@ -161,17 +154,10 @@ func TestErrorEncoding(t *testing.T) {
 func TestRichErrorSupport(t *testing.T) {
 	f := Field{
 		Type:      ErrorType,
-		Interface: richErrors.WithMessage(richErrors.New("egad"), "failed"),
+		Interface: fmt.Errorf("failed: %w", errors.New("egad")),
 		Key:       "k",
 	}
 	enc := NewMapObjectEncoder()
 	f.AddTo(enc)
 	assert.Equal(t, "failed: egad", enc.Fields["k"], "Unexpected basic error message.")
-
-	serialized := enc.Fields["kVerbose"]
-	// Don't assert the exact format used by a third-party package, but ensure
-	// that some critical elements are present.
-	assert.Regexp(t, `egad`, serialized, "Expected original error message to be present.")
-	assert.Regexp(t, `failed`, serialized, "Expected error annotation to be present.")
-	assert.Regexp(t, `TestRichErrorSupport`, serialized, "Expected calling function to be present in stacktrace.")
 }
