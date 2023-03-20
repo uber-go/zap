@@ -25,40 +25,34 @@ import (
 	"sync"
 )
 
-// A Constructor is a function that creates a T when a [Pool] is empty.
-type Constructor[T any] func() T
-
 // A Pool is a generic wrapper around [sync.Pool] to provide strongly-typed
 // object pooling.
+//
+// Note that SA6002 (ref: https://staticcheck.io/docs/checks/#SA6002) will
+// not be detected, so all internal pool use must take care to only store
+// pointer types.
 type Pool[T any] struct {
 	pool sync.Pool
-	ctor Constructor[T]
 }
 
-// New returns a new [Pool] for T, and will use ctor to construct new Ts when
+// New returns a new [Pool] for T, and will use fn to construct new Ts when
 // the pool is empty.
-func New[T any](ctor Constructor[T]) *Pool[T] {
+func New[T any](fn func() T) *Pool[T] {
 	return &Pool[T]{
 		pool: sync.Pool{
 			New: func() any {
-				return ctor()
+				return fn()
 			},
 		},
-		ctor: ctor,
 	}
 }
 
-// Get gets a new T from the pool, or creates a new one if the pool is empty.
+// Get gets a T from the pool, or creates a new one if the pool is empty.
 func (p *Pool[T]) Get() T {
-	if x, ok := p.pool.Get().(T); ok {
-		return x
-	}
-
-	// n.b. This branch is effectively unreachable.
-	return p.ctor()
+	return p.pool.Get().(T)
 }
 
-// Put puts x into the pool.
+// Put returns x into the pool.
 func (p *Pool[T]) Put(x T) {
 	p.pool.Put(x)
 }
