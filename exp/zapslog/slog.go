@@ -144,14 +144,16 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 		return nil
 	}
 
-	if h.addSource {
+	if h.addSource && record.PC != 0 {
 		frame, _ := runtime.CallersFrames([]uintptr{record.PC}).Next()
-		ce.Caller = zapcore.EntryCaller{
-			Defined:  true,
-			PC:       frame.PC,
-			File:     frame.File,
-			Line:     frame.Line,
-			Function: frame.Function,
+		if frame.PC != 0 {
+			ce.Caller = zapcore.EntryCaller{
+				Defined:  true,
+				PC:       frame.PC,
+				File:     frame.File,
+				Line:     frame.Line,
+				Function: frame.Function,
+			}
 		}
 	}
 
