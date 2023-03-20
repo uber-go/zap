@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.1
-	go.uber.org/zap v1.24.0
+	go.uber.org/zap v1.24.1-0.20230320162319-cb7832fc5727
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 )
 

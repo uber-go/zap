@@ -25,9 +25,45 @@ import (
 	"runtime"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/internal/pool"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/exp/slog"
 )
+
+type fieldSlice []zapcore.Field
+
+func (s *fieldSlice) Append(f zapcore.Field) {
+	*s = append(*s, f)
+}
+
+func (s *fieldSlice) AddTo(enc zapcore.ObjectEncoder) {
+	for i := 0; i < s.Len(); i++ {
+		(*s)[i].AddTo(enc)
+	}
+}
+
+func (s *fieldSlice) Extend(f *fieldSlice) {
+	*s = append(*s, *f...)
+}
+
+func (s *fieldSlice) Len() int {
+	return len(*s)
+}
+
+func (s *fieldSlice) Reset() {
+	*s = (*s)[:0]
+}
+
+func (s *fieldSlice) Return() {
+	s.Reset()
+	_fieldSlices.Put(s)
+}
+
+var _fieldSlices = pool.New(func() *fieldSlice {
+	// n.b. The majority of cases will only have one field.
+	x := make(fieldSlice, 0, 1)
+	return &x
+})
 
 // Handler implements the slog.Handler by writing to a zap Core.
 type Handler struct {
@@ -74,43 +110,62 @@ type groupObject []slog.Attr
 
 func (gs groupObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	for _, attr := range gs {
-		convertAttrToField(attr).AddTo(enc)
+		converted := convertAttrToFields(attr)
+		converted.AddTo(enc)
+		converted.Return()
 	}
 	return nil
 }
 
-func convertAttrToField(attr slog.Attr) zapcore.Field {
+func convertAttrToFields(attr slog.Attr) *fieldSlice {
+	fields := _fieldSlices.Get()
+
 	switch attr.Value.Kind() {
 	case slog.KindBool:
-		return zap.Bool(attr.Key, attr.Value.Bool())
+		fields.Append(zap.Bool(attr.Key, attr.Value.Bool()))
 	case slog.KindDuration:
-		return zap.Duration(attr.Key, attr.Value.Duration())
+		fields.Append(zap.Duration(attr.Key, attr.Value.Duration()))
 	case slog.KindFloat64:
-		return zap.Float64(attr.Key, attr.Value.Float64())
+		fields.Append(zap.Float64(attr.Key, attr.Value.Float64()))
 	case slog.KindInt64:
-		return zap.Int64(attr.Key, attr.Value.Int64())
+		fields.Append(zap.Int64(attr.Key, attr.Value.Int64()))
 	case slog.KindString:
-		return zap.String(attr.Key, attr.Value.String())
+		fields.Append(zap.String(attr.Key, attr.Value.String()))
 	case slog.KindTime:
-		return zap.Time(attr.Key, attr.Value.Time())
+		fields.Append(zap.Time(attr.Key, attr.Value.Time()))
 	case slog.KindUint64:
-		return zap.Uint64(attr.Key, attr.Value.Uint64())
+		fields.Append(zap.Uint64(attr.Key, attr.Value.Uint64()))
 	case slog.KindGroup:
-		return zap.Object(attr.Key, groupObject(attr.Value.Group()))
+		if len(attr.Key) > 0 {
+			fields.Append(zap.Object(attr.Key, groupObject(attr.Value.Group())))
+		} else {
+			for _, gattr := range attr.Value.Group() {
+				converted := convertAttrToFields(gattr)
+				fields.Extend(converted)
+				converted.Return()
+			}
+		}
 	case slog.KindLogValuer:
-		return convertAttrToField(slog.Attr{
+		// We're not using the fieldSlice depooled in this scope, so return it
+		// to the pool.
+		fields.Return()
+
+		return convertAttrToFields(slog.Attr{
 			Key: attr.Key,
 			// TODO: resolve the value in a lazy way
 			Value: attr.Value.Resolve(),
 		})
 	default:
-		return zap.Any(attr.Key, attr.Value.Any())
+		fields.Append(zap.Any(attr.Key, attr.Value.Any()))
 	}
+
+	return fields
 }
 
 // convertSlogLevel maps slog Levels to zap Levels.
-// Note that there is some room between slog levels while zap levels are continuous, so we can't 1:1 map them.
-// See also https://go.googlesource.com/proposal/+/master/design/56345-structured-logging.md?pli=1#levels
+// Note that there is some room between slog levels while zap levels are
+// continuous, so we can't 1:1 map them. See also:
+// https://go.googlesource.com/proposal/+/master/design/56345-structured-logging.md#levels
 func convertSlogLevel(l slog.Level) zapcore.Level {
 	switch {
 	case l >= slog.LevelError:
@@ -139,6 +194,7 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 		// TODO: do we need to set the following fields?
 		// Stack:
 	}
+
 	ce := h.core.Check(ent, nil)
 	if ce == nil {
 		return nil
@@ -157,33 +213,52 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 		}
 	}
 
-	fields := make([]zapcore.Field, 0, record.NumAttrs())
+	fields := _fieldSlices.Get()
+	defer fields.Return()
+
 	record.Attrs(func(attr slog.Attr) {
-		fields = append(fields, convertAttrToField(attr))
+		converted := convertAttrToFields(attr)
+		fields.Extend(converted)
+		converted.Return()
 	})
-	ce.Write(fields...)
+	ce.Write(*fields...)
+
 	return nil
 }
 
 // WithAttrs returns a new Handler whose attributes consist of
 // both the receiver's attributes and the arguments.
 func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	fields := make([]zapcore.Field, len(attrs))
-	for i, attr := range attrs {
-		fields[i] = convertAttrToField(attr)
+	fields := _fieldSlices.Get()
+	defer fields.Return()
+
+	for _, attr := range attrs {
+		converted := convertAttrToFields(attr)
+		fields.Extend(converted)
+		converted.Return()
 	}
-	return h.withFields(fields...)
+
+	return h.withFields(fields)
 }
 
 // WithGroup returns a new Handler with the given group appended to
 // the receiver's existing groups.
 func (h *Handler) WithGroup(group string) slog.Handler {
-	return h.withFields(zap.Namespace(group))
+	// Stack-allocate here: the number of options is known at compile time.
+	tmp := [...]zapcore.Field{
+		zap.Namespace(group),
+	}
+
+	cloned := *h
+	cloned.core = h.core.With(tmp[:])
+	return &cloned
 }
 
 // withFields returns a cloned Handler with the given fields.
-func (h *Handler) withFields(fields ...zapcore.Field) *Handler {
+func (h *Handler) withFields(fields *fieldSlice) *Handler {
+	defer fields.Return()
+
 	cloned := *h
-	cloned.core = h.core.With(fields)
+	cloned.core = h.core.With(*fields)
 	return &cloned
 }
