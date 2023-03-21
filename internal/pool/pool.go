@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Uber Technologies, Inc.
+// Copyright (c) 2023 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,36 +18,41 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package buffer
+// Package pool provides internal pool utilities.
+package pool
 
 import (
-	"go.uber.org/zap/internal/pool"
+	"sync"
 )
 
-// A Pool is a type-safe wrapper around a sync.Pool.
-type Pool struct {
-	p *pool.Pool[*Buffer]
+// A Pool is a generic wrapper around [sync.Pool] to provide strongly-typed
+// object pooling.
+//
+// Note that SA6002 (ref: https://staticcheck.io/docs/checks/#SA6002) will
+// not be detected, so all internal pool use must take care to only store
+// pointer types.
+type Pool[T any] struct {
+	pool sync.Pool
 }
 
-// NewPool constructs a new Pool.
-func NewPool() Pool {
-	return Pool{
-		p: pool.New(func() *Buffer {
-			return &Buffer{
-				bs: make([]byte, 0, _size),
-			}
-		}),
+// New returns a new [Pool] for T, and will use fn to construct new Ts when
+// the pool is empty.
+func New[T any](fn func() T) *Pool[T] {
+	return &Pool[T]{
+		pool: sync.Pool{
+			New: func() any {
+				return fn()
+			},
+		},
 	}
 }
 
-// Get retrieves a Buffer from the pool, creating one if necessary.
-func (p Pool) Get() *Buffer {
-	buf := p.p.Get()
-	buf.Reset()
-	buf.pool = p
-	return buf
+// Get gets a T from the pool, or creates a new one if the pool is empty.
+func (p *Pool[T]) Get() T {
+	return p.pool.Get().(T)
 }
 
-func (p Pool) put(buf *Buffer) {
-	p.p.Put(buf)
+// Put returns x into the pool.
+func (p *Pool[T]) Put(x T) {
+	p.pool.Put(x)
 }
