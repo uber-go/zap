@@ -7,6 +7,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	go.uber.org/goleak v1.2.0
 	go.uber.org/multierr v1.10.0
+	google.golang.org/grpc v1.54.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

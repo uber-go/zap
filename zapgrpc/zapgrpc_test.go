@@ -22,11 +22,15 @@ package zapgrpc
 
 import (
 	"fmt"
+	"runtime"
+	"strings"
 	"testing"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
+	"google.golang.org/grpc/grpclog"
 
 	"github.com/stretchr/testify/require"
 )
@@ -145,13 +149,13 @@ func TestLoggerFatalExpected(t *testing.T) {
 		"foo bar",
 		"s1 s2 1 2 3 s3 4 s5 6",
 	}, func(logger *Logger) {
-		logger.Fatal("hello")
-		logger.Fatal("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
-		logger.Fatalf("%s world", "hello")
-		logger.Fatalln()
-		logger.Fatalln("foo")
-		logger.Fatalln("foo", "bar")
-		logger.Fatalln("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
+		require.Panics(t, func() { logger.Fatal("hello") })
+		require.Panics(t, func() { logger.Fatal("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6) })
+		require.Panics(t, func() { logger.Fatalf("%s world", "hello") })
+		require.Panics(t, func() { logger.Fatalln() })
+		require.Panics(t, func() { logger.Fatalln("foo") })
+		require.Panics(t, func() { logger.Fatalln("foo", "bar") })
+		require.Panics(t, func() { logger.Fatalln("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6) })
 	})
 }
 
@@ -215,6 +219,67 @@ func TestLoggerV(t *testing.T) {
 	}
 }
 
+func TestDepthLogger(t *testing.T) {
+	defer grpclog.SetLoggerV2(NewLogger(zap.NewNop()))
+
+	comp := grpclog.Component("test")
+
+	args := []interface{}{"message", "param"}
+	cases := []struct {
+		name  string
+		fn    func(...interface{})
+		level zapcore.Level
+	}{
+		{name: "Info", fn: grpclog.Info, level: zap.InfoLevel},
+		{name: "Infoln", fn: grpclog.Infoln, level: zap.InfoLevel},
+		{name: "comp.Info", fn: comp.Info, level: zap.InfoLevel},
+		{name: "Warning", fn: grpclog.Warning, level: zap.WarnLevel},
+		{name: "Warningln", fn: grpclog.Warningln, level: zap.WarnLevel},
+		{name: "comp.Warning", fn: comp.Warning, level: zap.WarnLevel},
+		{name: "Error", fn: grpclog.Error, level: zap.ErrorLevel},
+		{name: "Errorln", fn: grpclog.Errorln, level: zap.ErrorLevel},
+		{name: "comp.Error", fn: comp.Error, level: zap.ErrorLevel},
+		{name: "Fatal", fn: grpclog.Fatal, level: zap.FatalLevel},
+		{name: "Fatalln", fn: grpclog.Fatalln, level: zap.FatalLevel},
+		{name: "comp.Fatal", fn: comp.Fatal, level: zap.FatalLevel},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			called := false
+			logger := zaptest.NewLogger(t, zaptest.WrapOptions(
+				zap.AddCaller(),
+				zap.WithFatalHook(zapcore.WriteThenPanic),
+				zap.Hooks(func(entry zapcore.Entry) error {
+					called = true
+					require.Equal(t, c.level, entry.Level)
+					prefix := ""
+					if strings.HasPrefix(c.name, "comp") {
+						prefix = "[test]"
+					}
+					if strings.HasSuffix(c.name, "ln") {
+						require.Equal(t, prefix+sprintln(args), entry.Message)
+					} else {
+						require.Equal(t, prefix+fmt.Sprint(args...), entry.Message)
+					}
+					_, file, _, _ := runtime.Caller(0)
+					require.Equal(t, file, entry.Caller.File, entry.Caller)
+					return nil
+				}),
+			))
+			grpclog.SetLoggerV2(NewLogger(logger))
+
+			if c.level != zap.FatalLevel {
+				c.fn(args...)
+			} else {
+				require.Panics(t, func() {
+					c.fn(args...)
+				})
+			}
+			require.True(t, called, "hook not called")
+		})
+	}
+}
+
 func checkLevel(
 	t testing.TB,
 	enab zapcore.LevelEnabler,
@@ -239,9 +304,6 @@ func checkMessages(
 	expectedMessages []string,
 	f func(*Logger),
 ) {
-	if expectedLevel == zapcore.FatalLevel {
-		expectedLevel = zapcore.WarnLevel
-	}
 	withLogger(enab, opts, func(logger *Logger, observedLogs *observer.ObservedLogs) {
 		f(logger)
 		logEntries := observedLogs.All()
@@ -259,5 +321,5 @@ func withLogger(
 	f func(*Logger, *observer.ObservedLogs),
 ) {
 	core, observedLogs := observer.New(enab)
-	f(NewLogger(zap.New(core), append(opts, withWarn())...), observedLogs)
+	f(NewLogger(zap.New(core, zap.WithFatalHook(zapcore.WriteThenPanic)), opts...), observedLogs)
 }

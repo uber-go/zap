@@ -65,45 +65,20 @@ func (f optionFunc) apply(log *Logger) {
 // Deprecated: use grpclog.SetLoggerV2() for v2 API.
 func WithDebug() Option {
 	return optionFunc(func(logger *Logger) {
-		logger.print = &printer{
-			enab:   logger.levelEnabler,
-			level:  zapcore.DebugLevel,
-			print:  logger.delegate.Debug,
-			printf: logger.delegate.Debugf,
-		}
-	})
-}
-
-// withWarn redirects the fatal level to the warn level, which makes testing
-// easier. This is intentionally unexported.
-func withWarn() Option {
-	return optionFunc(func(logger *Logger) {
-		logger.fatal = &printer{
-			enab:   logger.levelEnabler,
-			level:  zapcore.WarnLevel,
-			print:  logger.delegate.Warn,
-			printf: logger.delegate.Warnf,
-		}
+		logger.print.level = zapcore.DebugLevel
 	})
 }
 
 // NewLogger returns a new Logger.
 func NewLogger(l *zap.Logger, options ...Option) *Logger {
 	logger := &Logger{
-		delegate:     l.Sugar(),
+		delegate:     l.Sugar().WithOptions(zap.AddCallerSkip(2)),
 		levelEnabler: l.Core(),
 	}
 	logger.print = &printer{
-		enab:   logger.levelEnabler,
-		level:  zapcore.InfoLevel,
-		print:  logger.delegate.Info,
-		printf: logger.delegate.Infof,
-	}
-	logger.fatal = &printer{
-		enab:   logger.levelEnabler,
-		level:  zapcore.FatalLevel,
-		print:  logger.delegate.Fatal,
-		printf: logger.delegate.Fatalf,
+		enab:     logger.levelEnabler,
+		level:    zapcore.InfoLevel,
+		delegate: l,
 	}
 	for _, option := range options {
 		option.apply(logger)
@@ -116,23 +91,30 @@ func NewLogger(l *zap.Logger, options ...Option) *Logger {
 // We use it to customize Debug vs Info, and Warn vs Fatal for Print and Fatal
 // respectively.
 type printer struct {
-	enab   zapcore.LevelEnabler
-	level  zapcore.Level
-	print  func(...interface{})
-	printf func(string, ...interface{})
+	enab     zapcore.LevelEnabler
+	level    zapcore.Level
+	delegate *zap.Logger
 }
 
 func (v *printer) Print(args ...interface{}) {
-	v.print(args...)
+	if len(args) == 1 {
+		if str, ok := args[0].(string); ok {
+			v.delegate.Log(v.level, str)
+			return
+		}
+	}
+	v.delegate.Log(v.level, fmt.Sprint(args...))
+	return
 }
 
 func (v *printer) Printf(format string, args ...interface{}) {
-	v.printf(format, args...)
+	v.delegate.Log(v.level, fmt.Sprintf(format, args...))
+	return
 }
 
 func (v *printer) Println(args ...interface{}) {
 	if v.enab.Enabled(v.level) {
-		v.print(sprintln(args))
+		v.delegate.Log(v.level, sprintln(args))
 	}
 }
 
@@ -141,7 +123,6 @@ type Logger struct {
 	delegate     *zap.SugaredLogger
 	levelEnabler zapcore.LevelEnabler
 	print        *printer
-	fatal        *printer
 	// printToDebug bool
 	// fatalToWarn  bool
 }
@@ -184,6 +165,11 @@ func (l *Logger) Infof(format string, args ...interface{}) {
 	l.delegate.Infof(format, args...)
 }
 
+// InfoDepth implements DepthLoggerV2
+func (l *Logger) InfoDepth(depth int, args ...interface{}) {
+	l.delegate.WithOptions(zap.AddCallerSkip(depth)).Info(args...)
+}
+
 // Warning implements grpclog.LoggerV2.
 func (l *Logger) Warning(args ...interface{}) {
 	l.delegate.Warn(args...)
@@ -199,6 +185,11 @@ func (l *Logger) Warningln(args ...interface{}) {
 // Warningf implements grpclog.LoggerV2.
 func (l *Logger) Warningf(format string, args ...interface{}) {
 	l.delegate.Warnf(format, args...)
+}
+
+// WarningDepth implements DepthLoggerV2
+func (l *Logger) WarningDepth(depth int, args ...interface{}) {
+	l.delegate.WithOptions(zap.AddCallerSkip(depth)).Warn(args...)
 }
 
 // Error implements grpclog.LoggerV2.
@@ -218,19 +209,32 @@ func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.delegate.Errorf(format, args...)
 }
 
+// ErrorDepth implements Experimental DepthLoggerV2
+func (l *Logger) ErrorDepth(depth int, args ...interface{}) {
+	l.delegate.WithOptions(zap.AddCallerSkip(depth)).Error(args...)
+}
+
 // Fatal implements grpclog.LoggerV2.
 func (l *Logger) Fatal(args ...interface{}) {
-	l.fatal.Print(args...)
+	l.delegate.Fatal(args...)
 }
 
 // Fatalln implements grpclog.LoggerV2.
 func (l *Logger) Fatalln(args ...interface{}) {
-	l.fatal.Println(args...)
+	if !l.levelEnabler.Enabled(zapcore.FatalLevel) {
+		return
+	}
+	l.delegate.Fatal(sprintln(args))
 }
 
 // Fatalf implements grpclog.LoggerV2.
 func (l *Logger) Fatalf(format string, args ...interface{}) {
-	l.fatal.Printf(format, args...)
+	l.delegate.Fatal(fmt.Sprintf(format, args...))
+}
+
+// FatalDepth implements Experimental DepthLoggerV2
+func (l *Logger) FatalDepth(depth int, args ...interface{}) {
+	l.delegate.WithOptions(zap.AddCallerSkip(depth)).Fatal(fmt.Sprint(args...))
 }
 
 // V implements grpclog.LoggerV2.
