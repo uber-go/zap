@@ -42,7 +42,7 @@ func TestLogger(t *testing.T) {
 
 	grpclog.SetLogger(zapgrpc.NewLogger(zlog))
 
-	grpclog.Info("hello from grpc")
+	grpclog.Print("hello from grpc")
 
 	logs := observedLogs.TakeAll()
 	require.Len(t, logs, 1, "Expected one log entry.")
