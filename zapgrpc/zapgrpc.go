@@ -233,6 +233,8 @@ func (l *Logger) FatalDepth(depth int, args ...interface{}) {
 
 // V implements grpclog.LoggerV2.
 func (l *Logger) V(v int) bool {
+	// Check whether the verbosity of the current log ('level') is within the specified threshold ('l.verbosity').
+	// As in https://github.com/grpc/grpc-go/blob/41e044e1c82fcf6a5801d6cbd7ecf952505eecb1/grpclog/loggerv2.go#L199-L201.
 	return v <= l.v
 }
 
