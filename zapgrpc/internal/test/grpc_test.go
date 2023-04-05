@@ -36,6 +36,24 @@ import (
 	"google.golang.org/grpc/grpclog"
 )
 
+func TestLogger(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.InfoLevel)
+	zlog := zap.New(core)
+
+	grpclog.SetLogger(zapgrpc.NewLogger(zlog))
+
+	grpclog.Info("hello from grpc")
+
+	logs := observedLogs.TakeAll()
+	require.Len(t, logs, 1, "Expected one log entry.")
+	entry := logs[0]
+
+	assert.Equal(t, zapcore.InfoLevel, entry.Level,
+		"Log entry level did not match.")
+	assert.Equal(t, "hello from grpc", entry.Message,
+		"Log entry message did not match.")
+}
+
 func TestLoggerV2(t *testing.T) {
 	core, observedLogs := observer.New(zapcore.InfoLevel)
 	zlog := zap.New(core)
@@ -130,7 +148,7 @@ func Test_zapGrpcLogger_V(t *testing.T) {
 		extremelyVerbose = 99
 	)
 
-	grpclog.SetLoggerV2(zapgrpc.NewLogger(zap.NewNop(), zapgrpc.WithVerbosity(3)))
+	grpclog.SetLoggerV2(zapgrpc.NewLogger(zap.NewNop(), zapgrpc.WithVerbosity(2)))
 	assert.True(t, grpclog.V(normal))
 	assert.True(t, grpclog.V(verbose))
 	assert.False(t, grpclog.V(extremelyVerbose))
