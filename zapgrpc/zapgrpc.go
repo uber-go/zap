@@ -23,28 +23,11 @@ package zapgrpc // import "go.uber.org/zap/zapgrpc"
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-)
-
-// See https://github.com/grpc/grpc-go/blob/v1.35.0/grpclog/loggerv2.go#L77-L86
-const (
-	grpcLvlInfo int = iota
-	grpcLvlWarn
-	grpcLvlError
-	grpcLvlFatal
-)
-
-var (
-	// _grpcToZapLevel maps gRPC log levels to zap log levels.
-	// See https://pkg.go.dev/go.uber.org/zap@v1.16.0/zapcore#Level
-	_grpcToZapLevel = map[int]zapcore.Level{
-		grpcLvlInfo:  zapcore.InfoLevel,
-		grpcLvlWarn:  zapcore.WarnLevel,
-		grpcLvlError: zapcore.ErrorLevel,
-		grpcLvlFatal: zapcore.FatalLevel,
-	}
 )
 
 // An Option overrides a Logger's default configuration.
@@ -65,7 +48,19 @@ func (f optionFunc) apply(log *Logger) {
 // Deprecated: use grpclog.SetLoggerV2() for v2 API.
 func WithDebug() Option {
 	return optionFunc(func(logger *Logger) {
-		logger.print.level = zapcore.DebugLevel
+		logger.print = &printer{
+			enab:   logger.levelEnabler,
+			level:  zapcore.DebugLevel,
+			print:  logger.delegate.Debug,
+			printf: logger.delegate.Debugf,
+		}
+	})
+}
+
+// WithVerbosity configures verbosity level.
+func WithVerbosity(v int) Option {
+	return optionFunc(func(logger *Logger) {
+		logger.v = v
 	})
 }
 
@@ -76,9 +71,14 @@ func NewLogger(l *zap.Logger, options ...Option) *Logger {
 		levelEnabler: l.Core(),
 	}
 	logger.print = &printer{
-		enab:     logger.levelEnabler,
-		level:    zapcore.InfoLevel,
-		delegate: l,
+		enab:   logger.levelEnabler,
+		level:  zapcore.InfoLevel,
+		print:  logger.delegate.Info,
+		printf: logger.delegate.Infof,
+	}
+	vLevel := os.Getenv("GRPC_GO_LOG_VERBOSITY_LEVEL")
+	if vl, err := strconv.Atoi(vLevel); err == nil {
+		logger.v = vl
 	}
 	for _, option := range options {
 		option.apply(logger)
@@ -91,30 +91,23 @@ func NewLogger(l *zap.Logger, options ...Option) *Logger {
 // We use it to customize Debug vs Info, and Warn vs Fatal for Print and Fatal
 // respectively.
 type printer struct {
-	enab     zapcore.LevelEnabler
-	level    zapcore.Level
-	delegate *zap.Logger
+	enab   zapcore.LevelEnabler
+	level  zapcore.Level
+	print  func(...interface{})
+	printf func(string, ...interface{})
 }
 
 func (v *printer) Print(args ...interface{}) {
-	if len(args) == 1 {
-		if str, ok := args[0].(string); ok {
-			v.delegate.Log(v.level, str)
-			return
-		}
-	}
-	v.delegate.Log(v.level, fmt.Sprint(args...))
-	return
+	v.print(args...)
 }
 
 func (v *printer) Printf(format string, args ...interface{}) {
-	v.delegate.Log(v.level, fmt.Sprintf(format, args...))
-	return
+	v.printf(format, args...)
 }
 
 func (v *printer) Println(args ...interface{}) {
 	if v.enab.Enabled(v.level) {
-		v.delegate.Log(v.level, sprintln(args))
+		v.print(sprintln(args))
 	}
 }
 
@@ -123,6 +116,7 @@ type Logger struct {
 	delegate     *zap.SugaredLogger
 	levelEnabler zapcore.LevelEnabler
 	print        *printer
+	v            int
 	// printToDebug bool
 	// fatalToWarn  bool
 }
@@ -238,8 +232,8 @@ func (l *Logger) FatalDepth(depth int, args ...interface{}) {
 }
 
 // V implements grpclog.LoggerV2.
-func (l *Logger) V(level int) bool {
-	return l.levelEnabler.Enabled(_grpcToZapLevel[level])
+func (l *Logger) V(v int) bool {
+	return v <= l.v
 }
 
 func sprintln(args []interface{}) string {

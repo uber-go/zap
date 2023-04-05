@@ -26,6 +26,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
@@ -159,64 +160,25 @@ func TestLoggerFatalExpected(t *testing.T) {
 	})
 }
 
-func TestLoggerV(t *testing.T) {
-	tests := []struct {
-		zapLevel     zapcore.Level
-		grpcEnabled  []int
-		grpcDisabled []int
-	}{
-		{
-			zapLevel:     zapcore.DebugLevel,
-			grpcEnabled:  []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError, grpcLvlFatal},
-			grpcDisabled: []int{}, // everything is enabled, nothing is disabled
-		},
-		{
-			zapLevel:     zapcore.InfoLevel,
-			grpcEnabled:  []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError, grpcLvlFatal},
-			grpcDisabled: []int{}, // everything is enabled, nothing is disabled
-		},
-		{
-			zapLevel:     zapcore.WarnLevel,
-			grpcEnabled:  []int{grpcLvlWarn, grpcLvlError, grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo},
-		},
-		{
-			zapLevel:     zapcore.ErrorLevel,
-			grpcEnabled:  []int{grpcLvlError, grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn},
-		},
-		{
-			zapLevel:     zapcore.DPanicLevel,
-			grpcEnabled:  []int{grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError},
-		},
-		{
-			zapLevel:     zapcore.PanicLevel,
-			grpcEnabled:  []int{grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError},
-		},
-		{
-			zapLevel:     zapcore.FatalLevel,
-			grpcEnabled:  []int{grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError},
-		},
-	}
-	for _, tst := range tests {
-		for _, grpcLvl := range tst.grpcEnabled {
-			t.Run(fmt.Sprintf("enabled %s %d", tst.zapLevel, grpcLvl), func(t *testing.T) {
-				checkLevel(t, tst.zapLevel, true, func(logger *Logger) bool {
-					return logger.V(grpcLvl)
-				})
-			})
-		}
-		for _, grpcLvl := range tst.grpcDisabled {
-			t.Run(fmt.Sprintf("disabled %s %d", tst.zapLevel, grpcLvl), func(t *testing.T) {
-				checkLevel(t, tst.zapLevel, false, func(logger *Logger) bool {
-					return logger.V(grpcLvl)
-				})
-			})
-		}
-	}
+func Test_zapGrpcLogger_V(t *testing.T) {
+	const (
+		// The default verbosity level.
+		// See https://github.com/grpc/grpc-go/blob/8ab16ef276a33df4cdb106446eeff40ff56a6928/grpclog/loggerv2.go#L108.
+		normal = 0
+
+		// Currently the only level of "being verbose".
+		// For example https://github.com/grpc/grpc-go/blob/8ab16ef276a33df4cdb106446eeff40ff56a6928/grpclog/grpclog.go#L21.
+		verbose = 2
+
+		// As is mentioned in https://github.com/grpc/grpc-go/blob/8ab16ef276a33df4cdb106446eeff40ff56a6928/README.md#how-to-turn-on-logging,
+		// though currently not being used in the code.
+		extremelyVerbose = 99
+	)
+
+	logger := NewLogger(zap.NewNop(), WithVerbosity(3))
+	assert.True(t, logger.V(normal))
+	assert.True(t, logger.V(verbose))
+	assert.False(t, logger.V(extremelyVerbose))
 }
 
 func TestDepthLogger(t *testing.T) {
@@ -278,22 +240,6 @@ func TestDepthLogger(t *testing.T) {
 			require.True(t, called, "hook not called")
 		})
 	}
-}
-
-func checkLevel(
-	t testing.TB,
-	enab zapcore.LevelEnabler,
-	expectedBool bool,
-	f func(*Logger) bool,
-) {
-	withLogger(enab, nil, func(logger *Logger, observedLogs *observer.ObservedLogs) {
-		actualBool := f(logger)
-		if expectedBool {
-			require.True(t, actualBool)
-		} else {
-			require.False(t, actualBool)
-		}
-	})
 }
 
 func checkMessages(
