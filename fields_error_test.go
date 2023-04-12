@@ -22,6 +22,7 @@ package zap
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,20 +31,35 @@ import (
 
 func TestErrorWithFields(t *testing.T) {
 	rootErr := errors.New("root err")
-	wrapped := WrapError(rootErr,
+	wrap1 := fmt.Errorf("wrap1: %w", rootErr)
+	wrap2 := WrapError(wrap1,
 		String("user", "foo"),
 		Int("count", 12),
 	)
 
-	assert.True(t, errors.Is(wrapped, rootErr), "errors.Is")
+	assert.True(t, errors.Is(wrap2, rootErr), "errors.Is")
+	assert.True(t, errors.Is(wrap2, wrap1), "errors.Is")
 
 	enc := zapcore.NewMapObjectEncoder()
-	Error(wrapped).AddTo(enc)
+	Error(wrap2).AddTo(enc)
 	assert.Equal(t, map[string]any{
-		"error": rootErr.Error(),
+		"error": "wrap1: root err",
 		"errorFields": map[string]any{
 			"user":  "foo",
 			"count": int64(12),
+		},
+	}, enc.Fields)
+
+	wrap3 := fmt.Errorf("wrap3: %w", wrap2)
+	wrap4 := WrapError(wrap3, Bool("wrap4", true))
+
+	Error(wrap4).AddTo(enc)
+	assert.Equal(t, map[string]any{
+		"error": "wrap3: wrap1: root err",
+		"errorFields": map[string]any{
+			"user":  "foo",
+			"count": int64(12),
+			"wrap4": true,
 		},
 	}, enc.Fields)
 }

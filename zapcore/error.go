@@ -21,9 +21,11 @@
 package zapcore
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap/internal/pool"
 )
 
@@ -76,13 +78,38 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 		}
 	}
 
-	if errObj, ok := err.(ObjectMarshaler); ok {
-		if err := enc.AddObject(key+"Fields", errObj); err != nil {
+	// Unwrap the error and marshal any ObjectMarshalers in the error chain.
+
+	marshalers := make(mergedMarshalers, 0, 1)
+	for e := err; e != nil; e = errors.Unwrap(e) {
+		errObj, ok := e.(ObjectMarshaler)
+		if ok {
+			marshalers = append(marshalers, errObj)
+		}
+	}
+
+	switch {
+	case len(marshalers) == 1:
+		if err := enc.AddObject(key+"Fields", marshalers[0]); err != nil {
+			return err
+		}
+	case len(marshalers) > 1:
+		if err := enc.AddObject(key+"Fields", marshalers); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+type mergedMarshalers []ObjectMarshaler
+
+func (ms mergedMarshalers) MarshalLogObject(enc ObjectEncoder) error {
+	var errs error
+	for _, m := range ms {
+		errs = multierr.Append(errs, m.MarshalLogObject(enc))
+	}
+	return errs
 }
 
 type errorGroup interface {
