@@ -75,6 +75,13 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 			enc.AddString(key+"Verbose", verbose)
 		}
 	}
+
+	if errObj, ok := err.(ObjectMarshaler); ok {
+		if err := enc.AddObject(key+"Fields", errObj); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

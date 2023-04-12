@@ -46,6 +46,11 @@ func (e errTooManyUsers) Format(s fmt.State, verb rune) {
 	}
 }
 
+func (e errTooManyUsers) MarshalLogObject(oe ObjectEncoder) error {
+	oe.AddInt("numUsers", int(e))
+	return nil
+}
+
 type customMultierr struct{}
 
 func (e customMultierr) Error() string {
@@ -75,6 +80,9 @@ func TestErrorEncoding(t *testing.T) {
 			iface: errTooManyUsers(2),
 			want: map[string]interface{}{
 				"k": "2 too many users",
+				"kFields": map[string]interface{}{
+					"numUsers": 2,
+				},
 			},
 		},
 		{
