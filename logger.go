@@ -281,6 +281,12 @@ func (log *Logger) Core() zapcore.Core {
 	return log.core
 }
 
+// Name returns the Logger's underlying name.
+// Return empty string for unnamed Logger.
+func (log *Logger) Name() string {
+	return log.name
+}
+
 func (log *Logger) clone() *Logger {
 	copy := *log
 	return &copy
