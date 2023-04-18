@@ -92,17 +92,7 @@ func (c *ioCore) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 }
 
 func (c *ioCore) Write(ent Entry, fields []Field) error {
-	// https://github.com/golang/go/wiki/SliceTricks#filtering-without-allocating
-	filteredFields := fields[:0]
-	for _, field := range fields {
-		// include the field if the level is unset or
-		// the field level is higher than the entry's level.
-		if field.Level == nil || *field.Level >= ent.Level {
-			filteredFields = append(filteredFields, field)
-		}
-	}
-
-	buf, err := c.enc.EncodeEntry(ent, filteredFields)
+	buf, err := c.enc.EncodeEntry(ent, fields)
 	if err != nil {
 		return err
 	}
