@@ -38,7 +38,6 @@ func TestWrapError(t *testing.T) {
 			Int("count", 12),
 		)
 	)
-
 	assert.True(t, errors.Is(wrap2, rootErr), "errors.Is")
 	assert.True(t, errors.Is(wrap2, wrap1), "errors.Is")
 
@@ -56,7 +55,6 @@ func TestWrapError(t *testing.T) {
 		wrap3 = fmt.Errorf("wrap3: %w", wrap2)
 		wrap4 = WrapError(wrap3, Bool("wrap4", true))
 	)
-
 	Error(wrap4).AddTo(enc)
 	assert.Equal(t, map[string]any{
 		"error": "wrap3: wrap1: root err",
@@ -64,6 +62,37 @@ func TestWrapError(t *testing.T) {
 			"user":  "foo",
 			"count": int64(12),
 			"wrap4": true,
+		},
+	}, enc.Fields)
+
+	var (
+		wrap5 = fmt.Errorf("wrap5 no wrap: %v", wrap3)
+		wrap6 = WrapError(wrap5, Bool("wrap5", true))
+	)
+	Error(wrap6).AddTo(enc)
+	assert.Equal(t, map[string]any{
+		"error": "wrap5 no wrap: wrap3: wrap1: root err",
+		"errorFields": map[string]any{
+			"wrap5": true,
+		},
+	}, enc.Fields)
+}
+
+func TestWrapErrorDuplicateField(t *testing.T) {
+	var (
+		rootErr = errors.New("root err")
+		wrap1   = WrapError(rootErr, String("f1", "a"), String("f2", "b"))
+		wrap2   = WrapError(wrap1, String("f1", "c"))
+	)
+	enc := zapcore.NewMapObjectEncoder()
+	Error(wrap2).AddTo(enc)
+	assert.Equal(t, map[string]any{
+		"error": "root err",
+		"errorFields": map[string]any{
+			// fields are added in Unwrap order, and last added field wins in the map encoder
+			// which is the first field added.
+			"f1": "a",
+			"f2": "b",
 		},
 	}, enc.Fields)
 }
