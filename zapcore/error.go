@@ -35,6 +35,11 @@ import (
 // If the error implements fmt.Formatter, a field with the name ${key}Verbose
 // is also added with the full verbose error message.
 //
+// If the error implements `zapcore.ObjectMarshaler`, a field with the name
+// ${key}Fields is added with the marshaled object. If the error can be unwrapped
+// using `errors.Unwrap`, then unwrapped errors implementing `zapcore.Marshaler`
+// are also marshaled to the same ${key}Fields.
+//
 // Finally, if the error implements errorGroup (from go.uber.org/multierr) or
 // causer (from github.com/pkg/errors), a ${key}Causes field is added with an
 // array of objects containing the errors this error was comprised of.
