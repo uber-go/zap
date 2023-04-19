@@ -68,14 +68,28 @@ func (e customMultierr) Errors() []error {
 	}
 }
 
+type customErrObject struct {
+	name       string
+	underlying error
+}
+
+func (e customErrObject) Unwrap() error { return e.underlying }
+func (e customErrObject) Error() string { return fmt.Sprintf("error %s", e.name) }
+func (e customErrObject) MarshalLogObject(enc ObjectEncoder) error {
+	enc.AddString(e.name, "err")
+	return fmt.Errorf("marshal %v failed", e.name)
+}
+
 func TestErrorEncoding(t *testing.T) {
 	tests := []struct {
+		msg   string
 		k     string
 		t     FieldType // defaults to ErrorType
 		iface interface{}
 		want  map[string]interface{}
 	}{
 		{
+			msg:   "custom key and fields",
 			k:     "k",
 			iface: errTooManyUsers(2),
 			want: map[string]interface{}{
@@ -86,7 +100,8 @@ func TestErrorEncoding(t *testing.T) {
 			},
 		},
 		{
-			k: "err",
+			msg: "multierr",
+			k:   "err",
 			iface: multierr.Combine(
 				errors.New("foo"),
 				errors.New("bar"),
@@ -102,6 +117,7 @@ func TestErrorEncoding(t *testing.T) {
 			},
 		},
 		{
+			msg:   "nested error causes",
 			k:     "e",
 			iface: customMultierr{},
 			want: map[string]interface{}{
@@ -119,6 +135,7 @@ func TestErrorEncoding(t *testing.T) {
 			},
 		},
 		{
+			msg:   "simple error",
 			k:     "k",
 			iface: fmt.Errorf("failed: %w", errors.New("egad")),
 			want: map[string]interface{}{
@@ -126,7 +143,8 @@ func TestErrorEncoding(t *testing.T) {
 			},
 		},
 		{
-			k: "error",
+			msg: "multierr with causes",
+			k:   "error",
 			iface: multierr.Combine(
 				fmt.Errorf("hello: %w",
 					multierr.Combine(errors.New("foo"), errors.New("bar")),
@@ -145,17 +163,51 @@ func TestErrorEncoding(t *testing.T) {
 				},
 			},
 		},
+		{
+			msg: "single error with marshal fields error",
+			k:   "error",
+			iface: customErrObject{
+				name: "leaf",
+			},
+			want: map[string]interface{}{
+				"error":      "error leaf",
+				"errorError": "marshal leaf failed",
+				"errorFields": map[string]interface{}{
+					"leaf": "err",
+				},
+			},
+		},
+		{
+			msg: "nested error with marshal fields error",
+			k:   "error",
+			iface: customErrObject{
+				name: "top",
+				underlying: customErrObject{
+					name: "leaf",
+				},
+			},
+			want: map[string]interface{}{
+				"error":      "error top",
+				"errorError": "marshal top failed; marshal leaf failed",
+				"errorFields": map[string]interface{}{
+					"top":  "err",
+					"leaf": "err",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
-		if tt.t == UnknownType {
-			tt.t = ErrorType
-		}
+		t.Run(tt.msg, func(t *testing.T) {
+			if tt.t == UnknownType {
+				tt.t = ErrorType
+			}
 
-		enc := NewMapObjectEncoder()
-		f := Field{Key: tt.k, Type: tt.t, Interface: tt.iface}
-		f.AddTo(enc)
-		assert.Equal(t, tt.want, enc.Fields, "Unexpected output from field %+v.", f)
+			enc := NewMapObjectEncoder()
+			f := Field{Key: tt.k, Type: tt.t, Interface: tt.iface}
+			f.AddTo(enc)
+			assert.Equal(t, tt.want, enc.Fields, "Unexpected output from field %+v.", f)
+		})
 	}
 }
 
