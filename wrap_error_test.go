@@ -30,11 +30,13 @@ import (
 )
 
 func TestWrapError(t *testing.T) {
-	rootErr := errors.New("root err")
-	wrap1 := fmt.Errorf("wrap1: %w", rootErr)
-	wrap2 := WrapError(wrap1,
-		String("user", "foo"),
-		Int("count", 12),
+	var (
+		rootErr = errors.New("root err")
+		wrap1   = fmt.Errorf("wrap1: %w", rootErr)
+		wrap2   = WrapError(wrap1,
+			String("user", "foo"),
+			Int("count", 12),
+		)
 	)
 
 	assert.True(t, errors.Is(wrap2, rootErr), "errors.Is")
@@ -50,8 +52,10 @@ func TestWrapError(t *testing.T) {
 		},
 	}, enc.Fields)
 
-	wrap3 := fmt.Errorf("wrap3: %w", wrap2)
-	wrap4 := WrapError(wrap3, Bool("wrap4", true))
+	var (
+		wrap3 = fmt.Errorf("wrap3: %w", wrap2)
+		wrap4 = WrapError(wrap3, Bool("wrap4", true))
+	)
 
 	Error(wrap4).AddTo(enc)
 	assert.Equal(t, map[string]any{

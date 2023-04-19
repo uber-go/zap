@@ -46,9 +46,9 @@ func (e errorWithFields) Error() string {
 	return e.err.Error()
 }
 
-func (e errorWithFields) MarshalLogObject(oe zapcore.ObjectEncoder) error {
+func (e errorWithFields) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	for _, f := range e.fields {
-		f.AddTo(oe)
+		f.AddTo(enc)
 	}
 	return nil
 }

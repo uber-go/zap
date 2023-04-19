@@ -82,8 +82,7 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 
 	marshalers := make(mergedMarshalers, 0, 1)
 	for e := err; e != nil; e = errors.Unwrap(e) {
-		errObj, ok := e.(ObjectMarshaler)
-		if ok {
+		if errObj, ok := e.(ObjectMarshaler); ok {
 			marshalers = append(marshalers, errObj)
 		}
 	}
