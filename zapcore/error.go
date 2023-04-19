@@ -89,6 +89,8 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 
 	switch {
 	case len(marshalers) == 1:
+		// Special-case handling of single marshaler to avoid an alloc
+		// converting mergedMarshalers to an ObjectMarshaler interface.
 		if err := enc.AddObject(key+"Fields", marshalers[0]); err != nil {
 			return err
 		}
