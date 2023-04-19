@@ -29,7 +29,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func TestErrorWithFields(t *testing.T) {
+func TestWrapError(t *testing.T) {
 	rootErr := errors.New("root err")
 	wrap1 := fmt.Errorf("wrap1: %w", rootErr)
 	wrap2 := WrapError(wrap1,
