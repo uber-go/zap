@@ -158,8 +158,9 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	}
 
 	fields := make([]zapcore.Field, 0, record.NumAttrs())
-	record.Attrs(func(attr slog.Attr) {
+	record.Attrs(func(attr slog.Attr) bool {
 		fields = append(fields, convertAttrToField(attr))
+		return true
 	})
 	ce.Write(fields...)
 	return nil
