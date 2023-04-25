@@ -83,36 +83,57 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 		}
 	}
 
-	// Unwrap the error and marshal any ObjectMarshalers in the error chain.
-
-	marshalers := make(mergedMarshalers, 0, 1)
+	// Only addMarshalers if we find an error implementing ObjectMarshaler.
 	for e := err; e != nil; e = errors.Unwrap(e) {
-		if errObj, ok := e.(ObjectMarshaler); ok {
-			marshalers = append(marshalers, errObj)
-		}
-	}
-
-	switch {
-	case len(marshalers) == 1:
-		// Special-case handling of single marshaler to avoid an alloc
-		// converting mergedMarshalers to an ObjectMarshaler interface.
-		if err := enc.AddObject(key+"Fields", marshalers[0]); err != nil {
-			return err
-		}
-	case len(marshalers) > 1:
-		if err := enc.AddObject(key+"Fields", marshalers); err != nil {
-			return err
+		if _, ok := e.(ObjectMarshaler); ok {
+			if err := addMarshalers(enc, key, e); err != nil {
+				return err
+			}
+			break
 		}
 	}
 
 	return nil
 }
 
+// addMarshalers unwraps the error and marshals any ObjectMarshalers in the error chain.
+func addMarshalers(enc ObjectEncoder, key string, err error) error {
+	marshalers := getMarshalers()
+	defer putMarshalers(marshalers)
+
+	for e := err; e != nil; e = errors.Unwrap(e) {
+		if errObj, ok := e.(ObjectMarshaler); ok {
+			*marshalers = append(*marshalers, errObj)
+		}
+	}
+
+	if err := enc.AddObject(key+"Fields", marshalers); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var _marshalersPool = pool.New(func() *mergedMarshalers {
+	mm := make(mergedMarshalers, 0, 3)
+	return &mm
+})
+
+func getMarshalers() *mergedMarshalers {
+	mm := _marshalersPool.Get()
+	*mm = (*mm)[:0]
+	return mm
+}
+
+func putMarshalers(mm *mergedMarshalers) {
+	_marshalersPool.Put(mm)
+}
+
 type mergedMarshalers []ObjectMarshaler
 
-func (ms mergedMarshalers) MarshalLogObject(enc ObjectEncoder) error {
+func (ms *mergedMarshalers) MarshalLogObject(enc ObjectEncoder) error {
 	var errs error
-	for _, m := range ms {
+	for _, m := range *ms {
 		errs = multierr.Append(errs, m.MarshalLogObject(enc))
 	}
 	return errs
