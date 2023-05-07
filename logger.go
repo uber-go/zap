@@ -281,8 +281,8 @@ func (log *Logger) Core() zapcore.Core {
 	return log.core
 }
 
-// Name returns the Logger's underlying name.
-// Return empty string for unnamed Logger.
+// Name returns the Logger's underlying name,
+// or an empty string if the logger is unnamed.
 func (log *Logger) Name() string {
 	return log.name
 }
