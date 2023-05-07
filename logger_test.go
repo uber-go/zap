@@ -340,7 +340,8 @@ func TestLoggerNames(t *testing.T) {
 			}
 			log.Info("")
 			require.Equal(t, 1, logs.Len(), "Expected only one log entry to be written.")
-			assert.Equal(t, tt.expected, logs.AllUntimed()[0].LoggerName, "Unexpected logger name.")
+			assert.Equal(t, tt.expected, logs.AllUntimed()[0].LoggerName, "Unexpected logger name from entry.")
+			assert.Equal(t, tt.expected, log.Name(), "Unexpected logger name.")
 		})
 		withSugar(t, DebugLevel, nil, func(log *SugaredLogger, logs *observer.ObservedLogs) {
 			for _, n := range tt.names {
@@ -348,7 +349,8 @@ func TestLoggerNames(t *testing.T) {
 			}
 			log.Infow("")
 			require.Equal(t, 1, logs.Len(), "Expected only one log entry to be written.")
-			assert.Equal(t, tt.expected, logs.AllUntimed()[0].LoggerName, "Unexpected logger name.")
+			assert.Equal(t, tt.expected, logs.AllUntimed()[0].LoggerName, "Unexpected logger name from entry.")
+			assert.Equal(t, tt.expected, log.base.Name(), "Unexpected logger name.")
 		})
 	}
 }
