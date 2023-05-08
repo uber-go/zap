@@ -47,8 +47,8 @@ func TestFieldConstructors(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		field  zap.Field
 		expect zap.Field
+		field  zap.Field
 	}{
 		{"Str", zap.Field{Type: zapcore.StringType, Key: "test key", String: "test value"}, Str(key, value)},
 		{"Strs", zap.Array("test key", stringArray[MyValue]{"test value 1", "test value 2"}), Strs(key, values)},
