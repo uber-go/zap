@@ -24,12 +24,43 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"sync"
 )
 
 var errUnmarshalNilLevel = errors.New("can't unmarshal a nil *Level")
 
 // A Level is a logging priority. Higher levels are more important.
 type Level int8
+
+type CustomLevel interface {
+	String() string
+	CapitalString() string
+	Enabled(lvl Level) bool
+}
+
+// Type to hold custom levels
+type CustomLevels struct {
+	mu     sync.RWMutex
+	levels map[Level]CustomLevel
+}
+
+// Global variable to hold all custom levels
+var customLevels = &CustomLevels{
+	levels: make(map[Level]CustomLevel),
+}
+
+func (cl *CustomLevels) Add(level Level, custom CustomLevel) {
+	cl.mu.Lock()
+	defer cl.mu.Unlock()
+	cl.levels[level] = custom
+}
+
+func (cl *CustomLevels) Get(level Level) (CustomLevel, bool) {
+	cl.mu.RLock()
+	defer cl.mu.RUnlock()
+	lvl, ok := cl.levels[level]
+	return lvl, ok
+}
 
 const (
 	// DebugLevel logs are typically voluminous, and are usually disabled in
@@ -111,6 +142,9 @@ func LevelOf(enab LevelEnabler) Level {
 
 // String returns a lower-case ASCII representation of the log level.
 func (l Level) String() string {
+	if customLevel, ok := customLevels.Get(l); ok {
+		return customLevel.String()
+	}
 	switch l {
 	case DebugLevel:
 		return "debug"
@@ -135,6 +169,10 @@ func (l Level) String() string {
 func (l Level) CapitalString() string {
 	// Printing levels in all-caps is common enough that we should export this
 	// functionality.
+	if customLevel, ok := customLevels.Get(l); ok {
+		return customLevel.CapitalString()
+	}
+
 	switch l {
 	case DebugLevel:
 		return "DEBUG"
@@ -211,6 +249,9 @@ func (l *Level) Get() interface{} {
 
 // Enabled returns true if the given level is at or above this level.
 func (l Level) Enabled(lvl Level) bool {
+	if customLevel, ok := customLevels.Get(l); ok {
+		return customLevel.Enabled(lvl)
+	}
 	return lvl >= l
 }
 
