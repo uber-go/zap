@@ -311,13 +311,13 @@ func TestEquals(t *testing.T) {
 			want: false,
 		},
 		{
-			a:    zap.Dict("k", []Field{zap.String("a", "b")}),
-			b:    zap.Dict("k", []Field{zap.String("a", "b")}),
+			a:    zap.Dict("k", zap.String("a", "b")),
+			b:    zap.Dict("k", zap.String("a", "b")),
 			want: true,
 		},
 		{
-			a:    zap.Dict("k", []Field{zap.String("a", "b")}),
-			b:    zap.Dict("k", []Field{zap.String("a", "d")}),
+			a:    zap.Dict("k", zap.String("a", "b")),
+			b:    zap.Dict("k", zap.String("a", "d")),
 			want: false,
 		},
 	}

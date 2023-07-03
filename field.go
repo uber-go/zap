@@ -410,8 +410,8 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 	}
 }
 
-// Dict constructs a field with the given key and []Field.
-func Dict(key string, val []Field) Field {
+// Dict constructs a field with the given key and Fields.
+func Dict(key string, val ...Field) Field {
 	return Field{Key: key, Type: zapcore.DictType, Interface: val}
 }
 
@@ -429,7 +429,7 @@ func Any(key string, value interface{}) Field {
 	case zapcore.ArrayMarshaler:
 		return Array(key, val)
 	case []Field:
-		return Dict(key, val)
+		return Dict(key, val...)
 	case bool:
 		return Bool(key, val)
 	case *bool:
