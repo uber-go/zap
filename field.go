@@ -410,6 +410,10 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 	}
 }
 
+func Dict(key string, val []Field) Field {
+	return Field{Key: key, Type: zapcore.DictType, Interface: val}
+}
+
 // Any takes a key and an arbitrary value and chooses the best way to represent
 // them as a field, falling back to a reflection-based approach only if
 // necessary.
@@ -423,6 +427,8 @@ func Any(key string, value interface{}) Field {
 		return Object(key, val)
 	case zapcore.ArrayMarshaler:
 		return Array(key, val)
+	case []Field:
+		return Dict(key, val)
 	case bool:
 		return Bool(key, val)
 	case *bool:
