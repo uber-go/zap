@@ -21,9 +21,8 @@
 package ztest
 
 import (
+	"github.com/itbasis/go-clock"
 	"time"
-
-	"github.com/benbjohnson/clock"
 )
 
 // MockClock provides control over the time.
