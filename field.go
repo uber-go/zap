@@ -418,132 +418,263 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 // them. To minimize surprises, []byte values are treated as binary blobs, byte
 // values are treated as uint8, and runes are always treated as integers.
 func Any(key string, value interface{}) Field {
+	// To work around go compiler assigning unreasonably large space on stack
+	// (4kb, one `Field` per arm of the switch statement) which can trigger
+	// performance degradation if `Any` is used in a brand new goroutine.
+	var f func(key string) Field
 	switch val := value.(type) {
 	case zapcore.ObjectMarshaler:
-		return Object(key, val)
+		f = func(key string) Field {
+			return Object(key, val)
+		}
 	case zapcore.ArrayMarshaler:
-		return Array(key, val)
+		f = func(key string) Field {
+			return Array(key, val)
+		}
 	case bool:
-		return Bool(key, val)
+		f = func(key string) Field {
+			return Bool(key, val)
+		}
 	case *bool:
-		return Boolp(key, val)
+		f = func(key string) Field {
+			return Boolp(key, val)
+		}
 	case []bool:
-		return Bools(key, val)
+		f = func(key string) Field {
+			return Bools(key, val)
+		}
 	case complex128:
-		return Complex128(key, val)
+		f = func(key string) Field {
+			return Complex128(key, val)
+		}
 	case *complex128:
-		return Complex128p(key, val)
+		f = func(key string) Field {
+			return Complex128p(key, val)
+		}
 	case []complex128:
-		return Complex128s(key, val)
+		f = func(key string) Field {
+			return Complex128s(key, val)
+		}
 	case complex64:
-		return Complex64(key, val)
+		f = func(key string) Field {
+			return Complex64(key, val)
+		}
 	case *complex64:
-		return Complex64p(key, val)
+		f = func(key string) Field {
+			return Complex64p(key, val)
+		}
 	case []complex64:
-		return Complex64s(key, val)
+		f = func(key string) Field {
+			return Complex64s(key, val)
+		}
 	case float64:
-		return Float64(key, val)
+		f = func(key string) Field {
+			return Float64(key, val)
+		}
 	case *float64:
-		return Float64p(key, val)
+		f = func(key string) Field {
+			return Float64p(key, val)
+		}
 	case []float64:
-		return Float64s(key, val)
+		f = func(key string) Field {
+			return Float64s(key, val)
+		}
 	case float32:
-		return Float32(key, val)
+		f = func(key string) Field {
+			return Float32(key, val)
+		}
 	case *float32:
-		return Float32p(key, val)
+		f = func(key string) Field {
+			return Float32p(key, val)
+		}
 	case []float32:
-		return Float32s(key, val)
+		f = func(key string) Field {
+			return Float32s(key, val)
+		}
 	case int:
-		return Int(key, val)
+		f = func(key string) Field {
+			return Int(key, val)
+		}
 	case *int:
-		return Intp(key, val)
+		f = func(key string) Field {
+			return Intp(key, val)
+		}
 	case []int:
-		return Ints(key, val)
+		f = func(key string) Field {
+			return Ints(key, val)
+		}
 	case int64:
-		return Int64(key, val)
+		f = func(key string) Field {
+			return Int64(key, val)
+		}
 	case *int64:
-		return Int64p(key, val)
+		f = func(key string) Field {
+			return Int64p(key, val)
+		}
 	case []int64:
-		return Int64s(key, val)
+		f = func(key string) Field {
+			return Int64s(key, val)
+		}
 	case int32:
-		return Int32(key, val)
+		f = func(key string) Field {
+			return Int32(key, val)
+		}
 	case *int32:
-		return Int32p(key, val)
+		f = func(key string) Field {
+			return Int32p(key, val)
+		}
 	case []int32:
-		return Int32s(key, val)
+		f = func(key string) Field {
+			return Int32s(key, val)
+		}
 	case int16:
-		return Int16(key, val)
+		f = func(key string) Field {
+			return Int16(key, val)
+		}
 	case *int16:
-		return Int16p(key, val)
+		f = func(key string) Field {
+			return Int16p(key, val)
+		}
 	case []int16:
-		return Int16s(key, val)
+		f = func(key string) Field {
+			return Int16s(key, val)
+		}
 	case int8:
-		return Int8(key, val)
+		f = func(key string) Field {
+			return Int8(key, val)
+		}
 	case *int8:
-		return Int8p(key, val)
+		f = func(key string) Field {
+			return Int8p(key, val)
+		}
 	case []int8:
-		return Int8s(key, val)
+		f = func(key string) Field {
+			return Int8s(key, val)
+		}
 	case string:
-		return String(key, val)
+		f = func(key string) Field {
+			return String(key, val)
+		}
 	case *string:
-		return Stringp(key, val)
+		f = func(key string) Field {
+			return Stringp(key, val)
+		}
 	case []string:
-		return Strings(key, val)
+		f = func(key string) Field {
+			return Strings(key, val)
+		}
 	case uint:
-		return Uint(key, val)
+		f = func(key string) Field {
+			return Uint(key, val)
+		}
 	case *uint:
-		return Uintp(key, val)
+		f = func(key string) Field {
+			return Uintp(key, val)
+		}
 	case []uint:
-		return Uints(key, val)
+		f = func(key string) Field {
+			return Uints(key, val)
+		}
 	case uint64:
-		return Uint64(key, val)
+		f = func(key string) Field {
+			return Uint64(key, val)
+		}
 	case *uint64:
-		return Uint64p(key, val)
+		f = func(key string) Field {
+			return Uint64p(key, val)
+		}
 	case []uint64:
-		return Uint64s(key, val)
+		f = func(key string) Field {
+			return Uint64s(key, val)
+		}
 	case uint32:
-		return Uint32(key, val)
+		f = func(key string) Field {
+			return Uint32(key, val)
+		}
 	case *uint32:
-		return Uint32p(key, val)
+		f = func(key string) Field {
+			return Uint32p(key, val)
+		}
 	case []uint32:
-		return Uint32s(key, val)
+		f = func(key string) Field {
+			return Uint32s(key, val)
+		}
 	case uint16:
-		return Uint16(key, val)
+		f = func(key string) Field {
+			return Uint16(key, val)
+		}
 	case *uint16:
-		return Uint16p(key, val)
+		f = func(key string) Field {
+			return Uint16p(key, val)
+		}
 	case []uint16:
-		return Uint16s(key, val)
+		f = func(key string) Field {
+			return Uint16s(key, val)
+		}
 	case uint8:
-		return Uint8(key, val)
+		f = func(key string) Field {
+			return Uint8(key, val)
+		}
 	case *uint8:
-		return Uint8p(key, val)
+		f = func(key string) Field {
+			return Uint8p(key, val)
+		}
 	case []byte:
-		return Binary(key, val)
+		f = func(key string) Field {
+			return Binary(key, val)
+		}
 	case uintptr:
-		return Uintptr(key, val)
+		f = func(key string) Field {
+			return Uintptr(key, val)
+		}
 	case *uintptr:
-		return Uintptrp(key, val)
+		f = func(key string) Field {
+			return Uintptrp(key, val)
+		}
 	case []uintptr:
-		return Uintptrs(key, val)
+		f = func(key string) Field {
+			return Uintptrs(key, val)
+		}
 	case time.Time:
-		return Time(key, val)
+		f = func(key string) Field {
+			return Time(key, val)
+		}
 	case *time.Time:
-		return Timep(key, val)
+		f = func(key string) Field {
+			return Timep(key, val)
+		}
 	case []time.Time:
-		return Times(key, val)
+		f = func(key string) Field {
+			return Times(key, val)
+		}
 	case time.Duration:
-		return Duration(key, val)
+		f = func(key string) Field {
+			return Duration(key, val)
+		}
 	case *time.Duration:
-		return Durationp(key, val)
+		f = func(key string) Field {
+			return Durationp(key, val)
+		}
 	case []time.Duration:
-		return Durations(key, val)
+		f = func(key string) Field {
+			return Durations(key, val)
+		}
 	case error:
-		return NamedError(key, val)
+		f = func(key string) Field {
+			return NamedError(key, val)
+		}
 	case []error:
-		return Errors(key, val)
+		f = func(key string) Field {
+			return Errors(key, val)
+		}
 	case fmt.Stringer:
-		return Stringer(key, val)
+		f = func(key string) Field {
+			return Stringer(key, val)
+		}
 	default:
-		return Reflect(key, val)
+		f = func(key string) Field {
+			return Reflect(key, val)
+		}
 	}
+	return f(key)
 }
