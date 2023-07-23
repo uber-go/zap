@@ -22,6 +22,8 @@ package zap
 
 import (
 	"errors"
+	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -237,4 +239,109 @@ func Benchmark100Fields(b *testing.B) {
 		}
 		logger.With(first...).Info("Child loggers with lots of context.", second...)
 	}
+}
+
+func dummy(wg *sync.WaitGroup, s string, i int) string {
+	if i == 0 {
+		wg.Wait()
+		return "1" + s
+	}
+	return dummy(wg, s, i-1)
+}
+
+func stackGrower(n int) *sync.WaitGroup {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	go dummy(&wg, "hi", n)
+	return &wg
+}
+
+func BenchmarkAny(b *testing.B) {
+	logger := New(
+		zapcore.NewCore(
+			zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
+			&ztest.Discarder{},
+			DebugLevel,
+		),
+	)
+
+	b.Run("str-no-logger", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			f := String("some-string-longer-than-16", "yet-another-long-string")
+			runtime.KeepAlive(f)
+		}
+	})
+	b.Run("any-no-logger", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			f := Any("some-string-longer-than-16", "yet-another-long-string")
+			runtime.KeepAlive(f)
+		}
+	})
+	b.Run("str-with-logger", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			logger.Info("", String("some-string-longer-than-16", "yet-another-long-string"))
+		}
+	})
+	b.Run("any-with-logger", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			logger.Info("", String("some-string-longer-than-16", "yet-another-long-string"))
+		}
+	})
+	b.Run("str-in-go", func(b *testing.B) {
+		wg := sync.WaitGroup{}
+		wg.Add(b.N)
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			go func() {
+				logger.Info("", String("some-string-longer-than-16", "yet-another-long-string"))
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+	})
+	b.Run("any-in-go", func(b *testing.B) {
+		wg := sync.WaitGroup{}
+		wg.Add(b.N)
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			go func() {
+				logger.Info("", Any("some-string-longer-than-16", "yet-another-long-string"))
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+	})
+	b.Run("str-in-go-with-stack", func(b *testing.B) {
+		wg := sync.WaitGroup{}
+		wg.Add(b.N)
+		defer stackGrower(2000).Done()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			go func() {
+				logger.Info("", String("some-string-longer-than-16", "yet-another-long-string"))
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		b.StopTimer()
+	})
+	b.Run("any-in-go-with-stack", func(b *testing.B) {
+		wg := sync.WaitGroup{}
+		wg.Add(b.N)
+		defer stackGrower(2000).Done()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			go func() {
+				logger.Info("", Any("some-string-longer-than-16", "yet-another-long-string"))
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		b.StopTimer()
+	})
 }
