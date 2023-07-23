@@ -418,132 +418,311 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 // them. To minimize surprises, []byte values are treated as binary blobs, byte
 // values are treated as uint8, and runes are always treated as integers.
 func Any(key string, value interface{}) Field {
+	// To work around go compiler assigning unreasonably large space on stack
+	// (4kb, one `Field` per arm of the switch statement) which can trigger
+	// performance degradation if `Any` is used in a brand new goroutine.
+	var (
+		t     zapcore.FieldType
+		i     int64
+		s     string
+		iface any
+	)
 	switch val := value.(type) {
 	case zapcore.ObjectMarshaler:
-		return Object(key, val)
+		t = zapcore.ObjectMarshalerType
+		iface = val
 	case zapcore.ArrayMarshaler:
-		return Array(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = val
 	case bool:
-		return Bool(key, val)
+		var ival int64
+		if val {
+			ival = 1
+		}
+		t = zapcore.BoolType
+		i = ival
 	case *bool:
-		return Boolp(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		var ival int64
+		if *val {
+			ival = 1
+		}
+		t = zapcore.BoolType
+		i = ival
 	case []bool:
-		return Bools(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = bools(val)
 	case complex128:
-		return Complex128(key, val)
+		t = zapcore.Complex128Type
+		iface = val
 	case *complex128:
-		return Complex128p(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Complex128Type
+		iface = *val
 	case []complex128:
-		return Complex128s(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = complex128s(val)
 	case complex64:
-		return Complex64(key, val)
+		t = zapcore.Complex64Type
+		iface = val
 	case *complex64:
-		return Complex64p(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Complex64Type
+		iface = *val
 	case []complex64:
-		return Complex64s(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = complex64s(val)
 	case float64:
-		return Float64(key, val)
+		t = zapcore.Float64Type
+		i = int64(math.Float64bits(val))
 	case *float64:
-		return Float64p(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Float64Type
+		i = int64(math.Float64bits(*val))
 	case []float64:
-		return Float64s(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = float64s(val)
 	case float32:
-		return Float32(key, val)
+		t = zapcore.Float32Type
+		i = int64(math.Float32bits(val))
 	case *float32:
-		return Float32p(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Float32Type
+		i = int64(math.Float32bits(*val))
 	case []float32:
-		return Float32s(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = float32s(val)
 	case int:
-		return Int(key, val)
+		t = zapcore.Int64Type
+		i = int64(val)
 	case *int:
-		return Intp(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Int64Type
+		i = int64(*val)
 	case []int:
-		return Ints(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = ints(val)
 	case int64:
-		return Int64(key, val)
+		t = zapcore.Int64Type
+		i = val
 	case *int64:
-		return Int64p(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Int64Type
+		i = *val
 	case []int64:
-		return Int64s(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = int64s(val)
 	case int32:
-		return Int32(key, val)
+		t = zapcore.Int32Type
+		i = int64(val)
 	case *int32:
-		return Int32p(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Int32Type
+		i = int64(*val)
 	case []int32:
-		return Int32s(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = int32s(val)
 	case int16:
-		return Int16(key, val)
+		t = zapcore.Int16Type
+		i = int64(val)
 	case *int16:
-		return Int16p(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Int16Type
+		i = int64(*val)
 	case []int16:
-		return Int16s(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = int16s(val)
 	case int8:
-		return Int8(key, val)
+		t = zapcore.Int8Type
+		i = int64(val)
 	case *int8:
-		return Int8p(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Int8Type
+		i = int64(*val)
 	case []int8:
-		return Int8s(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = int8s(val)
 	case string:
-		return String(key, val)
+		t = zapcore.StringType
+		s = val
 	case *string:
-		return Stringp(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.StringType
+		s = *val
 	case []string:
-		return Strings(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = stringArray(val)
 	case uint:
-		return Uint(key, val)
+		t = zapcore.Uint64Type
+		i = int64(val)
 	case *uint:
-		return Uintp(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Uint64Type
+		i = int64(*val)
 	case []uint:
-		return Uints(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = uints(val)
 	case uint64:
-		return Uint64(key, val)
+		t = zapcore.Uint64Type
+		i = int64(val)
 	case *uint64:
-		return Uint64p(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Uint64Type
+		i = int64(*val)
 	case []uint64:
-		return Uint64s(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = uint64s(val)
 	case uint32:
-		return Uint32(key, val)
+		t = zapcore.Uint32Type
+		i = int64(val)
 	case *uint32:
-		return Uint32p(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Uint32Type
+		i = int64(*val)
 	case []uint32:
-		return Uint32s(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = uint32s(val)
 	case uint16:
-		return Uint16(key, val)
+		t = zapcore.Uint16Type
+		i = int64(val)
 	case *uint16:
-		return Uint16p(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Uint16Type
+		i = int64(*val)
 	case []uint16:
-		return Uint16s(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = uint16s(val)
 	case uint8:
-		return Uint8(key, val)
+		t = zapcore.Uint8Type
+		i = int64(val)
 	case *uint8:
-		return Uint8p(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.Uint8Type
+		i = int64(*val)
 	case []byte:
-		return Binary(key, val)
+		t = zapcore.BinaryType
+		iface = val
 	case uintptr:
-		return Uintptr(key, val)
+		t = zapcore.UintptrType
+		i = int64(val)
 	case *uintptr:
-		return Uintptrp(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.UintptrType
+		i = int64(*val)
 	case []uintptr:
-		return Uintptrs(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = uintptrs(val)
 	case time.Time:
-		return Time(key, val)
+		if val.Before(_minTimeInt64) || val.After(_maxTimeInt64) {
+			t = zapcore.TimeFullType
+			iface = val
+			break
+		}
+		t = zapcore.TimeType
+		i = val.UnixNano()
+		iface = val.Location()
 	case *time.Time:
-		return Timep(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		if val.Before(_minTimeInt64) || val.After(_maxTimeInt64) {
+			t = zapcore.TimeFullType
+			iface = *val
+			break
+		}
+		t = zapcore.TimeType
+		i = val.UnixNano()
+		iface = val.Location()
 	case []time.Time:
-		return Times(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = times(val)
 	case time.Duration:
-		return Duration(key, val)
+		t = zapcore.DurationType
+		i = int64(val)
 	case *time.Duration:
-		return Durationp(key, val)
+		if val == nil {
+			t = zapcore.ReflectType
+			break
+		}
+		t = zapcore.DurationType
+		i = int64(*val)
 	case []time.Duration:
-		return Durations(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = durations(val)
 	case error:
-		return NamedError(key, val)
+		if val == nil {
+			t = zapcore.SkipType
+			break
+		}
+		t = zapcore.ErrorType
+		iface = val
 	case []error:
-		return Errors(key, val)
+		t = zapcore.ArrayMarshalerType
+		iface = errArray(val)
 	case fmt.Stringer:
-		return Stringer(key, val)
+		t = zapcore.StringerType
+		iface = val
 	default:
-		return Reflect(key, val)
+		t = zapcore.ReflectType
+		iface = val
+	}
+	return Field{
+		Key:       key,
+		Type:      t,
+		Integer:   i,
+		String:    s,
+		Interface: iface,
 	}
 }
