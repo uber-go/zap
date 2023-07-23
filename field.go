@@ -418,15 +418,115 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 // them. To minimize surprises, []byte values are treated as binary blobs, byte
 // values are treated as uint8, and runes are always treated as integers.
 func Any(key string, value interface{}) Field {
-	// To work around go compiler assigning unreasonably large space on stack
-	// (4kb, one `Field` per arm of the switch statement) which can trigger
-	// performance degradation if `Any` is used in a brand new goroutine.
+	// Most of the code below is to work around go compiler assigning unreasonably
+	// large space on stack (5kb, one `Field` per arm of the switch statement)
+	// which can trigger perf degradation if `Any` is used in a brand new goroutine.
+	f := Field{Key: key, Type: zapcore.ReflectType}
+	switch val := value.(type) {
+	case *bool:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *complex128:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *complex64:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *float64:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *float32:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *int:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *int64:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *int32:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *int16:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *int8:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *string:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *uint:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *uint64:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *uint32:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *uint16:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *uint8:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *uintptr:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *time.Time:
+		if val == nil {
+			return f
+		}
+		value = *val
+	case *time.Duration:
+		if val == nil {
+			return f
+		}
+		value = *val
+	}
+
 	var (
 		t     zapcore.FieldType
 		i     int64
 		s     string
 		iface any
 	)
+
 	switch val := value.(type) {
 	case zapcore.ObjectMarshaler:
 		t = zapcore.ObjectMarshalerType
@@ -441,225 +541,102 @@ func Any(key string, value interface{}) Field {
 		}
 		t = zapcore.BoolType
 		i = ival
-	case *bool:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		var ival int64
-		if *val {
-			ival = 1
-		}
-		t = zapcore.BoolType
-		i = ival
 	case []bool:
 		t = zapcore.ArrayMarshalerType
 		iface = bools(val)
 	case complex128:
 		t = zapcore.Complex128Type
 		iface = val
-	case *complex128:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Complex128Type
-		iface = *val
 	case []complex128:
 		t = zapcore.ArrayMarshalerType
 		iface = complex128s(val)
 	case complex64:
 		t = zapcore.Complex64Type
 		iface = val
-	case *complex64:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Complex64Type
-		iface = *val
 	case []complex64:
 		t = zapcore.ArrayMarshalerType
 		iface = complex64s(val)
 	case float64:
 		t = zapcore.Float64Type
 		i = int64(math.Float64bits(val))
-	case *float64:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Float64Type
-		i = int64(math.Float64bits(*val))
 	case []float64:
 		t = zapcore.ArrayMarshalerType
 		iface = float64s(val)
 	case float32:
 		t = zapcore.Float32Type
 		i = int64(math.Float32bits(val))
-	case *float32:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Float32Type
-		i = int64(math.Float32bits(*val))
 	case []float32:
 		t = zapcore.ArrayMarshalerType
 		iface = float32s(val)
 	case int:
 		t = zapcore.Int64Type
 		i = int64(val)
-	case *int:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Int64Type
-		i = int64(*val)
 	case []int:
 		t = zapcore.ArrayMarshalerType
 		iface = ints(val)
 	case int64:
 		t = zapcore.Int64Type
 		i = val
-	case *int64:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Int64Type
-		i = *val
 	case []int64:
 		t = zapcore.ArrayMarshalerType
 		iface = int64s(val)
 	case int32:
 		t = zapcore.Int32Type
 		i = int64(val)
-	case *int32:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Int32Type
-		i = int64(*val)
 	case []int32:
 		t = zapcore.ArrayMarshalerType
 		iface = int32s(val)
 	case int16:
 		t = zapcore.Int16Type
 		i = int64(val)
-	case *int16:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Int16Type
-		i = int64(*val)
 	case []int16:
 		t = zapcore.ArrayMarshalerType
 		iface = int16s(val)
 	case int8:
 		t = zapcore.Int8Type
 		i = int64(val)
-	case *int8:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Int8Type
-		i = int64(*val)
 	case []int8:
 		t = zapcore.ArrayMarshalerType
 		iface = int8s(val)
 	case string:
 		t = zapcore.StringType
 		s = val
-	case *string:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.StringType
-		s = *val
 	case []string:
 		t = zapcore.ArrayMarshalerType
 		iface = stringArray(val)
 	case uint:
 		t = zapcore.Uint64Type
 		i = int64(val)
-	case *uint:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Uint64Type
-		i = int64(*val)
 	case []uint:
 		t = zapcore.ArrayMarshalerType
 		iface = uints(val)
 	case uint64:
 		t = zapcore.Uint64Type
 		i = int64(val)
-	case *uint64:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Uint64Type
-		i = int64(*val)
 	case []uint64:
 		t = zapcore.ArrayMarshalerType
 		iface = uint64s(val)
 	case uint32:
 		t = zapcore.Uint32Type
 		i = int64(val)
-	case *uint32:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Uint32Type
-		i = int64(*val)
 	case []uint32:
 		t = zapcore.ArrayMarshalerType
 		iface = uint32s(val)
 	case uint16:
 		t = zapcore.Uint16Type
 		i = int64(val)
-	case *uint16:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Uint16Type
-		i = int64(*val)
 	case []uint16:
 		t = zapcore.ArrayMarshalerType
 		iface = uint16s(val)
 	case uint8:
 		t = zapcore.Uint8Type
 		i = int64(val)
-	case *uint8:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Uint8Type
-		i = int64(*val)
 	case []byte:
 		t = zapcore.BinaryType
 		iface = val
 	case uintptr:
 		t = zapcore.UintptrType
 		i = int64(val)
-	case *uintptr:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.UintptrType
-		i = int64(*val)
 	case []uintptr:
 		t = zapcore.ArrayMarshalerType
 		iface = uintptrs(val)
@@ -672,32 +649,12 @@ func Any(key string, value interface{}) Field {
 		t = zapcore.TimeType
 		i = val.UnixNano()
 		iface = val.Location()
-	case *time.Time:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		if val.Before(_minTimeInt64) || val.After(_maxTimeInt64) {
-			t = zapcore.TimeFullType
-			iface = *val
-			break
-		}
-		t = zapcore.TimeType
-		i = val.UnixNano()
-		iface = val.Location()
 	case []time.Time:
 		t = zapcore.ArrayMarshalerType
 		iface = times(val)
 	case time.Duration:
 		t = zapcore.DurationType
 		i = int64(val)
-	case *time.Duration:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.DurationType
-		i = int64(*val)
 	case []time.Duration:
 		t = zapcore.ArrayMarshalerType
 		iface = durations(val)
