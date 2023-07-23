@@ -37,6 +37,20 @@ var (
 	_maxTimeInt64 = time.Unix(0, math.MaxInt64)
 )
 
+// toField converts props to a Field.
+// This is syntastic sugar that allows implementation sharing between
+// strongly typed methods and zap.Any. We expect `toField` to be inlined
+// and have no cost.
+func toField(key string, t zapcore.FieldType, i int64, s string, iface any) Field {
+	return Field{
+		Key:       key,
+		Type:      t,
+		Integer:   i,
+		String:    s,
+		Interface: iface,
+	}
+}
+
 // Skip constructs a no-op field, which is often useful when handling invalid
 // inputs in other Field constructors.
 func Skip() Field {
@@ -49,38 +63,62 @@ func Skip() Field {
 // implementation here should be changed to reflect that.
 func nilField(key string) Field { return Reflect(key, nil) }
 
+func nilProps() (zapcore.FieldType, int64, string, any) {
+	return zapcore.ReflectType, 0, "", nil
+}
+
 // Binary constructs a field that carries an opaque binary blob.
 //
 // Binary data is serialized in an encoding-appropriate format. For example,
 // zap's JSON encoder base64-encodes binary blobs. To log UTF-8 encoded text,
 // use ByteString.
 func Binary(key string, val []byte) Field {
-	return Field{Key: key, Type: zapcore.BinaryType, Interface: val}
+	t, i, s, iface := binaryProps(val)
+	return toField(key, t, i, s, iface)
+}
+
+func binaryProps(val []byte) (zapcore.FieldType, int64, string, any) {
+	return zapcore.BinaryType, 0, "", val
 }
 
 // Bool constructs a field that carries a bool.
 func Bool(key string, val bool) Field {
+	t, i, s, iface := boolProps(val)
+	return toField(key, t, i, s, iface)
+}
+
+func boolProps(val bool) (zapcore.FieldType, int64, string, any) {
 	var ival int64
 	if val {
 		ival = 1
 	}
-	return Field{Key: key, Type: zapcore.BoolType, Integer: ival}
+	return zapcore.BoolType, ival, "", nil
 }
 
 // Boolp constructs a field that carries a *bool. The returned Field will safely
 // and explicitly represent `nil` when appropriate.
 func Boolp(key string, val *bool) Field {
+	t, i, s, iface := boolpProps(val)
+	return toField(key, t, i, s, iface)
+}
+
+func boolpProps(val *bool) (zapcore.FieldType, int64, string, any) {
 	if val == nil {
-		return nilField(key)
+		return nilProps()
 	}
-	return Bool(key, *val)
+	return boolProps(*val)
 }
 
 // ByteString constructs a field that carries UTF-8 encoded text as a []byte.
 // To log opaque binary blobs (which aren't necessarily valid UTF-8), use
 // Binary.
 func ByteString(key string, val []byte) Field {
-	return Field{Key: key, Type: zapcore.ByteStringType, Interface: val}
+	t, i, s, iface := byteStringProps(val)
+	return toField(key, t, i, s, iface)
+}
+
+func byteStringProps(val []byte) (zapcore.FieldType, int64, string, any) {
+	return zapcore.ByteStringType, 0, "", val
 }
 
 // Complex128 constructs a field that carries a complex number. Unlike most
@@ -219,7 +257,12 @@ func Int8p(key string, val *int8) Field {
 
 // String constructs a field with the given key and value.
 func String(key string, val string) Field {
-	return Field{Key: key, Type: zapcore.StringType, String: val}
+	t, i, s, iface := stringProps(val)
+	return toField(key, t, i, s, iface)
+}
+
+func stringProps(val string) (zapcore.FieldType, int64, string, any) {
+	return zapcore.StringType, 0, val, nil
 }
 
 // Stringp constructs a field that carries a *string. The returned Field will safely
@@ -418,15 +461,27 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 // them. To minimize surprises, []byte values are treated as binary blobs, byte
 // values are treated as uint8, and runes are always treated as integers.
 func Any(key string, value interface{}) Field {
+	// Most of the code below is to work around go compiler assigning unreasonably
+	// large space on stack (5kb, one `Field` per arm of the switch statement)
+	// which can trigger perf degradation if `Any` is used in a brand new goroutine.
+	var (
+		t     zapcore.FieldType
+		i     int64
+		s     string
+		iface any
+	)
+
+	// temporary hack as "not found"
+	i = -1
 	switch val := value.(type) {
 	case zapcore.ObjectMarshaler:
 		return Object(key, val)
 	case zapcore.ArrayMarshaler:
 		return Array(key, val)
 	case bool:
-		return Bool(key, val)
+		t, i, s, iface = boolProps(val)
 	case *bool:
-		return Boolp(key, val)
+		t, i, s, iface = boolpProps(val)
 	case []bool:
 		return Bools(key, val)
 	case complex128:
@@ -484,7 +539,7 @@ func Any(key string, value interface{}) Field {
 	case []int8:
 		return Int8s(key, val)
 	case string:
-		return String(key, val)
+		t, i, s, iface = stringProps(val)
 	case *string:
 		return Stringp(key, val)
 	case []string:
@@ -518,7 +573,7 @@ func Any(key string, value interface{}) Field {
 	case *uint8:
 		return Uint8p(key, val)
 	case []byte:
-		return Binary(key, val)
+		t, i, s, iface = binaryProps(val)
 	case uintptr:
 		return Uintptr(key, val)
 	case *uintptr:
@@ -543,7 +598,12 @@ func Any(key string, value interface{}) Field {
 		return Errors(key, val)
 	case fmt.Stringer:
 		return Stringer(key, val)
-	default:
-		return Reflect(key, val)
 	}
+
+	// Temporary, will be gone if we re-write all of the above to use props.
+	if i == -1 {
+		return Reflect(key, value)
+	}
+
+	return toField(key, t, i, s, iface)
 }
