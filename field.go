@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"math"
 	"time"
+	"unsafe"
 
 	"go.uber.org/zap/zapcore"
 )
@@ -417,133 +418,511 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 // Since byte/uint8 and rune/int32 are aliases, Any can't differentiate between
 // them. To minimize surprises, []byte values are treated as binary blobs, byte
 // values are treated as uint8, and runes are always treated as integers.
-func Any(key string, value interface{}) Field {
+func Any(key string, value interface{}) (f Field) {
 	switch val := value.(type) {
 	case zapcore.ObjectMarshaler:
-		return Object(key, val)
+		_object(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case zapcore.ArrayMarshaler:
-		return Array(key, val)
+		_array(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case bool:
-		return Bool(key, val)
+		_bool(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *bool:
-		return Boolp(key, val)
+		_boolp(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []bool:
-		return Bools(key, val)
+		_bools(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case complex128:
-		return Complex128(key, val)
+		_complex128(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *complex128:
-		return Complex128p(key, val)
+		_complex128p(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []complex128:
-		return Complex128s(key, val)
+		_complex128s(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case complex64:
-		return Complex64(key, val)
+		_complex64(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *complex64:
-		return Complex64p(key, val)
+		_complex64p(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []complex64:
-		return Complex64s(key, val)
+		_complex64s(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case float64:
-		return Float64(key, val)
+		_float64(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *float64:
-		return Float64p(key, val)
+		_float64p(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []float64:
-		return Float64s(key, val)
+		_float64s(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case float32:
-		return Float32(key, val)
+		_float32(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *float32:
-		return Float32p(key, val)
+		_float32p(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []float32:
-		return Float32s(key, val)
+		_float32s(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case int:
-		return Int(key, val)
+		_int(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *int:
-		return Intp(key, val)
+		_intp(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []int:
-		return Ints(key, val)
+		_ints(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case int64:
-		return Int64(key, val)
+		_int64(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *int64:
-		return Int64p(key, val)
+		_int64p(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []int64:
-		return Int64s(key, val)
+		_int64s(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case int32:
-		return Int32(key, val)
+		_int32(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *int32:
-		return Int32p(key, val)
+		_int32p(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []int32:
-		return Int32s(key, val)
+		_int32s(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case int16:
-		return Int16(key, val)
+		_int16(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *int16:
-		return Int16p(key, val)
+		_int16p(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []int16:
-		return Int16s(key, val)
+		_int16s(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case int8:
-		return Int8(key, val)
+		_int8(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *int8:
-		return Int8p(key, val)
+		_int8p(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []int8:
-		return Int8s(key, val)
+		_int8s(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case string:
-		return String(key, val)
+		_string(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *string:
-		return Stringp(key, val)
+		_stringp(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []string:
-		return Strings(key, val)
+		_strings(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case uint:
-		return Uint(key, val)
+		_uint(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *uint:
-		return Uintp(key, val)
+		_uintp(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []uint:
-		return Uints(key, val)
+		_uints(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case uint64:
-		return Uint64(key, val)
+		_uint64(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *uint64:
-		return Uint64p(key, val)
+		_uint64p(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []uint64:
-		return Uint64s(key, val)
+		_uint64s(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case uint32:
-		return Uint32(key, val)
+		_uint32(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *uint32:
-		return Uint32p(key, val)
+		_uint32p(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []uint32:
-		return Uint32s(key, val)
+		_uint32s(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case uint16:
-		return Uint16(key, val)
+		_uint16(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *uint16:
-		return Uint16p(key, val)
+		_uint16p(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []uint16:
-		return Uint16s(key, val)
+		_uint16s(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case uint8:
-		return Uint8(key, val)
+		_uint8(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *uint8:
-		return Uint8p(key, val)
+		_uint8p(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []byte:
-		return Binary(key, val)
+		_binary(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case uintptr:
-		return Uintptr(key, val)
+		_uintptr(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *uintptr:
-		return Uintptrp(key, val)
+		_uintptrp(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []uintptr:
-		return Uintptrs(key, val)
+		_uintptrs(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case time.Time:
-		return Time(key, val)
+		_time(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *time.Time:
-		return Timep(key, val)
+		_timep(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []time.Time:
-		return Times(key, val)
+		_times(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case time.Duration:
-		return Duration(key, val)
+		_duration(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case *time.Duration:
-		return Durationp(key, val)
+		_durationp(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []time.Duration:
-		return Durations(key, val)
+		_durations(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case error:
-		return NamedError(key, val)
+		_namedError(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case []error:
-		return Errors(key, val)
+		_errors(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	case fmt.Stringer:
-		return Stringer(key, val)
+		_stringer(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	default:
-		return Reflect(key, val)
+		_reflect(unsafe.Pointer(&f), unsafe.Pointer(&key), unsafe.Pointer(&val))
 	}
+
+	return
+}
+
+//go:noinline
+//go:nosplit
+func _object(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Object(*(*string)(k), *(*zapcore.ObjectMarshaler)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _array(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Array(*(*string)(k), *(*zapcore.ArrayMarshaler)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _bool(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Bool(*(*string)(k), *(*bool)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _boolp(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Boolp(*(*string)(k), *(**bool)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _bools(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Bools(*(*string)(k), *(*[]bool)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _complex128(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Complex128(*(*string)(k), *(*complex128)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _complex128p(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Complex128p(*(*string)(k), *(**complex128)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _complex128s(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Complex128s(*(*string)(k), *(*[]complex128)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _complex64(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Complex64(*(*string)(k), *(*complex64)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _complex64p(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Complex64p(*(*string)(k), *(**complex64)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _complex64s(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Complex64s(*(*string)(k), *(*[]complex64)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _float64(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Float64(*(*string)(k), *(*float64)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _float64p(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Float64p(*(*string)(k), *(**float64)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _float64s(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Float64s(*(*string)(k), *(*[]float64)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _float32(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Float32(*(*string)(k), *(*float32)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _float32p(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Float32p(*(*string)(k), *(**float32)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _float32s(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Float32s(*(*string)(k), *(*[]float32)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _int(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Int(*(*string)(k), *(*int)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _intp(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Intp(*(*string)(k), *(**int)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _ints(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Ints(*(*string)(k), *(*[]int)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _int64(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Int64(*(*string)(k), *(*int64)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _int64p(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Int64p(*(*string)(k), *(**int64)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _int64s(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Int64s(*(*string)(k), *(*[]int64)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _int32(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Int32(*(*string)(k), *(*int32)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _int32p(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Int32p(*(*string)(k), *(**int32)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _int32s(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Int32s(*(*string)(k), *(*[]int32)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _int16(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Int16(*(*string)(k), *(*int16)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _int16p(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Int16p(*(*string)(k), *(**int16)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _int16s(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Int16s(*(*string)(k), *(*[]int16)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _int8(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Int8(*(*string)(k), *(*int8)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _int8p(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Int8p(*(*string)(k), *(**int8)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _int8s(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Int8s(*(*string)(k), *(*[]int8)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _string(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = String(*(*string)(k), *(*string)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _stringp(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Stringp(*(*string)(k), *(**string)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _strings(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Strings(*(*string)(k), *(*[]string)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uint(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uint(*(*string)(k), *(*uint)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uintp(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uintp(*(*string)(k), *(**uint)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uints(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uints(*(*string)(k), *(*[]uint)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uint64(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uint64(*(*string)(k), *(*uint64)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uint64p(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uint64p(*(*string)(k), *(**uint64)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uint64s(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uint64s(*(*string)(k), *(*[]uint64)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uint32(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uint32(*(*string)(k), *(*uint32)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uint32p(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uint32p(*(*string)(k), *(**uint32)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uint32s(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uint32s(*(*string)(k), *(*[]uint32)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uint16(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uint16(*(*string)(k), *(*uint16)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uint16p(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uint16p(*(*string)(k), *(**uint16)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uint16s(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uint16s(*(*string)(k), *(*[]uint16)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uint8(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uint8(*(*string)(k), *(*uint8)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uint8p(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uint8p(*(*string)(k), *(**uint8)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _binary(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Binary(*(*string)(k), *(*[]byte)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uintptr(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uintptr(*(*string)(k), *(*uintptr)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uintptrp(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uintptrp(*(*string)(k), *(**uintptr)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _uintptrs(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Uintptrs(*(*string)(k), *(*[]uintptr)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _time(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Time(*(*string)(k), *(*time.Time)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _timep(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Timep(*(*string)(k), *(**time.Time)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _times(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Times(*(*string)(k), *(*[]time.Time)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _duration(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Duration(*(*string)(k), *(*time.Duration)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _durationp(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Durationp(*(*string)(k), *(**time.Duration)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _durations(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Durations(*(*string)(k), *(*[]time.Duration)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _namedError(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = NamedError(*(*string)(k), *(*error)(value))
+}
+
+//go:noinline
+//go:nosplit
+func _errors(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Errors(*(*string)(k), *(*[]error)(value))
+}
+
+//go:noinline
+func _stringer(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Stringer(*(*string)(k), *(*fmt.Stringer)(value))
+}
+
+//go:noinline
+func _reflect(f unsafe.Pointer, k unsafe.Pointer, value unsafe.Pointer) {
+	*((*Field)(f)) = Reflect(*(*string)(k), *(*any)(value))
 }

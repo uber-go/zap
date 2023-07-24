@@ -21,9 +21,11 @@
 package zap
 
 import (
+	"errors"
 	"math"
 	"net"
 	"regexp"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -281,4 +283,40 @@ func TestStackSkipFieldWithSkip(t *testing.T) {
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
 	assert.Equal(t, takeStacktrace(1), f.String, "Unexpected stack trace")
 	assertCanBeReused(t, f)
+}
+
+func BenchmarkAny(b *testing.B) {
+	b.Run("normal", func(b *testing.B) {
+		errs := []error{errors.New("this error")}
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			field := Any("error", errs)
+			runtime.KeepAlive(field)
+		}
+	})
+
+	b.Run("normal with logger", func(b *testing.B) {
+		errs := []error{errors.New("this error")}
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			field := Any("error", errs)
+			L().Error("", field)
+		}
+	})
+
+	b.Run("normal new goroutine", func(b *testing.B) {
+		errs := []error{errors.New("this error")}
+		wg := sync.WaitGroup{}
+		wg.Add(b.N)
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			go func() {
+				field := Any("error", errs)
+				runtime.KeepAlive(field)
+				wg.Done()
+			}()
+		}
+
+		wg.Wait()
+	})
 }
