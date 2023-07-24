@@ -23,7 +23,9 @@ package zap
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"time"
+	"unsafe"
 
 	"go.uber.org/zap/zapcore"
 )
@@ -417,133 +419,672 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 // Since byte/uint8 and rune/int32 are aliases, Any can't differentiate between
 // them. To minimize surprises, []byte values are treated as binary blobs, byte
 // values are treated as uint8, and runes are always treated as integers.
-func Any(key string, value interface{}) Field {
+func Any(key string, value interface{}) (f Field) {
+	// this can hold the memory
+	storage := make([]byte, _minimumSize)
+	copy(storage[_sizeOfField:], (*(*[_sizeOfString]byte)(unsafe.Pointer(&key)))[:])
+	copy(storage[len(storage)-2*_sizeOfPtr:], (*(*[2 * _sizeOfPtr]byte)(unsafe.Pointer(&value)))[:])
+
 	switch val := value.(type) {
 	case zapcore.ObjectMarshaler:
-		return Object(key, val)
+		// fix interface type in temporal storage
+		copy(storage[len(storage)-2*_sizeOfPtr:], (*(*[2 * _sizeOfPtr]byte)(unsafe.Pointer(&val)))[:])
+
+		_object(&storage)
 	case zapcore.ArrayMarshaler:
-		return Array(key, val)
+		// fix interface type in temporal storage
+		copy(storage[len(storage)-2*_sizeOfPtr:], (*(*[2 * _sizeOfPtr]byte)(unsafe.Pointer(&val)))[:])
+
+		_array(&storage)
 	case bool:
-		return Bool(key, val)
+		_bool(&storage)
 	case *bool:
-		return Boolp(key, val)
+		_boolp(&storage)
 	case []bool:
-		return Bools(key, val)
+		_bools(&storage)
 	case complex128:
-		return Complex128(key, val)
+		_complex128(&storage)
 	case *complex128:
-		return Complex128p(key, val)
+		_complex128p(&storage)
 	case []complex128:
-		return Complex128s(key, val)
+		_complex128s(&storage)
 	case complex64:
-		return Complex64(key, val)
+		_complex64(&storage)
 	case *complex64:
-		return Complex64p(key, val)
+		_complex64p(&storage)
 	case []complex64:
-		return Complex64s(key, val)
+		_complex64s(&storage)
 	case float64:
-		return Float64(key, val)
+		_float64(&storage)
 	case *float64:
-		return Float64p(key, val)
+		_float64p(&storage)
 	case []float64:
-		return Float64s(key, val)
+		_float64s(&storage)
 	case float32:
-		return Float32(key, val)
+		_float32(&storage)
 	case *float32:
-		return Float32p(key, val)
+		_float32p(&storage)
 	case []float32:
-		return Float32s(key, val)
+		_float32s(&storage)
 	case int:
-		return Int(key, val)
+		_int(&storage)
 	case *int:
-		return Intp(key, val)
+		_intp(&storage)
 	case []int:
-		return Ints(key, val)
+		_ints(&storage)
 	case int64:
-		return Int64(key, val)
+		_int64(&storage)
 	case *int64:
-		return Int64p(key, val)
+		_int64p(&storage)
 	case []int64:
-		return Int64s(key, val)
+		_int64s(&storage)
 	case int32:
-		return Int32(key, val)
+		_int32(&storage)
 	case *int32:
-		return Int32p(key, val)
+		_int32p(&storage)
 	case []int32:
-		return Int32s(key, val)
+		_int32s(&storage)
 	case int16:
-		return Int16(key, val)
+		_int16(&storage)
 	case *int16:
-		return Int16p(key, val)
+		_int16p(&storage)
 	case []int16:
-		return Int16s(key, val)
+		_int16s(&storage)
 	case int8:
-		return Int8(key, val)
+		_int8(&storage)
 	case *int8:
-		return Int8p(key, val)
+		_int8p(&storage)
 	case []int8:
-		return Int8s(key, val)
+		_int8s(&storage)
 	case string:
-		return String(key, val)
+		_string(&storage)
 	case *string:
-		return Stringp(key, val)
+		_stringp(&storage)
 	case []string:
-		return Strings(key, val)
+		_strings(&storage)
 	case uint:
-		return Uint(key, val)
+		_uint(&storage)
 	case *uint:
-		return Uintp(key, val)
+		_uintp(&storage)
 	case []uint:
-		return Uints(key, val)
+		_uints(&storage)
 	case uint64:
-		return Uint64(key, val)
+		_uint64(&storage)
 	case *uint64:
-		return Uint64p(key, val)
+		_uint64p(&storage)
 	case []uint64:
-		return Uint64s(key, val)
+		_uint64s(&storage)
 	case uint32:
-		return Uint32(key, val)
+		_uint32(&storage)
 	case *uint32:
-		return Uint32p(key, val)
+		_uint32p(&storage)
 	case []uint32:
-		return Uint32s(key, val)
+		_uint32s(&storage)
 	case uint16:
-		return Uint16(key, val)
+		_uint16(&storage)
 	case *uint16:
-		return Uint16p(key, val)
+		_uint16p(&storage)
 	case []uint16:
-		return Uint16s(key, val)
+		_uint16s(&storage)
 	case uint8:
-		return Uint8(key, val)
+		_uint8(&storage)
 	case *uint8:
-		return Uint8p(key, val)
+		_uint8p(&storage)
 	case []byte:
-		return Binary(key, val)
+		_binary(&storage)
 	case uintptr:
-		return Uintptr(key, val)
+		_uintptr(&storage)
 	case *uintptr:
-		return Uintptrp(key, val)
+		_uintptrp(&storage)
 	case []uintptr:
-		return Uintptrs(key, val)
+		_uintptrs(&storage)
 	case time.Time:
-		return Time(key, val)
+		_time(&storage)
 	case *time.Time:
-		return Timep(key, val)
+		_timep(&storage)
 	case []time.Time:
-		return Times(key, val)
+		_times(&storage)
 	case time.Duration:
-		return Duration(key, val)
+		_duration(&storage)
 	case *time.Duration:
-		return Durationp(key, val)
+		_durationp(&storage)
 	case []time.Duration:
-		return Durations(key, val)
+		_durations(&storage)
 	case error:
-		return NamedError(key, val)
+		// fix interface type in temporal storage
+		copy(storage[len(storage)-2*_sizeOfPtr:], (*(*[2 * _sizeOfPtr]byte)(unsafe.Pointer(&val)))[:])
+
+		_namedError(&storage)
 	case []error:
-		return Errors(key, val)
+		_errors(&storage)
 	case fmt.Stringer:
-		return Stringer(key, val)
+		// fix interface type in temporal storage
+		copy(storage[len(storage)-2*_sizeOfPtr:], (*(*[2 * _sizeOfPtr]byte)(unsafe.Pointer(&val)))[:])
+
+		_stringer(&storage)
 	default:
-		return Reflect(key, val)
+		_reflect(&storage)
 	}
+
+	f = *(*Field)(unsafe.Pointer((*sliceHeader)(unsafe.Pointer(&storage)).Data))
+
+	return
 }
+
+//go:noinline
+//go:nosplit
+func _object(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	// zapcore.ObjectMarshaler is an interface so there is no need for temporal usafe.Pointer
+	*((*Field)(ptr)) = Object(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*zapcore.ObjectMarshaler)(unsafe.Add(ptr, _sizeOfField+_sizeOfString)))
+}
+
+//go:noinline
+//go:nosplit
+func _array(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	// zapcore.ArrayMarshaler is an interface so there is no need for temporal usafe.Pointer
+	*((*Field)(ptr)) = Array(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*zapcore.ArrayMarshaler)(unsafe.Add(ptr, _sizeOfField+_sizeOfString)))
+}
+
+//go:noinline
+//go:nosplit
+func _bool(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Bool(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*bool)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _boolp(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Boolp(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*bool)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _bools(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Bools(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]bool)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _complex128(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Complex128(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*complex128)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _complex128p(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Complex128p(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*complex128)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _complex128s(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Complex128s(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]complex128)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _complex64(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Complex64(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*complex64)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _complex64p(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Complex64p(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*complex64)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _complex64s(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Complex64s(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]complex64)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _float64(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Float64(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*float64)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _float64p(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Float64p(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*float64)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _float64s(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Float64s(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]float64)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _float32(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Float32(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*float32)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _float32p(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Float32p(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*float32)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _float32s(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Float32s(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]float32)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _int(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Int(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*int)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _intp(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Intp(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*int)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _ints(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Ints(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]int)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _int64(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Int64(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*int64)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _int64p(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Int64p(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*int64)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _int64s(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Int64s(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]int64)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _int32(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Int32(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*int32)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _int32p(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Int32p(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*int32)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _int32s(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Int32s(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]int32)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _int16(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Int16(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*int16)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _int16p(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Int16p(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*int16)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _int16s(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Int16s(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]int16)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _int8(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Int8(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*int8)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _int8p(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Int8p(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*int8)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _int8s(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Int8s(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]int8)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _string(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = String(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*string)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _stringp(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Stringp(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*string)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _strings(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Strings(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]string)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uint(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uint(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*uint)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uintp(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uintp(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*uint)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uints(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uints(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]uint)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uint64(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uint64(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*uint64)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uint64p(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uint64p(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*uint64)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uint64s(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uint64s(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]uint64)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uint32(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uint32(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*uint32)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uint32p(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uint32p(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*uint32)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uint32s(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uint32s(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]uint32)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uint16(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uint16(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*uint16)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uint16p(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uint16p(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*uint16)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uint16s(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uint16s(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]uint16)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uint8(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uint8(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*uint8)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uint8p(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uint8p(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*uint8)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _binary(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Binary(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]byte)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uintptr(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uintptr(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*uintptr)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uintptrp(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uintptrp(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*uintptr)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _uintptrs(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Uintptrs(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]uintptr)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _time(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Time(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*time.Time)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _timep(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Timep(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*time.Time)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _times(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Times(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]time.Time)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _duration(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Duration(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*time.Duration)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _durationp(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Durationp(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		(*time.Duration)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _durations(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Durations(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]time.Duration)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+//go:nosplit
+func _namedError(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	// error is an interface so there is no need for temporal usafe.Pointer
+	*((*Field)(ptr)) = NamedError(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*error)(unsafe.Add(ptr, _sizeOfField+_sizeOfString)))
+}
+
+//go:noinline
+//go:nosplit
+func _errors(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	*((*Field)(ptr)) = Errors(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*[]error)(*(*unsafe.Pointer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString+_sizeOfPtr))))
+}
+
+//go:noinline
+func _stringer(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	// fmt.Stringer is an interface so there is no need for temporal usafe.Pointer
+	*((*Field)(ptr)) = Stringer(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*fmt.Stringer)(unsafe.Add(ptr, _sizeOfField+_sizeOfString)))
+}
+
+//go:noinline
+func _reflect(p *[]byte) {
+	ptr := unsafe.Pointer((*sliceHeader)(unsafe.Pointer(p)).Data)
+	// any is an interface so there is no need for temporal usafe.Pointer
+	*((*Field)(ptr)) = Reflect(*(*string)(unsafe.Add(ptr, _sizeOfField)),
+		*(*any)(unsafe.Add(ptr, _sizeOfField+_sizeOfString)))
+}
+
+type sliceHeader = reflect.SliceHeader
+
+var _sizeOfField = unsafe.Sizeof(Field{})
+
+const _sizeOfString = 16
+const _sizeOfPtr = 8
+
+// 64 is _sizeOfField
+// 2*_sizeOfPtr is the interface
+const _minimumSize = 2*_sizeOfPtr + _sizeOfString + 64
