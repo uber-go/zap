@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"math"
 	"time"
+	"unsafe"
 
 	"go.uber.org/zap/zapcore"
 )
@@ -410,6 +411,13 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 	}
 }
 
+type anyParams struct {
+	f    *Field
+	k    *string
+	p    unsafe.Pointer
+	anyP [16]byte
+}
+
 // Any takes a key and an arbitrary value and chooses the best way to represent
 // them as a field, falling back to a reflection-based approach only if
 // necessary.
@@ -417,133 +425,473 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 // Since byte/uint8 and rune/int32 are aliases, Any can't differentiate between
 // them. To minimize surprises, []byte values are treated as binary blobs, byte
 // values are treated as uint8, and runes are always treated as integers.
-func Any(key string, value interface{}) Field {
+func Any(key string, value interface{}) (f Field) {
+	params := anyParams{
+		f: &f,
+		k: &key,
+		// most common case
+		p: (*(*[2]unsafe.Pointer)(unsafe.Pointer(&value)))[1],
+		// interface case
+		anyP: *(*[16]byte)(unsafe.Pointer(&value)),
+	}
 	switch val := value.(type) {
 	case zapcore.ObjectMarshaler:
-		return Object(key, val)
+		_fixInterface(&params, unsafe.Pointer(&val))
+		_object(&params)
 	case zapcore.ArrayMarshaler:
-		return Array(key, val)
+		_fixInterface(&params, unsafe.Pointer(&val))
+		_array(&params)
 	case bool:
-		return Bool(key, val)
+		_bool(&params)
 	case *bool:
-		return Boolp(key, val)
+		_boolp(&params)
 	case []bool:
-		return Bools(key, val)
+		_bools(&params)
 	case complex128:
-		return Complex128(key, val)
+		_complex128(&params)
 	case *complex128:
-		return Complex128p(key, val)
+		_complex128p(&params)
 	case []complex128:
-		return Complex128s(key, val)
+		_complex128s(&params)
 	case complex64:
-		return Complex64(key, val)
+		_complex64(&params)
 	case *complex64:
-		return Complex64p(key, val)
+		_complex64p(&params)
 	case []complex64:
-		return Complex64s(key, val)
+		_complex64s(&params)
 	case float64:
-		return Float64(key, val)
+		_float64(&params)
 	case *float64:
-		return Float64p(key, val)
+		_float64p(&params)
 	case []float64:
-		return Float64s(key, val)
+		_float64s(&params)
 	case float32:
-		return Float32(key, val)
+		_float32(&params)
 	case *float32:
-		return Float32p(key, val)
+		_float32p(&params)
 	case []float32:
-		return Float32s(key, val)
+		_float32s(&params)
 	case int:
-		return Int(key, val)
+		_int(&params)
 	case *int:
-		return Intp(key, val)
+		_intp(&params)
 	case []int:
-		return Ints(key, val)
+		_ints(&params)
 	case int64:
-		return Int64(key, val)
+		_int64(&params)
 	case *int64:
-		return Int64p(key, val)
+		_int64p(&params)
 	case []int64:
-		return Int64s(key, val)
+		_int64s(&params)
 	case int32:
-		return Int32(key, val)
+		_int32(&params)
 	case *int32:
-		return Int32p(key, val)
+		_int32p(&params)
 	case []int32:
-		return Int32s(key, val)
+		_int32s(&params)
 	case int16:
-		return Int16(key, val)
+		_int16(&params)
 	case *int16:
-		return Int16p(key, val)
+		_int16p(&params)
 	case []int16:
-		return Int16s(key, val)
+		_int16s(&params)
 	case int8:
-		return Int8(key, val)
+		_int8(&params)
 	case *int8:
-		return Int8p(key, val)
+		_int8p(&params)
 	case []int8:
-		return Int8s(key, val)
+		_int8s(&params)
 	case string:
-		return String(key, val)
+		_string(&params)
 	case *string:
-		return Stringp(key, val)
+		_stringp(&params)
 	case []string:
-		return Strings(key, val)
+		_strings(&params)
 	case uint:
-		return Uint(key, val)
+		_uint(&params)
 	case *uint:
-		return Uintp(key, val)
+		_uintp(&params)
 	case []uint:
-		return Uints(key, val)
+		_uints(&params)
 	case uint64:
-		return Uint64(key, val)
+		_uint64(&params)
 	case *uint64:
-		return Uint64p(key, val)
+		_uint64p(&params)
 	case []uint64:
-		return Uint64s(key, val)
+		_uint64s(&params)
 	case uint32:
-		return Uint32(key, val)
+		_uint32(&params)
 	case *uint32:
-		return Uint32p(key, val)
+		_uint32p(&params)
 	case []uint32:
-		return Uint32s(key, val)
+		_uint32s(&params)
 	case uint16:
-		return Uint16(key, val)
+		_uint16(&params)
 	case *uint16:
-		return Uint16p(key, val)
+		_uint16p(&params)
 	case []uint16:
-		return Uint16s(key, val)
+		_uint16s(&params)
 	case uint8:
-		return Uint8(key, val)
+		_uint8(&params)
 	case *uint8:
-		return Uint8p(key, val)
+		_uint8p(&params)
 	case []byte:
-		return Binary(key, val)
+		_binary(&params)
 	case uintptr:
-		return Uintptr(key, val)
+		_uintptr(&params)
 	case *uintptr:
-		return Uintptrp(key, val)
+		_uintptrp(&params)
 	case []uintptr:
-		return Uintptrs(key, val)
+		_uintptrs(&params)
 	case time.Time:
-		return Time(key, val)
+		_time(&params)
 	case *time.Time:
-		return Timep(key, val)
+		_timep(&params)
 	case []time.Time:
-		return Times(key, val)
+		_times(&params)
 	case time.Duration:
-		return Duration(key, val)
+		_duration(&params)
 	case *time.Duration:
-		return Durationp(key, val)
+		_durationp(&params)
 	case []time.Duration:
-		return Durations(key, val)
+		_durations(&params)
 	case error:
-		return NamedError(key, val)
+		_fixInterface(&params, unsafe.Pointer(&val))
+		_namedError(&params)
 	case []error:
-		return Errors(key, val)
+		_errors(&params)
 	case fmt.Stringer:
-		return Stringer(key, val)
+		_fixInterface(&params, unsafe.Pointer(&val))
+		_stringer(&params)
 	default:
-		return Reflect(key, val)
+		_reflect(&params)
 	}
+
+	return
+}
+
+// _fixInterface makes sure that first 8 bytes are the correct object type. This happens because when we do any(10), the
+// interface would look like:
+// [ <pointer_to_int_type>, <pointer_to_object> ]
+// but what if the object is an interface, so when we do a := any(errors.New("some error")) and then we do type
+// assertion a.(error), this actually changes the first 8 bytes.
+func _fixInterface(p *anyParams, valPtr unsafe.Pointer) {
+	copy(p.anyP[:], (*(*[8]byte)(valPtr))[:])
+}
+
+//go:noinline
+func _object(p *anyParams) {
+	*p.f = Object(*p.k, *(*zapcore.ObjectMarshaler)(unsafe.Pointer(&p.anyP)))
+}
+
+//go:noinline
+func _array(p *anyParams) {
+	*p.f = Array(*p.k, *(*zapcore.ArrayMarshaler)(unsafe.Pointer(&p.anyP)))
+}
+
+//go:noinline
+func _bool(p *anyParams) {
+	*p.f = Bool(*p.k, *(*bool)(p.p))
+}
+
+//go:noinline
+func _boolp(p *anyParams) {
+	*p.f = Boolp(*p.k, (*bool)(p.p))
+}
+
+//go:noinline
+func _bools(p *anyParams) {
+	*p.f = Bools(*p.k, *(*[]bool)(p.p))
+}
+
+//go:noinline
+func _complex128(p *anyParams) {
+	*p.f = Complex128(*p.k, *(*complex128)(p.p))
+}
+
+//go:noinline
+func _complex128p(p *anyParams) {
+	*p.f = Complex128p(*p.k, (*complex128)(p.p))
+}
+
+//go:noinline
+func _complex128s(p *anyParams) {
+	*p.f = Complex128s(*p.k, *(*[]complex128)(p.p))
+}
+
+//go:noinline
+func _complex64(p *anyParams) {
+	*p.f = Complex64(*p.k, *(*complex64)(p.p))
+}
+
+//go:noinline
+func _complex64p(p *anyParams) {
+	*p.f = Complex64p(*p.k, (*complex64)(p.p))
+}
+
+//go:noinline
+func _complex64s(p *anyParams) {
+	*p.f = Complex64s(*p.k, *(*[]complex64)(p.p))
+}
+
+//go:noinline
+func _float64(p *anyParams) {
+	*p.f = Float64(*p.k, *(*float64)(p.p))
+}
+
+//go:noinline
+func _float64p(p *anyParams) {
+	*p.f = Float64p(*p.k, (*float64)(p.p))
+}
+
+//go:noinline
+func _float64s(p *anyParams) {
+	*p.f = Float64s(*p.k, *(*[]float64)(p.p))
+}
+
+//go:noinline
+func _float32(p *anyParams) {
+	*p.f = Float32(*p.k, *(*float32)(p.p))
+}
+
+//go:noinline
+func _float32p(p *anyParams) {
+	*p.f = Float32p(*p.k, (*float32)(p.p))
+}
+
+//go:noinline
+func _float32s(p *anyParams) {
+	*p.f = Float32s(*p.k, *(*[]float32)(p.p))
+}
+
+//go:noinline
+func _int(p *anyParams) {
+	*p.f = Int(*p.k, *(*int)(p.p))
+}
+
+//go:noinline
+func _intp(p *anyParams) {
+	*p.f = Intp(*p.k, (*int)(p.p))
+}
+
+//go:noinline
+func _ints(p *anyParams) {
+	*p.f = Ints(*p.k, *(*[]int)(p.p))
+}
+
+//go:noinline
+func _int64(p *anyParams) {
+	*p.f = Int64(*p.k, *(*int64)(p.p))
+}
+
+//go:noinline
+func _int64p(p *anyParams) {
+	*p.f = Int64p(*p.k, (*int64)(p.p))
+}
+
+//go:noinline
+func _int64s(p *anyParams) {
+	*p.f = Int64s(*p.k, *(*[]int64)(p.p))
+}
+
+//go:noinline
+func _int32(p *anyParams) {
+	*p.f = Int32(*p.k, *(*int32)(p.p))
+}
+
+//go:noinline
+func _int32p(p *anyParams) {
+	*p.f = Int32p(*p.k, (*int32)(p.p))
+}
+
+//go:noinline
+func _int32s(p *anyParams) {
+	*p.f = Int32s(*p.k, *(*[]int32)(p.p))
+}
+
+//go:noinline
+func _int16(p *anyParams) {
+	*p.f = Int16(*p.k, *(*int16)(p.p))
+}
+
+//go:noinline
+func _int16p(p *anyParams) {
+	*p.f = Int16p(*p.k, (*int16)(p.p))
+}
+
+//go:noinline
+func _int16s(p *anyParams) {
+	*p.f = Int16s(*p.k, *(*[]int16)(p.p))
+}
+
+//go:noinline
+func _int8(p *anyParams) {
+	*p.f = Int8(*p.k, *(*int8)(p.p))
+}
+
+//go:noinline
+
+func _int8p(p *anyParams) {
+	*p.f = Int8p(*p.k, (*int8)(p.p))
+}
+
+//go:noinline
+func _int8s(p *anyParams) {
+	*p.f = Int8s(*p.k, *(*[]int8)(p.p))
+}
+
+//go:noinline
+func _string(p *anyParams) {
+	*p.f = String(*p.k, *(*string)(p.p))
+}
+
+//go:noinline
+
+func _stringp(p *anyParams) {
+	*p.f = Stringp(*p.k, (*string)(p.p))
+}
+
+//go:noinline
+func _strings(p *anyParams) {
+	*p.f = Strings(*p.k, *(*[]string)(p.p))
+}
+
+//go:noinline
+func _uint(p *anyParams) {
+	*p.f = Uint(*p.k, *(*uint)(p.p))
+}
+
+//go:noinline
+func _uintp(p *anyParams) {
+	*p.f = Uintp(*p.k, (*uint)(p.p))
+}
+
+//go:noinline
+func _uints(p *anyParams) {
+	*p.f = Uints(*p.k, *(*[]uint)(p.p))
+}
+
+//go:noinline
+func _uint64(p *anyParams) {
+	*p.f = Uint64(*p.k, *(*uint64)(p.p))
+}
+
+//go:noinline
+func _uint64p(p *anyParams) {
+	*p.f = Uint64p(*p.k, (*uint64)(p.p))
+}
+
+//go:noinline
+func _uint64s(p *anyParams) {
+	*p.f = Uint64s(*p.k, *(*[]uint64)(p.p))
+}
+
+//go:noinline
+func _uint32(p *anyParams) {
+	*p.f = Uint32(*p.k, *(*uint32)(p.p))
+}
+
+//go:noinline
+func _uint32p(p *anyParams) {
+	*p.f = Uint32p(*p.k, (*uint32)(p.p))
+}
+
+//go:noinline
+func _uint32s(p *anyParams) {
+	*p.f = Uint32s(*p.k, *(*[]uint32)(p.p))
+}
+
+//go:noinline
+func _uint16(p *anyParams) {
+	*p.f = Uint16(*p.k, *(*uint16)(p.p))
+}
+
+//go:noinline
+func _uint16p(p *anyParams) {
+	*p.f = Uint16p(*p.k, (*uint16)(p.p))
+}
+
+//go:noinline
+func _uint16s(p *anyParams) {
+	*p.f = Uint16s(*p.k, *(*[]uint16)(p.p))
+}
+
+//go:noinline
+func _uint8(p *anyParams) {
+	*p.f = Uint8(*p.k, *(*uint8)(p.p))
+}
+
+//go:noinline
+func _uint8p(p *anyParams) {
+	*p.f = Uint8p(*p.k, (*uint8)(p.p))
+}
+
+//go:noinline
+func _binary(p *anyParams) {
+	*p.f = Binary(*p.k, *(*[]byte)(p.p))
+}
+
+//go:noinline
+func _uintptr(p *anyParams) {
+	*p.f = Uintptr(*p.k, *(*uintptr)(p.p))
+}
+
+//go:noinline
+func _uintptrp(p *anyParams) {
+	*p.f = Uintptrp(*p.k, (*uintptr)(p.p))
+}
+
+//go:noinline
+func _uintptrs(p *anyParams) {
+	*p.f = Uintptrs(*p.k, *(*[]uintptr)(p.p))
+}
+
+//go:noinline
+func _time(p *anyParams) {
+	*p.f = Time(*p.k, *(*time.Time)(p.p))
+}
+
+//go:noinline
+func _timep(p *anyParams) {
+	*p.f = Timep(*p.k, (*time.Time)(p.p))
+}
+
+//go:noinline
+func _times(p *anyParams) {
+	*p.f = Times(*p.k, *(*[]time.Time)(p.p))
+}
+
+//go:noinline
+func _duration(p *anyParams) {
+	*p.f = Duration(*p.k, *(*time.Duration)(p.p))
+}
+
+//go:noinline
+func _durationp(p *anyParams) {
+	*p.f = Durationp(*p.k, (*time.Duration)(p.p))
+}
+
+//go:noinline
+func _durations(p *anyParams) {
+	*p.f = Durations(*p.k, *(*[]time.Duration)(p.p))
+}
+
+//go:noinline
+func _namedError(p *anyParams) {
+	*p.f = NamedError(*p.k, *(*error)(unsafe.Pointer(&p.anyP)))
+}
+
+//go:noinline
+func _errors(p *anyParams) {
+	*p.f = Errors(*p.k, *(*[]error)(p.p))
+}
+
+//go:noinline
+func _stringer(p *anyParams) {
+	*p.f = Stringer(*p.k, *(*fmt.Stringer)(unsafe.Pointer(&p.anyP)))
+}
+
+//go:noinline
+func _reflect(p *anyParams) {
+	*p.f = Reflect(*p.k, *(*any)(unsafe.Pointer(&p.anyP)))
 }
