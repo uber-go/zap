@@ -86,6 +86,7 @@ func TestFieldConstructors(t *testing.T) {
 		uint16Val     = uint16(1)
 		uint8Val      = uint8(1)
 		uintptrVal    = uintptr(1)
+		nilErr        error
 	)
 
 	tests := []struct {
@@ -166,6 +167,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:Uintptr", Any("k", uintptr(1)), Uintptr("k", 1)},
 		{"Any:Uintptrs", Any("k", []uintptr{1}), Uintptrs("k", []uintptr{1})},
 		{"Any:Time", Any("k", time.Unix(0, 0)), Time("k", time.Unix(0, 0))},
+		{"Any:Time-FullType", Any("k", time.Time{}), Time("k", time.Time{})},
 		{"Any:Times", Any("k", []time.Time{time.Unix(0, 0)}), Times("k", []time.Time{time.Unix(0, 0)})},
 		{"Any:Duration", Any("k", time.Second), Duration("k", time.Second)},
 		{"Any:Durations", Any("k", []time.Duration{time.Second}), Durations("k", []time.Duration{time.Second})},
@@ -222,6 +224,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Ptr:Time", Timep("k", &timeVal), Time("k", timeVal)},
 		{"Any:PtrTime", Any("k", (*time.Time)(nil)), nilField("k")},
 		{"Any:PtrTime", Any("k", &timeVal), Time("k", timeVal)},
+		{"Any:PtrTime-FullType", Any("k", &time.Time{}), Time("k", time.Time{})},
 		{"Ptr:Uint", Uintp("k", nil), nilField("k")},
 		{"Ptr:Uint", Uintp("k", &uintVal), Uint("k", uintVal)},
 		{"Any:PtrUint", Any("k", (*uint)(nil)), nilField("k")},
@@ -246,6 +249,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Ptr:Uintptr", Uintptrp("k", &uintptrVal), Uintptr("k", uintptrVal)},
 		{"Any:PtrUintptr", Any("k", (*uintptr)(nil)), nilField("k")},
 		{"Any:PtrUintptr", Any("k", &uintptrVal), Uintptr("k", uintptrVal)},
+		{"Any:Error-nil", Any("k", nilErr), nilField("k")},
 		{"Namespace", Namespace("k"), Field{Key: "k", Type: zapcore.NamespaceType}},
 	}
 
