@@ -21,9 +21,11 @@
 package zapcore
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap/internal/pool"
 )
 
@@ -32,6 +34,11 @@ import (
 //
 // If the error implements fmt.Formatter, a field with the name ${key}Verbose
 // is also added with the full verbose error message.
+//
+// If the error implements `zapcore.ObjectMarshaler`, a field with the name
+// ${key}Fields is added with the marshaled object. If the error can be unwrapped
+// using `errors.Unwrap`, then unwrapped errors implementing `zapcore.Marshaler`
+// are also marshaled to the same ${key}Fields.
 //
 // Finally, if the error implements errorGroup (from go.uber.org/multierr) or
 // causer (from github.com/pkg/errors), a ${key}Causes field is added with an
@@ -75,7 +82,61 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 			enc.AddString(key+"Verbose", verbose)
 		}
 	}
+
+	// Only addMarshalers if we find an error implementing ObjectMarshaler.
+	for e := err; e != nil; e = errors.Unwrap(e) {
+		if _, ok := e.(ObjectMarshaler); ok {
+			if err := addMarshalers(enc, key, e); err != nil {
+				return err
+			}
+			break
+		}
+	}
+
 	return nil
+}
+
+// addMarshalers unwraps the error and marshals any ObjectMarshalers in the error chain.
+func addMarshalers(enc ObjectEncoder, key string, err error) error {
+	marshalers := getMarshalers()
+	defer putMarshalers(marshalers)
+
+	for e := err; e != nil; e = errors.Unwrap(e) {
+		if errObj, ok := e.(ObjectMarshaler); ok {
+			*marshalers = append(*marshalers, errObj)
+		}
+	}
+
+	if err := enc.AddObject(key+"Fields", marshalers); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var _marshalersPool = pool.New(func() *mergedMarshalers {
+	mm := make(mergedMarshalers, 0, 3)
+	return &mm
+})
+
+func getMarshalers() *mergedMarshalers {
+	mm := _marshalersPool.Get()
+	*mm = (*mm)[:0]
+	return mm
+}
+
+func putMarshalers(mm *mergedMarshalers) {
+	_marshalersPool.Put(mm)
+}
+
+type mergedMarshalers []ObjectMarshaler
+
+func (ms *mergedMarshalers) MarshalLogObject(enc ObjectEncoder) error {
+	var errs error
+	for _, m := range *ms {
+		errs = multierr.Append(errs, m.MarshalLogObject(enc))
+	}
+	return errs
 }
 
 type errorGroup interface {

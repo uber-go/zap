@@ -22,9 +22,12 @@ package zap_test
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -357,4 +360,47 @@ func ExampleWrapCore_wrap() {
 	// {"level":"info","msg":"single"}
 	// {"level":"info","msg":"doubled"}
 	// {"level":"info","msg":"doubled"}
+}
+
+type timeouts struct {
+	readTimeout  time.Duration
+	writeTimeout time.Duration
+}
+
+func parseTimeouts(line string) (timeouts, error) {
+	parts := strings.Split(line, " ")
+	if len(parts) != 2 {
+		return timeouts{}, errors.New("line not in expected format")
+	}
+
+	read, err := time.ParseDuration(parts[0])
+	if err != nil {
+		return timeouts{}, zap.WrapError(fmt.Errorf("parse readTimeout: %w", err),
+			zap.String("readTimeout", parts[0]))
+	}
+
+	write, err := time.ParseDuration(parts[1])
+	if err != nil {
+		return timeouts{}, zap.WrapError(fmt.Errorf("parse writeTimeout: %w", err),
+			zap.String("writeTimeout", parts[1]))
+	}
+
+	return timeouts{read, write}, nil
+}
+
+func ExampleWrapError() {
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	if _, err := parseTimeouts(""); err != nil {
+		logger.Error("parse empty", zap.Error(err))
+	}
+
+	if _, err := parseTimeouts("12ms 45"); err != nil {
+		logger.Error("parse invalid duration", zap.Error(err))
+	}
+
+	// Output:
+	// {"level":"error","msg":"parse empty","error":"line not in expected format"}
+	// {"level":"error","msg":"parse invalid duration","error":"parse writeTimeout: time: missing unit in duration \"45\"","errorFields":{"writeTimeout":"45"}}
 }

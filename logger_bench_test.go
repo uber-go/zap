@@ -238,3 +238,11 @@ func Benchmark100Fields(b *testing.B) {
 		logger.With(first...).Info("Child loggers with lots of context.", second...)
 	}
 }
+
+func BenchmarkWrapError(b *testing.B) {
+	err := errors.New("err")
+	err = WrapError(err, String("errKey", "errVal"))
+	withBenchedLogger(b, func(log *Logger) {
+		log.Error("error", Error(err))
+	})
+}
