@@ -493,7 +493,7 @@ func Any(key string, value interface{}) Field {
 		i = int64(math.Float64bits(*val))
 	case []float64:
 		t = zapcore.ArrayMarshalerType
-		val = float64s(val)
+		iface = float64s(val)
 	case float32:
 		t = zapcore.Float32Type
 		i = int64(math.Float32bits(val))
@@ -606,6 +606,7 @@ func Any(key string, value interface{}) Field {
 			t = zapcore.ReflectType
 			break
 		}
+		t = zapcore.Uint64Type
 		i = int64(*val)
 	case []uint64:
 		t = zapcore.ArrayMarshalerType
