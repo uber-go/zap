@@ -23,6 +23,7 @@ package zap
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"time"
 
 	"go.uber.org/zap/zapcore"
@@ -410,6 +411,91 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 	}
 }
 
+// anyTypeLookup is a map from concrete types to the field constructors.
+var anyTypeLookup = map[reflect.Type]func(string, any) Field{
+	reflect.TypeOf(bool(true)):            func(k string, v any) Field { return Bool(k, v.(bool)) },
+	reflect.TypeOf((*bool)(nil)):          func(k string, v any) Field { return Boolp(k, v.(*bool)) },
+	reflect.TypeOf([]bool(nil)):           func(k string, v any) Field { return Bools(k, v.([]bool)) },
+	reflect.TypeOf(complex128(1)):         func(k string, v any) Field { return Complex128(k, v.(complex128)) },
+	reflect.TypeOf((*complex128)(nil)):    func(k string, v any) Field { return Complex128p(k, v.(*complex128)) },
+	reflect.TypeOf(([]complex128)(nil)):   func(k string, v any) Field { return Complex128s(k, v.([]complex128)) },
+	reflect.TypeOf(complex64(1)):          func(k string, v any) Field { return Complex64(k, v.(complex64)) },
+	reflect.TypeOf((*complex64)(nil)):     func(k string, v any) Field { return Complex64p(k, v.(*complex64)) },
+	reflect.TypeOf(([]complex64)(nil)):    func(k string, v any) Field { return Complex64s(k, v.([]complex64)) },
+	reflect.TypeOf(float64(1)):            func(k string, v any) Field { return Float64(k, v.(float64)) },
+	reflect.TypeOf((*float64)(nil)):       func(k string, v any) Field { return Float64p(k, v.(*float64)) },
+	reflect.TypeOf(([]float64)(nil)):      func(k string, v any) Field { return Float64s(k, v.([]float64)) },
+	reflect.TypeOf(float32(1)):            func(k string, v any) Field { return Float32(k, v.(float32)) },
+	reflect.TypeOf((*float32)(nil)):       func(k string, v any) Field { return Float32p(k, v.(*float32)) },
+	reflect.TypeOf(([]float32)(nil)):      func(k string, v any) Field { return Float32s(k, v.([]float32)) },
+	reflect.TypeOf(int(0)):                func(k string, v any) Field { return Int(k, v.(int)) },
+	reflect.TypeOf((*int)(nil)):           func(k string, v any) Field { return Intp(k, v.(*int)) },
+	reflect.TypeOf(([]int)(nil)):          func(k string, v any) Field { return Ints(k, v.([]int)) },
+	reflect.TypeOf(int64(0)):              func(k string, v any) Field { return Int64(k, v.(int64)) },
+	reflect.TypeOf((*int64)(nil)):         func(k string, v any) Field { return Int64p(k, v.(*int64)) },
+	reflect.TypeOf(([]int64)(nil)):        func(k string, v any) Field { return Int64s(k, v.([]int64)) },
+	reflect.TypeOf(int32(0)):              func(k string, v any) Field { return Int32(k, v.(int32)) },
+	reflect.TypeOf((*int32)(nil)):         func(k string, v any) Field { return Int32p(k, v.(*int32)) },
+	reflect.TypeOf(([]int32)(nil)):        func(k string, v any) Field { return Int32s(k, v.([]int32)) },
+	reflect.TypeOf(int16(0)):              func(k string, v any) Field { return Int16(k, v.(int16)) },
+	reflect.TypeOf((*int16)(nil)):         func(k string, v any) Field { return Int16p(k, v.(*int16)) },
+	reflect.TypeOf(([]int16)(nil)):        func(k string, v any) Field { return Int16s(k, v.([]int16)) },
+	reflect.TypeOf(int8(0)):               func(k string, v any) Field { return Int8(k, v.(int8)) },
+	reflect.TypeOf((*int8)(nil)):          func(k string, v any) Field { return Int8p(k, v.(*int8)) },
+	reflect.TypeOf(([]int8)(nil)):         func(k string, v any) Field { return Int8s(k, v.([]int8)) },
+	reflect.TypeOf(string("")):            func(k string, v any) Field { return String(k, v.(string)) },
+	reflect.TypeOf((*string)(nil)):        func(k string, v any) Field { return Stringp(k, v.(*string)) },
+	reflect.TypeOf(([]string)(nil)):       func(k string, v any) Field { return Strings(k, v.([]string)) },
+	reflect.TypeOf(uint(0)):               func(k string, v any) Field { return Uint(k, v.(uint)) },
+	reflect.TypeOf((*uint)(nil)):          func(k string, v any) Field { return Uintp(k, v.(*uint)) },
+	reflect.TypeOf(([]uint)(nil)):         func(k string, v any) Field { return Uints(k, v.([]uint)) },
+	reflect.TypeOf(uint64(0)):             func(k string, v any) Field { return Uint64(k, v.(uint64)) },
+	reflect.TypeOf((*uint64)(nil)):        func(k string, v any) Field { return Uint64p(k, v.(*uint64)) },
+	reflect.TypeOf(([]uint64)(nil)):       func(k string, v any) Field { return Uint64s(k, v.([]uint64)) },
+	reflect.TypeOf(uint32(0)):             func(k string, v any) Field { return Uint32(k, v.(uint32)) },
+	reflect.TypeOf((*uint32)(nil)):        func(k string, v any) Field { return Uint32p(k, v.(*uint32)) },
+	reflect.TypeOf(([]uint32)(nil)):       func(k string, v any) Field { return Uint32s(k, v.([]uint32)) },
+	reflect.TypeOf(uint16(0)):             func(k string, v any) Field { return Uint16(k, v.(uint16)) },
+	reflect.TypeOf((*uint16)(nil)):        func(k string, v any) Field { return Uint16p(k, v.(*uint16)) },
+	reflect.TypeOf(([]uint16)(nil)):       func(k string, v any) Field { return Uint16s(k, v.([]uint16)) },
+	reflect.TypeOf(uint8(0)):              func(k string, v any) Field { return Uint8(k, v.(uint8)) },
+	reflect.TypeOf((*uint8)(nil)):         func(k string, v any) Field { return Uint8p(k, v.(*uint8)) },
+	reflect.TypeOf(([]uint8)(nil)):        func(k string, v any) Field { return Uint8s(k, v.([]uint8)) },
+	reflect.TypeOf([]byte(nil)):           func(k string, v any) Field { return Binary(k, v.([]byte)) },
+	reflect.TypeOf(uintptr(0)):            func(k string, v any) Field { return Uintptr(k, v.(uintptr)) },
+	reflect.TypeOf((*uintptr)(nil)):       func(k string, v any) Field { return Uintptrp(k, v.(*uintptr)) },
+	reflect.TypeOf([]uintptr(nil)):        func(k string, v any) Field { return Uintptrs(k, v.([]uintptr)) },
+	reflect.TypeOf(time.Time{}):           func(k string, v any) Field { return Time(k, v.(time.Time)) },
+	reflect.TypeOf((*time.Time)(nil)):     func(k string, v any) Field { return Timep(k, v.(*time.Time)) },
+	reflect.TypeOf([]time.Time(nil)):      func(k string, v any) Field { return Times(k, v.([]time.Time)) },
+	reflect.TypeOf(time.Duration(0)):      func(k string, v any) Field { return Duration(k, v.(time.Duration)) },
+	reflect.TypeOf((*time.Duration)(nil)): func(k string, v any) Field { return Durationp(k, v.(*time.Duration)) },
+	reflect.TypeOf([]time.Duration(nil)):  func(k string, v any) Field { return Durations(k, v.([]time.Duration)) },
+	reflect.TypeOf([]error(nil)):          func(k string, v any) Field { return Errors(k, v.([]error)) },
+}
+
+var anyInterfaceLookup = []struct {
+	match func(v any) bool
+	fn    func(k string, v any) Field
+}{
+	{
+		match: func(v any) bool { _, ok := v.(zapcore.ObjectMarshaler); return ok },
+		fn:    func(k string, v any) Field { return Object(k, v.(zapcore.ObjectMarshaler)) },
+	},
+	{
+		match: func(v any) bool { _, ok := v.(zapcore.ArrayMarshaler); return ok },
+		fn:    func(k string, v any) Field { return Array(k, v.(zapcore.ArrayMarshaler)) },
+	},
+	{
+		match: func(v any) bool { _, ok := v.(error); return ok },
+		fn:    func(k string, v any) Field { return NamedError(k, v.(error)) },
+	},
+	{
+		match: func(v any) bool { _, ok := v.(fmt.Stringer); return ok },
+		fn:    func(k string, v any) Field { return Stringer(k, v.(fmt.Stringer)) },
+	},
+}
+
 // Any takes a key and an arbitrary value and chooses the best way to represent
 // them as a field, falling back to a reflection-based approach only if
 // necessary.
@@ -418,311 +504,20 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 // them. To minimize surprises, []byte values are treated as binary blobs, byte
 // values are treated as uint8, and runes are always treated as integers.
 func Any(key string, value interface{}) Field {
-	// To work around go compiler assigning unreasonably large space on stack
-	// (4kb, one `Field` per arm of the switch statement) which can trigger
-	// performance degradation if `Any` is used in a brand new goroutine.
-	var (
-		t     zapcore.FieldType
-		i     int64
-		s     string
-		iface any
-	)
-	switch val := value.(type) {
-	case zapcore.ObjectMarshaler:
-		t = zapcore.ObjectMarshalerType
-		iface = val
-	case zapcore.ArrayMarshaler:
-		t = zapcore.ArrayMarshalerType
-		iface = val
-	case bool:
-		var ival int64
-		if val {
-			ival = 1
+	fn, ok := anyTypeLookup[reflect.TypeOf(value)]
+
+	if !ok {
+		for i := range anyInterfaceLookup {
+			if anyInterfaceLookup[i].match(value) {
+				fn = anyInterfaceLookup[i].fn
+				break
+			}
 		}
-		t = zapcore.BoolType
-		i = ival
-	case *bool:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		var ival int64
-		if *val {
-			ival = 1
-		}
-		t = zapcore.BoolType
-		i = ival
-	case []bool:
-		t = zapcore.ArrayMarshalerType
-		iface = bools(val)
-	case complex128:
-		t = zapcore.Complex128Type
-		iface = val
-	case *complex128:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Complex128Type
-		iface = *val
-	case []complex128:
-		t = zapcore.ArrayMarshalerType
-		iface = complex128s(val)
-	case complex64:
-		t = zapcore.Complex64Type
-		iface = val
-	case *complex64:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Complex64Type
-		iface = *val
-	case []complex64:
-		t = zapcore.ArrayMarshalerType
-		iface = complex64s(val)
-	case float64:
-		t = zapcore.Float64Type
-		i = int64(math.Float64bits(val))
-	case *float64:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Float64Type
-		i = int64(math.Float64bits(*val))
-	case []float64:
-		t = zapcore.ArrayMarshalerType
-		iface = float64s(val)
-	case float32:
-		t = zapcore.Float32Type
-		i = int64(math.Float32bits(val))
-	case *float32:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Float32Type
-		i = int64(math.Float32bits(*val))
-	case []float32:
-		t = zapcore.ArrayMarshalerType
-		iface = float32s(val)
-	case int:
-		t = zapcore.Int64Type
-		i = int64(val)
-	case *int:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Int64Type
-		i = int64(*val)
-	case []int:
-		t = zapcore.ArrayMarshalerType
-		iface = ints(val)
-	case int64:
-		t = zapcore.Int64Type
-		i = val
-	case *int64:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Int64Type
-		i = *val
-	case []int64:
-		t = zapcore.ArrayMarshalerType
-		iface = int64s(val)
-	case int32:
-		t = zapcore.Int32Type
-		i = int64(val)
-	case *int32:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Int32Type
-		i = int64(*val)
-	case []int32:
-		t = zapcore.ArrayMarshalerType
-		iface = int32s(val)
-	case int16:
-		t = zapcore.Int16Type
-		i = int64(val)
-	case *int16:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Int16Type
-		i = int64(*val)
-	case []int16:
-		t = zapcore.ArrayMarshalerType
-		iface = int16s(val)
-	case int8:
-		t = zapcore.Int8Type
-		i = int64(val)
-	case *int8:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Int8Type
-		i = int64(*val)
-	case []int8:
-		t = zapcore.ArrayMarshalerType
-		iface = int8s(val)
-	case string:
-		t = zapcore.StringType
-		s = val
-	case *string:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.StringType
-		s = *val
-	case []string:
-		t = zapcore.ArrayMarshalerType
-		iface = stringArray(val)
-	case uint:
-		t = zapcore.Uint64Type
-		i = int64(val)
-	case *uint:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Uint64Type
-		i = int64(*val)
-	case []uint:
-		t = zapcore.ArrayMarshalerType
-		iface = uints(val)
-	case uint64:
-		t = zapcore.Uint64Type
-		i = int64(val)
-	case *uint64:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Uint64Type
-		i = int64(*val)
-	case []uint64:
-		t = zapcore.ArrayMarshalerType
-		iface = uint64s(val)
-	case uint32:
-		t = zapcore.Uint32Type
-		i = int64(val)
-	case *uint32:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Uint32Type
-		i = int64(*val)
-	case []uint32:
-		t = zapcore.ArrayMarshalerType
-		iface = uint32s(val)
-	case uint16:
-		t = zapcore.Uint16Type
-		i = int64(val)
-	case *uint16:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Uint16Type
-		i = int64(*val)
-	case []uint16:
-		t = zapcore.ArrayMarshalerType
-		iface = uint16s(val)
-	case uint8:
-		t = zapcore.Uint8Type
-		i = int64(val)
-	case *uint8:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.Uint8Type
-		i = int64(*val)
-	case []byte:
-		t = zapcore.BinaryType
-		iface = val
-	case uintptr:
-		t = zapcore.UintptrType
-		i = int64(val)
-	case *uintptr:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.UintptrType
-		i = int64(*val)
-	case []uintptr:
-		t = zapcore.ArrayMarshalerType
-		iface = uintptrs(val)
-	case time.Time:
-		if val.Before(_minTimeInt64) || val.After(_maxTimeInt64) {
-			t = zapcore.TimeFullType
-			iface = val
-			break
-		}
-		t = zapcore.TimeType
-		i = val.UnixNano()
-		iface = val.Location()
-	case *time.Time:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		if val.Before(_minTimeInt64) || val.After(_maxTimeInt64) {
-			t = zapcore.TimeFullType
-			iface = *val
-			break
-		}
-		t = zapcore.TimeType
-		i = val.UnixNano()
-		iface = val.Location()
-	case []time.Time:
-		t = zapcore.ArrayMarshalerType
-		iface = times(val)
-	case time.Duration:
-		t = zapcore.DurationType
-		i = int64(val)
-	case *time.Duration:
-		if val == nil {
-			t = zapcore.ReflectType
-			break
-		}
-		t = zapcore.DurationType
-		i = int64(*val)
-	case []time.Duration:
-		t = zapcore.ArrayMarshalerType
-		iface = durations(val)
-	case error:
-		if val == nil {
-			t = zapcore.SkipType
-			break
-		}
-		t = zapcore.ErrorType
-		iface = val
-	case []error:
-		t = zapcore.ArrayMarshalerType
-		iface = errArray(val)
-	case fmt.Stringer:
-		t = zapcore.StringerType
-		iface = val
-	default:
-		t = zapcore.ReflectType
-		iface = val
 	}
-	return Field{
-		Key:       key,
-		Type:      t,
-		Integer:   i,
-		String:    s,
-		Interface: iface,
+
+	if fn == nil {
+		fn = Reflect
 	}
+
+	return fn(key, value)
 }
