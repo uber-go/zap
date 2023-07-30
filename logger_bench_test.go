@@ -22,6 +22,8 @@ package zap
 
 import (
 	"errors"
+	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -236,5 +238,132 @@ func Benchmark100Fields(b *testing.B) {
 			second[i] = Int("foo", i+batchSize)
 		}
 		logger.With(first...).Info("Child loggers with lots of context.", second...)
+	}
+}
+
+func dummy(wg *sync.WaitGroup, s string, i int) string {
+	if i == 0 {
+		wg.Wait()
+		return "1" + s
+	}
+	return dummy(wg, s, i-1)
+}
+
+func stackGrower(n int) *sync.WaitGroup {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	go dummy(&wg, "hi", n)
+	return &wg
+}
+
+func BenchmarkAny(b *testing.B) {
+	var (
+		logger = New(
+			zapcore.NewCore(
+				zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
+				&ztest.Discarder{},
+				DebugLevel,
+			),
+		)
+		key = "some-long-string-longer-than-16"
+	)
+
+	tests := []struct {
+		name   string
+		typed  func() Field
+		anyArg any
+	}{
+		{
+			name:   "string",
+			typed:  func() Field { return String(key, "yet-another-long-string") },
+			anyArg: "yet-another-long-string",
+		},
+		{
+			name:   "stringer",
+			typed:  func() Field { return Stringer(key, InfoLevel) },
+			anyArg: InfoLevel,
+		},
+	}
+
+	for _, tt := range tests {
+		b.Run(tt.name+"-typ-no-logger", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				f := tt.typed()
+				runtime.KeepAlive(f)
+			}
+		})
+		b.Run(tt.name+"-any-no-logger", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				f := Any(key, tt.anyArg)
+				runtime.KeepAlive(f)
+			}
+		})
+		b.Run(tt.name+"-typ-logger", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				logger.Info("", tt.typed())
+			}
+		})
+		b.Run(tt.name+"-any-logger", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				logger.Info("", Any(key, tt.anyArg))
+			}
+		})
+		b.Run(tt.name+"-typ-logger-go", func(b *testing.B) {
+			wg := sync.WaitGroup{}
+			wg.Add(b.N)
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				go func() {
+					logger.Info("", tt.typed())
+					wg.Done()
+				}()
+			}
+			wg.Wait()
+		})
+		b.Run(tt.name+"-any-logger-go", func(b *testing.B) {
+			wg := sync.WaitGroup{}
+			wg.Add(b.N)
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				go func() {
+					logger.Info("", Any(key, tt.anyArg))
+					wg.Done()
+				}()
+			}
+			wg.Wait()
+		})
+		// The stack growing below simulates production setup where some other
+		// goroutines exist and affect the starting goroutine stack size up.
+		// Otherwise, for tests with 2+ goroutines, the cost of starting the goroutine
+		// dominates and the cost of `any` stack overallocation is not visible.
+		b.Run(tt.name+"-typ-logger-go-stack", func(b *testing.B) {
+			wg := sync.WaitGroup{}
+			wg.Add(b.N)
+			defer stackGrower(2000).Done()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				go func() {
+					logger.Info("", tt.typed())
+					wg.Done()
+				}()
+			}
+			wg.Wait()
+			b.StopTimer()
+		})
+		b.Run(tt.name+"-any-logger-go-stack", func(b *testing.B) {
+			wg := sync.WaitGroup{}
+			wg.Add(b.N)
+			defer stackGrower(2000).Done()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				go func() {
+					logger.Info("", Any(key, tt.anyArg))
+					wg.Done()
+				}()
+			}
+			wg.Wait()
+			b.StopTimer()
+		})
 	}
 }
