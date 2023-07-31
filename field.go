@@ -411,69 +411,16 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 	}
 }
 
-// anyTypeLookup is a map from concrete types to the field constructors.
-var anyTypeLookup = map[reflect.Type]func(string, any) Field{
-	reflect.TypeOf(bool(true)):            func(k string, v any) Field { return Bool(k, v.(bool)) },
-	reflect.TypeOf((*bool)(nil)):          func(k string, v any) Field { return Boolp(k, v.(*bool)) },
-	reflect.TypeOf([]bool(nil)):           func(k string, v any) Field { return Bools(k, v.([]bool)) },
-	reflect.TypeOf(complex128(1)):         func(k string, v any) Field { return Complex128(k, v.(complex128)) },
-	reflect.TypeOf((*complex128)(nil)):    func(k string, v any) Field { return Complex128p(k, v.(*complex128)) },
-	reflect.TypeOf(([]complex128)(nil)):   func(k string, v any) Field { return Complex128s(k, v.([]complex128)) },
-	reflect.TypeOf(complex64(1)):          func(k string, v any) Field { return Complex64(k, v.(complex64)) },
-	reflect.TypeOf((*complex64)(nil)):     func(k string, v any) Field { return Complex64p(k, v.(*complex64)) },
-	reflect.TypeOf(([]complex64)(nil)):    func(k string, v any) Field { return Complex64s(k, v.([]complex64)) },
-	reflect.TypeOf(float64(1)):            func(k string, v any) Field { return Float64(k, v.(float64)) },
-	reflect.TypeOf((*float64)(nil)):       func(k string, v any) Field { return Float64p(k, v.(*float64)) },
-	reflect.TypeOf(([]float64)(nil)):      func(k string, v any) Field { return Float64s(k, v.([]float64)) },
-	reflect.TypeOf(float32(1)):            func(k string, v any) Field { return Float32(k, v.(float32)) },
-	reflect.TypeOf((*float32)(nil)):       func(k string, v any) Field { return Float32p(k, v.(*float32)) },
-	reflect.TypeOf(([]float32)(nil)):      func(k string, v any) Field { return Float32s(k, v.([]float32)) },
-	reflect.TypeOf(int(0)):                func(k string, v any) Field { return Int(k, v.(int)) },
-	reflect.TypeOf((*int)(nil)):           func(k string, v any) Field { return Intp(k, v.(*int)) },
-	reflect.TypeOf(([]int)(nil)):          func(k string, v any) Field { return Ints(k, v.([]int)) },
-	reflect.TypeOf(int64(0)):              func(k string, v any) Field { return Int64(k, v.(int64)) },
-	reflect.TypeOf((*int64)(nil)):         func(k string, v any) Field { return Int64p(k, v.(*int64)) },
-	reflect.TypeOf(([]int64)(nil)):        func(k string, v any) Field { return Int64s(k, v.([]int64)) },
-	reflect.TypeOf(int32(0)):              func(k string, v any) Field { return Int32(k, v.(int32)) },
-	reflect.TypeOf((*int32)(nil)):         func(k string, v any) Field { return Int32p(k, v.(*int32)) },
-	reflect.TypeOf(([]int32)(nil)):        func(k string, v any) Field { return Int32s(k, v.([]int32)) },
-	reflect.TypeOf(int16(0)):              func(k string, v any) Field { return Int16(k, v.(int16)) },
-	reflect.TypeOf((*int16)(nil)):         func(k string, v any) Field { return Int16p(k, v.(*int16)) },
-	reflect.TypeOf(([]int16)(nil)):        func(k string, v any) Field { return Int16s(k, v.([]int16)) },
-	reflect.TypeOf(int8(0)):               func(k string, v any) Field { return Int8(k, v.(int8)) },
-	reflect.TypeOf((*int8)(nil)):          func(k string, v any) Field { return Int8p(k, v.(*int8)) },
-	reflect.TypeOf(([]int8)(nil)):         func(k string, v any) Field { return Int8s(k, v.([]int8)) },
-	reflect.TypeOf(string("")):            func(k string, v any) Field { return String(k, v.(string)) },
-	reflect.TypeOf((*string)(nil)):        func(k string, v any) Field { return Stringp(k, v.(*string)) },
-	reflect.TypeOf(([]string)(nil)):       func(k string, v any) Field { return Strings(k, v.([]string)) },
-	reflect.TypeOf(uint(0)):               func(k string, v any) Field { return Uint(k, v.(uint)) },
-	reflect.TypeOf((*uint)(nil)):          func(k string, v any) Field { return Uintp(k, v.(*uint)) },
-	reflect.TypeOf(([]uint)(nil)):         func(k string, v any) Field { return Uints(k, v.([]uint)) },
-	reflect.TypeOf(uint64(0)):             func(k string, v any) Field { return Uint64(k, v.(uint64)) },
-	reflect.TypeOf((*uint64)(nil)):        func(k string, v any) Field { return Uint64p(k, v.(*uint64)) },
-	reflect.TypeOf(([]uint64)(nil)):       func(k string, v any) Field { return Uint64s(k, v.([]uint64)) },
-	reflect.TypeOf(uint32(0)):             func(k string, v any) Field { return Uint32(k, v.(uint32)) },
-	reflect.TypeOf((*uint32)(nil)):        func(k string, v any) Field { return Uint32p(k, v.(*uint32)) },
-	reflect.TypeOf(([]uint32)(nil)):       func(k string, v any) Field { return Uint32s(k, v.([]uint32)) },
-	reflect.TypeOf(uint16(0)):             func(k string, v any) Field { return Uint16(k, v.(uint16)) },
-	reflect.TypeOf((*uint16)(nil)):        func(k string, v any) Field { return Uint16p(k, v.(*uint16)) },
-	reflect.TypeOf(([]uint16)(nil)):       func(k string, v any) Field { return Uint16s(k, v.([]uint16)) },
-	reflect.TypeOf(uint8(0)):              func(k string, v any) Field { return Uint8(k, v.(uint8)) },
-	reflect.TypeOf((*uint8)(nil)):         func(k string, v any) Field { return Uint8p(k, v.(*uint8)) },
-	reflect.TypeOf(([]uint8)(nil)):        func(k string, v any) Field { return Uint8s(k, v.([]uint8)) },
-	reflect.TypeOf([]byte(nil)):           func(k string, v any) Field { return Binary(k, v.([]byte)) },
-	reflect.TypeOf(uintptr(0)):            func(k string, v any) Field { return Uintptr(k, v.(uintptr)) },
-	reflect.TypeOf((*uintptr)(nil)):       func(k string, v any) Field { return Uintptrp(k, v.(*uintptr)) },
-	reflect.TypeOf([]uintptr(nil)):        func(k string, v any) Field { return Uintptrs(k, v.([]uintptr)) },
-	reflect.TypeOf(time.Time{}):           func(k string, v any) Field { return Time(k, v.(time.Time)) },
-	reflect.TypeOf((*time.Time)(nil)):     func(k string, v any) Field { return Timep(k, v.(*time.Time)) },
-	reflect.TypeOf([]time.Time(nil)):      func(k string, v any) Field { return Times(k, v.([]time.Time)) },
-	reflect.TypeOf(time.Duration(0)):      func(k string, v any) Field { return Duration(k, v.(time.Duration)) },
-	reflect.TypeOf((*time.Duration)(nil)): func(k string, v any) Field { return Durationp(k, v.(*time.Duration)) },
-	reflect.TypeOf([]time.Duration(nil)):  func(k string, v any) Field { return Durations(k, v.([]time.Duration)) },
-	reflect.TypeOf([]error(nil)):          func(k string, v any) Field { return Errors(k, v.([]error)) },
+type anyFuncType func(string, any) Field
+
+func typedToAnyFunc[T any](f func(string, T) Field) anyFuncType {
+	return func(k string, v any) Field {
+		return f(k, v.(T))
+	}
 }
 
+// anyTypeLookup is a map from concrete types to the field constructors.
+var anyTypeLookup = buildAnyTypeLookup()
 var anyInterfaceLookup = []struct {
 	match func(v any) bool
 	fn    func(k string, v any) Field
@@ -494,6 +441,44 @@ var anyInterfaceLookup = []struct {
 		match: func(v any) bool { _, ok := v.(fmt.Stringer); return ok },
 		fn:    func(k string, v any) Field { return Stringer(k, v.(fmt.Stringer)) },
 	},
+}
+
+func addTypeLookup[T any](
+	m map[reflect.Type]anyFuncType,
+	directTypeFn func(string, T) Field,
+	ptrTypeFn func(string, *T) Field,
+	arrayTypeFn func(string, []T) Field,
+) {
+	var v T
+	m[reflect.TypeOf(v)] = typedToAnyFunc(directTypeFn)
+	m[reflect.TypeOf(&v)] = typedToAnyFunc(ptrTypeFn)
+	m[reflect.TypeOf([]T(nil))] = typedToAnyFunc(arrayTypeFn)
+}
+
+func buildAnyTypeLookup() map[reflect.Type]anyFuncType {
+	m := make(map[reflect.Type]anyFuncType)
+	addTypeLookup[bool](m, Bool, Boolp, Bools)
+	addTypeLookup[complex128](m, Complex128, Complex128p, Complex128s)
+	addTypeLookup[complex64](m, Complex64, Complex64p, Complex64s)
+	addTypeLookup[float64](m, Float64, Float64p, Float64s)
+	addTypeLookup[float32](m, Float32, Float32p, Float32s)
+	addTypeLookup[int](m, Int, Intp, Ints)
+	addTypeLookup[int64](m, Int64, Int64p, Int64s)
+	addTypeLookup[int32](m, Int32, Int32p, Int32s)
+	addTypeLookup[int16](m, Int16, Int16p, Int16s)
+	addTypeLookup[int8](m, Int8, Int8p, Int8s)
+	addTypeLookup[string](m, String, Stringp, Strings)
+	addTypeLookup[uint](m, Uint, Uintp, Uints)
+	addTypeLookup[uint64](m, Uint64, Uint64p, Uint64s)
+	addTypeLookup[uint32](m, Uint32, Uint32p, Uint32s)
+	addTypeLookup[uint16](m, Uint16, Uint16p, Uint16s)
+	addTypeLookup[uint8](m, Uint8, Uint8p, Uint8s)
+	addTypeLookup[uintptr](m, Uintptr, Uintptrp, Uintptrs)
+	addTypeLookup[time.Time](m, Time, Timep, Times)
+	addTypeLookup[time.Duration](m, Duration, Durationp, Durations)
+	m[reflect.TypeOf([]byte(nil))] = typedToAnyFunc(Binary)
+	m[reflect.TypeOf([]error(nil))] = typedToAnyFunc(Errors)
+	return m
 }
 
 // Any takes a key and an arbitrary value and chooses the best way to represent
