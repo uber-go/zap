@@ -421,26 +421,11 @@ func typedToAnyFunc[T any](f func(string, T) Field) anyFuncType {
 
 // anyTypeLookup is a map from concrete types to the field constructors.
 var anyTypeLookup = buildAnyTypeLookup()
-var anyInterfaceLookup = []struct {
-	match func(v any) bool
-	fn    func(k string, v any) Field
-}{
-	{
-		match: func(v any) bool { _, ok := v.(zapcore.ObjectMarshaler); return ok },
-		fn:    func(k string, v any) Field { return Object(k, v.(zapcore.ObjectMarshaler)) },
-	},
-	{
-		match: func(v any) bool { _, ok := v.(zapcore.ArrayMarshaler); return ok },
-		fn:    func(k string, v any) Field { return Array(k, v.(zapcore.ArrayMarshaler)) },
-	},
-	{
-		match: func(v any) bool { _, ok := v.(error); return ok },
-		fn:    func(k string, v any) Field { return NamedError(k, v.(error)) },
-	},
-	{
-		match: func(v any) bool { _, ok := v.(fmt.Stringer); return ok },
-		fn:    func(k string, v any) Field { return Stringer(k, v.(fmt.Stringer)) },
-	},
+var anyInterfaceLookup = buildAnyInterfaceLookup()
+
+type interfaceMatcher struct {
+	match func(any) bool
+	field func(string, any) Field
 }
 
 func addTypeLookup[T any](
@@ -481,6 +466,25 @@ func buildAnyTypeLookup() map[reflect.Type]anyFuncType {
 	return m
 }
 
+func buildInterfaceMatcher[T any](typedFn func(string, T) Field) interfaceMatcher {
+	return interfaceMatcher{
+		match: func(v any) bool {
+			_, ok := v.(T)
+			return ok
+		},
+		field: typedToAnyFunc(typedFn),
+	}
+}
+
+func buildAnyInterfaceLookup() []interfaceMatcher {
+	return []interfaceMatcher{
+		buildInterfaceMatcher[zapcore.ObjectMarshaler](Object),
+		buildInterfaceMatcher[zapcore.ArrayMarshaler](Array),
+		buildInterfaceMatcher[error](NamedError),
+		buildInterfaceMatcher[fmt.Stringer](Stringer),
+	}
+}
+
 // Any takes a key and an arbitrary value and chooses the best way to represent
 // them as a field, falling back to a reflection-based approach only if
 // necessary.
@@ -494,7 +498,7 @@ func Any(key string, value interface{}) Field {
 	if !ok {
 		for i := range anyInterfaceLookup {
 			if anyInterfaceLookup[i].match(value) {
-				fn = anyInterfaceLookup[i].fn
+				fn = anyInterfaceLookup[i].field
 				break
 			}
 		}
