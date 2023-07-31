@@ -249,7 +249,11 @@ func dummy(wg *sync.WaitGroup, s string, i int) string {
 	return dummy(wg, s, i-1)
 }
 
-func stackGrower(n int) *sync.WaitGroup {
+// avgStackIncreaser starts a background goroutine with a variable
+// stack size. The goal is to move the average stack size higher,
+// since https://go-review.googlesource.com/c/go/+/345889 this affects
+// goroutine starting stack size.
+func avgStackIncreaser(n int) *sync.WaitGroup {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
@@ -258,16 +262,7 @@ func stackGrower(n int) *sync.WaitGroup {
 }
 
 func BenchmarkAny(b *testing.B) {
-	var (
-		logger = New(
-			zapcore.NewCore(
-				zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig),
-				&ztest.Discarder{},
-				DebugLevel,
-			),
-		)
-		key = "some-long-string-longer-than-16"
-	)
+	key := "some-long-string-longer-than-16"
 
 	tests := []struct {
 		name   string
@@ -287,83 +282,90 @@ func BenchmarkAny(b *testing.B) {
 	}
 
 	for _, tt := range tests {
-		b.Run(tt.name+"-typ-no-logger", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				f := tt.typed()
-				runtime.KeepAlive(f)
-			}
-		})
-		b.Run(tt.name+"-any-no-logger", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				f := Any(key, tt.anyArg)
-				runtime.KeepAlive(f)
-			}
-		})
-		b.Run(tt.name+"-typ-logger", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				logger.Info("", tt.typed())
-			}
-		})
-		b.Run(tt.name+"-any-logger", func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				logger.Info("", Any(key, tt.anyArg))
-			}
-		})
-		b.Run(tt.name+"-typ-logger-go", func(b *testing.B) {
-			wg := sync.WaitGroup{}
-			wg.Add(b.N)
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				go func() {
-					logger.Info("", tt.typed())
-					wg.Done()
-				}()
-			}
-			wg.Wait()
-		})
-		b.Run(tt.name+"-any-logger-go", func(b *testing.B) {
-			wg := sync.WaitGroup{}
-			wg.Add(b.N)
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				go func() {
-					logger.Info("", Any(key, tt.anyArg))
-					wg.Done()
-				}()
-			}
-			wg.Wait()
-		})
-		// The stack growing below simulates production setup where some other
-		// goroutines exist and affect the starting goroutine stack size up.
-		// Otherwise, for tests with 2+ goroutines, the cost of starting the goroutine
-		// dominates and the cost of `any` stack overallocation is not visible.
-		b.Run(tt.name+"-typ-logger-go-stack", func(b *testing.B) {
-			wg := sync.WaitGroup{}
-			wg.Add(b.N)
-			defer stackGrower(2000).Done()
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				go func() {
-					logger.Info("", tt.typed())
-					wg.Done()
-				}()
-			}
-			wg.Wait()
-			b.StopTimer()
-		})
-		b.Run(tt.name+"-any-logger-go-stack", func(b *testing.B) {
-			wg := sync.WaitGroup{}
-			wg.Add(b.N)
-			defer stackGrower(2000).Done()
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				go func() {
-					logger.Info("", Any(key, tt.anyArg))
-					wg.Done()
-				}()
-			}
-			wg.Wait()
-			b.StopTimer()
+		b.Run(tt.name, func(b *testing.B) {
+			b.Run("field-only", func(b *testing.B) {
+				b.Run("typed", func(b *testing.B) {
+					withBenchedLogger(b, func(log *Logger) {
+						f := tt.typed()
+						runtime.KeepAlive(f)
+					})
+				})
+				b.Run("any", func(b *testing.B) {
+					withBenchedLogger(b, func(log *Logger) {
+						f := Any(key, tt.anyArg)
+						runtime.KeepAlive(f)
+					})
+				})
+			})
+			b.Run("log", func(b *testing.B) {
+				b.Run("typed", func(b *testing.B) {
+					withBenchedLogger(b, func(log *Logger) {
+						log.Info("", tt.typed())
+					})
+				})
+				b.Run("any", func(b *testing.B) {
+					withBenchedLogger(b, func(log *Logger) {
+						log.Info("", Any(key, tt.anyArg))
+					})
+				})
+			})
+			b.Run("log-go", func(b *testing.B) {
+				b.Run("typed", func(b *testing.B) {
+					wg := sync.WaitGroup{}
+					wg.Add(b.N)
+					b.ResetTimer()
+					withBenchedLogger(b, func(log *Logger) {
+						go func() {
+							log.Info("", tt.typed())
+							wg.Done()
+						}()
+					})
+					wg.Wait()
+				})
+				b.Run("any", func(b *testing.B) {
+					wg := sync.WaitGroup{}
+					wg.Add(b.N)
+					b.ResetTimer()
+					withBenchedLogger(b, func(log *Logger) {
+						go func() {
+							log.Info("", Any(key, tt.anyArg))
+							wg.Done()
+						}()
+					})
+					wg.Wait()
+				})
+			})
+			// The stack growing below simulates production setup where some other
+			// goroutines exist and affect the starting goroutine stack size up.
+			// Otherwise, for tests with 2+ goroutines, the cost of starting the goroutine
+			// dominates and the cost of `any` stack overallocation is not visible.
+			b.Run("log-go-stack", func(b *testing.B) {
+				defer avgStackIncreaser(5000).Done()
+				b.ResetTimer()
+				b.Run("typed", func(b *testing.B) {
+					wg := sync.WaitGroup{}
+					wg.Add(b.N)
+					withBenchedLogger(b, func(log *Logger) {
+						go func() {
+							log.Info("", tt.typed())
+							wg.Done()
+						}()
+					})
+					wg.Wait()
+				})
+				b.Run("any", func(b *testing.B) {
+					wg := sync.WaitGroup{}
+					wg.Add(b.N)
+					withBenchedLogger(b, func(log *Logger) {
+						go func() {
+							log.Info("", Any(key, tt.anyArg))
+							wg.Done()
+						}()
+					})
+					wg.Wait()
+				})
+				b.StopTimer()
+			})
 		})
 	}
 }
