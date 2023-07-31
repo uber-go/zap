@@ -311,28 +311,26 @@ func BenchmarkAny(b *testing.B) {
 			})
 			b.Run("log-go", func(b *testing.B) {
 				b.Run("typed", func(b *testing.B) {
-					wg := sync.WaitGroup{}
-					wg.Add(b.N)
-					b.ResetTimer()
 					withBenchedLogger(b, func(log *Logger) {
+						var wg sync.WaitGroup
+						wg.Add(1)
 						go func() {
 							log.Info("", tt.typed())
 							wg.Done()
 						}()
+						wg.Wait()
 					})
-					wg.Wait()
 				})
 				b.Run("any", func(b *testing.B) {
-					wg := sync.WaitGroup{}
-					wg.Add(b.N)
-					b.ResetTimer()
 					withBenchedLogger(b, func(log *Logger) {
+						var wg sync.WaitGroup
+						wg.Add(1)
 						go func() {
 							log.Info("", Any(key, tt.anyArg))
 							wg.Done()
 						}()
+						wg.Wait()
 					})
-					wg.Wait()
 				})
 			})
 			// The stack growing below simulates production setup where some other
@@ -340,29 +338,31 @@ func BenchmarkAny(b *testing.B) {
 			// Otherwise, for tests with 2+ goroutines, the cost of starting the goroutine
 			// dominates and the cost of `any` stack overallocation is not visible.
 			b.Run("log-go-stack", func(b *testing.B) {
-				defer increaseAvgStack(5000).Done()
+				defer increaseAvgStack(1000).Done()
 				b.ResetTimer()
 				b.Run("typed", func(b *testing.B) {
-					wg := sync.WaitGroup{}
-					wg.Add(b.N)
 					withBenchedLogger(b, func(log *Logger) {
+						var wg sync.WaitGroup
+						wg.Add(1)
 						go func() {
 							log.Info("", tt.typed())
 							wg.Done()
 						}()
+						wg.Wait()
 					})
-					wg.Wait()
 				})
 				b.Run("any", func(b *testing.B) {
 					wg := sync.WaitGroup{}
 					wg.Add(b.N)
 					withBenchedLogger(b, func(log *Logger) {
+						var wg sync.WaitGroup
+						wg.Add(1)
 						go func() {
 							log.Info("", Any(key, tt.anyArg))
 							wg.Done()
 						}()
+						wg.Wait()
 					})
-					wg.Wait()
 				})
 				b.StopTimer()
 			})
