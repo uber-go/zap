@@ -249,11 +249,11 @@ func dummy(wg *sync.WaitGroup, s string, i int) string {
 	return dummy(wg, s, i-1)
 }
 
-// avgStackIncreaser starts a background goroutine with a variable
+// increaseAvgStack starts a background goroutine with a variable
 // stack size. The goal is to move the average stack size higher,
 // since https://go-review.googlesource.com/c/go/+/345889 this affects
 // goroutine starting stack size.
-func avgStackIncreaser(n int) *sync.WaitGroup {
+func increaseAvgStack(n int) *sync.WaitGroup {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
@@ -340,7 +340,7 @@ func BenchmarkAny(b *testing.B) {
 			// Otherwise, for tests with 2+ goroutines, the cost of starting the goroutine
 			// dominates and the cost of `any` stack overallocation is not visible.
 			b.Run("log-go-stack", func(b *testing.B) {
-				defer avgStackIncreaser(5000).Done()
+				defer increaseAvgStack(5000).Done()
 				b.ResetTimer()
 				b.Run("typed", func(b *testing.B) {
 					wg := sync.WaitGroup{}
