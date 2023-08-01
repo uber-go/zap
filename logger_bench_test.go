@@ -241,14 +241,6 @@ func Benchmark100Fields(b *testing.B) {
 	}
 }
 
-func dummy(wg *sync.WaitGroup, s string, i int) string {
-	if i == 0 {
-		wg.Wait()
-		return "1" + s
-	}
-	return dummy(wg, s, i-1)
-}
-
 func BenchmarkAny(b *testing.B) {
 	key := "some-long-string-longer-than-16"
 
