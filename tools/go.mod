@@ -3,7 +3,7 @@ module go.uber.org/zap/tools
 require (
 	github.com/mgechev/revive v1.2.5
 	golang.org/x/vuln v0.0.0-20230217165152-67742527d09b
-	honnef.co/go/tools v0.4.2
+	honnef.co/go/tools v0.4.3
 )
 
 require (
