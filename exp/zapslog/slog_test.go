@@ -32,14 +32,14 @@ import (
 func TestAddSource(t *testing.T) {
 	r := require.New(t)
 	fac, logs := observer.New(zapcore.DebugLevel)
-	sl := slog.New(HandlerOptions{
+	sl := slog.New(NewHandler(fac, &HandlerOptions{
 		AddSource: true,
-	}.New(fac))
+	}))
 	sl.Info("msg")
 
 	r.Len(logs.AllUntimed(), 1, "Expected exactly one entry to be logged")
 	entry := logs.AllUntimed()[0]
-	r.Equal("msg", entry.Entry.Message, "Unexpected message")
+	r.Equal("msg", entry.Message, "Unexpected message")
 	r.Regexp(
 		`/slog_test.go:\d+$`,
 		entry.Caller.String(),

@@ -50,21 +50,17 @@ type HandlerOptions struct {
 	AddSource bool
 }
 
-// New builds a [Handler] that writes to the supplied [zapcore.Core].
-// This handler may be supplied to [slog.New] to create a new [slog.Logger].
-func (opts HandlerOptions) New(core zapcore.Core) *Handler {
+// NewHandler builds a [Handler] that writes to the supplied [zapcore.Core]
+// with the default options.
+func NewHandler(core zapcore.Core, opts *HandlerOptions) *Handler {
+	if opts == nil {
+		opts = &HandlerOptions{}
+	}
 	return &Handler{
 		core:      core,
 		name:      opts.LoggerName,
 		addSource: opts.AddSource,
 	}
-}
-
-// NewHandler builds a [Handler] that writes to the supplied [zapcore.Core]
-// with the default options.
-func NewHandler(core zapcore.Core) *Handler {
-	var opts HandlerOptions
-	return opts.New(core)
 }
 
 var _ slog.Handler = (*Handler)(nil)
@@ -100,7 +96,9 @@ func convertAttrToField(attr slog.Attr) zapcore.Field {
 	case slog.KindLogValuer:
 		return convertAttrToField(slog.Attr{
 			Key: attr.Key,
-			// TODO: resolve the value in a lazy way
+			// TODO: resolve the value in a lazy way.
+			// This probably needs a new Zap field type
+			// that can be resolved lazily.
 			Value: attr.Value.Resolve(),
 		})
 	default:
