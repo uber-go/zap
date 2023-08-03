@@ -56,9 +56,9 @@ type nopCloserSink struct{ zapcore.WriteSyncer }
 func (nopCloserSink) Close() error { return nil }
 
 type sinkRegistry struct {
-	mu        sync.Mutex
 	factories map[string]func(*url.URL) (Sink, error)          // keyed by scheme
 	openFile  func(string, int, os.FileMode) (*os.File, error) // type matches os.OpenFile
+	mu        sync.Mutex
 }
 
 func newSinkRegistry() *sinkRegistry {

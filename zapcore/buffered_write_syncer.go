@@ -81,6 +81,17 @@ type BufferedWriteSyncer struct {
 	// This field is required.
 	WS WriteSyncer
 
+	// Clock, if specified, provides control of the source of time for the
+	// writer.
+	//
+	// Defaults to the system clock.
+	Clock Clock
+
+	writer *bufio.Writer
+	ticker *time.Ticker
+	stop   chan struct{} // closed when flushLoop should stop
+	done   chan struct{} // closed when flushLoop has stopped
+
 	// Size specifies the maximum amount of data the writer will buffered
 	// before flushing.
 	//
@@ -93,20 +104,10 @@ type BufferedWriteSyncer struct {
 	// Defaults to 30 seconds if unspecified.
 	FlushInterval time.Duration
 
-	// Clock, if specified, provides control of the source of time for the
-	// writer.
-	//
-	// Defaults to the system clock.
-	Clock Clock
-
 	// unexported fields for state
 	mu          sync.Mutex
 	initialized bool // whether initialize() has run
 	stopped     bool // whether Stop() has run
-	writer      *bufio.Writer
-	ticker      *time.Ticker
-	stop        chan struct{} // closed when flushLoop should stop
-	done        chan struct{} // closed when flushLoop has stopped
 }
 
 func (s *BufferedWriteSyncer) initialize() {

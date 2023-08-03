@@ -54,12 +54,12 @@ type Writer struct {
 	// The Writer will panic if Log is unspecified.
 	Log *zap.Logger
 
+	buff bytes.Buffer
+
 	// Log level for the messages written to the provided logger.
 	//
 	// If unspecified, defaults to Info.
 	Level zapcore.Level
-
-	buff bytes.Buffer
 }
 
 var (

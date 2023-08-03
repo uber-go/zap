@@ -169,9 +169,9 @@ type sampler struct {
 	Core
 
 	counts            *counters
+	hook              func(Entry, SamplingDecision)
 	tick              time.Duration
 	first, thereafter uint64
-	hook              func(Entry, SamplingDecision)
 }
 
 var (

@@ -52,14 +52,15 @@ func putJSONEncoder(enc *jsonEncoder) {
 }
 
 type jsonEncoder struct {
+	reflectEnc ReflectedEncoder
 	*EncoderConfig
-	buf            *buffer.Buffer
-	spaced         bool // include spaces after colons and commas
-	openNamespaces int
+	buf *buffer.Buffer
 
 	// for encoding generic values by reflection
-	reflectBuf *buffer.Buffer
-	reflectEnc ReflectedEncoder
+	reflectBuf     *buffer.Buffer
+	openNamespaces int
+
+	spaced bool // include spaces after colons and commas
 }
 
 // NewJSONEncoder creates a fast, low-allocation JSON encoder. The encoder

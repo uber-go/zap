@@ -34,9 +34,9 @@ func With(code int) {
 
 // A StubbedExit is a testing fake for os.Exit.
 type StubbedExit struct {
-	Exited bool
-	Code   int
 	prev   func(code int)
+	Code   int
+	Exited bool
 }
 
 // Stub substitutes a fake for the call to os.Exit(1).

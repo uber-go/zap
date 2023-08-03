@@ -117,9 +117,9 @@ func NewLogger(l *zap.Logger, options ...Option) *Logger {
 // respectively.
 type printer struct {
 	enab   zapcore.LevelEnabler
-	level  zapcore.Level
 	print  func(...interface{})
 	printf func(string, ...interface{})
+	level  zapcore.Level
 }
 
 func (v *printer) Print(args ...interface{}) {

@@ -118,7 +118,7 @@ func TestSugarWith(t *testing.T) {
 			desc:     "one non-string key",
 			args:     []interface{}{"foo", 42, true, "bar"},
 			expected: []Field{Int("foo", 42)},
-			errLogs:  []observer.LoggedEntry{nonString(invalidPair{2, true, "bar"})},
+			errLogs:  []observer.LoggedEntry{nonString(invalidPair{position: 2, key: true, value: "bar"})},
 		},
 		{
 			desc:     "pairs, structured fields, non-string keys, and a dangling key",
@@ -126,7 +126,7 @@ func TestSugarWith(t *testing.T) {
 			expected: []Field{Int("foo", 42), Int("structure", 11), String("baz", "quux")},
 			errLogs: []observer.LoggedEntry{
 				ignored("dangling"),
-				nonString(invalidPair{2, true, "bar"}, invalidPair{5, 42, "reversed"}),
+				nonString(invalidPair{position: 2, key: true, value: "bar"}, invalidPair{position: 5, key: 42, value: "reversed"}),
 			},
 		},
 		{

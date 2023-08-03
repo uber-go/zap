@@ -102,11 +102,11 @@ const (
 // context. Most fields are lazily marshaled, so it's inexpensive to add fields
 // to disabled debug-level log statements.
 type Field struct {
-	Key       string
-	Type      FieldType
-	Integer   int64
-	String    string
 	Interface interface{}
+	Key       string
+	String    string
+	Integer   int64
+	Type      FieldType
 }
 
 // AddTo exports a field through the ObjectEncoder interface. It's primarily

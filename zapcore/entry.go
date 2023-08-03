@@ -68,11 +68,11 @@ func NewEntryCaller(pc uintptr, file string, line int, ok bool) EntryCaller {
 
 // EntryCaller represents the caller of a logging function.
 type EntryCaller struct {
-	Defined  bool
-	PC       uintptr
 	File     string
-	Line     int
 	Function string
+	PC       uintptr
+	Line     int
+	Defined  bool
 }
 
 // String returns the full path and line number of the caller.
@@ -141,12 +141,12 @@ func (ec EntryCaller) TrimmedPath() string {
 // Entries are pooled, so any functions that accept them MUST be careful not to
 // retain references to them.
 type Entry struct {
-	Level      Level
 	Time       time.Time
+	Caller     EntryCaller
 	LoggerName string
 	Message    string
-	Caller     EntryCaller
 	Stack      string
+	Level      Level
 }
 
 // CheckWriteHook is a custom action that may be executed after an entry is
@@ -208,11 +208,11 @@ var _ CheckWriteHook = CheckWriteAction(0)
 // nil *CheckedEntry. References are returned to a pool after Write, and MUST
 // NOT be retained after calling their Write method.
 type CheckedEntry struct {
-	Entry
 	ErrorOutput WriteSyncer
-	dirty       bool // best-effort detection of pool misuse
 	after       CheckWriteHook
-	cores       []Core
+	Entry
+	cores []Core
+	dirty bool // best-effort detection of pool misuse
 }
 
 func (ce *CheckedEntry) reset() {

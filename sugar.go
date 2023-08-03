@@ -400,7 +400,7 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []Field {
 			if cap(invalid) == 0 {
 				invalid = make(invalidPairs, 0, len(args)/2)
 			}
-			invalid = append(invalid, invalidPair{i, key, val})
+			invalid = append(invalid, invalidPair{position: i, key: key, value: val})
 		} else {
 			fields = append(fields, Any(keyStr, val))
 		}
@@ -415,8 +415,8 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []Field {
 }
 
 type invalidPair struct {
-	position   int
 	key, value interface{}
+	position   int
 }
 
 func (p invalidPair) MarshalLogObject(enc zapcore.ObjectEncoder) error {

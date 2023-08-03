@@ -79,8 +79,8 @@ func (w ShortWriter) Write(b []byte) (int, error) {
 // a bytes.Buffer. It has convenience methods to split the accumulated buffer
 // on newlines.
 type Buffer struct {
-	bytes.Buffer
 	Syncer
+	bytes.Buffer
 }
 
 // Lines returns the current buffer contents, split on newlines.
