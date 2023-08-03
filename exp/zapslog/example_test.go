@@ -40,7 +40,7 @@ func Example_slog() {
 	logger := zap.NewExample(zap.IncreaseLevel(zap.InfoLevel))
 	defer logger.Sync()
 
-	sl := slog.New(zapslog.NewHandler(logger.Core()))
+	sl := slog.New(zapslog.NewHandler(logger.Core(), nil /* options */))
 	ctx := context.Background()
 
 	sl.Info("user", "name", "Al", "secret", Password("secret"))
