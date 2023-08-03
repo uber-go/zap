@@ -6,9 +6,10 @@ GOVULNCHECK = $(GOBIN)/govulncheck
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 
 # Directories containing independent Go modules.
-#
-# We track coverage only for the main module.
 MODULE_DIRS = . ./exp ./benchmarks ./zapgrpc/internal/test
+
+# Directories that we want to track coverage for.
+COVER_DIRS = . ./exp
 
 # Many Go tools take file globs or directories as arguments instead of packages.
 GO_FILES := $(shell \
@@ -57,7 +58,7 @@ test:
 
 .PHONY: cover
 cover:
-	@$(foreach dir,$(MODULE_DIRS), ( \
+	@$(foreach dir,$(COVER_DIRS), ( \
 		cd $(dir) && \
 		go test -race -coverprofile=cover.out -coverpkg=./... ./... \
 		&& go tool cover -html=cover.out -o cover.html) &&) true
