@@ -106,6 +106,7 @@ type Field struct {
 	Type      FieldType
 	Integer   int64
 	String    string
+	Level     *Level
 	Interface interface{}
 }
 

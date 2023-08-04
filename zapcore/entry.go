@@ -249,8 +249,19 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 	ce.dirty = true
 
 	var err error
+
+	// https://github.com/golang/go/wiki/SliceTricks#filtering-without-allocating
+	filteredFields := fields[:0]
+	for _, field := range fields {
+		// include the field if the level is unset or
+		// the field level is higher than the entry's level.
+		if field.Level == nil || *field.Level >= ce.Entry.Level {
+			filteredFields = append(filteredFields, field)
+		}
+	}
+
 	for i := range ce.cores {
-		err = multierr.Append(err, ce.cores[i].Write(ce.Entry, fields))
+		err = multierr.Append(err, ce.cores[i].Write(ce.Entry, filteredFields))
 	}
 	if err != nil && ce.ErrorOutput != nil {
 		fmt.Fprintf(ce.ErrorOutput, "%v write error: %v\n", ce.Time, err)
@@ -259,7 +270,7 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 
 	hook := ce.after
 	if hook != nil {
-		hook.OnWrite(ce, fields)
+		hook.OnWrite(ce, filteredFields)
 	}
 	putCheckedEntry(ce)
 }
