@@ -1,3 +1,5 @@
+fortio.org/log v1.10.0 h1:Id2z9HjGlof0VsIHi2XNI9k+tG7ujODVDnAAvkSgpuE=
+fortio.org/log v1.10.0/go.mod h1:u/8/2lyczXq52aT5Nw6reD+3cR6m/EbS2jBiIYhgiTU=
 github.com/apex/log v1.9.0 h1:FHtw/xuaM8AgmvDDTI9fiwoAL25Sq2cxojnZICUU8l0=
 github.com/apex/log v1.9.0/go.mod h1:m82fZlWIuiWzWP04XCTXmnX0xRkYYbCdYn8jbJeLBEA=
 github.com/apex/logs v1.0.0/go.mod h1:XzxuLZ5myVHDy9SAmYpamKKRNApGj54PfYLcFrXqDwo=

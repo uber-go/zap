@@ -110,6 +110,7 @@ func newZapLogger(lvl zapcore.Level) *zap.Logger {
 	enc := zapcore.NewJSONEncoder(ec)
 	return zap.New(zapcore.NewCore(
 		enc,
+		// os.Stderr, // for real/checking the output
 		&ztest.Discarder{},
 		lvl,
 	))

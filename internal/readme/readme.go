@@ -46,6 +46,7 @@ var (
 		"apex/log":              "apex/log",
 		"rs/zerolog":            "zerolog",
 		"slog":                  "slog",
+		"fortio.org/log":        "fortio log",
 	}
 )
 

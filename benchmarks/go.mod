@@ -5,6 +5,7 @@ go 1.19
 replace go.uber.org/zap => ../
 
 require (
+	fortio.org/log v1.10.0
 	github.com/apex/log v1.9.0
 	github.com/go-kit/log v0.2.1
 	github.com/rs/zerolog v1.28.0
@@ -13,6 +14,11 @@ require (
 	go.uber.org/zap v1.23.0
 	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0
 	gopkg.in/inconshreveable/log15.v2 v2.0.0-20221122034931-555555054819
+)
+
+replace (
+// 	fortio.org/log => ../../../fortio.org/log
+ 	go.ubder.org/zap => ../
 )
 
 require (
