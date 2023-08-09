@@ -22,11 +22,11 @@ package zapslog
 
 import (
 	"context"
+	"log/slog"
 	"runtime"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/exp/slog"
 )
 
 // Handler implements the slog.Handler by writing to a zap Core.
