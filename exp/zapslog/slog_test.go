@@ -21,12 +21,12 @@
 package zapslog
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
-	"golang.org/x/exp/slog"
 )
 
 func TestAddSource(t *testing.T) {

@@ -22,12 +22,12 @@ package zapslog_test
 
 import (
 	"context"
+	"log/slog"
 	"net"
 	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
-	"golang.org/x/exp/slog"
 )
 
 type Password string
