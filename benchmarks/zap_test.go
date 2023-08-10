@@ -34,20 +34,21 @@ import (
 var (
 	errExample = errors.New("fail")
 
-	_messages   = fakeMessages(1000)
-	_tenInts    = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+	_messages = fakeMessages(1000)
+	// Go optimizes away allocations for numbers below 256
+	_tenInts    = []int{1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010}
 	_tenStrings = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
 	_tenTimes   = []time.Time{
-		time.Unix(0, 0),
-		time.Unix(1, 0),
-		time.Unix(2, 0),
-		time.Unix(3, 0),
-		time.Unix(4, 0),
-		time.Unix(5, 0),
-		time.Unix(6, 0),
-		time.Unix(7, 0),
-		time.Unix(8, 0),
-		time.Unix(9, 0),
+		time.Unix(1000, 0),
+		time.Unix(1001, 0),
+		time.Unix(1002, 0),
+		time.Unix(1003, 0),
+		time.Unix(1004, 0),
+		time.Unix(1005, 0),
+		time.Unix(1006, 0),
+		time.Unix(1007, 0),
+		time.Unix(1008, 0),
+		time.Unix(1009, 0),
 	}
 	_oneUser = &user{
 		Name:      "Jane Doe",
