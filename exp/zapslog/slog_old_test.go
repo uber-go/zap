@@ -1,4 +1,4 @@
-//go:build go1.21
+//go:build go1 && !go1.21
 
 // Copyright (c) 2023 Uber Technologies, Inc.
 //
@@ -23,12 +23,12 @@
 package zapslog
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+	"golang.org/x/exp/slog"
 )
 
 func TestAddSource(t *testing.T) {

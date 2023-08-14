@@ -1,4 +1,4 @@
-//go:build go1.21
+//go:build go1 && !go1.21
 
 // Copyright (c) 2023 Uber Technologies, Inc.
 //
@@ -24,11 +24,11 @@ package zapslog
 
 import (
 	"context"
-	"log/slog"
 	"runtime"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/slog"
 )
 
 // Handler implements the slog.Handler by writing to a zap Core.

@@ -1,4 +1,4 @@
-//go:build go1.21
+//go:build go1 && !go1.21
 
 // Copyright (c) 2023 Uber Technologies, Inc.
 //
@@ -24,12 +24,12 @@ package zapslog_test
 
 import (
 	"context"
-	"log/slog"
 	"net"
 	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
+	"golang.org/x/exp/slog"
 )
 
 type Password string
