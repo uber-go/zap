@@ -127,6 +127,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Inline", Field{Type: zapcore.InlineMarshalerType, Interface: name}, Inline(name)},
 		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
 		{"Any:ArrayMarshaler", Any("k", bools([]bool{true})), Array("k", bools([]bool{true}))},
+		{"Any:Dict", Any("k", []Field{String("k", "v")}), Dict("k", String("k", "v"))},
 		{"Any:Stringer", Any("k", addr), Stringer("k", addr)},
 		{"Any:Bool", Any("k", true), Bool("k", true)},
 		{"Any:Bools", Any("k", []bool{true}), Bools("k", []bool{true})},
@@ -287,4 +288,28 @@ func TestStackSkipFieldWithSkip(t *testing.T) {
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
 	assert.Equal(t, takeStacktrace(1), f.String, "Unexpected stack trace")
 	assertCanBeReused(t, f)
+}
+
+func TestDict(t *testing.T) {
+	tests := []struct {
+		desc     string
+		field    Field
+		expected any
+	}{
+		{"empty", Dict(""), map[string]any{}},
+		{"single", Dict("", String("k", "v")), map[string]any{"k": "v"}},
+		{"multiple", Dict("", String("k", "v"), String("k2", "v2")), map[string]any{"k": "v", "k2": "v2"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			enc := zapcore.NewMapObjectEncoder()
+			tt.field.Key = "k"
+			tt.field.AddTo(enc)
+			assert.Equal(t, tt.expected, enc.Fields["k"], "unexpected map contents")
+			assert.Len(t, enc.Fields, 1, "found extra keys in map: %v", enc.Fields)
+
+			assertCanBeReused(t, tt.field)
+		})
+	}
 }

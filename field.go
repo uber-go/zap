@@ -410,6 +410,26 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 	}
 }
 
+// Dict constructs a field containing the provided key-value pairs.
+// It acts similar to [Object], but with the fields specified as arguments.
+func Dict(key string, val ...Field) Field {
+	return dictField(key, val)
+}
+
+// We need a function with the signature (string, T) for zap.Any.
+func dictField(key string, val []Field) Field {
+	return Object(key, dictObject(val))
+}
+
+type dictObject []Field
+
+func (d dictObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	for _, f := range d {
+		f.AddTo(enc)
+	}
+	return nil
+}
+
 // We discovered an issue where zap.Any can cause a performance degradation
 // when used in new goroutines.
 //
@@ -462,6 +482,8 @@ func Any(key string, value interface{}) Field {
 		c = anyFieldC[zapcore.ObjectMarshaler](Object)
 	case zapcore.ArrayMarshaler:
 		c = anyFieldC[zapcore.ArrayMarshaler](Array)
+	case []Field:
+		c = anyFieldC[[]Field](dictField)
 	case bool:
 		c = anyFieldC[bool](Bool)
 	case *bool:

@@ -309,6 +309,16 @@ func TestEquals(t *testing.T) {
 			b:    zap.Any("k", map[string]string{"a": "d"}),
 			want: false,
 		},
+		{
+			a:    zap.Dict("k", zap.String("a", "b")),
+			b:    zap.Dict("k", zap.String("a", "b")),
+			want: true,
+		},
+		{
+			a:    zap.Dict("k", zap.String("a", "b")),
+			b:    zap.Dict("k", zap.String("a", "d")),
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {
