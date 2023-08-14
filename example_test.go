@@ -358,3 +358,16 @@ func ExampleWrapCore_wrap() {
 	// {"level":"info","msg":"doubled"}
 	// {"level":"info","msg":"doubled"}
 }
+
+func ExampleDict() {
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	logger.Info("login event",
+		zap.Dict("event",
+			zap.Int("id", 123),
+			zap.String("name", "jane"),
+			zap.String("status", "pending")))
+	// Output:
+	// {"level":"info","msg":"login event","event":{"id":123,"name":"jane","status":"pending"}}
+}

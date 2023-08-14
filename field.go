@@ -410,7 +410,8 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 	}
 }
 
-// Dict constructs a field with the given key and Fields.
+// Dict constructs a field containing the provided key-value pairs.
+// It acts similar to [Object], but with the fields specified as arguments.
 func Dict(key string, val ...Field) Field {
 	return dictField(key, val)
 }
