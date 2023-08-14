@@ -137,7 +137,6 @@ func TestFields(t *testing.T) {
 	}{
 		{t: ArrayMarshalerType, iface: users(2), want: []interface{}{"user", "user"}},
 		{t: ObjectMarshalerType, iface: users(2), want: map[string]interface{}{"users": 2}},
-		{t: DictType, iface: []Field{{Type: StringType, Key: "k", String: "v"}}, want: map[string]interface{}{"k": "v"}},
 		{t: BoolType, i: 0, want: false},
 		{t: ByteStringType, iface: []byte("foo"), want: "foo"},
 		{t: Complex128Type, iface: 1 + 2i, want: 1 + 2i},

@@ -96,9 +96,6 @@ const (
 	// InlineMarshalerType indicates that the field carries an ObjectMarshaler
 	// that should be inlined.
 	InlineMarshalerType
-
-	// DictType indicates that the field carries []Field.
-	DictType
 )
 
 // A Field is a marshaling operation used to add a key-value pair to a logger's
@@ -124,11 +121,6 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		err = enc.AddObject(f.Key, f.Interface.(ObjectMarshaler))
 	case InlineMarshalerType:
 		err = f.Interface.(ObjectMarshaler).MarshalLogObject(enc)
-	case DictType:
-		err = enc.AddObject(f.Key, ObjectMarshalerFunc(func(inner ObjectEncoder) error {
-			addFields(inner, f.Interface.([]Field))
-			return nil
-		}))
 	case BinaryType:
 		enc.AddBinary(f.Key, f.Interface.([]byte))
 	case BoolType:
@@ -206,7 +198,7 @@ func (f Field) Equals(other Field) bool {
 	switch f.Type {
 	case BinaryType, ByteStringType:
 		return bytes.Equal(f.Interface.([]byte), other.Interface.([]byte))
-	case ArrayMarshalerType, ObjectMarshalerType, ErrorType, ReflectType, DictType:
+	case ArrayMarshalerType, ObjectMarshalerType, ErrorType, ReflectType:
 		return reflect.DeepEqual(f.Interface, other.Interface)
 	default:
 		return f == other

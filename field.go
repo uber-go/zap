@@ -417,7 +417,16 @@ func Dict(key string, val ...Field) Field {
 
 // We need a function with the signature (string, T) for zap.Any.
 func dictField(key string, val []Field) Field {
-	return Field{Key: key, Type: zapcore.DictType, Interface: val}
+	return Object(key, dictObject(val))
+}
+
+type dictObject []Field
+
+func (d dictObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	for _, f := range d {
+		f.AddTo(enc)
+	}
+	return nil
 }
 
 // We discovered an issue where zap.Any can cause a performance degradation
