@@ -124,58 +124,121 @@ func TestLoggerInitialFields(t *testing.T) {
 }
 
 func TestLoggerWith(t *testing.T) {
-	fieldOpts := opts(Fields(Int("foo", 42)))
-	withLogger(t, DebugLevel, fieldOpts, func(logger *Logger, logs *observer.ObservedLogs) {
-		// Child loggers should have copy-on-write semantics, so two children
-		// shouldn't stomp on each other's fields or affect the parent's fields.
-		logger.With(String("one", "two")).Info("")
-		logger.With(String("three", "four")).Info("")
-		logger.With(String("five", "six")).With(String("seven", "eight")).Info("")
-		logger.Info("")
 
-		assert.Equal(t, []observer.LoggedEntry{
-			{Context: []Field{Int("foo", 42), String("one", "two")}},
-			{Context: []Field{Int("foo", 42), String("three", "four")}},
-			{Context: []Field{Int("foo", 42), String("five", "six"), String("seven", "eight")}},
-			{Context: []Field{Int("foo", 42)}},
-		}, logs.AllUntimed(), "Unexpected cross-talk between child loggers.")
-	})
+	for _, tt := range []struct {
+		name           string
+		initialFields  []Field
+		withMethodExpr func(*Logger, ...Field) *Logger
+	}{
+		{
+			"regular non lazy logger",
+			[]Field{Int("foo", 42)},
+			(*Logger).With,
+		},
+		{
+			"regular non lazy logger no initial fields",
+			[]Field{},
+			(*Logger).With,
+		},
+		{
+			"lazy with logger",
+			[]Field{Int("foo", 42)},
+			(*Logger).WithLazy,
+		},
+		{
+			"lazy with logger no initial fields",
+			[]Field{},
+			(*Logger).WithLazy,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			withLogger(t, DebugLevel, opts(Fields(tt.initialFields...)), func(logger *Logger, logs *observer.ObservedLogs) {
+				// Child loggers should have copy-on-write semantics, so two children
+				// shouldn't stomp on each other's fields or affect the parent's fields.
+				tt.withMethodExpr(logger).Info("")
+				tt.withMethodExpr(logger, String("one", "two")).Info("")
+				tt.withMethodExpr(logger, String("three", "four")).Info("")
+				tt.withMethodExpr(logger, String("five", "six")).With(String("seven", "eight")).Info("")
+				logger.Info("")
+
+				assert.Equal(t, []observer.LoggedEntry{
+					{Context: tt.initialFields},
+					{Context: append(tt.initialFields, String("one", "two"))},
+					{Context: append(tt.initialFields, String("three", "four"))},
+					{Context: append(tt.initialFields, String("five", "six"), String("seven", "eight"))},
+					{Context: tt.initialFields},
+				}, logs.AllUntimed(), "Unexpected cross-talk between child loggers.")
+			})
+		})
+	}
 }
 
 func TestLoggerWithCaptures(t *testing.T) {
-	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-		MessageKey: "m",
-	})
+	for _, tt := range []struct {
+		name           string
+		withMethodExpr func(*Logger, ...Field) *Logger
+		wantJSON       [2]string
+	}{
+		{
+			name:           "regular with captures arguments at time of With",
+			withMethodExpr: (*Logger).With,
+			wantJSON: [2]string{
+				`{
+					"m": "hello",
+					"a": [0],
+					"b": [1]
+				}`,
+				`{
+					"m": "world",
+					"a": [0],
+					"c": [2]
+				}`,
+			},
+		},
+		{
+			name:           "lazy with captures arguments at time of With or Logging",
+			withMethodExpr: (*Logger).WithLazy,
+			wantJSON: [2]string{
+				`{
+					"m": "hello",
+					"a": [1],
+					"b": [1]
+				}`,
+				`{
+					"m": "world",
+					"a": [1],
+					"c": [2]
+				}`,
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+				MessageKey: "m",
+			})
 
-	var bs ztest.Buffer
-	logger := New(zapcore.NewCore(enc, &bs, DebugLevel))
+			var bs ztest.Buffer
+			logger := New(zapcore.NewCore(enc, &bs, DebugLevel))
 
-	x := 0
-	arr := zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
-		enc.AppendInt(x)
-		return nil
-	})
+			x := 0
+			arr := zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
+				enc.AppendInt(x)
+				return nil
+			})
 
-	// Demonstrate the arguments are captured when With() and Info() are invoked.
-	logger = logger.With(Array("a", arr))
-	x = 1
-	logger.Info("hello", Array("b", arr))
-	x = 2
-	logger = logger.With(Array("c", arr))
-	logger.Info("world")
+			// Demonstrate the arguments are captured when With() and Info() are invoked.
+			logger = tt.withMethodExpr(logger, Array("a", arr))
+			x = 1
+			logger.Info("hello", Array("b", arr))
+			x = 2
+			logger = tt.withMethodExpr(logger, Array("c", arr))
+			logger.Info("world")
 
-	if lines := bs.Lines(); assert.Len(t, lines, 2) {
-		assert.JSONEq(t, `{
-			"m": "hello",
-			"a": [0],
-			"b": [1]
-		}`, lines[0], "Unexpected output from first log.")
-
-		assert.JSONEq(t, `{
-			"m": "world",
-			"a": [0],
-			"c": [2]
-		}`, lines[1], "Unexpected output from second log.")
+			if lines := bs.Lines(); assert.Len(t, lines, 2) {
+				assert.JSONEq(t, tt.wantJSON[0], lines[0], "Unexpected output from first log.")
+				assert.JSONEq(t, tt.wantJSON[1], lines[1], "Unexpected output from second log.")
+			}
+		})
 	}
 }
 

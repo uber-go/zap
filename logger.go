@@ -184,6 +184,23 @@ func (log *Logger) With(fields ...Field) *Logger {
 	return l
 }
 
+// WithLazy creates a child logger and lazily encodes structured context if the
+// child logger is ever further chained with With() or is written to with any
+// of the log level methods. Until the occurs, the logger may retain references
+// to references in objects, etc, and logging will reflect the state of an object
+// at the time of logging, not the time of WithLazy(). However, is a worthwhile
+// performance optimisation if one creates a contextual logger and the likelihood
+// of using it is low (e.g. in error or rarely taken branches).
+// Fields added to the child don't affect the parent, and vice versa.
+func (log *Logger) WithLazy(fields ...Field) *Logger {
+	if len(fields) == 0 {
+		return log
+	}
+	return log.WithOptions(WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewLazyWith(core, fields)
+	}))
+}
+
 // Level reports the minimum enabled level for this logger.
 //
 // For NopLoggers, this is [zapcore.InvalidLevel].
