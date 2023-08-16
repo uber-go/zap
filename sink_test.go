@@ -68,13 +68,12 @@ func TestRegisterSink(t *testing.T) {
 	require.NoError(t, RegisterSink(strings.ToUpper(memScheme), memFactory), "Failed to register scheme %q.", memScheme)
 	require.NoError(t, RegisterSink(nopScheme, nopFactory), "Failed to register scheme %q.", nopScheme)
 
-	sink, close, err := Open(
+	sink, closeSink, err := Open(
 		memScheme+"://somewhere",
 		nopScheme+"://somewhere-else",
 	)
 	require.NoError(t, err, "Unexpected error opening URLs with registered schemes.")
-
-	defer close()
+	defer closeSink()
 
 	assert.Equal(t, 1, memCalls, "Unexpected number of calls to memory factory.")
 	assert.Equal(t, 1, nopCalls, "Unexpected number of calls to no-op factory.")

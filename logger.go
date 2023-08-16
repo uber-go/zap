@@ -288,8 +288,8 @@ func (log *Logger) Name() string {
 }
 
 func (log *Logger) clone() *Logger {
-	copy := *log
-	return &copy
+	clone := *log
+	return &clone
 }
 
 func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
