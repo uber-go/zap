@@ -1,10 +1,11 @@
 module go.uber.org/zap/exp
 
-go 1.21
+go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.1
 	go.uber.org/zap v1.24.0
+	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
 )
 
 require (
