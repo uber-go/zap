@@ -43,7 +43,7 @@ func TestAddSource(t *testing.T) {
 	entry := logs.AllUntimed()[0]
 	r.Equal("msg", entry.Message, "Unexpected message")
 	r.Regexp(
-		`/slog_test.go:\d+$`,
+		`/slog_go121_test.go:\d+$`,
 		entry.Caller.String(),
 		"Unexpected caller annotation.",
 	)
