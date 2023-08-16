@@ -25,7 +25,5 @@ package tools
 
 import (
 	// Tools we use during development.
-	_ "github.com/mgechev/revive"
 	_ "golang.org/x/vuln/cmd/govulncheck"
-	_ "honnef.co/go/tools/cmd/staticcheck"
 )
