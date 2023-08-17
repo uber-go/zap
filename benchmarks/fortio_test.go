@@ -46,8 +46,9 @@ func (l *shmLogger) InfoContext(msg string) {
 
 func newFortiolog(fields ...log.KeyVal) *shmLogger {
 	log.Config = log.DefaultConfig()
-	log.Config.LogFileAndLine = false
-	log.Config.JSON = true
+	log.Config.LogFileAndLine = false // file/line extraction implies bad perf
+	log.Config.JSON = true            // structured logging comparison
+	log.Config.GoroutineID = false    // other loggers don't have that
 	log.SetOutput(io.Discard)
 	log.Color = false // should already be but just in case
 	fLog.fields = fields

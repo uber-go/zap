@@ -431,7 +431,7 @@ func BenchmarkWithoutFields(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.InfoS(getMessage(0))
+				logger.Infof(getMessage(0))
 			}
 		})
 	})

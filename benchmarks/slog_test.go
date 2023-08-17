@@ -21,17 +21,16 @@
 package benchmarks
 
 import (
-	"io"
-
+	"go.uber.org/zap/internal/ztest"
 	"golang.org/x/exp/slog"
 )
 
 func newSlog(fields ...slog.Attr) *slog.Logger {
-	return slog.New(slog.NewJSONHandler(io.Discard).WithAttrs(fields))
+	return slog.New(slog.NewJSONHandler(&ztest.Discarder{}).WithAttrs(fields))
 }
 
 func newDisabledSlog(fields ...slog.Attr) *slog.Logger {
-	return slog.New(slog.HandlerOptions{Level: slog.LevelError}.NewJSONHandler(io.Discard).WithAttrs(fields))
+	return slog.New(slog.HandlerOptions{Level: slog.LevelError}.NewJSONHandler(&ztest.Discarder{}).WithAttrs(fields))
 }
 
 func fakeSlogFields() []slog.Attr {

@@ -17,8 +17,8 @@ require (
 )
 
 replace (
-// 	fortio.org/log => ../../../fortio.org/log
- 	go.ubder.org/zap => ../
+//	fortio.org/log => ../../../fortio.org/log
+	go.ubder.org/zap => ../
 )
 
 require (
