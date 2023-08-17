@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build go1 && !go1.21
+//go:build go1.19 && !go1.21
 
 package zapslog_test
 
