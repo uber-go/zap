@@ -173,7 +173,8 @@ func (log *Logger) WithOptions(opts ...Option) *Logger {
 }
 
 // With creates a child logger and adds structured context to it. Fields added
-// to the child don't affect the parent, and vice versa.
+// to the child don't affect the parent, and vice versa. Any fields that
+// require evaluation (such as Objects) are evaluated upon invocation of With.
 func (log *Logger) With(fields ...Field) *Logger {
 	if len(fields) == 0 {
 		return log
@@ -199,6 +200,8 @@ func (log *Logger) Check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 
 // Log logs a message at the specified level. The message includes any fields
 // passed at the log site, as well as any fields accumulated on the logger.
+// Any Fields that require  evaluation (such as Objects) are evaluated upon
+// invocation of Log.
 func (log *Logger) Log(lvl zapcore.Level, msg string, fields ...Field) {
 	if ce := log.check(lvl, msg); ce != nil {
 		ce.Write(fields...)
@@ -288,8 +291,8 @@ func (log *Logger) Name() string {
 }
 
 func (log *Logger) clone() *Logger {
-	copy := *log
-	return &copy
+	clone := *log
+	return &clone
 }
 
 func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {

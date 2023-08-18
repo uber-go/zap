@@ -130,14 +130,53 @@ func TestLoggerWith(t *testing.T) {
 		// shouldn't stomp on each other's fields or affect the parent's fields.
 		logger.With(String("one", "two")).Info("")
 		logger.With(String("three", "four")).Info("")
+		logger.With(String("five", "six")).With(String("seven", "eight")).Info("")
 		logger.Info("")
 
 		assert.Equal(t, []observer.LoggedEntry{
 			{Context: []Field{Int("foo", 42), String("one", "two")}},
 			{Context: []Field{Int("foo", 42), String("three", "four")}},
+			{Context: []Field{Int("foo", 42), String("five", "six"), String("seven", "eight")}},
 			{Context: []Field{Int("foo", 42)}},
 		}, logs.AllUntimed(), "Unexpected cross-talk between child loggers.")
 	})
+}
+
+func TestLoggerWithCaptures(t *testing.T) {
+	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+		MessageKey: "m",
+	})
+
+	var bs ztest.Buffer
+	logger := New(zapcore.NewCore(enc, &bs, DebugLevel))
+
+	x := 0
+	arr := zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
+		enc.AppendInt(x)
+		return nil
+	})
+
+	// Demonstrate the arguments are captured when With() and Info() are invoked.
+	logger = logger.With(Array("a", arr))
+	x = 1
+	logger.Info("hello", Array("b", arr))
+	x = 2
+	logger = logger.With(Array("c", arr))
+	logger.Info("world")
+
+	if lines := bs.Lines(); assert.Len(t, lines, 2) {
+		assert.JSONEq(t, `{
+			"m": "hello",
+			"a": [0],
+			"b": [1]
+		}`, lines[0], "Unexpected output from first log.")
+
+		assert.JSONEq(t, `{
+			"m": "world",
+			"a": [0],
+			"c": [2]
+		}`, lines[1], "Unexpected output from second log.")
+	}
 }
 
 func TestLoggerLogPanic(t *testing.T) {
