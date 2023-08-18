@@ -140,6 +140,43 @@ func TestLoggerWith(t *testing.T) {
 	})
 }
 
+func TestLoggerWithCaptures(t *testing.T) {
+	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+		MessageKey: "m",
+	})
+
+	var bs ztest.Buffer
+	logger := New(zapcore.NewCore(enc, &bs, DebugLevel))
+
+	x := 0
+	arr := zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
+		enc.AppendInt(x)
+		return nil
+	})
+
+	// Demonstrate the arguments are captured when With() and Info() are invoked.
+	logger = logger.With(Array("a", arr))
+	x = 1
+	logger.Info("hello", Array("b", arr))
+	x = 2
+	logger = logger.With(Array("c", arr))
+	logger.Info("world")
+
+	if lines := bs.Lines(); assert.Len(t, lines, 2) {
+		assert.JSONEq(t, `{
+			"m": "hello",
+			"a": [0],
+			"b": [1]
+		}`, lines[0], "Unexpected output from first log.")
+
+		assert.JSONEq(t, `{
+			"m": "world",
+			"a": [0],
+			"c": [2]
+		}`, lines[1], "Unexpected output from second log.")
+	}
+}
+
 func TestLoggerLogPanic(t *testing.T) {
 	for _, tt := range []struct {
 		do       func(*Logger)
