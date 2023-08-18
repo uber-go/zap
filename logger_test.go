@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"encoding/json"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -138,6 +139,40 @@ func TestLoggerWith(t *testing.T) {
 			{Context: []Field{Int("foo", 42)}},
 		}, logs.AllUntimed(), "Unexpected cross-talk between child loggers.")
 	})
+}
+
+func TestLoggerWithCaptures(t *testing.T) {
+	type res struct {
+		A, B, C []int
+		Msg     string
+	}
+
+	bs := &ztest.Buffer{}
+	enc := zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig)
+	core := zapcore.NewCore(enc, bs, DebugLevel)
+	logger := New(core)
+
+	x := 0
+	arr := zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
+		enc.AppendInt(x)
+		return nil
+	})
+	// demonstrate the arguments are captured when With() and Info() are invoked.
+	logger = logger.With(Array("a", arr))
+	x = 1
+	logger.Info("hello", Array("b", arr))
+	x = 2
+	logger = logger.With(Array("c", arr))
+	logger.Info("world")
+
+	if lines := bs.Lines(); assert.Len(t, lines, 2) {
+		var gotRes res
+		require.NoError(t, json.Unmarshal([]byte(lines[0]), &gotRes))
+		assert.Equal(t, res{Msg: "hello", A: []int{0}, B: []int{1}}, gotRes)
+
+		require.NoError(t, json.Unmarshal([]byte(lines[1]), &gotRes))
+		assert.Equal(t, res{Msg: "world", A: []int{0}, B: []int{1}, C: []int{2}}, gotRes)
+	}
 }
 
 func TestLoggerLogPanic(t *testing.T) {
