@@ -21,7 +21,6 @@
 package zap
 
 import (
-	"encoding/json"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -142,22 +141,20 @@ func TestLoggerWith(t *testing.T) {
 }
 
 func TestLoggerWithCaptures(t *testing.T) {
-	type res struct {
-		A, B, C []int
-		Msg     string
-	}
+	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+		MessageKey: "m",
+	})
 
-	bs := &ztest.Buffer{}
-	enc := zapcore.NewJSONEncoder(NewProductionConfig().EncoderConfig)
-	core := zapcore.NewCore(enc, bs, DebugLevel)
-	logger := New(core)
+	var bs ztest.Buffer
+	logger := New(zapcore.NewCore(enc, &bs, DebugLevel))
 
 	x := 0
 	arr := zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
 		enc.AppendInt(x)
 		return nil
 	})
-	// demonstrate the arguments are captured when With() and Info() are invoked.
+
+	// Demonstrate the arguments are captured when With() and Info() are invoked.
 	logger = logger.With(Array("a", arr))
 	x = 1
 	logger.Info("hello", Array("b", arr))
@@ -166,12 +163,17 @@ func TestLoggerWithCaptures(t *testing.T) {
 	logger.Info("world")
 
 	if lines := bs.Lines(); assert.Len(t, lines, 2) {
-		var gotRes res
-		require.NoError(t, json.Unmarshal([]byte(lines[0]), &gotRes))
-		assert.Equal(t, res{Msg: "hello", A: []int{0}, B: []int{1}}, gotRes)
+		assert.JSONEq(t, `{
+			"m": "hello",
+			"a": [0],
+			"b": [1]
+		}`, lines[0], "Unexpected output from first log.")
 
-		require.NoError(t, json.Unmarshal([]byte(lines[1]), &gotRes))
-		assert.Equal(t, res{Msg: "world", A: []int{0}, B: []int{1}, C: []int{2}}, gotRes)
+		assert.JSONEq(t, `{
+			"m": "world",
+			"a": [0],
+			"c": [2]
+		}`, lines[1], "Unexpected output from second log.")
 	}
 }
 
