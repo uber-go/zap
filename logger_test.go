@@ -130,11 +130,13 @@ func TestLoggerWith(t *testing.T) {
 		// shouldn't stomp on each other's fields or affect the parent's fields.
 		logger.With(String("one", "two")).Info("")
 		logger.With(String("three", "four")).Info("")
+		logger.With(String("five", "six")).With(String("seven", "eight")).Info("")
 		logger.Info("")
 
 		assert.Equal(t, []observer.LoggedEntry{
 			{Context: []Field{Int("foo", 42), String("one", "two")}},
 			{Context: []Field{Int("foo", 42), String("three", "four")}},
+			{Context: []Field{Int("foo", 42), String("five", "six"), String("seven", "eight")}},
 			{Context: []Field{Int("foo", 42)}},
 		}, logs.AllUntimed(), "Unexpected cross-talk between child loggers.")
 	})
