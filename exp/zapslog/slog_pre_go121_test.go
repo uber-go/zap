@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//go:build !go1.21
+
 package zapslog
 
 import (
@@ -41,7 +43,7 @@ func TestAddSource(t *testing.T) {
 	entry := logs.AllUntimed()[0]
 	r.Equal("msg", entry.Message, "Unexpected message")
 	r.Regexp(
-		`/slog_test.go:\d+$`,
+		`/slog_pre_go121_test.go:\d+$`,
 		entry.Caller.String(),
 		"Unexpected caller annotation.",
 	)

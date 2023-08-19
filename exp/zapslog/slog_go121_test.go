@@ -18,9 +18,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package zapslog provides an implementation of slog.Handler which writes to
-// the supplied zapcore.Core.
-//
-// For versions of Go before 1.21, this package uses golang.org/x/exp/slog.
-// For Go 1.21 or newer, this package uses the standard log/slog package.
-package zapslog // import "go.uber.org/zap/exp/zapslog"
+//go:build go1.21
+
+package zapslog
+
+import (
+	"log/slog"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
+)
+
+func TestAddSource(t *testing.T) {
+	r := require.New(t)
+	fac, logs := observer.New(zapcore.DebugLevel)
+	sl := slog.New(NewHandler(fac, &HandlerOptions{
+		AddSource: true,
+	}))
+	sl.Info("msg")
+
+	r.Len(logs.AllUntimed(), 1, "Expected exactly one entry to be logged")
+	entry := logs.AllUntimed()[0]
+	r.Equal("msg", entry.Message, "Unexpected message")
+	r.Regexp(
+		`/slog_go121_test.go:\d+$`,
+		entry.Caller.String(),
+		"Unexpected caller annotation.",
+	)
+}
