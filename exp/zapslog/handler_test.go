@@ -33,6 +33,8 @@ import (
 )
 
 func TestAddSource(t *testing.T) {
+	t.Parallel()
+
 	fac, logs := observer.New(zapcore.DebugLevel)
 	sl := slog.New(NewHandler(fac, &HandlerOptions{
 		AddSource: true,
@@ -47,4 +49,35 @@ func TestAddSource(t *testing.T) {
 		entry.Caller.String(),
 		"Unexpected caller annotation.",
 	)
+}
+
+func TestEmptyAttr(t *testing.T) {
+	t.Parallel()
+
+	fac, observedLogs := observer.New(zapcore.DebugLevel)
+	sl := slog.New(NewHandler(fac, nil))
+
+	t.Run("Handle", func(t *testing.T) {
+		sl.Info(
+			"msg",
+			slog.String("foo", "bar"),
+			slog.Attr{},
+		)
+
+		logs := observedLogs.TakeAll()
+		require.Len(t, logs, 1, "Expected exactly one entry to be logged")
+		assert.Equal(t, map[string]any{
+			"foo": "bar",
+		}, logs[0].ContextMap(), "Unexpected context")
+	})
+
+	t.Run("WithAttrs", func(t *testing.T) {
+		sl.With(slog.String("foo", "bar"), slog.Attr{}).Info("msg")
+
+		logs := observedLogs.TakeAll()
+		require.Len(t, logs, 1, "Expected exactly one entry to be logged")
+		assert.Equal(t, map[string]any{
+			"foo": "bar",
+		}, logs[0].ContextMap(), "Unexpected context")
+	})
 }
