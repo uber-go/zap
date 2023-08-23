@@ -21,6 +21,5 @@
 // Package zapslog provides an implementation of slog.Handler which writes to
 // the supplied zapcore.Core.
 //
-// For versions of Go before 1.21, this package uses golang.org/x/exp/slog.
-// For Go 1.21 or newer, this package uses the standard log/slog package.
+// Use of this package requires at least Go 1.21.
 package zapslog // import "go.uber.org/zap/exp/zapslog"
