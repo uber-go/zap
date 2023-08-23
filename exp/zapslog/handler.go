@@ -33,36 +33,24 @@ import (
 
 // Handler implements the slog.Handler by writing to a zap Core.
 type Handler struct {
-	core      zapcore.Core
-	name      string // logger name
-	addSource bool
-}
-
-// HandlerOptions are options for a Zap-based [slog.Handler].
-type HandlerOptions struct {
-	// LoggerName is used for log entries received from slog.
-	//
-	// Defaults to empty.
-	LoggerName string
-
-	// AddSource configures the handler to annotate each message with the filename,
-	// line number, and function name.
-	// AddSource is false by default to skip the cost of computing
-	// this information.
-	AddSource bool
+	core       zapcore.Core
+	name       string // logger name
+	addCaller  bool
+	addStack   zapcore.LevelEnabler
+	callerSkip int
 }
 
 // NewHandler builds a [Handler] that writes to the supplied [zapcore.Core]
-// with the default options.
-func NewHandler(core zapcore.Core, opts *HandlerOptions) *Handler {
-	if opts == nil {
-		opts = &HandlerOptions{}
+// with options.
+func NewHandler(core zapcore.Core, opts ...Option) *Handler {
+	h := &Handler{
+		core:     core,
+		addStack: zapcore.ErrorLevel,
 	}
-	return &Handler{
-		core:      core,
-		name:      opts.LoggerName,
-		addSource: opts.AddSource,
+	for _, v := range opts {
+		v.apply(h)
 	}
+	return h
 }
 
 var _ slog.Handler = (*Handler)(nil)
@@ -131,20 +119,19 @@ func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
 
 // Handle handles the Record.
 func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
+	zapLevel := convertSlogLevel(record.Level)
 	ent := zapcore.Entry{
-		Level:      convertSlogLevel(record.Level),
+		Level:      zapLevel,
 		Time:       record.Time,
 		Message:    record.Message,
 		LoggerName: h.name,
-		// TODO: do we need to set the following fields?
-		// Stack:
 	}
 	ce := h.core.Check(ent, nil)
 	if ce == nil {
 		return nil
 	}
 
-	if h.addSource && record.PC != 0 {
+	if h.addCaller && record.PC != 0 {
 		frame, _ := runtime.CallersFrames([]uintptr{record.PC}).Next()
 		if frame.PC != 0 {
 			ce.Caller = zapcore.EntryCaller{
@@ -155,6 +142,10 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 				Function: frame.Function,
 			}
 		}
+	}
+
+	if h.addStack.Enabled(zapLevel) {
+		ce.Stack = zap.TakeStacktrace(4 + h.callerSkip)
 	}
 
 	fields := make([]zapcore.Field, 0, record.NumAttrs())
