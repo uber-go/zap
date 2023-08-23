@@ -18,18 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build !go1.21
+//go:build go1.21
 
 package zapslog
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
-	"golang.org/x/exp/slog"
 )
 
 func TestAddSource(t *testing.T) {
@@ -43,7 +43,7 @@ func TestAddSource(t *testing.T) {
 	entry := logs.AllUntimed()[0]
 	assert.Equal(t, "msg", entry.Message, "Unexpected message")
 	assert.Regexp(t,
-		`/slog_pre_go121_test.go:\d+$`,
+		`/handler_test.go:\d+$`,
 		entry.Caller.String(),
 		"Unexpected caller annotation.",
 	)
