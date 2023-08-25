@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"go.uber.org/zap/internal/bufferpool"
+	"go.uber.org/zap/internal/stacktrace"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -363,11 +364,11 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 
 	// Adding the caller or stack trace requires capturing the callers of
 	// this function. We'll share information between these two.
-	stackDepth := stacktraceFirst
+	stackDepth := stacktrace.First
 	if addStack {
-		stackDepth = stacktraceFull
+		stackDepth = stacktrace.Full
 	}
-	stack := captureStacktrace(log.callerSkip+callerSkipOffset, stackDepth)
+	stack := stacktrace.Capture(log.callerSkip+callerSkipOffset, stackDepth)
 	defer stack.Free()
 
 	if stack.Count() == 0 {
@@ -394,7 +395,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 		buffer := bufferpool.Get()
 		defer buffer.Free()
 
-		stackfmt := newStackFormatter(buffer)
+		stackfmt := stacktrace.NewFormatter(buffer)
 
 		// We've already extracted the first frame, so format that
 		// separately and defer to stackfmt for the rest.
