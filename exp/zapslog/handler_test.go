@@ -62,7 +62,7 @@ func TestAddStack(t *testing.T) {
 		"Unexpected stack trace annotation.",
 	)
 	assert.Regexp(t,
-		`/zapslog/slog_go121_test.go:\d+`,
+		`/zapslog/handler_test.go:\d+`,
 		entry.Stack,
 		"Unexpected stack trace annotation.",
 	)
