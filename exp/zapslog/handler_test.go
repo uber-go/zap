@@ -34,7 +34,7 @@ import (
 
 func TestAddCaller(t *testing.T) {
 	fac, logs := observer.New(zapcore.DebugLevel)
-	sl := slog.New(NewHandler(fac, AddCaller()))
+	sl := slog.New(NewHandler(fac, WithCaller(true)))
 	sl.Info("msg")
 
 	require.Len(t, logs.AllUntimed(), 1, "Expected exactly one entry to be logged")

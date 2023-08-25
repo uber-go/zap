@@ -40,15 +40,9 @@ func WithName(name string) Option {
 	})
 }
 
-// AddCaller configures the Logger to annotate each message with the filename,
-// line number, and function name of zap's caller. See also WithCaller.
-func AddCaller() Option {
-	return WithCaller(true)
-}
-
 // WithCaller configures the Logger to annotate each message with the filename,
-// line number, and function name of zap's caller, or not, depending on the
-// value of enabled. This is a generalized form of AddCaller.
+// line number, and function name of Zap's caller, or not, depending on the
+// value of enabled.
 func WithCaller(enabled bool) Option {
 	return optionFunc(func(handler *Handler) {
 		handler.addCaller = enabled
