@@ -28,6 +28,7 @@ import (
 	"runtime"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/internal/stacktrace"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -145,7 +146,11 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	}
 
 	if h.addStack.Enabled(zapLevel) {
-		ce.Stack = zap.TakeStacktrace(4 + h.callerSkip)
+		// Skipping 3:
+		// zapslog/handler log/slog.(*Logger).log
+		// slog/logger log/slog.(*Logger).log
+		// slog/logger log/slog.(*Logger).<level>
+		ce.Stack = stacktrace.Take(3 + h.callerSkip)
 	}
 
 	fields := make([]zapcore.Field, 0, record.NumAttrs())
