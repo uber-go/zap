@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/internal/stacktrace"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -269,7 +270,7 @@ func TestStackField(t *testing.T) {
 	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
 	r := regexp.MustCompile(`field_test.go:(\d+)`)
-	assert.Equal(t, r.ReplaceAllString(takeStacktrace(0), "field_test.go"), r.ReplaceAllString(f.String, "field_test.go"), "Unexpected stack trace")
+	assert.Equal(t, r.ReplaceAllString(stacktrace.Take(0), "field_test.go"), r.ReplaceAllString(f.String, "field_test.go"), "Unexpected stack trace")
 	assertCanBeReused(t, f)
 }
 
@@ -278,7 +279,7 @@ func TestStackSkipField(t *testing.T) {
 	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
 	r := regexp.MustCompile(`field_test.go:(\d+)`)
-	assert.Equal(t, r.ReplaceAllString(takeStacktrace(0), "field_test.go"), r.ReplaceAllString(f.String, "field_test.go"), f.String, "Unexpected stack trace")
+	assert.Equal(t, r.ReplaceAllString(stacktrace.Take(0), "field_test.go"), r.ReplaceAllString(f.String, "field_test.go"), f.String, "Unexpected stack trace")
 	assertCanBeReused(t, f)
 }
 
@@ -286,7 +287,7 @@ func TestStackSkipFieldWithSkip(t *testing.T) {
 	f := StackSkip("stacktrace", 1)
 	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
-	assert.Equal(t, takeStacktrace(1), f.String, "Unexpected stack trace")
+	assert.Equal(t, stacktrace.Take(1), f.String, "Unexpected stack trace")
 	assertCanBeReused(t, f)
 }
 
