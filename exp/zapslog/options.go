@@ -24,6 +24,7 @@ package zapslog
 
 import "go.uber.org/zap/zapcore"
 
+// An Option configures a slog Handler.
 type Option interface {
 	apply(*Handler)
 }
