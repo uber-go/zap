@@ -50,7 +50,7 @@ func TestAddCaller(t *testing.T) {
 func TestAddStack(t *testing.T) {
 	r := require.New(t)
 	fac, logs := observer.New(zapcore.DebugLevel)
-	sl := slog.New(NewHandler(fac, AddStacktrace(zapcore.DebugLevel)))
+	sl := slog.New(NewHandler(fac, AddStacktrace(slog.LevelDebug)))
 	sl.Info("msg")
 
 	r.Len(logs.AllUntimed(), 1, "Expected exactly one entry to be logged")

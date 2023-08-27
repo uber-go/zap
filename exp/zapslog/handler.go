@@ -37,7 +37,7 @@ type Handler struct {
 	core       zapcore.Core
 	name       string // logger name
 	addCaller  bool
-	addStack   zapcore.LevelEnabler
+	addStackAt slog.Level
 	callerSkip int
 }
 
@@ -45,8 +45,8 @@ type Handler struct {
 // with options.
 func NewHandler(core zapcore.Core, opts ...Option) *Handler {
 	h := &Handler{
-		core:     core,
-		addStack: zapcore.ErrorLevel,
+		core:       core,
+		addStackAt: slog.LevelError,
 	}
 	for _, v := range opts {
 		v.apply(h)
@@ -145,7 +145,7 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 		}
 	}
 
-	if h.addStack.Enabled(zapLevel) {
+	if record.Level >= h.addStackAt {
 		// Skipping 3:
 		// zapslog/handler log/slog.(*Logger).log
 		// slog/logger log/slog.(*Logger).log

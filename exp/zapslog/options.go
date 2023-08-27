@@ -22,7 +22,7 @@
 
 package zapslog
 
-import "go.uber.org/zap/zapcore"
+import "log/slog"
 
 // An Option configures a slog Handler.
 type Option interface {
@@ -64,10 +64,10 @@ func WithCallerSkip(skip int) Option {
 	})
 }
 
-// AddStacktrace configures the Logger to record a stack trace for all messages at
-// or above a given level.
-func AddStacktrace(lvl zapcore.LevelEnabler) Option {
+// AddStacktraceAt configures the Logger to record a stack trace
+// for all messages at or above a given level.
+func AddStacktraceAt(lvl slog.Level) Option {
 	return optionFunc(func(log *Handler) {
-		log.addStack = lvl
+		log.addStackAt = lvl
 	})
 }
