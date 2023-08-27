@@ -43,9 +43,8 @@ func WithName(name string) Option {
 	})
 }
 
-// WithCaller configures the Logger to annotate each message with the filename,
-// line number, and function name of Zap's caller, or not, depending on the
-// value of enabled.
+// WithCaller configures the Logger to include the filename and line number
+// of the caller in log messages--if available.
 func WithCaller(enabled bool) Option {
 	return optionFunc(func(handler *Handler) {
 		handler.addCaller = enabled
