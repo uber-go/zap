@@ -120,9 +120,8 @@ func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
 
 // Handle handles the Record.
 func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
-	zapLevel := convertSlogLevel(record.Level)
 	ent := zapcore.Entry{
-		Level:      zapLevel,
+		Level:      convertSlogLevel(record.Level),
 		Time:       record.Time,
 		Message:    record.Message,
 		LoggerName: h.name,
