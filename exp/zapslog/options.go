@@ -52,11 +52,13 @@ func WithCaller(enabled bool) Option {
 	})
 }
 
-// AddCallerSkip increases the number of callers skipped by caller annotation
-// (as enabled by the AddCaller option). When building wrappers around the
-// Logger and SugaredLogger, supplying this Option prevents zap from always
-// reporting the wrapper code as the caller.
-func AddCallerSkip(skip int) Option {
+// WithCallerSkip increases the number of callers skipped by caller annotation
+// (as enabled by the [WithCaller] option).
+//
+// When building wrappers around the Logger,
+// supplying this Option prevents Zap from always reporting
+// the wrapper code as the caller.
+func WithCallerSkip(skip int) Option {
 	return optionFunc(func(log *Handler) {
 		log.callerSkip += skip
 	})
