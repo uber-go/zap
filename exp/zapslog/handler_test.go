@@ -48,14 +48,13 @@ func TestAddCaller(t *testing.T) {
 }
 
 func TestAddStack(t *testing.T) {
-	r := require.New(t)
 	fac, logs := observer.New(zapcore.DebugLevel)
 	sl := slog.New(NewHandler(fac, AddStacktraceAt(slog.LevelDebug)))
 	sl.Info("msg")
 
-	r.Len(logs.AllUntimed(), 1, "Expected exactly one entry to be logged")
+	require.Len(t, logs.AllUntimed(), 1, "Expected exactly one entry to be logged")
 	entry := logs.AllUntimed()[0]
-	r.Equal("msg", entry.Message, "Unexpected message")
+	require.Equal(t, "msg", entry.Message, "Unexpected message")
 	assert.Regexp(t,
 		`^go.uber.org/zap/exp/zapslog.TestAddStack`,
 		entry.Stack,
