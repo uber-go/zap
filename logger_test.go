@@ -124,21 +124,31 @@ func TestLoggerInitialFields(t *testing.T) {
 }
 
 func TestLoggerWith(t *testing.T) {
-	fieldOpts := opts(Fields(Int("foo", 42)))
-	withLogger(t, DebugLevel, fieldOpts, func(logger *Logger, logs *observer.ObservedLogs) {
-		// Child loggers should have copy-on-write semantics, so two children
-		// shouldn't stomp on each other's fields or affect the parent's fields.
-		logger.With(String("one", "two")).Info("")
-		logger.With(String("three", "four")).Info("")
-		logger.With(String("five", "six")).With(String("seven", "eight")).Info("")
-		logger.Info("")
+	t.Run("ok", func(t *testing.T) {
+		fieldOpts := opts(Fields(Int("foo", 42)))
+		withLogger(t, DebugLevel, fieldOpts, func(logger *Logger, logs *observer.ObservedLogs) {
+			// Child loggers should have copy-on-write semantics, so two children
+			// shouldn't stomp on each other's fields or affect the parent's fields.
+			logger.With(String("one", "two")).Info("")
+			logger.With(String("three", "four")).Info("")
+			logger.With(String("five", "six")).With(String("seven", "eight")).Info("")
+			logger.Info("")
 
-		assert.Equal(t, []observer.LoggedEntry{
-			{Context: []Field{Int("foo", 42), String("one", "two")}},
-			{Context: []Field{Int("foo", 42), String("three", "four")}},
-			{Context: []Field{Int("foo", 42), String("five", "six"), String("seven", "eight")}},
-			{Context: []Field{Int("foo", 42)}},
-		}, logs.AllUntimed(), "Unexpected cross-talk between child loggers.")
+			assert.Equal(t, []observer.LoggedEntry{
+				{Context: []Field{Int("foo", 42), String("one", "two")}},
+				{Context: []Field{Int("foo", 42), String("three", "four")}},
+				{Context: []Field{Int("foo", 42), String("five", "six"), String("seven", "eight")}},
+				{Context: []Field{Int("foo", 42)}},
+			}, logs.AllUntimed(), "Unexpected cross-talk between child loggers.")
+		})
+	})
+	t.Run("the relationship between parent logger， and child logger", func(t *testing.T) {
+		logger := NewNop()
+		assert.NotSame(t, logger, logger.WithOptions(Fields()))
+		assert.Equal(t, logger, logger.WithOptions(Fields()))
+
+		assert.NotSame(t, logger, logger.With(), "Expected return a new child logger to be consistent with the behavior of WithOptions(Fields())")
+		assert.Equal(t, logger, logger.With())
 	})
 }
 
