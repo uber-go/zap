@@ -70,7 +70,7 @@ func TestNewMultiWriteSyncerWorksForSingleWriter(t *testing.T) {
 	ws := NewMultiWriteSyncer(w)
 	assert.Equal(t, w, ws, "Expected NewMultiWriteSyncer to return the same WriteSyncer object for a single argument.")
 
-	ws.Sync()
+	assert.NoError(t, ws.Sync(), "Expected Sync to succeed.")
 	assert.True(t, w.Called(), "Expected Sync to be called on the created WriteSyncer")
 }
 

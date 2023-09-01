@@ -101,7 +101,8 @@ func TestBufferWriter(t *testing.T) {
 		n, err := ws.Write([]byte("foo"))
 		require.NoError(t, err, "Unexpected error writing to WriteSyncer.")
 		require.Equal(t, 3, n, "Wrote an unexpected number of bytes.")
-		ws.Write([]byte("foo"))
+		_, err = ws.Write([]byte("foo"))
+		assert.Error(t, err, "Expected error writing to WriteSyncer.")
 		assert.Error(t, ws.Stop(), "Expected stop to fail.")
 	})
 

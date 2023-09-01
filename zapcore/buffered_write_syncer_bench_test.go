@@ -40,11 +40,15 @@ func BenchmarkBufferedWriteSyncer(b *testing.B) {
 		w := &BufferedWriteSyncer{
 			WS: AddSync(file),
 		}
-		defer w.Stop()
+		defer func() {
+			assert.NoError(b, w.Stop(), "failed to stop buffered write syncer")
+		}()
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				w.Write([]byte("foobarbazbabble"))
+				if _, err := w.Write([]byte("foobarbazbabble")); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	})

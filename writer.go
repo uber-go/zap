@@ -62,7 +62,7 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	closers := make([]io.Closer, 0, len(paths))
 	closeAll := func() {
 		for _, c := range closers {
-			c.Close()
+			_ = c.Close()
 		}
 	}
 

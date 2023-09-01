@@ -167,7 +167,9 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err, "Error making %s request.", req.Method)
-			defer res.Body.Close()
+			defer func() {
+				assert.NoError(t, res.Body.Close(), "Error closing response body.")
+			}()
 
 			require.Equal(t, tt.expectedCode, res.StatusCode, "Unexpected status code.")
 			if tt.expectedCode != http.StatusOK {

@@ -104,7 +104,6 @@ func BenchmarkDisabledWithoutFields(b *testing.B) {
 			}
 		})
 	})
-
 }
 
 func BenchmarkDisabledAccumulatedContext(b *testing.B) {
@@ -183,7 +182,6 @@ func BenchmarkDisabledAccumulatedContext(b *testing.B) {
 			}
 		})
 	})
-
 }
 
 func BenchmarkDisabledAddingFields(b *testing.B) {
@@ -253,7 +251,6 @@ func BenchmarkDisabledAddingFields(b *testing.B) {
 			}
 		})
 	})
-
 }
 
 func BenchmarkWithoutFields(b *testing.B) {
@@ -323,7 +320,9 @@ func BenchmarkWithoutFields(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Log(getMessage(0), getMessage(1))
+				if err := logger.Log(getMessage(0), getMessage(1)); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	})
@@ -401,7 +400,6 @@ func BenchmarkWithoutFields(b *testing.B) {
 			}
 		})
 	})
-
 }
 
 func BenchmarkAccumulatedContext(b *testing.B) {
@@ -471,7 +469,9 @@ func BenchmarkAccumulatedContext(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Log(getMessage(0), getMessage(1))
+				if err := logger.Log(getMessage(0), getMessage(1)); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	})
@@ -531,7 +531,6 @@ func BenchmarkAccumulatedContext(b *testing.B) {
 			}
 		})
 	})
-
 }
 
 func BenchmarkAddingFields(b *testing.B) {
@@ -592,7 +591,9 @@ func BenchmarkAddingFields(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Log(fakeSugarFields()...)
+				if err := logger.Log(fakeSugarFields()...); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	})
@@ -643,5 +644,4 @@ func BenchmarkAddingFields(b *testing.B) {
 			}
 		})
 	})
-
 }

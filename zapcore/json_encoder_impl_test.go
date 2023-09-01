@@ -249,7 +249,7 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 			desc:     "object (no nested namespace)",
 			expected: `"obj":{"obj-out":"obj-outside-namespace"},"not-obj":"should-be-outside-obj"`,
 			f: func(e Encoder) {
-				e.AddObject("obj", maybeNamespace{false})
+				assert.NoError(t, e.AddObject("obj", maybeNamespace{false}))
 				e.AddString("not-obj", "should-be-outside-obj")
 			},
 		},
@@ -257,7 +257,7 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 			desc:     "object (with nested namespace)",
 			expected: `"obj":{"obj-out":"obj-outside-namespace","obj-namespace":{"obj-in":"obj-inside-namespace"}},"not-obj":"should-be-outside-obj"`,
 			f: func(e Encoder) {
-				e.AddObject("obj", maybeNamespace{true})
+				assert.NoError(t, e.AddObject("obj", maybeNamespace{true}))
 				e.AddString("not-obj", "should-be-outside-obj")
 			},
 		},
@@ -265,7 +265,7 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 			desc:     "multiple open namespaces",
 			expected: `"k":{"foo":1,"middle":{"foo":2,"inner":{"foo":3}}}`,
 			f: func(e Encoder) {
-				e.AddObject("k", ObjectMarshalerFunc(func(enc ObjectEncoder) error {
+				err := e.AddObject("k", ObjectMarshalerFunc(func(enc ObjectEncoder) error {
 					e.AddInt("foo", 1)
 					e.OpenNamespace("middle")
 					e.AddInt("foo", 2)
@@ -273,6 +273,7 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 					e.AddInt("foo", 3)
 					return nil
 				}))
+				assert.NoError(t, err)
 			},
 		},
 	}
@@ -289,10 +290,11 @@ func TestJSONEncoderTimeFormats(t *testing.T) {
 
 	f := func(e Encoder) {
 		e.AddTime("k", date)
-		e.AddArray("a", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
+		err := e.AddArray("a", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
 			enc.AppendTime(date)
 			return nil
 		}))
+		assert.NoError(t, err)
 	}
 	tests := []struct {
 		desc     string
@@ -420,7 +422,7 @@ func TestJSONEncoderArrays(t *testing.T) {
 			desc:     "object (no nested namespace) then string",
 			expected: `[{"obj-out":"obj-outside-namespace"},"should-be-outside-obj",{"obj-out":"obj-outside-namespace"},"should-be-outside-obj"]`,
 			f: func(arr ArrayEncoder) {
-				arr.AppendObject(maybeNamespace{false})
+				assert.NoError(t, arr.AppendObject(maybeNamespace{false}))
 				arr.AppendString("should-be-outside-obj")
 			},
 		},
@@ -428,7 +430,7 @@ func TestJSONEncoderArrays(t *testing.T) {
 			desc:     "object (with nested namespace) then string",
 			expected: `[{"obj-out":"obj-outside-namespace","obj-namespace":{"obj-in":"obj-inside-namespace"}},"should-be-outside-obj",{"obj-out":"obj-outside-namespace","obj-namespace":{"obj-in":"obj-inside-namespace"}},"should-be-outside-obj"]`,
 			f: func(arr ArrayEncoder) {
-				arr.AppendObject(maybeNamespace{true})
+				assert.NoError(t, arr.AppendObject(maybeNamespace{true}))
 				arr.AppendString("should-be-outside-obj")
 			},
 		},
@@ -530,10 +532,13 @@ type turducken struct{}
 func (t turducken) MarshalLogObject(enc ObjectEncoder) error {
 	return enc.AddArray("ducks", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
 		for i := 0; i < 2; i++ {
-			arr.AppendObject(ObjectMarshalerFunc(func(inner ObjectEncoder) error {
+			err := arr.AppendObject(ObjectMarshalerFunc(func(inner ObjectEncoder) error {
 				inner.AddString("in", "chicken")
 				return nil
 			}))
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	}))

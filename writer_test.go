@@ -91,7 +91,6 @@ func TestOpen(t *testing.T) {
 	}
 
 	assert.True(t, fileExists(tempName))
-	os.Remove(tempName)
 }
 
 func TestOpenPathsNotFound(t *testing.T) {
@@ -255,7 +254,8 @@ func TestOpenWithErroringSinkFactory(t *testing.T) {
 func TestCombineWriteSyncers(t *testing.T) {
 	tw := &testWriter{"test", t}
 	w := CombineWriteSyncers(tw)
-	w.Write([]byte("test"))
+	_, err := w.Write([]byte("test"))
+	assert.NoError(t, err, "Unexpected write error.")
 }
 
 func fileExists(name string) bool {
