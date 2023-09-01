@@ -33,6 +33,8 @@ import (
 )
 
 func TestAddCaller(t *testing.T) {
+	t.Parallel()
+
 	fac, logs := observer.New(zapcore.DebugLevel)
 	sl := slog.New(NewHandler(fac, WithCaller(true)))
 	sl.Info("msg")
@@ -65,4 +67,35 @@ func TestAddStack(t *testing.T) {
 		entry.Stack,
 		"Unexpected stack trace annotation.",
 	)
+}
+
+func TestEmptyAttr(t *testing.T) {
+	t.Parallel()
+
+	fac, observedLogs := observer.New(zapcore.DebugLevel)
+	sl := slog.New(NewHandler(fac))
+
+	t.Run("Handle", func(t *testing.T) {
+		sl.Info(
+			"msg",
+			slog.String("foo", "bar"),
+			slog.Attr{},
+		)
+
+		logs := observedLogs.TakeAll()
+		require.Len(t, logs, 1, "Expected exactly one entry to be logged")
+		assert.Equal(t, map[string]any{
+			"foo": "bar",
+		}, logs[0].ContextMap(), "Unexpected context")
+	})
+
+	t.Run("WithAttrs", func(t *testing.T) {
+		sl.With(slog.String("foo", "bar"), slog.Attr{}).Info("msg")
+
+		logs := observedLogs.TakeAll()
+		require.Len(t, logs, 1, "Expected exactly one entry to be logged")
+		assert.Equal(t, map[string]any{
+			"foo": "bar",
+		}, logs[0].ContextMap(), "Unexpected context")
+	})
 }
