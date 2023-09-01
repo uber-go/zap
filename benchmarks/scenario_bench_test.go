@@ -104,6 +104,15 @@ func BenchmarkDisabledWithoutFields(b *testing.B) {
 			}
 		})
 	})
+	b.Run("fortio.org/log", func(b *testing.B) {
+		logger := newDisabledFortiolog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.InfoS(getMessage(0))
+			}
+		})
+	})
 
 }
 
@@ -183,7 +192,15 @@ func BenchmarkDisabledAccumulatedContext(b *testing.B) {
 			}
 		})
 	})
-
+	b.Run("fortio.org/log", func(b *testing.B) {
+		logger := newDisabledFortiolog(fakeFortiologFields()...)
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.InfoContext(getMessage(0))
+			}
+		})
+	})
 }
 
 func BenchmarkDisabledAddingFields(b *testing.B) {
@@ -253,7 +270,15 @@ func BenchmarkDisabledAddingFields(b *testing.B) {
 			}
 		})
 	})
-
+	b.Run("fortio.org/log", func(b *testing.B) {
+		logger := newDisabledFortiolog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.InfoS(getMessage(0), fakeFortiologFields()...)
+			}
+		})
+	})
 }
 
 func BenchmarkWithoutFields(b *testing.B) {
@@ -401,7 +426,15 @@ func BenchmarkWithoutFields(b *testing.B) {
 			}
 		})
 	})
-
+	b.Run("fortio.org/log", func(b *testing.B) {
+		logger := newFortiolog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Infof(getMessage(0))
+			}
+		})
+	})
 }
 
 func BenchmarkAccumulatedContext(b *testing.B) {
@@ -531,6 +564,15 @@ func BenchmarkAccumulatedContext(b *testing.B) {
 			}
 		})
 	})
+	b.Run("fortio.org/log", func(b *testing.B) {
+		logger := newFortiolog(fakeFortiologFields()...)
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.InfoContext(getMessage(0))
+			}
+		})
+	})
 
 }
 
@@ -643,5 +685,13 @@ func BenchmarkAddingFields(b *testing.B) {
 			}
 		})
 	})
-
+	b.Run("fortio.org/log", func(b *testing.B) {
+		logger := newFortiolog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.InfoS(getMessage(0), fakeFortiologFields()...)
+			}
+		})
+	})
 }

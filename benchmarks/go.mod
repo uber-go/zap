@@ -4,7 +4,10 @@ go 1.19
 
 replace go.uber.org/zap => ../
 
+// replace fortio.org/log => ../../../fortio.org/log // remove this before any merging
+
 require (
+	fortio.org/log v1.11.0
 	github.com/apex/log v1.9.0
 	github.com/go-kit/log v0.2.1
 	github.com/rs/zerolog v1.28.0
