@@ -32,13 +32,11 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestAddSource(t *testing.T) {
+func TestAddCaller(t *testing.T) {
 	t.Parallel()
 
 	fac, logs := observer.New(zapcore.DebugLevel)
-	sl := slog.New(NewHandler(fac, &HandlerOptions{
-		AddSource: true,
-	}))
+	sl := slog.New(NewHandler(fac, WithCaller(true)))
 	sl.Info("msg")
 
 	require.Len(t, logs.AllUntimed(), 1, "Expected exactly one entry to be logged")
@@ -51,11 +49,31 @@ func TestAddSource(t *testing.T) {
 	)
 }
 
+func TestAddStack(t *testing.T) {
+	fac, logs := observer.New(zapcore.DebugLevel)
+	sl := slog.New(NewHandler(fac, AddStacktraceAt(slog.LevelDebug)))
+	sl.Info("msg")
+
+	require.Len(t, logs.AllUntimed(), 1, "Expected exactly one entry to be logged")
+	entry := logs.AllUntimed()[0]
+	require.Equal(t, "msg", entry.Message, "Unexpected message")
+	assert.Regexp(t,
+		`^go.uber.org/zap/exp/zapslog.TestAddStack`,
+		entry.Stack,
+		"Unexpected stack trace annotation.",
+	)
+	assert.Regexp(t,
+		`/zapslog/handler_test.go:\d+`,
+		entry.Stack,
+		"Unexpected stack trace annotation.",
+	)
+}
+
 func TestEmptyAttr(t *testing.T) {
 	t.Parallel()
 
 	fac, observedLogs := observer.New(zapcore.DebugLevel)
-	sl := slog.New(NewHandler(fac, nil))
+	sl := slog.New(NewHandler(fac))
 
 	t.Run("Handle", func(t *testing.T) {
 		sl.Info(
