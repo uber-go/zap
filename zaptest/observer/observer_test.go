@@ -173,7 +173,7 @@ func TestFilters(t *testing.T) {
 
 	logger, sink := New(zap.InfoLevel)
 	for _, log := range logs {
-		logger.Write(log.Entry, log.Context)
+		assert.NoError(t, logger.Write(log.Entry, log.Context), "Unexpected error writing log entry.")
 	}
 
 	tests := []struct {

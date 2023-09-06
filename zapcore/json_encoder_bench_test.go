@@ -31,10 +31,13 @@ import (
 func BenchmarkJSONLogMarshalerFunc(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		enc := NewJSONEncoder(testEncoderConfig())
-		enc.AddObject("nested", ObjectMarshalerFunc(func(enc ObjectEncoder) error {
+		err := enc.AddObject("nested", ObjectMarshalerFunc(func(enc ObjectEncoder) error {
 			enc.AddInt64("i", int64(i))
 			return nil
 		}))
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -95,7 +98,9 @@ func BenchmarkStandardJSON(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			json.Marshal(record)
+			if _, err := json.Marshal(record); err != nil {
+				b.Fatal(err)
+			}
 		}
 	})
 }

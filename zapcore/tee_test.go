@@ -120,7 +120,7 @@ func TestTeeWrite(t *testing.T) {
 		debugEntry := Entry{Level: DebugLevel, Message: "log-at-debug"}
 		warnEntry := Entry{Level: WarnLevel, Message: "log-at-warn"}
 		for _, ent := range []Entry{debugEntry, warnEntry} {
-			tee.Write(ent, nil)
+			assert.NoError(t, tee.Write(ent, nil))
 		}
 
 		for _, logs := range []*observer.ObservedLogs{debugLogs, warnLogs} {

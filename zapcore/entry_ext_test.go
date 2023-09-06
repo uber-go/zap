@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Uber Technologies, Inc.
+// Copyright (c) 2023 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,38 +18,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapcore
+package zapcore_test
 
 import (
-	"os"
+	"bytes"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 )
 
-func BenchmarkBufferedWriteSyncer(b *testing.B) {
-	b.Run("write file with buffer", func(b *testing.B) {
-		file, err := os.CreateTemp(b.TempDir(), "test.log")
-		require.NoError(b, err)
+func TestCheckedEntryIllegalReuse(t *testing.T) {
+	t.Parallel()
 
-		defer func() {
-			assert.NoError(b, file.Close())
-		}()
+	var errOut bytes.Buffer
 
-		w := &BufferedWriteSyncer{
-			WS: AddSync(file),
-		}
-		defer func() {
-			assert.NoError(b, w.Stop(), "failed to stop buffered write syncer")
-		}()
-		b.ResetTimer()
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				if _, err := w.Write([]byte("foobarbazbabble")); err != nil {
-					b.Fatal(err)
-				}
-			}
-		})
-	})
+	testCore := zaptest.NewLogger(t).Core()
+	ce := testCore.Check(zapcore.Entry{
+		Level:   zapcore.InfoLevel,
+		Time:    time.Now(),
+		Message: "hello",
+	}, nil)
+	ce.ErrorOutput = zapcore.AddSync(&errOut)
+
+	// The first write should succeed.
+	ce.Write(zap.String("k", "v"), zap.Int("n", 42))
+	assert.Empty(t, errOut.String(), "Expected no errors on first write.")
+
+	// The second write should fail.
+	ce.Write(zap.String("foo", "bar"), zap.Int("x", 1))
+	assert.Contains(t, errOut.String(), "Unsafe CheckedEntry re-use near Entry",
+		"Expected error logged on second write.")
 }

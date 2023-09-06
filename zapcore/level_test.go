@@ -159,7 +159,7 @@ func TestLevelNils(t *testing.T) {
 	}, "Level(nil).String() should panic")
 
 	assert.Panics(t, func() {
-		l.MarshalText()
+		_, _ = l.MarshalText() // should panic
 	}, "Expected to panic when marshalling a nil level.")
 
 	err := l.UnmarshalText([]byte("debug"))

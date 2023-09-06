@@ -41,7 +41,7 @@ func TestRegisterEncoder(t *testing.T) {
 
 func TestDuplicateRegisterEncoder(t *testing.T) {
 	testEncoders(func() {
-		RegisterEncoder("foo", newNilEncoder)
+		assert.NoError(t, RegisterEncoder("foo", newNilEncoder), "expected to be able to register the encoder foo")
 		assert.Error(t, RegisterEncoder("foo", newNilEncoder), "expected an error when registering an encoder with the same name twice")
 	})
 }
@@ -52,7 +52,7 @@ func TestRegisterEncoderNoName(t *testing.T) {
 
 func TestNewEncoder(t *testing.T) {
 	testEncoders(func() {
-		RegisterEncoder("foo", newNilEncoder)
+		assert.NoError(t, RegisterEncoder("foo", newNilEncoder), "expected to be able to register the encoder foo")
 		encoder, err := newEncoder("foo", zapcore.EncoderConfig{})
 		assert.NoError(t, err, "could not create an encoder for the registered name foo")
 		assert.Nil(t, encoder, "the encoder from newNilEncoder is not nil")
