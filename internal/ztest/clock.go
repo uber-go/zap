@@ -89,9 +89,12 @@ func (c *MockClock) NewTicker(d time.Duration) *time.Ticker {
 }
 
 // Add progresses time by the given duration.
-//
 // Other operations waiting for the time to advance
 // will be resolved if they are within range.
+//
+// Side effects of operations waiting for the time to advance
+// will take effect on a best-effort basis.
+// Avoid racing with operations that have side effects.
 //
 // Panics if the duration is negative.
 func (c *MockClock) Add(d time.Duration) {
