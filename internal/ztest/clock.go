@@ -107,7 +107,12 @@ func (c *MockClock) Add(d time.Duration) {
 	// This ensures that any waiters that are resolved
 	// are resolved at the time they were expecting.
 
-	for w, ok := c.waiters.PopLTE(newTime); ok; w, ok = c.waiters.PopLTE(newTime) {
+	for {
+		w, ok := c.waiters.PopLTE(newTime)
+		if !ok {
+			break
+		}
+
 		// The waiter is within range.
 		// Travel to the time of the waiter and resolve it.
 		c.now = w.until
