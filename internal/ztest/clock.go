@@ -62,6 +62,9 @@ func (c *MockClock) Now() time.Time {
 // As with [time.NewTicker],
 // the ticker will drop ticks if the receiver is slow,
 // and the channel is never closed.
+//
+// Calling Stop on the returned ticker is a no-op.
+// The ticker only runs when the clock is advanced.
 func (c *MockClock) NewTicker(d time.Duration) *time.Ticker {
 	ch := make(chan time.Time, 1)
 
