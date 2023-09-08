@@ -22,6 +22,7 @@ package zapcore_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -51,7 +52,28 @@ func BenchmarkZapJSONFloat32AndComplex64(b *testing.B) {
 	})
 }
 
+const _sliceSize = 5000
+
+type StringSlice []string
+
+func (s StringSlice) MarshalLogArray(encoder ArrayEncoder) error {
+	for _, str := range s {
+		encoder.AppendString(str)
+	}
+	return nil
+}
+
+func generateStringSlice(n int) StringSlice {
+	output := make(StringSlice, 0, n)
+	for i := 0; i < n; i++ {
+		output = append(output, fmt.Sprint("00000000-0000-0000-0000-0000000000", i))
+	}
+	return output
+}
+
 func BenchmarkZapJSON(b *testing.B) {
+	additional := generateStringSlice(_sliceSize)
+	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			enc := NewJSONEncoder(testEncoderConfig())
@@ -64,6 +86,7 @@ func BenchmarkZapJSON(b *testing.B) {
 			enc.AddString("string3", "🤔")
 			enc.AddString("string4", "🙊")
 			enc.AddBool("bool", true)
+			_ = enc.AddArray("test", additional)
 			buf, _ := enc.EncodeEntry(Entry{
 				Message: "fake",
 				Level:   DebugLevel,
@@ -75,10 +98,11 @@ func BenchmarkZapJSON(b *testing.B) {
 
 func BenchmarkStandardJSON(b *testing.B) {
 	record := struct {
-		Level   string                 `json:"level"`
-		Message string                 `json:"msg"`
-		Time    time.Time              `json:"ts"`
-		Fields  map[string]interface{} `json:"fields"`
+		Level      string                 `json:"level"`
+		Message    string                 `json:"msg"`
+		Time       time.Time              `json:"ts"`
+		Fields     map[string]interface{} `json:"fields"`
+		Additional StringSlice
 	}{
 		Level:   "debug",
 		Message: "fake",
@@ -94,6 +118,7 @@ func BenchmarkStandardJSON(b *testing.B) {
 			"string4": "🙊",
 			"bool":    true,
 		},
+		Additional: generateStringSlice(_sliceSize),
 	}
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
