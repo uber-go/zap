@@ -16,7 +16,6 @@ require (
 )
 
 require (
-	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
