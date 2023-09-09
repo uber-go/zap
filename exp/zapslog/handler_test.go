@@ -113,6 +113,18 @@ func TestEmptyAttr(t *testing.T) {
 			"foo": "bar",
 		}, logs[0].ContextMap(), "Unexpected context")
 	})
+
+	t.Run("Group", func(t *testing.T) {
+		sl.With("k", slog.GroupValue(slog.String("foo", "bar"), slog.Attr{})).Info("msg")
+
+		logs := observedLogs.TakeAll()
+		require.Len(t, logs, 1, "Expected exactly one entry to be logged")
+		assert.Equal(t, map[string]any{
+			"k": map[string]any{
+				"foo": "bar",
+			},
+		}, logs[0].ContextMap(), "Unexpected context")
+	})
 }
 
 func TestWithName(t *testing.T) {
