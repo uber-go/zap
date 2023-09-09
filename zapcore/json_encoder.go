@@ -563,18 +563,20 @@ func safeAppendStringLike[S []byte | string](
 			continue
 		}
 
-		appendTo(buf, s[last:i])
-
 		r, size := decodeRune(s[i:])
 		if r == utf8.RuneError && size == 1 {
+			// Invalid UTF-8 sequence.
+			// Replace it with the Unicode replacement character.
+			appendTo(buf, s[last:i])
 			buf.AppendString(`\ufffd`)
 			i++
 			last = i
 			continue
 		}
-		appendTo(buf, s[i:i+size])
+
+		// No special handling required.
+		// Skip over this rune and continue.
 		i += size
-		last = i
 	}
 
 	// add remaining
