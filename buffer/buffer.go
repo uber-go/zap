@@ -43,7 +43,7 @@ func (b *Buffer) AppendByte(v byte) {
 }
 
 // AppendByteV writes a single byte to the Buffer.
-func (b *Buffer) AppendByteV(v ...byte) {
+func (b *Buffer) AppendBytes(v []byte) {
 	b.bs = append(b.bs, v...)
 }
 

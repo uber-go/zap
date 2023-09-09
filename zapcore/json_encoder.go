@@ -23,10 +23,8 @@ package zapcore
 import (
 	"encoding/base64"
 	"math"
-	"reflect"
 	"time"
 	"unicode/utf8"
-	"unsafe"
 
 	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/internal/bufferpool"
@@ -488,15 +486,35 @@ func (enc *jsonEncoder) appendFloat(val float64, bitSize int) {
 // Unlike the standard library's encoder, it doesn't attempt to protect the
 // user from browser vulnerabilities or JSONP-related problems.
 func (enc *jsonEncoder) safeAddString(s string) {
-	enc.safeAddByteString(*(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{
-		Data: (*reflect.StringHeader)(unsafe.Pointer(&s)).Data,
-		Len:  len(s),
-		Cap:  len(s),
-	})))
+	safeAppendStringLike(
+		(*buffer.Buffer).AppendString,
+		utf8.DecodeRuneInString,
+		enc.buf,
+		s,
+	)
 }
 
 // safeAddByteString is no-alloc equivalent of safeAddString(string(s)) for s []byte.
 func (enc *jsonEncoder) safeAddByteString(s []byte) {
+	safeAppendStringLike(
+		(*buffer.Buffer).AppendBytes,
+		utf8.DecodeRune,
+		enc.buf,
+		s,
+	)
+}
+
+// safeAppendStringLike is a generic implementation of safeAddString and safeAddByteString.
+// It appends a string or byte slice to the buffer, escaping all special characters.
+func safeAppendStringLike[S []byte | string](
+	// appendTo appends this string-like object to the buffer.
+	appendTo func(*buffer.Buffer, S),
+	// decodeRune decodes the next rune from the string-like object
+	// and returns its value and width in bytes.
+	decodeRune func(S) (rune, int),
+	buf *buffer.Buffer,
+	s S,
+) {
 	start := 0
 	for i := 0; i < len(s); {
 		if s[i] < utf8.RuneSelf {
@@ -505,26 +523,26 @@ func (enc *jsonEncoder) safeAddByteString(s []byte) {
 				continue
 			}
 
-			enc.buf.AppendByteV(s[start:i]...)
+			appendTo(buf, s[start:i])
 
 			switch s[i] {
 			case '\\', '"':
-				enc.buf.AppendByte('\\')
-				enc.buf.AppendByte(s[i])
+				buf.AppendByte('\\')
+				buf.AppendByte(s[i])
 			case '\n':
-				enc.buf.AppendByte('\\')
-				enc.buf.AppendByte('n')
+				buf.AppendByte('\\')
+				buf.AppendByte('n')
 			case '\r':
-				enc.buf.AppendByte('\\')
-				enc.buf.AppendByte('r')
+				buf.AppendByte('\\')
+				buf.AppendByte('r')
 			case '\t':
-				enc.buf.AppendByte('\\')
-				enc.buf.AppendByte('t')
+				buf.AppendByte('\\')
+				buf.AppendByte('t')
 			default:
 				// Encode bytes < 0x20, except for the escape sequences above.
-				enc.buf.AppendString(`\u00`)
-				enc.buf.AppendByte(_hex[s[i]>>4])
-				enc.buf.AppendByte(_hex[s[i]&0xF])
+				buf.AppendString(`\u00`)
+				buf.AppendByte(_hex[s[i]>>4])
+				buf.AppendByte(_hex[s[i]&0xF])
 			}
 
 			i++
@@ -532,26 +550,26 @@ func (enc *jsonEncoder) safeAddByteString(s []byte) {
 			continue
 		}
 
-		enc.buf.AppendByteV(s[start:i]...)
+		appendTo(buf, s[start:i])
 
-		r, size := utf8.DecodeRune(s[i:])
-		if enc.tryAddRuneError(r, size) {
+		r, size := decodeRune(s[i:])
+		if tryAddRuneError(buf, r, size) {
 			i++
 			start = i
 			continue
 		}
-		enc.buf.Write(s[i : i+size])
+		appendTo(buf, s[i:i+size])
 		i += size
 		start = i
 	}
 
 	// add remaining
-	enc.buf.AppendByteV(s[start:]...)
+	appendTo(buf, s[start:])
 }
 
-func (enc *jsonEncoder) tryAddRuneError(r rune, size int) bool {
+func tryAddRuneError(buf *buffer.Buffer, r rune, size int) bool {
 	if r == utf8.RuneError && size == 1 {
-		enc.buf.AppendString(`\ufffd`)
+		buf.AppendString(`\ufffd`)
 		return true
 	}
 	return false
