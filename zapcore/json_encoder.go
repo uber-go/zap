@@ -524,20 +524,35 @@ func safeAppendStringLike[S []byte | string](
 	// last is the index of the last byte that was copied to the buffer.
 	last := 0
 	for i := 0; i < len(s); {
-		// Character smaller than RuneSelf are single byte
-		// and do not need decoding.
-		if s[i] < utf8.RuneSelf {
+		if s[i] >= utf8.RuneSelf {
+			// Character >= RuneSelf may be part of a multi-byte rune.
+			// They need to be decoded before we can decide how to handle them.
+			r, size := decodeRune(s[i:])
+			if r != utf8.RuneError || size != 1 {
+				// No special handling required.
+				// Skip over this rune and continue.
+				i += size
+				continue
+			}
+
+			// Invalid UTF-8 sequence.
+			// Replace it with the Unicode replacement character.
+			appendTo(buf, s[last:i])
+			buf.AppendString(`\ufffd`)
+
+			i++
+			last = i
+		} else {
+			// Character < RuneSelf is a single-byte UTF-8 rune.
 			if s[i] >= 0x20 && s[i] != '\\' && s[i] != '"' {
 				// No escaping necessary.
-				// These will be copied as-is later.
+				// Skip over this character and continue.
 				i++
 				continue
 			}
 
-			// Needs special handling.
-			// Copy everything we've seen so far.
+			// This character needs to be escaped.
 			appendTo(buf, s[last:i])
-
 			switch s[i] {
 			case '\\', '"':
 				buf.AppendByte('\\')
@@ -560,23 +575,7 @@ func safeAppendStringLike[S []byte | string](
 
 			i++
 			last = i
-			continue
 		}
-
-		r, size := decodeRune(s[i:])
-		if r == utf8.RuneError && size == 1 {
-			// Invalid UTF-8 sequence.
-			// Replace it with the Unicode replacement character.
-			appendTo(buf, s[last:i])
-			buf.AppendString(`\ufffd`)
-			i++
-			last = i
-			continue
-		}
-
-		// No special handling required.
-		// Skip over this rune and continue.
-		i += size
 	}
 
 	// add remaining
