@@ -67,6 +67,11 @@ func (gs groupObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 }
 
 func convertAttrToField(attr slog.Attr) zapcore.Field {
+	if attr.Equal(slog.Attr{}) {
+		// Ignore empty attrs.
+		return zap.Skip()
+	}
+
 	switch attr.Value.Kind() {
 	case slog.KindBool:
 		return zap.Bool(attr.Key, attr.Value.Bool())
@@ -154,10 +159,6 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 
 	fields := make([]zapcore.Field, 0, record.NumAttrs())
 	record.Attrs(func(attr slog.Attr) bool {
-		if attr.Equal(slog.Attr{}) {
-			return true // ignore empty attributes
-		}
-
 		fields = append(fields, convertAttrToField(attr))
 		return true
 	})
@@ -170,9 +171,6 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	fields := make([]zapcore.Field, 0, len(attrs))
 	for _, attr := range attrs {
-		if attr.Equal(slog.Attr{}) {
-			continue // ignore empty attributes
-		}
 		fields = append(fields, convertAttrToField(attr))
 	}
 	return h.withFields(fields...)
