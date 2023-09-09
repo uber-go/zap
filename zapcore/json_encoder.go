@@ -553,7 +553,8 @@ func safeAppendStringLike[S []byte | string](
 		appendTo(buf, s[start:i])
 
 		r, size := decodeRune(s[i:])
-		if tryAddRuneError(buf, r, size) {
+		if r == utf8.RuneError && size == 1 {
+			buf.AppendString(`\ufffd`)
 			i++
 			start = i
 			continue
@@ -565,12 +566,4 @@ func safeAppendStringLike[S []byte | string](
 
 	// add remaining
 	appendTo(buf, s[start:])
-}
-
-func tryAddRuneError(buf *buffer.Buffer, r rune, size int) bool {
-	if r == utf8.RuneError && size == 1 {
-		buf.AppendString(`\ufffd`)
-		return true
-	}
-	return false
 }
