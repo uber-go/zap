@@ -515,15 +515,28 @@ func safeAppendStringLike[S []byte | string](
 	buf *buffer.Buffer,
 	s S,
 ) {
-	start := 0
+	// The encoding logic below works by skipping over characters
+	// that can be safely copied as-is,
+	// until a character is found that needs special handling.
+	// At that point, we copy everything we've seen so far,
+	// and then handle that special character.
+	//
+	// last is the index of the last byte that was copied to the buffer.
+	last := 0
 	for i := 0; i < len(s); {
+		// Character smaller than RuneSelf are single byte
+		// and do not need decoding.
 		if s[i] < utf8.RuneSelf {
 			if s[i] >= 0x20 && s[i] != '\\' && s[i] != '"' {
+				// No escaping necessary.
+				// These will be copied as-is later.
 				i++
 				continue
 			}
 
-			appendTo(buf, s[start:i])
+			// Needs special handling.
+			// Copy everything we've seen so far.
+			appendTo(buf, s[last:i])
 
 			switch s[i] {
 			case '\\', '"':
@@ -546,24 +559,24 @@ func safeAppendStringLike[S []byte | string](
 			}
 
 			i++
-			start = i
+			last = i
 			continue
 		}
 
-		appendTo(buf, s[start:i])
+		appendTo(buf, s[last:i])
 
 		r, size := decodeRune(s[i:])
 		if r == utf8.RuneError && size == 1 {
 			buf.AppendString(`\ufffd`)
 			i++
-			start = i
+			last = i
 			continue
 		}
 		appendTo(buf, s[i:i+size])
 		i += size
-		start = i
+		last = i
 	}
 
 	// add remaining
-	appendTo(buf, s[start:])
+	appendTo(buf, s[last:])
 }
