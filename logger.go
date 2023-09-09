@@ -185,14 +185,19 @@ func (log *Logger) With(fields ...Field) *Logger {
 	return l
 }
 
-// WithLazy creates a child logger and lazily encodes structured context if the
-// child logger is ever further chained with With() or is written to with any
-// of the log level methods. Until the occurs, the logger may retain references
-// to references in objects, etc, and logging will reflect the state of an object
-// at the time of logging, not the time of WithLazy(). However, is a worthwhile
-// performance optimisation if one creates a contextual logger and the likelihood
-// of using it is low (e.g. in error or rarely taken branches).
-// Fields added to the child don't affect the parent, and vice versa.
+// WithLazy creates a child logger and adds structured context to it lazily.
+//
+// The fields are evaluated only if the logger is further chained with [With]
+// or is written to with any of the log level methods.
+// Until that occurs, the logger may retain references to objects inside the fields,
+// and logging will reflect the state of an object at the time of logging,
+// not the time of WithLazy().
+//
+// WithLazy provides a worthwhile performance optimization for contextual loggers
+// when the likelihood of using the child logger is low,
+// such as error paths and rarely taken branches.
+//
+// Similar to [With], fields added to the child don't affect the parent, and vice versa.
 func (log *Logger) WithLazy(fields ...Field) *Logger {
 	if len(fields) == 0 {
 		return log
