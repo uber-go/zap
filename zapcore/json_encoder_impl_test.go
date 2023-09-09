@@ -29,10 +29,13 @@ import (
 	"testing"
 	"testing/quick"
 	"time"
+	"unicode/utf8"
 
+	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/internal/bufferpool"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
 )
 
@@ -661,4 +664,73 @@ func TestJSONQuick(t *testing.T) {
 	// Focus on ASCII strings.
 	check(asciiRoundTripsCorrectlyString)
 	check(asciiRoundTripsCorrectlyByteString)
+}
+
+var _stringLikeCorpus = []string{
+	"",
+	"foo",
+	"bar",
+	"a\nb",
+	"a\tb",
+	"a\\b",
+	`a"b`,
+}
+
+func FuzzSafeAppendStringLike_bytes(f *testing.F) {
+	for _, s := range _stringLikeCorpus {
+		f.Add([]byte(s))
+	}
+	f.Fuzz(func(t *testing.T, b []byte) {
+		if !utf8.Valid(b) {
+			t.Skip()
+		}
+
+		fuzzSafeAppendStringLike(t, string(b), func(buf *buffer.Buffer) {
+			safeAppendStringLike(
+				(*buffer.Buffer).AppendBytes,
+				utf8.DecodeRune,
+				buf,
+				b,
+			)
+		})
+	})
+}
+
+func FuzzSafeAppendStringLike_string(f *testing.F) {
+	for _, s := range _stringLikeCorpus {
+		f.Add(s)
+	}
+	f.Fuzz(func(t *testing.T, s string) {
+		if !utf8.ValidString(s) {
+			t.Skip()
+		}
+
+		fuzzSafeAppendStringLike(t, s, func(buf *buffer.Buffer) {
+			safeAppendStringLike(
+				(*buffer.Buffer).AppendString,
+				utf8.DecodeRuneInString,
+				buf,
+				s,
+			)
+		})
+	})
+}
+
+func fuzzSafeAppendStringLike(
+	t *testing.T,
+	want string,
+	writeString func(*buffer.Buffer),
+) {
+	t.Helper()
+
+	buf := bufferpool.Get()
+	defer buf.Free()
+
+	buf.AppendByte('"')
+	writeString(buf)
+	buf.AppendByte('"')
+
+	var got string
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	assert.Equal(t, want, got)
 }
