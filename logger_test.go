@@ -125,7 +125,7 @@ func TestLoggerInitialFields(t *testing.T) {
 
 func TestLoggerWith(t *testing.T) {
 
-	for _, tt := range []struct {
+	tests := []struct {
 		name           string
 		initialFields  []Field
 		withMethodExpr func(*Logger, ...Field) *Logger
@@ -150,7 +150,8 @@ func TestLoggerWith(t *testing.T) {
 			[]Field{},
 			(*Logger).WithLazy,
 		},
-	} {
+	}
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			withLogger(t, DebugLevel, opts(Fields(tt.initialFields...)), func(logger *Logger, logs *observer.ObservedLogs) {
 				// Child loggers should have copy-on-write semantics, so two children
@@ -174,7 +175,7 @@ func TestLoggerWith(t *testing.T) {
 }
 
 func TestLoggerWithCaptures(t *testing.T) {
-	for _, tt := range []struct {
+	tests := []struct {
 		name           string
 		withMethodExpr func(*Logger, ...Field) *Logger
 		wantJSON       [2]string
@@ -211,7 +212,9 @@ func TestLoggerWithCaptures(t *testing.T) {
 				}`,
 			},
 		},
-	} {
+	}
+
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
 				MessageKey: "m",

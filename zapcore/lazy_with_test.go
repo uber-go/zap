@@ -58,7 +58,7 @@ func withLazyCore(f func(zapcore.Core, *proxyCore, *observer.ObservedLogs), init
 }
 
 func TestLazyCore(t *testing.T) {
-	for _, tt := range []struct {
+	tests := []struct {
 		name          string
 		entries       []zapcore.Entry
 		initialFields []zapcore.Field
@@ -114,7 +114,8 @@ func TestLazyCore(t *testing.T) {
 				},
 			},
 		},
-	} {
+	}
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			withLazyCore(func(lazy zapcore.Core, proxy *proxyCore, logs *observer.ObservedLogs) {
 				checkCounts := func(withCount int64, msg string) {
