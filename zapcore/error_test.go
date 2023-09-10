@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap/zapcore"
 	. "go.uber.org/zap/zapcore"
 )
 
@@ -160,4 +161,50 @@ func TestRichErrorSupport(t *testing.T) {
 	enc := NewMapObjectEncoder()
 	f.AddTo(enc)
 	assert.Equal(t, "failed: egad", enc.Fields["k"], "Unexpected basic error message.")
+}
+
+func TestErrArrayBrokenEncoder(t *testing.T) {
+	t.Parallel()
+
+	f := Field{
+		Key:  "foo",
+		Type: ErrorType,
+		Interface: multierr.Combine(
+			errors.New("foo"),
+			errors.New("bar"),
+		),
+	}
+
+	failWith := errors.New("great sadness")
+	enc := NewMapObjectEncoder()
+	f.AddTo(brokenArrayObjectEncoder{
+		Err:           failWith,
+		ObjectEncoder: enc,
+	})
+
+	// Failure to add the field to the encoder
+	// causes the error to be added as a string field.
+	assert.Equal(t, "great sadness", enc.Fields["fooError"],
+		"Unexpected error message.")
+}
+
+// brokenArrayObjectEncoder is an ObjectEncoder
+// that builds a broken ArrayEncoder.
+type brokenArrayObjectEncoder struct {
+	ObjectEncoder
+	ArrayEncoder
+
+	Err error // error to return
+}
+
+func (enc brokenArrayObjectEncoder) AddArray(key string, marshaler ArrayMarshaler) error {
+	return enc.ObjectEncoder.AddArray(key,
+		ArrayMarshalerFunc(func(ae ArrayEncoder) error {
+			enc.ArrayEncoder = ae
+			return marshaler.MarshalLogArray(enc)
+		}))
+}
+
+func (enc brokenArrayObjectEncoder) AppendObject(zapcore.ObjectMarshaler) error {
+	return enc.Err
 }

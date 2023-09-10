@@ -218,7 +218,7 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 			desc: "object (no nested namespace) then string",
 			f: func(e ObjectEncoder) {
 				e.OpenNamespace("k")
-				e.AddObject("obj", maybeNamespace{false})
+				assert.NoError(t, e.AddObject("obj", maybeNamespace{false}))
 				e.AddString("not-obj", "should-be-outside-obj")
 			},
 			expected: map[string]interface{}{
@@ -232,7 +232,7 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 			desc: "object (with nested namespace) then string",
 			f: func(e ObjectEncoder) {
 				e.OpenNamespace("k")
-				e.AddObject("obj", maybeNamespace{true})
+				assert.NoError(t, e.AddObject("obj", maybeNamespace{true}))
 				e.AddString("not-obj", "should-be-outside-obj")
 			},
 			expected: map[string]interface{}{
@@ -255,6 +255,7 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 		})
 	}
 }
+
 func TestSliceArrayEncoderAppend(t *testing.T) {
 	tests := []struct {
 		desc     string
@@ -284,29 +285,33 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 		{"AppendUint8", func(e ArrayEncoder) { e.AppendUint8(42) }, uint8(42)},
 		{"AppendUintptr", func(e ArrayEncoder) { e.AppendUintptr(42) }, uintptr(42)},
 		{
-			desc:     "AppendReflected",
-			f:        func(e ArrayEncoder) { e.AppendReflected(map[string]interface{}{"foo": 5}) },
+			desc: "AppendReflected",
+			f: func(e ArrayEncoder) {
+				assert.NoError(t, e.AppendReflected(map[string]interface{}{"foo": 5}))
+			},
 			expected: map[string]interface{}{"foo": 5},
 		},
 		{
 			desc: "AppendArray (arrays of arrays)",
 			f: func(e ArrayEncoder) {
-				e.AppendArray(ArrayMarshalerFunc(func(inner ArrayEncoder) error {
+				err := e.AppendArray(ArrayMarshalerFunc(func(inner ArrayEncoder) error {
 					inner.AppendBool(true)
 					inner.AppendBool(false)
 					return nil
 				}))
+				assert.NoError(t, err)
 			},
 			expected: []interface{}{true, false},
 		},
 		{
 			desc: "object (no nested namespace) then string",
 			f: func(e ArrayEncoder) {
-				e.AppendArray(ArrayMarshalerFunc(func(inner ArrayEncoder) error {
-					inner.AppendObject(maybeNamespace{false})
+				err := e.AppendArray(ArrayMarshalerFunc(func(inner ArrayEncoder) error {
+					err := inner.AppendObject(maybeNamespace{false})
 					inner.AppendString("should-be-outside-obj")
-					return nil
+					return err
 				}))
+				assert.NoError(t, err)
 			},
 			expected: []interface{}{
 				map[string]interface{}{
@@ -318,11 +323,12 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 		{
 			desc: "object (with nested namespace) then string",
 			f: func(e ArrayEncoder) {
-				e.AppendArray(ArrayMarshalerFunc(func(inner ArrayEncoder) error {
-					inner.AppendObject(maybeNamespace{true})
+				err := e.AppendArray(ArrayMarshalerFunc(func(inner ArrayEncoder) error {
+					err := inner.AppendObject(maybeNamespace{true})
 					inner.AppendString("should-be-outside-obj")
-					return nil
+					return err
 				}))
+				assert.NoError(t, err)
 			},
 			expected: []interface{}{
 				map[string]interface{}{

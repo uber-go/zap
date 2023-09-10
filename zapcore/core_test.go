@@ -148,7 +148,7 @@ func TestIOCoreSyncsOutput(t *testing.T) {
 			DebugLevel,
 		)
 
-		core.Write(tt.entry, nil)
+		assert.NoError(t, core.Write(tt.entry, nil), "Unexpected error writing entry.")
 		assert.Equal(t, tt.shouldSync, sink.Called(), "Incorrect Sync behavior.")
 	}
 }

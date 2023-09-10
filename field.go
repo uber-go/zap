@@ -25,6 +25,7 @@ import (
 	"math"
 	"time"
 
+	"go.uber.org/zap/internal/stacktrace"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -374,7 +375,7 @@ func StackSkip(key string, skip int) Field {
 	// from expanding the zapcore.Field union struct to include a byte slice. Since
 	// taking a stacktrace is already so expensive (~10us), the extra allocation
 	// is okay.
-	return String(key, takeStacktrace(skip+1)) // skip StackSkip
+	return String(key, stacktrace.Take(skip+1)) // skip StackSkip
 }
 
 // Duration constructs a field with the given key and value. The encoder

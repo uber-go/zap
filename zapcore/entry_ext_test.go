@@ -18,33 +18,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build !go1.21
-
-package zapslog
+package zapcore_test
 
 import (
+	"bytes"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
-	"golang.org/x/exp/slog"
+	"go.uber.org/zap/zaptest"
 )
 
-func TestAddSource(t *testing.T) {
-	r := require.New(t)
-	fac, logs := observer.New(zapcore.DebugLevel)
-	sl := slog.New(NewHandler(fac, &HandlerOptions{
-		AddSource: true,
-	}))
-	sl.Info("msg")
+func TestCheckedEntryIllegalReuse(t *testing.T) {
+	t.Parallel()
 
-	r.Len(logs.AllUntimed(), 1, "Expected exactly one entry to be logged")
-	entry := logs.AllUntimed()[0]
-	r.Equal("msg", entry.Message, "Unexpected message")
-	r.Regexp(
-		`/slog_pre_go121_test.go:\d+$`,
-		entry.Caller.String(),
-		"Unexpected caller annotation.",
-	)
+	var errOut bytes.Buffer
+
+	testCore := zaptest.NewLogger(t).Core()
+	ce := testCore.Check(zapcore.Entry{
+		Level:   zapcore.InfoLevel,
+		Time:    time.Now(),
+		Message: "hello",
+	}, nil)
+	ce.ErrorOutput = zapcore.AddSync(&errOut)
+
+	// The first write should succeed.
+	ce.Write(zap.String("k", "v"), zap.Int("n", 42))
+	assert.Empty(t, errOut.String(), "Expected no errors on first write.")
+
+	// The second write should fail.
+	ce.Write(zap.String("foo", "bar"), zap.Int("x", 1))
+	assert.Contains(t, errOut.String(), "Unsafe CheckedEntry re-use near Entry",
+		"Expected error logged on second write.")
 }

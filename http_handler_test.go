@@ -22,6 +22,7 @@ package zap_test
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -167,7 +168,9 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 
 			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err, "Error making %s request.", req.Method)
-			defer res.Body.Close()
+			defer func() {
+				assert.NoError(t, res.Body.Close(), "Error closing response body.")
+			}()
 
 			require.Equal(t, tt.expectedCode, res.StatusCode, "Unexpected status code.")
 			if tt.expectedCode != http.StatusOK {
@@ -187,4 +190,28 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 			assert.Equal(t, tt.expectedLevel, pld.Level, "Unexpected logging level returned")
 		})
 	}
+}
+
+func TestAtomicLevelServeHTTPBrokenWriter(t *testing.T) {
+	t.Parallel()
+
+	lvl := zap.NewAtomicLevel()
+
+	request, err := http.NewRequest(http.MethodGet, "http://localhost:1234/log/level", nil)
+	require.NoError(t, err, "Error constructing request.")
+
+	recorder := httptest.NewRecorder()
+	lvl.ServeHTTP(&brokenHTTPResponseWriter{
+		ResponseWriter: recorder,
+	}, request)
+
+	assert.Equal(t, http.StatusInternalServerError, recorder.Code, "Unexpected status code.")
+}
+
+type brokenHTTPResponseWriter struct {
+	http.ResponseWriter
+}
+
+func (w *brokenHTTPResponseWriter) Write([]byte) (int, error) {
+	return 0, errors.New("great sadness")
 }

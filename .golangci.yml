@@ -9,7 +9,7 @@ linters:
   disable-all: true
   enable:
     # golangci-lint defaults:
-    # - errcheck TODO: enable errcheck
+    - errcheck
     - gosimple
     - govet
     - ineffassign
@@ -21,7 +21,7 @@ linters:
     - nolintlint # lints nolint directives
     - revive
 
-linter-settings:
+linters-settings:
   govet:
     # These govet checks are disabled by default, but they're useful.
     enable:
@@ -29,6 +29,24 @@ linter-settings:
       - reflectvaluecompare
       - sortslice
       - unusedwrite
+
+  errcheck:
+    exclude-functions:
+      # These methods can not fail.
+      # They operate on an in-memory buffer.
+      - (*go.uber.org/zap/buffer.Buffer).Write
+      - (*go.uber.org/zap/buffer.Buffer).WriteByte
+      - (*go.uber.org/zap/buffer.Buffer).WriteString
+
+      - (*go.uber.org/zap/zapio.Writer).Close
+      - (*go.uber.org/zap/zapio.Writer).Sync
+      - (*go.uber.org/zap/zapio.Writer).Write
+      # Write to zapio.Writer cannot fail,
+      # so io.WriteString on it cannot fail.
+      - io.WriteString(*go.uber.org/zap/zapio.Writer)
+
+      # Writing a plain string to a fmt.State cannot fail.
+      - io.WriteString(fmt.State)
 
 issues:
   # Print all issues reported by all linters.
@@ -51,3 +69,9 @@ issues:
     #   for foo() { }
     - linters: [revive]
       text: 'empty-block: this block is empty, you can remove it'
+
+    # Ignore logger.Sync() errcheck failures in example_test.go
+    # since those are intended to be uncomplicated examples.
+    - linters: [errcheck]
+      path: example_test.go
+      text: 'Error return value of `logger.Sync` is not checked'

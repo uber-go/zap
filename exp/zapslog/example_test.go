@@ -18,18 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build !go1.21
+//go:build go1.21
 
 package zapslog_test
 
 import (
 	"context"
+	"log/slog"
 	"net"
 	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
-	"golang.org/x/exp/slog"
 )
 
 type Password string
@@ -42,7 +42,7 @@ func Example_slog() {
 	logger := zap.NewExample(zap.IncreaseLevel(zap.InfoLevel))
 	defer logger.Sync()
 
-	sl := slog.New(zapslog.NewHandler(logger.Core(), nil /* options */))
+	sl := slog.New(zapslog.NewHandler(logger.Core()))
 	ctx := context.Background()
 
 	sl.Info("user", "name", "Al", "secret", Password("secret"))

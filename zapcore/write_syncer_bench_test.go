@@ -24,6 +24,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/internal/ztest"
 )
@@ -37,7 +38,9 @@ func BenchmarkMultiWriteSyncer(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				w.Write([]byte("foobarbazbabble"))
+				if _, err := w.Write([]byte("foobarbazbabble")); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	})
@@ -51,7 +54,9 @@ func BenchmarkMultiWriteSyncer(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				w.Write([]byte("foobarbazbabble"))
+				if _, err := w.Write([]byte("foobarbazbabble")); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	})
@@ -64,11 +69,15 @@ func BenchmarkMultiWriteSyncer(b *testing.B) {
 				&ztest.Discarder{},
 			),
 		}
-		defer w.Stop()
+		defer func() {
+			assert.NoError(b, w.Stop(), "Unexpected error stopping buffered write syncer.")
+		}()
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				w.Write([]byte("foobarbazbabble"))
+				if _, err := w.Write([]byte("foobarbazbabble")); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	})
@@ -83,7 +92,9 @@ func BenchmarkWriteSyncer(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				w.Write([]byte("foobarbazbabble"))
+				if _, err := w.Write([]byte("foobarbazbabble")); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	})

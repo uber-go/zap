@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Uber Technologies, Inc.
+// Copyright (c) 2023 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -54,4 +54,27 @@ func TestMockClock_NewTicker(t *testing.T) {
 	clock.Add(2 * time.Microsecond)
 	assert.Equal(t, int32(2), n.Load())
 	close(quit)
+}
+
+func TestMockClock_NewTicker_slowConsumer(t *testing.T) {
+	clock := NewMockClock()
+
+	ticker := clock.NewTicker(time.Microsecond)
+	defer ticker.Stop()
+
+	// Two ticks, only one consumed.
+	clock.Add(2 * time.Microsecond)
+	<-ticker.C
+
+	select {
+	case <-ticker.C:
+		t.Fatal("unexpected tick")
+	default:
+		// ok
+	}
+}
+
+func TestMockClock_Add_negative(t *testing.T) {
+	clock := NewMockClock()
+	assert.Panics(t, func() { clock.Add(-1) })
 }
