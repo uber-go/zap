@@ -177,9 +177,6 @@ func (log *Logger) WithOptions(opts ...Option) *Logger {
 // to the child don't affect the parent, and vice versa. Any fields that
 // require evaluation (such as Objects) are evaluated upon invocation of With.
 func (log *Logger) With(fields ...Field) *Logger {
-	if len(fields) == 0 {
-		return log
-	}
 	l := log.clone()
 	l.core = l.core.With(fields)
 	return l
