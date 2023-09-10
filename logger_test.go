@@ -22,6 +22,8 @@ package zap
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -175,40 +177,161 @@ func TestLoggerWith(t *testing.T) {
 }
 
 func TestLoggerWithCaptures(t *testing.T) {
+	type withF func(*Logger, ...Field) *Logger
 	tests := []struct {
-		name       string
-		withMethod func(*Logger, ...Field) *Logger
-		wantJSON   [2]string
+		name        string
+		withMethods []withF
+		wantJSON    []string
 	}{
 		{
-			name:       "regular with captures arguments at time of With",
-			withMethod: (*Logger).With,
-			wantJSON: [2]string{
+			name:        "regular with captures arguments at time of With",
+			withMethods: []withF{(*Logger).With},
+			wantJSON: []string{
 				`{
-					"m": "hello",
-					"a": [0],
-					"b": [1]
+					"m": "hello 0",
+					"a0": [0],
+					"b0": [1]
 				}`,
 				`{
-					"m": "world",
-					"a": [0],
-					"c": [2]
+					"m": "world 0",
+					"a0": [0],
+					"c0": [2]
 				}`,
 			},
 		},
 		{
-			name:       "lazy with captures arguments at time of With or Logging",
-			withMethod: (*Logger).WithLazy,
-			wantJSON: [2]string{
+			name:        "lazy with captures arguments at time of With or Logging",
+			withMethods: []withF{(*Logger).WithLazy},
+			wantJSON: []string{
 				`{
-					"m": "hello",
-					"a": [1],
-					"b": [1]
+					"m": "hello 0",
+					"a0": [1],
+					"b0": [1]
 				}`,
 				`{
-					"m": "world",
-					"a": [1],
-					"c": [2]
+					"m": "world 0",
+					"a0": [1],
+					"c0": [2]
+				}`,
+			},
+		},
+		{
+			name:        "2x With captures arguments at time of each With",
+			withMethods: []withF{(*Logger).With, (*Logger).With},
+			wantJSON: []string{
+				`{
+					"m": "hello 0",
+					"a0": [0],
+					"b0": [1]
+				}`,
+				`{
+					"m": "world 0",
+					"a0": [0],
+					"c0": [2]
+				}`,
+				`{
+					"m": "hello 1",
+					"a0": [0],
+					"c0": [2],
+					"a1": [10],
+					"b1": [11]
+				}`,
+				`{
+					"m": "world 1",
+					"a0": [0],
+					"c0": [2],
+					"a1": [10],
+					"c1": [12]
+				}`,
+			},
+		},
+		{
+			name:        "2x WithLazy. Captures arguments only at logging time.",
+			withMethods: []withF{(*Logger).WithLazy, (*Logger).WithLazy},
+			wantJSON: []string{
+				`{
+					"m": "hello 0",
+					"a0": [1],
+					"b0": [1]
+				}`,
+				`{
+					"m": "world 0",
+					"a0": [1],
+					"c0": [2]
+				}`,
+				`{
+					"m": "hello 1",
+					"a0": [1],
+					"c0": [2],
+					"a1": [11],
+					"b1": [11]
+				}`,
+				`{
+					"m": "world 1",
+					"a0": [1],
+					"c0": [2],
+					"a1": [11],
+					"c1": [12]
+				}`,
+			},
+		},
+		{
+			name:        "WithLazy then With",
+			withMethods: []withF{(*Logger).WithLazy, (*Logger).With},
+			wantJSON: []string{
+				`{
+					"m": "hello 0",
+					"a0": [1],
+					"b0": [1]
+				}`,
+				`{
+					"m": "world 0",
+					"a0": [1],
+					"c0": [2]
+				}`,
+				`{
+					"m": "hello 1",
+					"a0": [1],
+					"c0": [2],
+					"a1": [10],
+					"b1": [11]
+				}`,
+				`{
+					"m": "world 1",
+					"a0": [1],
+					"c0": [2],
+					"a1": [10],
+					"c1": [12]
+				}`,
+			},
+		},
+		{
+			name:        "With then WithLazy",
+			withMethods: []withF{(*Logger).With, (*Logger).WithLazy},
+			wantJSON: []string{
+				`{
+					"m": "hello 0",
+					"a0": [0],
+					"b0": [1]
+				}`,
+				`{
+					"m": "world 0",
+					"a0": [0],
+					"c0": [2]
+				}`,
+				`{
+					"m": "hello 1",
+					"a0": [0],
+					"c0": [2],
+					"a1": [11],
+					"b1": [11]
+				}`,
+				`{
+					"m": "world 1",
+					"a0": [0],
+					"c0": [2],
+					"a1": [11],
+					"c1": [12]
 				}`,
 			},
 		},
@@ -223,23 +346,28 @@ func TestLoggerWithCaptures(t *testing.T) {
 			var bs ztest.Buffer
 			logger := New(zapcore.NewCore(enc, &bs, DebugLevel))
 
-			x := 0
-			arr := zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
-				enc.AppendInt(x)
-				return nil
-			})
+			for i, withMethod := range tt.withMethods {
 
-			// Demonstrate the arguments are captured when With() and Info() are invoked.
-			logger = tt.withMethod(logger, Array("a", arr))
-			x = 1
-			logger.Info("hello", Array("b", arr))
-			x = 2
-			logger = tt.withMethod(logger, Array("c", arr))
-			logger.Info("world")
+				iStr := strconv.Itoa(i)
+				x := 10 * i
+				arr := zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
+					enc.AppendInt(x)
+					return nil
+				})
 
-			if lines := bs.Lines(); assert.Len(t, lines, 2) {
-				assert.JSONEq(t, tt.wantJSON[0], lines[0], "Unexpected output from first log.")
-				assert.JSONEq(t, tt.wantJSON[1], lines[1], "Unexpected output from second log.")
+				// Demonstrate the arguments are captured when With() and Info() are invoked.
+				logger = withMethod(logger, Array("a"+iStr, arr))
+				x++
+				logger.Info(fmt.Sprintf("hello %d", i), Array("b"+iStr, arr))
+				x++
+				logger = withMethod(logger, Array("c"+iStr, arr))
+				logger.Info(fmt.Sprintf("world %d", i))
+			}
+
+			if lines := bs.Lines(); assert.Len(t, lines, len(tt.wantJSON)) {
+				for i, want := range tt.wantJSON {
+					assert.JSONEq(t, want, lines[i], "Unexpected output from the %d'th log.", i)
+				}
 			}
 		})
 	}
