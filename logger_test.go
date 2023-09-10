@@ -126,9 +126,9 @@ func TestLoggerInitialFields(t *testing.T) {
 func TestLoggerWith(t *testing.T) {
 
 	tests := []struct {
-		name           string
-		initialFields  []Field
-		withMethod func(*Logger, ...Field) *Logger
+		name          string
+		initialFields []Field
+		withMethod    func(*Logger, ...Field) *Logger
 	}{
 		{
 			"regular non lazy logger",
@@ -176,12 +176,12 @@ func TestLoggerWith(t *testing.T) {
 
 func TestLoggerWithCaptures(t *testing.T) {
 	tests := []struct {
-		name           string
+		name       string
 		withMethod func(*Logger, ...Field) *Logger
-		wantJSON       [2]string
+		wantJSON   [2]string
 	}{
 		{
-			name:           "regular with captures arguments at time of With",
+			name:       "regular with captures arguments at time of With",
 			withMethod: (*Logger).With,
 			wantJSON: [2]string{
 				`{
@@ -197,7 +197,7 @@ func TestLoggerWithCaptures(t *testing.T) {
 			},
 		},
 		{
-			name:           "lazy with captures arguments at time of With or Logging",
+			name:       "lazy with captures arguments at time of With or Logging",
 			withMethod: (*Logger).WithLazy,
 			wantJSON: [2]string{
 				`{
