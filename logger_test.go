@@ -128,7 +128,7 @@ func TestLoggerWith(t *testing.T) {
 	tests := []struct {
 		name           string
 		initialFields  []Field
-		withMethodExpr func(*Logger, ...Field) *Logger
+		withMethod func(*Logger, ...Field) *Logger
 	}{
 		{
 			"regular non lazy logger",
@@ -156,10 +156,10 @@ func TestLoggerWith(t *testing.T) {
 			withLogger(t, DebugLevel, opts(Fields(tt.initialFields...)), func(logger *Logger, logs *observer.ObservedLogs) {
 				// Child loggers should have copy-on-write semantics, so two children
 				// shouldn't stomp on each other's fields or affect the parent's fields.
-				tt.withMethodExpr(logger).Info("")
-				tt.withMethodExpr(logger, String("one", "two")).Info("")
-				tt.withMethodExpr(logger, String("three", "four")).Info("")
-				tt.withMethodExpr(logger, String("five", "six")).With(String("seven", "eight")).Info("")
+				tt.withMethod(logger).Info("")
+				tt.withMethod(logger, String("one", "two")).Info("")
+				tt.withMethod(logger, String("three", "four")).Info("")
+				tt.withMethod(logger, String("five", "six")).With(String("seven", "eight")).Info("")
 				logger.Info("")
 
 				assert.Equal(t, []observer.LoggedEntry{
@@ -177,12 +177,12 @@ func TestLoggerWith(t *testing.T) {
 func TestLoggerWithCaptures(t *testing.T) {
 	tests := []struct {
 		name           string
-		withMethodExpr func(*Logger, ...Field) *Logger
+		withMethod func(*Logger, ...Field) *Logger
 		wantJSON       [2]string
 	}{
 		{
 			name:           "regular with captures arguments at time of With",
-			withMethodExpr: (*Logger).With,
+			withMethod: (*Logger).With,
 			wantJSON: [2]string{
 				`{
 					"m": "hello",
@@ -198,7 +198,7 @@ func TestLoggerWithCaptures(t *testing.T) {
 		},
 		{
 			name:           "lazy with captures arguments at time of With or Logging",
-			withMethodExpr: (*Logger).WithLazy,
+			withMethod: (*Logger).WithLazy,
 			wantJSON: [2]string{
 				`{
 					"m": "hello",
@@ -230,11 +230,11 @@ func TestLoggerWithCaptures(t *testing.T) {
 			})
 
 			// Demonstrate the arguments are captured when With() and Info() are invoked.
-			logger = tt.withMethodExpr(logger, Array("a", arr))
+			logger = tt.withMethod(logger, Array("a", arr))
 			x = 1
 			logger.Info("hello", Array("b", arr))
 			x = 2
-			logger = tt.withMethodExpr(logger, Array("c", arr))
+			logger = tt.withMethod(logger, Array("c", arr))
 			logger.Info("world")
 
 			if lines := bs.Lines(); assert.Len(t, lines, 2) {
