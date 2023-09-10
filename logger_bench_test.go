@@ -220,7 +220,7 @@ func Benchmark5WithLazysNotUsed(b *testing.B) {
 	benchmarkWithUsed(b, (*Logger).WithLazy, 5, false)
 }
 
-func benchmarkWithUsed(b *testing.B, withMethodExpr func(*Logger, ...zapcore.Field) *Logger, N int, use bool) {
+func benchmarkWithUsed(b *testing.B, withMethod func(*Logger, ...zapcore.Field) *Logger, N int, use bool) {
 	keys := make([]string, N)
 	values := make([]string, N)
 	for i := 0; i < N; i++ {
@@ -232,7 +232,7 @@ func benchmarkWithUsed(b *testing.B, withMethodExpr func(*Logger, ...zapcore.Fie
 
 	withBenchedLogger(b, func(log *Logger) {
 		for i := 0; i < N; i++ {
-			log = withMethodExpr(log, String(keys[i], values[i]))
+			log = withMethod(log, String(keys[i], values[i]))
 		}
 		if use {
 			log.Info("used")
