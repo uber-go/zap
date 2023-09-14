@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.26.0 (14 Sep 2023)
+Enhancements:
+* [#1319][]: Add `WithLazy` method to `Logger` which lazily evaluates the structured
+context.
+* [#1350][]: String encoding is much (~50%) faster now.
+
+Thanks to @jquirke, @cdvr1993 for their contributions to this release.
+
+[#1319]: https://github.com/uber-go/zap/pull/1319
+[#1350]: https://github.com/uber-go/zap/pull/1350
+
 ## 1.25.0 (1 Aug 2023)
 
 This release contains several improvements including performance, API additions,
