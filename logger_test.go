@@ -22,6 +22,8 @@ package zap
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -124,58 +126,250 @@ func TestLoggerInitialFields(t *testing.T) {
 }
 
 func TestLoggerWith(t *testing.T) {
-	fieldOpts := opts(Fields(Int("foo", 42)))
-	withLogger(t, DebugLevel, fieldOpts, func(logger *Logger, logs *observer.ObservedLogs) {
-		// Child loggers should have copy-on-write semantics, so two children
-		// shouldn't stomp on each other's fields or affect the parent's fields.
-		logger.With(String("one", "two")).Info("")
-		logger.With(String("three", "four")).Info("")
-		logger.With(String("five", "six")).With(String("seven", "eight")).Info("")
-		logger.Info("")
 
-		assert.Equal(t, []observer.LoggedEntry{
-			{Context: []Field{Int("foo", 42), String("one", "two")}},
-			{Context: []Field{Int("foo", 42), String("three", "four")}},
-			{Context: []Field{Int("foo", 42), String("five", "six"), String("seven", "eight")}},
-			{Context: []Field{Int("foo", 42)}},
-		}, logs.AllUntimed(), "Unexpected cross-talk between child loggers.")
-	})
+	tests := []struct {
+		name          string
+		initialFields []Field
+		withMethod    func(*Logger, ...Field) *Logger
+	}{
+		{
+			"regular non lazy logger",
+			[]Field{Int("foo", 42)},
+			(*Logger).With,
+		},
+		{
+			"regular non lazy logger no initial fields",
+			[]Field{},
+			(*Logger).With,
+		},
+		{
+			"lazy with logger",
+			[]Field{Int("foo", 42)},
+			(*Logger).WithLazy,
+		},
+		{
+			"lazy with logger no initial fields",
+			[]Field{},
+			(*Logger).WithLazy,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			withLogger(t, DebugLevel, opts(Fields(tt.initialFields...)), func(logger *Logger, logs *observer.ObservedLogs) {
+				// Child loggers should have copy-on-write semantics, so two children
+				// shouldn't stomp on each other's fields or affect the parent's fields.
+				tt.withMethod(logger).Info("")
+				tt.withMethod(logger, String("one", "two")).Info("")
+				tt.withMethod(logger, String("three", "four")).Info("")
+				tt.withMethod(logger, String("five", "six")).With(String("seven", "eight")).Info("")
+				logger.Info("")
+
+				assert.Equal(t, []observer.LoggedEntry{
+					{Context: tt.initialFields},
+					{Context: append(tt.initialFields, String("one", "two"))},
+					{Context: append(tt.initialFields, String("three", "four"))},
+					{Context: append(tt.initialFields, String("five", "six"), String("seven", "eight"))},
+					{Context: tt.initialFields},
+				}, logs.AllUntimed(), "Unexpected cross-talk between child loggers.")
+			})
+		})
+	}
 }
 
 func TestLoggerWithCaptures(t *testing.T) {
-	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-		MessageKey: "m",
-	})
+	type withF func(*Logger, ...Field) *Logger
+	tests := []struct {
+		name        string
+		withMethods []withF
+		wantJSON    []string
+	}{
+		{
+			name:        "regular with captures arguments at time of With",
+			withMethods: []withF{(*Logger).With},
+			wantJSON: []string{
+				`{
+					"m": "hello 0",
+					"a0": [0],
+					"b0": [1]
+				}`,
+				`{
+					"m": "world 0",
+					"a0": [0],
+					"c0": [2]
+				}`,
+			},
+		},
+		{
+			name:        "lazy with captures arguments at time of With or Logging",
+			withMethods: []withF{(*Logger).WithLazy},
+			wantJSON: []string{
+				`{
+					"m": "hello 0",
+					"a0": [1],
+					"b0": [1]
+				}`,
+				`{
+					"m": "world 0",
+					"a0": [1],
+					"c0": [2]
+				}`,
+			},
+		},
+		{
+			name:        "2x With captures arguments at time of each With",
+			withMethods: []withF{(*Logger).With, (*Logger).With},
+			wantJSON: []string{
+				`{
+					"m": "hello 0",
+					"a0": [0],
+					"b0": [1]
+				}`,
+				`{
+					"m": "world 0",
+					"a0": [0],
+					"c0": [2]
+				}`,
+				`{
+					"m": "hello 1",
+					"a0": [0],
+					"c0": [2],
+					"a1": [10],
+					"b1": [11]
+				}`,
+				`{
+					"m": "world 1",
+					"a0": [0],
+					"c0": [2],
+					"a1": [10],
+					"c1": [12]
+				}`,
+			},
+		},
+		{
+			name:        "2x WithLazy. Captures arguments only at logging time.",
+			withMethods: []withF{(*Logger).WithLazy, (*Logger).WithLazy},
+			wantJSON: []string{
+				`{
+					"m": "hello 0",
+					"a0": [1],
+					"b0": [1]
+				}`,
+				`{
+					"m": "world 0",
+					"a0": [1],
+					"c0": [2]
+				}`,
+				`{
+					"m": "hello 1",
+					"a0": [1],
+					"c0": [2],
+					"a1": [11],
+					"b1": [11]
+				}`,
+				`{
+					"m": "world 1",
+					"a0": [1],
+					"c0": [2],
+					"a1": [11],
+					"c1": [12]
+				}`,
+			},
+		},
+		{
+			name:        "WithLazy then With",
+			withMethods: []withF{(*Logger).WithLazy, (*Logger).With},
+			wantJSON: []string{
+				`{
+					"m": "hello 0",
+					"a0": [1],
+					"b0": [1]
+				}`,
+				`{
+					"m": "world 0",
+					"a0": [1],
+					"c0": [2]
+				}`,
+				`{
+					"m": "hello 1",
+					"a0": [1],
+					"c0": [2],
+					"a1": [10],
+					"b1": [11]
+				}`,
+				`{
+					"m": "world 1",
+					"a0": [1],
+					"c0": [2],
+					"a1": [10],
+					"c1": [12]
+				}`,
+			},
+		},
+		{
+			name:        "With then WithLazy",
+			withMethods: []withF{(*Logger).With, (*Logger).WithLazy},
+			wantJSON: []string{
+				`{
+					"m": "hello 0",
+					"a0": [0],
+					"b0": [1]
+				}`,
+				`{
+					"m": "world 0",
+					"a0": [0],
+					"c0": [2]
+				}`,
+				`{
+					"m": "hello 1",
+					"a0": [0],
+					"c0": [2],
+					"a1": [11],
+					"b1": [11]
+				}`,
+				`{
+					"m": "world 1",
+					"a0": [0],
+					"c0": [2],
+					"a1": [11],
+					"c1": [12]
+				}`,
+			},
+		},
+	}
 
-	var bs ztest.Buffer
-	logger := New(zapcore.NewCore(enc, &bs, DebugLevel))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+				MessageKey: "m",
+			})
 
-	x := 0
-	arr := zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
-		enc.AppendInt(x)
-		return nil
-	})
+			var bs ztest.Buffer
+			logger := New(zapcore.NewCore(enc, &bs, DebugLevel))
 
-	// Demonstrate the arguments are captured when With() and Info() are invoked.
-	logger = logger.With(Array("a", arr))
-	x = 1
-	logger.Info("hello", Array("b", arr))
-	x = 2
-	logger = logger.With(Array("c", arr))
-	logger.Info("world")
+			for i, withMethod := range tt.withMethods {
 
-	if lines := bs.Lines(); assert.Len(t, lines, 2) {
-		assert.JSONEq(t, `{
-			"m": "hello",
-			"a": [0],
-			"b": [1]
-		}`, lines[0], "Unexpected output from first log.")
+				iStr := strconv.Itoa(i)
+				x := 10 * i
+				arr := zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
+					enc.AppendInt(x)
+					return nil
+				})
 
-		assert.JSONEq(t, `{
-			"m": "world",
-			"a": [0],
-			"c": [2]
-		}`, lines[1], "Unexpected output from second log.")
+				// Demonstrate the arguments are captured when With() and Info() are invoked.
+				logger = withMethod(logger, Array("a"+iStr, arr))
+				x++
+				logger.Info(fmt.Sprintf("hello %d", i), Array("b"+iStr, arr))
+				x++
+				logger = withMethod(logger, Array("c"+iStr, arr))
+				logger.Info(fmt.Sprintf("world %d", i))
+			}
+
+			if lines := bs.Lines(); assert.Len(t, lines, len(tt.wantJSON)) {
+				for i, want := range tt.wantJSON {
+					assert.JSONEq(t, want, lines[i], "Unexpected output from the %d'th log.", i)
+				}
+			}
+		})
 	}
 }
 

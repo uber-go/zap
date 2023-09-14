@@ -199,17 +199,28 @@ func BenchmarkAddCallerAndStacktrace(b *testing.B) {
 		}
 	})
 }
+
 func Benchmark5WithsUsed(b *testing.B) {
-	benchmarkWithUsed(b, 5, true)
+	benchmarkWithUsed(b, (*Logger).With, 5, true)
 }
 
 // This benchmark will be used in future as a
 // baseline for improving
 func Benchmark5WithsNotUsed(b *testing.B) {
-	benchmarkWithUsed(b, 5, false)
+	benchmarkWithUsed(b, (*Logger).With, 5, false)
 }
 
-func benchmarkWithUsed(b *testing.B, N int, use bool) {
+func Benchmark5WithLazysUsed(b *testing.B) {
+	benchmarkWithUsed(b, (*Logger).WithLazy, 5, true)
+}
+
+// This benchmark will be used in future as a
+// baseline for improving
+func Benchmark5WithLazysNotUsed(b *testing.B) {
+	benchmarkWithUsed(b, (*Logger).WithLazy, 5, false)
+}
+
+func benchmarkWithUsed(b *testing.B, withMethod func(*Logger, ...zapcore.Field) *Logger, N int, use bool) {
 	keys := make([]string, N)
 	values := make([]string, N)
 	for i := 0; i < N; i++ {
@@ -221,7 +232,7 @@ func benchmarkWithUsed(b *testing.B, N int, use bool) {
 
 	withBenchedLogger(b, func(log *Logger) {
 		for i := 0; i < N; i++ {
-			log = log.With(String(keys[i], values[i]))
+			log = withMethod(log, String(keys[i], values[i]))
 		}
 		if use {
 			log.Info("used")
