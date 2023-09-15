@@ -5,12 +5,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## 1.26.0 (14 Sep 2023)
 Enhancements:
+* [#1297][]: Add Dict as a Field.
 * [#1319][]: Add `WithLazy` method to `Logger` which lazily evaluates the structured
 context.
 * [#1350][]: String encoding is much (~50%) faster now.
 
-Thanks to @jquirke, @cdvr1993 for their contributions to this release.
+Thanks to @hhk7734, @jquirke, and @cdvr1993 for their contributions to this release.
 
+[#1297]: https://github.com/uber-go/zap/pull/1297
 [#1319]: https://github.com/uber-go/zap/pull/1319
 [#1350]: https://github.com/uber-go/zap/pull/1350
 
@@ -25,7 +27,7 @@ Enhancements:
 * [#1273][]: Add `Name` to `Logger` which returns the Logger's name if one is set.
 * [#1281][]: Add `zap/exp/expfield` package which contains helper methods
 `Str` and `Strs` for constructing String-like zap.Fields.
-* [#1310][]: Reduce stack size on `Any`. 
+* [#1310][]: Reduce stack size on `Any`.
 
 Thanks to @knight42, @dzakaammar, @bcspragu, and @rexywork for their contributions
 to this release.
