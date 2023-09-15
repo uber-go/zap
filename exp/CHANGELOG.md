@@ -6,9 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## 0.2.0 - 9 Sep 2023
 
 Breaking changes:
-* [#1315](https://github.com/uber-go/zap/pull/1315): zapslog: Drop HandlerOptions.New in favor of just the NewHandler constructor.
-* [#1320](https://github.com/uber-go/zap/pull/1320), [#1338](https://github.com/uber-go/zap/pull/1338):
-  zapslog: Drop support for golang.org/x/exp/slog in favor of log/slog released in Go 1.21.
+* [#1315][]: zapslog: Drop HandlerOptions.New in favor of just the NewHandler constructor.
+* [#1320][], [#1338][]: zapslog: Drop support for golang.org/x/exp/slog in favor of log/slog released in Go 1.21.
+
+[#1315]: https://github.com/uber-go/zap/pull/1315
+[#1320]: https://github.com/uber-go/zap/pull/1320
+[#1338]: https://github.com/uber-go/zap/pull/1338
 
 ## 0.1.0 - 1 Aug 2023
 
