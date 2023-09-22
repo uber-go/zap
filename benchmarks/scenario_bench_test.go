@@ -106,7 +106,7 @@ func BenchmarkDisabledWithoutFields(b *testing.B) {
 			}
 		})
 	})
-	b.Run("slog/LogAttrs", func(b *testing.B) {
+	b.Run("slog.LogAttrs", func(b *testing.B) {
 		logger := newDisabledSlog()
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
@@ -193,7 +193,7 @@ func BenchmarkDisabledAccumulatedContext(b *testing.B) {
 			}
 		})
 	})
-	b.Run("slog/LogAttrs", func(b *testing.B) {
+	b.Run("slog.LogAttrs", func(b *testing.B) {
 		logger := newDisabledSlog(fakeSlogFields()...)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
@@ -271,7 +271,7 @@ func BenchmarkDisabledAddingFields(b *testing.B) {
 			}
 		})
 	})
-	b.Run("slog/LogAttrs", func(b *testing.B) {
+	b.Run("slog.LogAttrs", func(b *testing.B) {
 		logger := newDisabledSlog()
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
@@ -429,7 +429,7 @@ func BenchmarkWithoutFields(b *testing.B) {
 			}
 		})
 	})
-	b.Run("slog/LogAttrs", func(b *testing.B) {
+	b.Run("slog.LogAttrs", func(b *testing.B) {
 		logger := newSlog()
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
@@ -569,7 +569,7 @@ func BenchmarkAccumulatedContext(b *testing.B) {
 			}
 		})
 	})
-	b.Run("slog/LogAttrs", func(b *testing.B) {
+	b.Run("slog.LogAttrs", func(b *testing.B) {
 		logger := newSlog(fakeSlogFields()...)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
@@ -691,7 +691,7 @@ func BenchmarkAddingFields(b *testing.B) {
 			}
 		})
 	})
-	b.Run("slog/LogAttrs", func(b *testing.B) {
+	b.Run("slog.LogAttrs", func(b *testing.B) {
 		logger := newSlog()
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
