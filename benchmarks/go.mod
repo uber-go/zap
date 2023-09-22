@@ -1,6 +1,6 @@
 module go.uber.org/zap/benchmarks
 
-go 1.19
+go 1.21
 
 replace go.uber.org/zap => ../
 
