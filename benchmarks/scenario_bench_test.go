@@ -247,7 +247,7 @@ func BenchmarkDisabledAddingFields(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Info(getMessage(0), fakeSlogFields())
+				logger.Info(getMessage(0), fakeSlogArgs()...)
 			}
 		})
 	})
@@ -640,7 +640,7 @@ func BenchmarkAddingFields(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Info(getMessage(0), fakeSlogFields())
+				logger.Info(getMessage(0), fakeSlogArgs()...)
 			}
 		})
 	})
