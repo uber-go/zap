@@ -35,19 +35,18 @@ import (
 	"time"
 )
 
-var (
-	libraryNameToMarkdownName = map[string]string{
-		"Zap":                   ":zap: zap",
-		"Zap.Sugar":             ":zap: zap (sugared)",
-		"stdlib.Println":        "standard library",
-		"sirupsen/logrus":       "logrus",
-		"go-kit/kit/log":        "go-kit",
-		"inconshreveable/log15": "log15",
-		"apex/log":              "apex/log",
-		"rs/zerolog":            "zerolog",
-		"slog":                  "slog",
-	}
-)
+var libraryNameToMarkdownName = map[string]string{
+	"Zap":                   ":zap: zap",
+	"Zap.Sugar":             ":zap: zap (sugared)",
+	"stdlib.Println":        "standard library",
+	"sirupsen/logrus":       "logrus",
+	"go-kit/kit/log":        "go-kit",
+	"inconshreveable/log15": "log15",
+	"apex/log":              "apex/log",
+	"rs/zerolog":            "zerolog",
+	"slog":                  "slog",
+	"slog.LogAttrs":         "slog (LogAttrs)",
+}
 
 func main() {
 	flag.Parse()

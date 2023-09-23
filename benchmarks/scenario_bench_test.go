@@ -21,7 +21,9 @@
 package benchmarks
 
 import (
+	"context"
 	"log"
+	"log/slog"
 	"testing"
 
 	"go.uber.org/zap"
@@ -104,6 +106,15 @@ func BenchmarkDisabledWithoutFields(b *testing.B) {
 			}
 		})
 	})
+	b.Run("slog.LogAttrs", func(b *testing.B) {
+		logger := newDisabledSlog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.LogAttrs(context.Background(), slog.LevelInfo, getMessage(0))
+			}
+		})
+	})
 }
 
 func BenchmarkDisabledAccumulatedContext(b *testing.B) {
@@ -182,6 +193,15 @@ func BenchmarkDisabledAccumulatedContext(b *testing.B) {
 			}
 		})
 	})
+	b.Run("slog.LogAttrs", func(b *testing.B) {
+		logger := newDisabledSlog(fakeSlogFields()...)
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.LogAttrs(context.Background(), slog.LevelInfo, getMessage(0))
+			}
+		})
+	})
 }
 
 func BenchmarkDisabledAddingFields(b *testing.B) {
@@ -243,11 +263,20 @@ func BenchmarkDisabledAddingFields(b *testing.B) {
 		})
 	})
 	b.Run("slog", func(b *testing.B) {
-		logger := newSlog()
+		logger := newDisabledSlog()
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Info(getMessage(0), fakeSlogFields())
+				logger.Info(getMessage(0), fakeSlogArgs()...)
+			}
+		})
+	})
+	b.Run("slog.LogAttrs", func(b *testing.B) {
+		logger := newDisabledSlog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.LogAttrs(context.Background(), slog.LevelInfo, getMessage(0), fakeSlogFields()...)
 			}
 		})
 	})
@@ -400,6 +429,15 @@ func BenchmarkWithoutFields(b *testing.B) {
 			}
 		})
 	})
+	b.Run("slog.LogAttrs", func(b *testing.B) {
+		logger := newSlog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.LogAttrs(context.Background(), slog.LevelInfo, getMessage(0))
+			}
+		})
+	})
 }
 
 func BenchmarkAccumulatedContext(b *testing.B) {
@@ -531,6 +569,15 @@ func BenchmarkAccumulatedContext(b *testing.B) {
 			}
 		})
 	})
+	b.Run("slog.LogAttrs", func(b *testing.B) {
+		logger := newSlog(fakeSlogFields()...)
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.LogAttrs(context.Background(), slog.LevelInfo, getMessage(0))
+			}
+		})
+	})
 }
 
 func BenchmarkAddingFields(b *testing.B) {
@@ -640,7 +687,16 @@ func BenchmarkAddingFields(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				logger.Info(getMessage(0), fakeSlogFields())
+				logger.Info(getMessage(0), fakeSlogArgs()...)
+			}
+		})
+	})
+	b.Run("slog.LogAttrs", func(b *testing.B) {
+		logger := newSlog()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.LogAttrs(context.Background(), slog.LevelInfo, getMessage(0), fakeSlogFields()...)
 			}
 		})
 	})
