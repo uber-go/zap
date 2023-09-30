@@ -76,9 +76,11 @@ func TestLazyCore(t *testing.T) {
 				{Level: zapcore.WarnLevel, Message: "log-at-warn"},
 			},
 			wantLogs: []observer.LoggedEntry{
-				{Entry: zapcore.Entry{
-					Level:   zapcore.WarnLevel,
-					Message: "log-at-warn"},
+				{
+					Entry: zapcore.Entry{
+						Level:   zapcore.WarnLevel,
+						Message: "log-at-warn",
+					},
 					Context: []zapcore.Field{},
 				},
 			},
@@ -102,9 +104,11 @@ func TestLazyCore(t *testing.T) {
 				{makeInt64Field("c", 33), makeInt64Field("d", 44)},
 			},
 			wantLogs: []observer.LoggedEntry{
-				{Entry: zapcore.Entry{
-					Level:   zapcore.WarnLevel,
-					Message: "log-at-warn"},
+				{
+					Entry: zapcore.Entry{
+						Level:   zapcore.WarnLevel,
+						Message: "log-at-warn",
+					},
 					Context: []zapcore.Field{
 						makeInt64Field("a", 11),
 						makeInt64Field("b", 22),

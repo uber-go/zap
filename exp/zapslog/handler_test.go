@@ -166,7 +166,7 @@ func TestAttrKinds(t *testing.T) {
 		slog.Duration("duration", time.Hour),
 		slog.Float64("float64", 42.0),
 		slog.Int64("int64", -1234),
-		slog.Time("time", time.Date(2015, 10, 21, 7, 28, 00, 0, time.UTC)),
+		slog.Time("time", time.Date(2015, 10, 21, 7, 28, 0o0, 0, time.UTC)),
 		slog.Uint64("uint64", 2),
 		slog.Group("group", slog.String("inner", "inner-group")),
 		"logvaluer", testToken,
