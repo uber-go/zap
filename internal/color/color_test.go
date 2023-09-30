@@ -27,6 +27,8 @@ import (
 )
 
 func TestColorFormatting(t *testing.T) {
+	t.Parallel()
+
 	assert.Equal(
 		t,
 		"\x1b[31mfoo\x1b[0m",

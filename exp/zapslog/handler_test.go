@@ -51,6 +51,8 @@ func TestAddCaller(t *testing.T) {
 }
 
 func TestAddStack(t *testing.T) {
+	t.Parallel()
+
 	fac, logs := observer.New(zapcore.DebugLevel)
 	sl := slog.New(NewHandler(fac, AddStacktraceAt(slog.LevelDebug)))
 	sl.Info("msg")
@@ -71,6 +73,8 @@ func TestAddStack(t *testing.T) {
 }
 
 func TestAddStackSkip(t *testing.T) {
+	t.Parallel()
+
 	fac, logs := observer.New(zapcore.DebugLevel)
 	sl := slog.New(NewHandler(fac, AddStacktraceAt(slog.LevelDebug), WithCallerSkip(1)))
 	sl.Info("msg")
@@ -87,10 +91,12 @@ func TestAddStackSkip(t *testing.T) {
 func TestEmptyAttr(t *testing.T) {
 	t.Parallel()
 
-	fac, observedLogs := observer.New(zapcore.DebugLevel)
-	sl := slog.New(NewHandler(fac))
-
 	t.Run("Handle", func(t *testing.T) {
+		t.Parallel()
+
+		fac, observedLogs := observer.New(zapcore.DebugLevel)
+		sl := slog.New(NewHandler(fac))
+
 		sl.Info(
 			"msg",
 			slog.String("foo", "bar"),
@@ -105,6 +111,11 @@ func TestEmptyAttr(t *testing.T) {
 	})
 
 	t.Run("WithAttrs", func(t *testing.T) {
+		t.Parallel()
+
+		fac, observedLogs := observer.New(zapcore.DebugLevel)
+		sl := slog.New(NewHandler(fac))
+
 		sl.With(slog.String("foo", "bar"), slog.Attr{}).Info("msg")
 
 		logs := observedLogs.TakeAll()
@@ -115,6 +126,11 @@ func TestEmptyAttr(t *testing.T) {
 	})
 
 	t.Run("Group", func(t *testing.T) {
+		t.Parallel()
+
+		fac, observedLogs := observer.New(zapcore.DebugLevel)
+		sl := slog.New(NewHandler(fac))
+
 		sl.With("k", slog.GroupValue(slog.String("foo", "bar"), slog.Attr{})).Info("msg")
 
 		logs := observedLogs.TakeAll()
@@ -129,8 +145,11 @@ func TestEmptyAttr(t *testing.T) {
 
 func TestWithName(t *testing.T) {
 	t.Parallel()
-	fac, observedLogs := observer.New(zapcore.DebugLevel)
+
 	t.Run("default", func(t *testing.T) {
+		t.Parallel()
+
+		fac, observedLogs := observer.New(zapcore.DebugLevel)
 		sl := slog.New(NewHandler(fac))
 		sl.Info("msg")
 
@@ -139,7 +158,11 @@ func TestWithName(t *testing.T) {
 		entry := logs[0]
 		assert.Equal(t, "", entry.LoggerName, "Unexpected logger name")
 	})
+
 	t.Run("with name", func(t *testing.T) {
+		t.Parallel()
+
+		fac, observedLogs := observer.New(zapcore.DebugLevel)
 		sl := slog.New(NewHandler(fac, WithName("test-name")))
 		sl.Info("msg")
 
@@ -157,6 +180,8 @@ func (Token) LogValue() slog.Value {
 }
 
 func TestAttrKinds(t *testing.T) {
+	t.Parallel()
+
 	fac, logs := observer.New(zapcore.DebugLevel)
 	sl := slog.New(NewHandler(fac))
 	testToken := Token("no")

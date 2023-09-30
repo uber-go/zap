@@ -32,6 +32,8 @@ import (
 )
 
 func TestErrorConstructors(t *testing.T) {
+	t.Parallel()
+
 	fail := errors.New("fail")
 
 	tests := []struct {
@@ -48,14 +50,21 @@ func TestErrorConstructors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if !assert.Equal(t, tt.expect, tt.field, "Unexpected output from convenience field constructor %s.", tt.name) {
-			t.Logf("type expected: %T\nGot: %T", tt.expect.Interface, tt.field.Interface)
-		}
-		assertCanBeReused(t, tt.field)
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if !assert.Equal(t, tt.expect, tt.field, "Unexpected output from convenience field constructor %s.", tt.name) {
+				t.Logf("type expected: %T\nGot: %T", tt.expect.Interface, tt.field.Interface)
+			}
+			assertCanBeReused(t, tt.field)
+		})
 	}
 }
 
 func TestErrorArrayConstructor(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		desc     string
 		field    Field
@@ -70,15 +79,22 @@ func TestErrorArrayConstructor(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		enc := zapcore.NewMapObjectEncoder()
-		tt.field.Key = "k"
-		tt.field.AddTo(enc)
-		assert.Equal(t, tt.expected, enc.Fields["k"], "%s: unexpected map contents.", tt.desc)
-		assert.Equal(t, 1, len(enc.Fields), "%s: found extra keys in map: %v", tt.desc, enc.Fields)
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			enc := zapcore.NewMapObjectEncoder()
+			tt.field.Key = "k"
+			tt.field.AddTo(enc)
+			assert.Equal(t, tt.expected, enc.Fields["k"], "%s: unexpected map contents.", tt.desc)
+			assert.Equal(t, 1, len(enc.Fields), "%s: found extra keys in map: %v", tt.desc, enc.Fields)
+		})
 	}
 }
 
 func TestErrorsArraysHandleRichErrors(t *testing.T) {
+	t.Parallel()
+
 	errs := []error{fmt.Errorf("egad")}
 
 	enc := zapcore.NewMapObjectEncoder()

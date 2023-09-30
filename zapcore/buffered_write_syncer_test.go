@@ -31,9 +31,13 @@ import (
 )
 
 func TestBufferWriter(t *testing.T) {
+	t.Parallel()
+
 	// If we pass a plain io.Writer, make sure that we still get a WriteSyncer
 	// with a no-op Sync.
 	t.Run("sync", func(t *testing.T) {
+		t.Parallel()
+
 		buf := &bytes.Buffer{}
 		ws := &BufferedWriteSyncer{WS: AddSync(buf)}
 
@@ -45,6 +49,8 @@ func TestBufferWriter(t *testing.T) {
 	})
 
 	t.Run("stop", func(t *testing.T) {
+		t.Parallel()
+
 		buf := &bytes.Buffer{}
 		ws := &BufferedWriteSyncer{WS: AddSync(buf)}
 		requireWriteWorks(t, ws)
@@ -54,6 +60,8 @@ func TestBufferWriter(t *testing.T) {
 	})
 
 	t.Run("stop twice", func(t *testing.T) {
+		t.Parallel()
+
 		ws := &BufferedWriteSyncer{WS: &ztest.FailWriter{}}
 		_, err := ws.Write([]byte("foo"))
 		require.NoError(t, err, "Unexpected error writing to WriteSyncer.")
@@ -62,6 +70,8 @@ func TestBufferWriter(t *testing.T) {
 	})
 
 	t.Run("wrap twice", func(t *testing.T) {
+		t.Parallel()
+
 		buf := &bytes.Buffer{}
 		bufsync := &BufferedWriteSyncer{WS: AddSync(buf)}
 		ws := &BufferedWriteSyncer{WS: bufsync}
@@ -75,6 +85,8 @@ func TestBufferWriter(t *testing.T) {
 	})
 
 	t.Run("small buffer", func(t *testing.T) {
+		t.Parallel()
+
 		buf := &bytes.Buffer{}
 		ws := &BufferedWriteSyncer{WS: AddSync(buf), Size: 5}
 
@@ -86,6 +98,8 @@ func TestBufferWriter(t *testing.T) {
 	})
 
 	t.Run("with lockedWriteSyncer", func(t *testing.T) {
+		t.Parallel()
+
 		buf := &bytes.Buffer{}
 		ws := &BufferedWriteSyncer{WS: Lock(AddSync(buf)), Size: 5}
 
@@ -97,6 +111,8 @@ func TestBufferWriter(t *testing.T) {
 	})
 
 	t.Run("flush error", func(t *testing.T) {
+		t.Parallel()
+
 		ws := &BufferedWriteSyncer{WS: &ztest.FailWriter{}, Size: 4}
 		n, err := ws.Write([]byte("foo"))
 		require.NoError(t, err, "Unexpected error writing to WriteSyncer.")
@@ -107,6 +123,8 @@ func TestBufferWriter(t *testing.T) {
 	})
 
 	t.Run("flush timer", func(t *testing.T) {
+		t.Parallel()
+
 		buf := &bytes.Buffer{}
 		clock := ztest.NewMockClock()
 		ws := &BufferedWriteSyncer{
@@ -128,12 +146,18 @@ func TestBufferWriter(t *testing.T) {
 }
 
 func TestBufferWriterWithoutStart(t *testing.T) {
+	t.Parallel()
+
 	t.Run("stop", func(t *testing.T) {
+		t.Parallel()
+
 		ws := &BufferedWriteSyncer{WS: AddSync(new(bytes.Buffer))}
 		assert.NoError(t, ws.Stop(), "Stop must not fail")
 	})
 
 	t.Run("Sync", func(t *testing.T) {
+		t.Parallel()
+
 		ws := &BufferedWriteSyncer{WS: AddSync(new(bytes.Buffer))}
 		assert.NoError(t, ws.Sync(), "Sync must not fail")
 	})

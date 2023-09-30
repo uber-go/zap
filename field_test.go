@@ -61,6 +61,8 @@ func assertCanBeReused(t testing.TB, field Field) {
 }
 
 func TestFieldConstructors(t *testing.T) {
+	t.Parallel()
+
 	// Interface types.
 	addr := net.ParseIP("1.2.3.4")
 	name := username("phil")
@@ -256,7 +258,10 @@ func TestFieldConstructors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			if !assert.Equal(t, tt.expect, tt.field, "Unexpected output from convenience field constructor") {
 				t.Logf("type expected: %T\nGot: %T", tt.expect.Interface, tt.field.Interface)
 			}
@@ -266,6 +271,8 @@ func TestFieldConstructors(t *testing.T) {
 }
 
 func TestStackField(t *testing.T) {
+	t.Parallel()
+
 	f := Stack("stacktrace")
 	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
@@ -275,6 +282,8 @@ func TestStackField(t *testing.T) {
 }
 
 func TestStackSkipField(t *testing.T) {
+	t.Parallel()
+
 	f := StackSkip("stacktrace", 0)
 	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
@@ -284,6 +293,8 @@ func TestStackSkipField(t *testing.T) {
 }
 
 func TestStackSkipFieldWithSkip(t *testing.T) {
+	t.Parallel()
+
 	f := StackSkip("stacktrace", 1)
 	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
@@ -292,6 +303,8 @@ func TestStackSkipFieldWithSkip(t *testing.T) {
 }
 
 func TestDict(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		desc     string
 		field    Field
@@ -303,7 +316,10 @@ func TestDict(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			enc := zapcore.NewMapObjectEncoder()
 			tt.field.Key = "k"
 			tt.field.AddTo(enc)

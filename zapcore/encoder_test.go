@@ -75,6 +75,8 @@ func capitalNameEncoder(loggerName string, enc PrimitiveArrayEncoder) {
 }
 
 func TestEncoderConfiguration(t *testing.T) {
+	t.Parallel()
+
 	base := testEncoderConfig()
 
 	tests := []struct {
@@ -529,38 +531,45 @@ func TestEncoderConfiguration(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		json := NewJSONEncoder(tt.cfg)
-		console := NewConsoleEncoder(tt.cfg)
-		if tt.extra != nil {
-			tt.extra(json)
-			tt.extra(console)
-		}
-		entry := _testEntry
-		if tt.amendEntry != nil {
-			entry = tt.amendEntry(_testEntry)
-		}
-		jsonOut, jsonErr := json.EncodeEntry(entry, nil)
-		if assert.NoError(t, jsonErr, "Unexpected error JSON-encoding entry in case #%d.", i) {
-			assert.Equal(
-				t,
-				tt.expectedJSON,
-				jsonOut.String(),
-				"Unexpected JSON output: expected to %v.", tt.desc,
-			)
-		}
-		consoleOut, consoleErr := console.EncodeEntry(entry, nil)
-		if assert.NoError(t, consoleErr, "Unexpected error console-encoding entry in case #%d.", i) {
-			assert.Equal(
-				t,
-				tt.expectedConsole,
-				consoleOut.String(),
-				"Unexpected console output: expected to %v.", tt.desc,
-			)
-		}
+		i, tt := i, tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			json := NewJSONEncoder(tt.cfg)
+			console := NewConsoleEncoder(tt.cfg)
+			if tt.extra != nil {
+				tt.extra(json)
+				tt.extra(console)
+			}
+			entry := _testEntry
+			if tt.amendEntry != nil {
+				entry = tt.amendEntry(_testEntry)
+			}
+			jsonOut, jsonErr := json.EncodeEntry(entry, nil)
+			if assert.NoError(t, jsonErr, "Unexpected error JSON-encoding entry in case #%d.", i) {
+				assert.Equal(
+					t,
+					tt.expectedJSON,
+					jsonOut.String(),
+					"Unexpected JSON output: expected to %v.", tt.desc,
+				)
+			}
+			consoleOut, consoleErr := console.EncodeEntry(entry, nil)
+			if assert.NoError(t, consoleErr, "Unexpected error console-encoding entry in case #%d.", i) {
+				assert.Equal(
+					t,
+					tt.expectedConsole,
+					consoleOut.String(),
+					"Unexpected console output: expected to %v.", tt.desc,
+				)
+			}
+		})
 	}
 }
 
 func TestLevelEncoders(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		expected interface{} // output of encoding InfoLevel
@@ -572,84 +581,114 @@ func TestLevelEncoders(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		var le LevelEncoder
-		require.NoError(t, le.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
-		assertAppended(
-			t,
-			tt.expected,
-			func(arr ArrayEncoder) { le(InfoLevel, arr) },
-			"Unexpected output serializing InfoLevel with %q.", tt.name,
-		)
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var le LevelEncoder
+			require.NoError(t, le.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+			assertAppended(
+				t,
+				tt.expected,
+				func(arr ArrayEncoder) { le(InfoLevel, arr) },
+				"Unexpected output serializing InfoLevel with %q.", tt.name,
+			)
+		})
 	}
 }
 
 func TestTimeEncoders(t *testing.T) {
+	t.Parallel()
+
 	moment := time.Unix(100, 50005000).UTC()
 	tests := []struct {
+		name     string
 		yamlDoc  string
 		expected interface{} // output of serializing moment
 	}{
-		{"timeEncoder: iso8601", "1970-01-01T00:01:40.050Z"},
-		{"timeEncoder: ISO8601", "1970-01-01T00:01:40.050Z"},
-		{"timeEncoder: millis", 100050.005},
-		{"timeEncoder: nanos", int64(100050005000)},
-		{"timeEncoder: {layout: 06/01/02 03:04pm}", "70/01/01 12:01am"},
-		{"timeEncoder: ''", 100.050005},
-		{"timeEncoder: something-random", 100.050005},
-		{"timeEncoder: rfc3339", "1970-01-01T00:01:40Z"},
-		{"timeEncoder: RFC3339", "1970-01-01T00:01:40Z"},
-		{"timeEncoder: rfc3339nano", "1970-01-01T00:01:40.050005Z"},
-		{"timeEncoder: RFC3339Nano", "1970-01-01T00:01:40.050005Z"},
+		{"iso8601", "timeEncoder: iso8601", "1970-01-01T00:01:40.050Z"},
+		{"ISO8601", "timeEncoder: ISO8601", "1970-01-01T00:01:40.050Z"},
+		{"millis", "timeEncoder: millis", 100050.005},
+		{"nanos", "timeEncoder: nanos", int64(100050005000)},
+		{"manual", "timeEncoder: {layout: 06/01/02 03:04pm}", "70/01/01 12:01am"},
+		{"empty", "timeEncoder: ''", 100.050005},
+		{"something-random", "timeEncoder: something-random", 100.050005},
+		{"rfc3339", "timeEncoder: rfc3339", "1970-01-01T00:01:40Z"},
+		{"RFC3339", "timeEncoder: RFC3339", "1970-01-01T00:01:40Z"},
+		{"rfc3339nano", "timeEncoder: rfc3339nano", "1970-01-01T00:01:40.050005Z"},
+		{"RFC3339Nano", "timeEncoder: RFC3339Nano", "1970-01-01T00:01:40.050005Z"},
 	}
 
 	for _, tt := range tests {
-		cfg := EncoderConfig{}
-		require.NoError(t, yaml.Unmarshal([]byte(tt.yamlDoc), &cfg), "Unexpected error unmarshaling %q.", tt.yamlDoc)
-		require.NotNil(t, cfg.EncodeTime, "Unmashalled timeEncoder is nil for %q.", tt.yamlDoc)
-		assertAppended(
-			t,
-			tt.expected,
-			func(arr ArrayEncoder) { cfg.EncodeTime(moment, arr) },
-			"Unexpected output serializing %v with %q.", moment, tt.yamlDoc,
-		)
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := EncoderConfig{}
+			require.NoError(t, yaml.Unmarshal([]byte(tt.yamlDoc), &cfg), "Unexpected error unmarshaling %q.", tt.yamlDoc)
+			require.NotNil(t, cfg.EncodeTime, "Unmashalled timeEncoder is nil for %q.", tt.yamlDoc)
+			assertAppended(
+				t,
+				tt.expected,
+				func(arr ArrayEncoder) { cfg.EncodeTime(moment, arr) },
+				"Unexpected output serializing %v with %q.", moment, tt.yamlDoc,
+			)
+		})
 	}
 }
 
 func TestTimeEncodersWrongYAML(t *testing.T) {
+	t.Parallel()
+
 	tests := []string{
 		"timeEncoder: [1, 2, 3]", // wrong type
 		"timeEncoder: {foo:bar",  // broken yaml
 	}
 	for _, tt := range tests {
-		cfg := EncoderConfig{}
-		assert.Error(t, yaml.Unmarshal([]byte(tt), &cfg), "Expected unmarshaling %q to become error, but not.", tt)
+		tt := tt
+		t.Run(tt, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := EncoderConfig{}
+			assert.Error(t, yaml.Unmarshal([]byte(tt), &cfg), "Expected unmarshaling %q to become error, but not.", tt)
+		})
 	}
 }
 
 func TestTimeEncodersParseFromJSON(t *testing.T) {
+	t.Parallel()
+
 	moment := time.Unix(100, 50005000).UTC()
 	tests := []struct {
+		desc     string
 		jsonDoc  string
 		expected interface{} // output of serializing moment
 	}{
-		{`{"timeEncoder": "iso8601"}`, "1970-01-01T00:01:40.050Z"},
-		{`{"timeEncoder": {"layout": "06/01/02 03:04pm"}}`, "70/01/01 12:01am"},
+		{"iso8601", `{"timeEncoder": "iso8601"}`, "1970-01-01T00:01:40.050Z"},
+		{"manual", `{"timeEncoder": {"layout": "06/01/02 03:04pm"}}`, "70/01/01 12:01am"},
 	}
 
 	for _, tt := range tests {
-		cfg := EncoderConfig{}
-		require.NoError(t, json.Unmarshal([]byte(tt.jsonDoc), &cfg), "Unexpected error unmarshaling %q.", tt.jsonDoc)
-		require.NotNil(t, cfg.EncodeTime, "Unmashalled timeEncoder is nil for %q.", tt.jsonDoc)
-		assertAppended(
-			t,
-			tt.expected,
-			func(arr ArrayEncoder) { cfg.EncodeTime(moment, arr) },
-			"Unexpected output serializing %v with %q.", moment, tt.jsonDoc,
-		)
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := EncoderConfig{}
+			require.NoError(t, json.Unmarshal([]byte(tt.jsonDoc), &cfg), "Unexpected error unmarshaling %q.", tt.jsonDoc)
+			require.NotNil(t, cfg.EncodeTime, "Unmashalled timeEncoder is nil for %q.", tt.jsonDoc)
+			assertAppended(
+				t,
+				tt.expected,
+				func(arr ArrayEncoder) { cfg.EncodeTime(moment, arr) },
+				"Unexpected output serializing %v with %q.", moment, tt.jsonDoc,
+			)
+		})
 	}
 }
 
 func TestDurationEncoders(t *testing.T) {
+	t.Parallel()
+
 	elapsed := time.Second + 500*time.Nanosecond
 	tests := []struct {
 		name     string
@@ -663,18 +702,25 @@ func TestDurationEncoders(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		var de DurationEncoder
-		require.NoError(t, de.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
-		assertAppended(
-			t,
-			tt.expected,
-			func(arr ArrayEncoder) { de(elapsed, arr) },
-			"Unexpected output serializing %v with %q.", elapsed, tt.name,
-		)
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var de DurationEncoder
+			require.NoError(t, de.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+			assertAppended(
+				t,
+				tt.expected,
+				func(arr ArrayEncoder) { de(elapsed, arr) },
+				"Unexpected output serializing %v with %q.", elapsed, tt.name,
+			)
+		})
 	}
 }
 
 func TestCallerEncoders(t *testing.T) {
+	t.Parallel()
+
 	caller := EntryCaller{Defined: true, File: "/home/jack/src/github.com/foo/foo.go", Line: 42}
 	tests := []struct {
 		name     string
@@ -687,18 +733,25 @@ func TestCallerEncoders(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		var ce CallerEncoder
-		require.NoError(t, ce.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
-		assertAppended(
-			t,
-			tt.expected,
-			func(arr ArrayEncoder) { ce(caller, arr) },
-			"Unexpected output serializing file name as %v with %q.", tt.expected, tt.name,
-		)
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var ce CallerEncoder
+			require.NoError(t, ce.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+			assertAppended(
+				t,
+				tt.expected,
+				func(arr ArrayEncoder) { ce(caller, arr) },
+				"Unexpected output serializing file name as %v with %q.", tt.expected, tt.name,
+			)
+		})
 	}
 }
 
 func TestNameEncoders(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		expected interface{} // output of encoding InfoLevel
@@ -709,14 +762,19 @@ func TestNameEncoders(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		var ne NameEncoder
-		require.NoError(t, ne.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
-		assertAppended(
-			t,
-			tt.expected,
-			func(arr ArrayEncoder) { ne("main", arr) },
-			"Unexpected output serializing logger name with %q.", tt.name,
-		)
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var ne NameEncoder
+			require.NoError(t, ne.UnmarshalText([]byte(tt.name)), "Unexpected error unmarshaling %q.", tt.name)
+			assertAppended(
+				t,
+				tt.expected,
+				func(arr ArrayEncoder) { ne("main", arr) },
+				"Unexpected output serializing logger name with %q.", tt.name,
+			)
+		})
 	}
 }
 

@@ -32,6 +32,8 @@ import (
 )
 
 func TestIncreaseLevel(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		coreLevel     Level
 		increaseLevel Level
@@ -78,8 +80,11 @@ func TestIncreaseLevel(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		msg := fmt.Sprintf("increase %v to %v", tt.coreLevel, tt.increaseLevel)
 		t.Run(msg, func(t *testing.T) {
+			t.Parallel()
+
 			logger, logs := observer.New(tt.coreLevel)
 
 			// sanity check

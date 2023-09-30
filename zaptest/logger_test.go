@@ -35,6 +35,8 @@ import (
 )
 
 func TestTestLogger(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestLogSpy(t)
 	defer ts.AssertPassed()
 
@@ -59,6 +61,8 @@ func TestTestLogger(t *testing.T) {
 }
 
 func TestTestLoggerSupportsLevels(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestLogSpy(t)
 	defer ts.AssertPassed()
 
@@ -81,6 +85,8 @@ func TestTestLoggerSupportsLevels(t *testing.T) {
 }
 
 func TestTestLoggerSupportsWrappedZapOptions(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestLogSpy(t)
 	defer ts.AssertPassed()
 
@@ -96,15 +102,17 @@ func TestTestLoggerSupportsWrappedZapOptions(t *testing.T) {
 	}, "log.Panic should panic")
 
 	ts.AssertMessages(
-		`INFO	zaptest/logger_test.go:89	received work order	{"k1": "v1"}`,
-		`DEBUG	zaptest/logger_test.go:90	starting work	{"k1": "v1"}`,
-		`WARN	zaptest/logger_test.go:91	work may fail	{"k1": "v1"}`,
-		`ERROR	zaptest/logger_test.go:92	work failed	{"k1": "v1", "error": "great sadness"}`,
-		`PANIC	zaptest/logger_test.go:95	failed to do work	{"k1": "v1"}`,
+		`INFO	zaptest/logger_test.go:95	received work order	{"k1": "v1"}`,
+		`DEBUG	zaptest/logger_test.go:96	starting work	{"k1": "v1"}`,
+		`WARN	zaptest/logger_test.go:97	work may fail	{"k1": "v1"}`,
+		`ERROR	zaptest/logger_test.go:98	work failed	{"k1": "v1", "error": "great sadness"}`,
+		`PANIC	zaptest/logger_test.go:101	failed to do work	{"k1": "v1"}`,
 	)
 }
 
 func TestTestingWriter(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestLogSpy(t)
 	w := newTestingWriter(ts)
 
@@ -114,6 +122,8 @@ func TestTestingWriter(t *testing.T) {
 }
 
 func TestTestLoggerErrorOutput(t *testing.T) {
+	t.Parallel()
+
 	// This test verifies that the test logger logs internal messages to the
 	// testing.T and marks the test as failed.
 

@@ -27,6 +27,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -36,6 +37,8 @@ import (
 )
 
 func TestOpenNoPaths(t *testing.T) {
+	t.Parallel()
+
 	ws, cleanup, err := Open()
 	defer cleanup()
 
@@ -49,6 +52,8 @@ func TestOpenNoPaths(t *testing.T) {
 }
 
 func TestOpen(t *testing.T) {
+	t.Parallel()
+
 	tempName := filepath.Join(t.TempDir(), "test.log")
 	assert.False(t, fileExists(tempName))
 	require.True(t, filepath.IsAbs(tempName), "Expected absolute temp file path.")
@@ -80,7 +85,10 @@ func TestOpen(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.msg, func(t *testing.T) {
+			t.Parallel()
+
 			_, cleanup, err := Open(tt.paths...)
 			if err == nil {
 				defer cleanup()
@@ -90,10 +98,17 @@ func TestOpen(t *testing.T) {
 		})
 	}
 
-	assert.True(t, fileExists(tempName))
+	// t.Parallel for subtests will unblock t.Run right away.
+	// This assertion should run *after* all subtests have completed
+	// so it needs to be with a t.Cleanup.
+	t.Cleanup(func() {
+		assert.True(t, fileExists(tempName))
+	})
 }
 
 func TestOpenPathsNotFound(t *testing.T) {
+	t.Parallel()
+
 	tempName := filepath.Join(t.TempDir(), "test.log")
 
 	tests := []struct {
@@ -122,7 +137,10 @@ func TestOpenPathsNotFound(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.msg, func(t *testing.T) {
+			t.Parallel()
+
 			_, cleanup, err := Open(tt.paths...)
 			if !assert.Error(t, err, "Open must fail.") {
 				cleanup()
@@ -140,6 +158,8 @@ func TestOpenPathsNotFound(t *testing.T) {
 }
 
 func TestOpenRelativePath(t *testing.T) {
+	t.Parallel()
+
 	const name = "test-relative-path.txt"
 
 	require.False(t, fileExists(name), "Test file already exists.")
@@ -160,6 +180,8 @@ func TestOpenRelativePath(t *testing.T) {
 }
 
 func TestOpenFails(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		paths []string
 	}{
@@ -169,14 +191,21 @@ func TestOpenFails(t *testing.T) {
 		{paths: []string{"mem://somewhere"}},                   // scheme not registered
 	}
 
-	for _, tt := range tests {
-		_, cleanup, err := Open(tt.paths...)
-		require.Nil(t, cleanup, "Cleanup function should never be nil")
-		assert.Error(t, err, "Open with invalid URL should fail.")
+	for i, tt := range tests {
+		i, tt := i, tt
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+
+			_, cleanup, err := Open(tt.paths...)
+			require.Nil(t, cleanup, "Cleanup function should never be nil")
+			assert.Error(t, err, "Open with invalid URL should fail.")
+		})
 	}
 }
 
 func TestOpenOtherErrors(t *testing.T) {
+	t.Parallel()
+
 	tempName := filepath.Join(t.TempDir(), "test.log")
 
 	tests := []struct {
@@ -212,7 +241,10 @@ func TestOpenOtherErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.msg, func(t *testing.T) {
+			t.Parallel()
+
 			_, cleanup, err := Open(tt.paths...)
 			if !assert.Error(t, err, "Open must fail.") {
 				cleanup()
@@ -238,6 +270,7 @@ func (w *testWriter) Sync() error {
 	return nil
 }
 
+//nolint:paralleltest // stubs global registry
 func TestOpenWithErroringSinkFactory(t *testing.T) {
 	stubSinkRegistry(t)
 
@@ -252,6 +285,8 @@ func TestOpenWithErroringSinkFactory(t *testing.T) {
 }
 
 func TestCombineWriteSyncers(t *testing.T) {
+	t.Parallel()
+
 	tw := &testWriter{"test", t}
 	w := CombineWriteSyncers(tw)
 	_, err := w.Write([]byte("test"))

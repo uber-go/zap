@@ -31,6 +31,8 @@ import (
 var _ Clock = (*ztest.MockClock)(nil)
 
 func TestSystemClock_NewTicker(t *testing.T) {
+	t.Parallel()
+
 	want := 3
 
 	var n int

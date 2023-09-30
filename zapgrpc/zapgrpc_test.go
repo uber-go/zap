@@ -32,6 +32,8 @@ import (
 )
 
 func TestLoggerInfoExpected(t *testing.T) {
+	t.Parallel()
+
 	checkMessages(t, zapcore.DebugLevel, nil, zapcore.InfoLevel, []string{
 		"hello",
 		"s1s21 2 3s34s56",
@@ -66,6 +68,8 @@ func TestLoggerInfoExpected(t *testing.T) {
 }
 
 func TestLoggerDebugExpected(t *testing.T) {
+	t.Parallel()
+
 	checkMessages(t, zapcore.DebugLevel, []Option{WithDebug()}, zapcore.DebugLevel, []string{
 		"hello",
 		"s1s21 2 3s34s56",
@@ -86,6 +90,8 @@ func TestLoggerDebugExpected(t *testing.T) {
 }
 
 func TestLoggerDebugSuppressed(t *testing.T) {
+	t.Parallel()
+
 	checkMessages(t, zapcore.InfoLevel, []Option{WithDebug()}, zapcore.DebugLevel, nil, func(logger *Logger) {
 		logger.Print("hello")
 		logger.Printf("%s world", "hello")
@@ -96,6 +102,8 @@ func TestLoggerDebugSuppressed(t *testing.T) {
 }
 
 func TestLoggerWarningExpected(t *testing.T) {
+	t.Parallel()
+
 	checkMessages(t, zapcore.DebugLevel, nil, zapcore.WarnLevel, []string{
 		"hello",
 		"s1s21 2 3s34s56",
@@ -116,6 +124,8 @@ func TestLoggerWarningExpected(t *testing.T) {
 }
 
 func TestLoggerErrorExpected(t *testing.T) {
+	t.Parallel()
+
 	checkMessages(t, zapcore.DebugLevel, nil, zapcore.ErrorLevel, []string{
 		"hello",
 		"s1s21 2 3s34s56",
@@ -136,6 +146,8 @@ func TestLoggerErrorExpected(t *testing.T) {
 }
 
 func TestLoggerFatalExpected(t *testing.T) {
+	t.Parallel()
+
 	checkMessages(t, zapcore.DebugLevel, nil, zapcore.FatalLevel, []string{
 		"hello",
 		"s1s21 2 3s34s56",
@@ -156,6 +168,8 @@ func TestLoggerFatalExpected(t *testing.T) {
 }
 
 func TestLoggerV(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		zapLevel     zapcore.Level
 		grpcEnabled  []int
@@ -197,21 +211,34 @@ func TestLoggerV(t *testing.T) {
 			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError},
 		},
 	}
-	for _, tst := range tests {
-		for _, grpcLvl := range tst.grpcEnabled {
-			t.Run(fmt.Sprintf("enabled %s %d", tst.zapLevel, grpcLvl), func(t *testing.T) {
-				checkLevel(t, tst.zapLevel, true, func(logger *Logger) bool {
-					return logger.V(grpcLvl)
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run("zap="+tt.zapLevel.String(), func(t *testing.T) {
+			t.Parallel()
+
+			for _, grpcLvl := range tt.grpcEnabled {
+				grpcLvl := grpcLvl
+				t.Run(fmt.Sprintf("grpc=%d", grpcLvl), func(t *testing.T) {
+					t.Parallel()
+
+					checkLevel(t, tt.zapLevel, true, func(logger *Logger) bool {
+						return logger.V(grpcLvl)
+					})
 				})
-			})
-		}
-		for _, grpcLvl := range tst.grpcDisabled {
-			t.Run(fmt.Sprintf("disabled %s %d", tst.zapLevel, grpcLvl), func(t *testing.T) {
-				checkLevel(t, tst.zapLevel, false, func(logger *Logger) bool {
-					return logger.V(grpcLvl)
+			}
+
+			for _, grpcLvl := range tt.grpcDisabled {
+				grpcLvl := grpcLvl
+				t.Run(fmt.Sprintf("grpc=%d", grpcLvl), func(t *testing.T) {
+					t.Parallel()
+
+					checkLevel(t, tt.zapLevel, false, func(logger *Logger) bool {
+						return logger.V(grpcLvl)
+					})
 				})
-			})
-		}
+			}
+		})
 	}
 }
 
