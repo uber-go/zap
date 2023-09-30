@@ -126,7 +126,6 @@ func TestLoggerInitialFields(t *testing.T) {
 }
 
 func TestLoggerWith(t *testing.T) {
-
 	tests := []struct {
 		name          string
 		initialFields []Field

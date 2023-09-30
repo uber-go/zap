@@ -60,7 +60,6 @@ func TestFieldConstructors(t *testing.T) {
 		}
 		assertCanBeReused(t, tt.field)
 	}
-
 }
 
 func assertCanBeReused(t testing.TB, field zap.Field) {
