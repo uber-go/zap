@@ -58,8 +58,6 @@ func withLazyCore(f func(zapcore.Core, *proxyCore, *observer.ObservedLogs), init
 }
 
 func TestLazyCore(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name          string
 		entries       []zapcore.Entry
@@ -122,10 +120,7 @@ func TestLazyCore(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			withLazyCore(func(lazy zapcore.Core, proxy *proxyCore, logs *observer.ObservedLogs) {
 				checkCounts := func(withCount int64, msg string) {
 					assert.Equal(t, withCount, proxy.withCount.Load(), msg)

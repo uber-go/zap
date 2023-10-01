@@ -32,8 +32,6 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		desc     string
 		cfg      Config
@@ -59,10 +57,7 @@ func TestConfig(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-
 			logOut := filepath.Join(t.TempDir(), "test.log")
 
 			tt.cfg.OutputPaths = []string{logOut}
@@ -91,8 +86,6 @@ func TestConfig(t *testing.T) {
 }
 
 func TestConfigWithInvalidPaths(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		desc      string
 		output    string
@@ -104,10 +97,7 @@ func TestConfigWithInvalidPaths(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-
 			cfg := NewProductionConfig()
 			cfg.OutputPaths = []string{tt.output}
 			cfg.ErrorOutputPaths = []string{tt.errOutput}
@@ -118,8 +108,6 @@ func TestConfigWithInvalidPaths(t *testing.T) {
 }
 
 func TestConfigWithMissingAttributes(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		desc      string
 		cfg       Config
@@ -147,10 +135,7 @@ func TestConfigWithMissingAttributes(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-
 			cfg := tt.cfg
 			_, err := cfg.Build()
 			assert.EqualError(t, err, tt.expectErr)
@@ -174,8 +159,6 @@ func makeSamplerCountingHook() (h func(zapcore.Entry, zapcore.SamplingDecision),
 }
 
 func TestConfigWithSamplingHook(t *testing.T) {
-	t.Parallel()
-
 	shook, dcount, scount := makeSamplerCountingHook()
 	cfg := Config{
 		Level:       NewAtomicLevelAt(InfoLevel),

@@ -33,7 +33,6 @@ type pooledValue[T any] struct {
 	value T
 }
 
-//nolint:paralleltest // disables GC temporarily
 func TestNew(t *testing.T) {
 	// Disable GC to avoid the victim cache during the test.
 	defer debug.SetGCPercent(debug.SetGCPercent(-1))
@@ -77,8 +76,6 @@ func TestNew(t *testing.T) {
 }
 
 func TestNew_Race(t *testing.T) {
-	t.Parallel()
-
 	p := pool.New(func() *pooledValue[int] {
 		return &pooledValue[int]{
 			value: -1,

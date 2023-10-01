@@ -36,8 +36,6 @@ var testEntry = Entry{
 }
 
 func TestConsoleSeparator(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		desc        string
 		separator   string
@@ -66,11 +64,8 @@ func TestConsoleSeparator(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
+		console := NewConsoleEncoder(encoderTestEncoderConfig(tt.separator))
 		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-
-			console := NewConsoleEncoder(encoderTestEncoderConfig(tt.separator))
 			entry := testEntry
 			consoleOut, err := console.EncodeEntry(entry, nil)
 			if !assert.NoError(t, err) {

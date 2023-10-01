@@ -28,8 +28,6 @@ import (
 )
 
 func TestBuffers(t *testing.T) {
-	t.Parallel()
-
 	const dummyData = "dummy data"
 	p := NewPool()
 

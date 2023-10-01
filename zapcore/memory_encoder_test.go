@@ -29,8 +29,6 @@ import (
 )
 
 func TestMapObjectEncoderAdd(t *testing.T) {
-	t.Parallel()
-
 	// Expected output of a turducken.
 	wantTurducken := map[string]interface{}{
 		"ducks": []interface{}{
@@ -250,10 +248,7 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-
 			enc := NewMapObjectEncoder()
 			tt.f(enc)
 			assert.Equal(t, tt.expected, enc.Fields["k"], "Unexpected encoder output.")
@@ -262,8 +257,6 @@ func TestMapObjectEncoderAdd(t *testing.T) {
 }
 
 func TestSliceArrayEncoderAppend(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		desc     string
 		f        func(ArrayEncoder)
@@ -350,10 +343,7 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-
 			enc := NewMapObjectEncoder()
 			assert.NoError(t, enc.AddArray("k", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
 				tt.f(arr)
@@ -369,8 +359,6 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 }
 
 func TestMapObjectEncoderReflectionFailures(t *testing.T) {
-	t.Parallel()
-
 	enc := NewMapObjectEncoder()
 	assert.Error(t, enc.AddObject("object", loggable{false}), "Expected AddObject to fail.")
 	assert.Equal(

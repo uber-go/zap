@@ -31,8 +31,6 @@ import (
 )
 
 func TestLevelEnablerFunc(t *testing.T) {
-	t.Parallel()
-
 	enab := LevelEnablerFunc(func(l zapcore.Level) bool { return l == zapcore.InfoLevel })
 	tests := []struct {
 		level   zapcore.Level
@@ -52,8 +50,6 @@ func TestLevelEnablerFunc(t *testing.T) {
 }
 
 func TestNewAtomicLevel(t *testing.T) {
-	t.Parallel()
-
 	lvl := NewAtomicLevel()
 	assert.Equal(t, InfoLevel, lvl.Level(), "Unexpected initial level.")
 	lvl.SetLevel(ErrorLevel)
@@ -63,8 +59,6 @@ func TestNewAtomicLevel(t *testing.T) {
 }
 
 func TestParseAtomicLevel(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		text  string
 		level AtomicLevel
@@ -76,24 +70,17 @@ func TestParseAtomicLevel(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.text, func(t *testing.T) {
-			t.Parallel()
-
-			parsedAtomicLevel, err := ParseAtomicLevel(tt.text)
-			if len(tt.err) == 0 {
-				require.NoError(t, err)
-				assert.Equal(t, tt.level, parsedAtomicLevel)
-			} else {
-				assert.ErrorContains(t, err, tt.err)
-			}
-		})
+		parsedAtomicLevel, err := ParseAtomicLevel(tt.text)
+		if len(tt.err) == 0 {
+			require.NoError(t, err)
+			assert.Equal(t, tt.level, parsedAtomicLevel)
+		} else {
+			assert.ErrorContains(t, err, tt.err)
+		}
 	}
 }
 
 func TestAtomicLevelMutation(t *testing.T) {
-	t.Parallel()
-
 	lvl := NewAtomicLevel()
 	lvl.SetLevel(WarnLevel)
 	// Trigger races for non-atomic level mutations.
@@ -112,8 +99,6 @@ func TestAtomicLevelMutation(t *testing.T) {
 }
 
 func TestAtomicLevelText(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		text   string
 		expect zapcore.Level
@@ -131,30 +116,25 @@ func TestAtomicLevelText(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.text, func(t *testing.T) {
-			t.Parallel()
-
-			var lvl AtomicLevel
-			// Test both initial unmarshaling and overwriting existing value.
-			for i := 0; i < 2; i++ {
-				if tt.err {
-					assert.Error(t, lvl.UnmarshalText([]byte(tt.text)), "Expected unmarshaling %q to fail.", tt.text)
-				} else {
-					assert.NoError(t, lvl.UnmarshalText([]byte(tt.text)), "Expected unmarshaling %q to succeed.", tt.text)
-				}
-				assert.Equal(t, tt.expect, lvl.Level(), "Unexpected level after unmarshaling.")
-				lvl.SetLevel(InfoLevel)
+		var lvl AtomicLevel
+		// Test both initial unmarshaling and overwriting existing value.
+		for i := 0; i < 2; i++ {
+			if tt.err {
+				assert.Error(t, lvl.UnmarshalText([]byte(tt.text)), "Expected unmarshaling %q to fail.", tt.text)
+			} else {
+				assert.NoError(t, lvl.UnmarshalText([]byte(tt.text)), "Expected unmarshaling %q to succeed.", tt.text)
 			}
+			assert.Equal(t, tt.expect, lvl.Level(), "Unexpected level after unmarshaling.")
+			lvl.SetLevel(InfoLevel)
+		}
 
-			// Test marshalling
-			if tt.text != "" && !tt.err {
-				lvl.SetLevel(tt.expect)
-				marshaled, err := lvl.MarshalText()
-				assert.NoError(t, err, `Unexpected error marshalling level "%v" to text.`, tt.expect)
-				assert.Equal(t, tt.text, string(marshaled), "Expected marshaled text to match")
-				assert.Equal(t, tt.text, lvl.String(), "Expected Stringer call to match")
-			}
-		})
+		// Test marshalling
+		if tt.text != "" && !tt.err {
+			lvl.SetLevel(tt.expect)
+			marshaled, err := lvl.MarshalText()
+			assert.NoError(t, err, `Unexpected error marshalling level "%v" to text.`, tt.expect)
+			assert.Equal(t, tt.text, string(marshaled), "Expected marshaled text to match")
+			assert.Equal(t, tt.text, lvl.String(), "Expected Stringer call to match")
+		}
 	}
 }

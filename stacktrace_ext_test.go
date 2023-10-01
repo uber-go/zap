@@ -47,8 +47,6 @@ var _zapPackages = []string{
 }
 
 func TestStacktraceFiltersZapLog(t *testing.T) {
-	t.Parallel()
-
 	withLogger(t, func(logger *zap.Logger, out *bytes.Buffer) {
 		logger.Error("test log")
 		logger.Sugar().Error("sugar test log")
@@ -59,8 +57,6 @@ func TestStacktraceFiltersZapLog(t *testing.T) {
 }
 
 func TestStacktraceFiltersZapMarshal(t *testing.T) {
-	t.Parallel()
-
 	withLogger(t, func(logger *zap.Logger, out *bytes.Buffer) {
 		marshal := func(enc zapcore.ObjectEncoder) error {
 			logger.Warn("marshal caused warn")
@@ -87,7 +83,6 @@ func TestStacktraceFiltersZapMarshal(t *testing.T) {
 	})
 }
 
-//nolint:paralleltest // modifies process global state
 func TestStacktraceFiltersVendorZap(t *testing.T) {
 	// We already have the dependencies downloaded so this should be
 	// instant.
@@ -125,8 +120,6 @@ func TestStacktraceFiltersVendorZap(t *testing.T) {
 }
 
 func TestStacktraceWithoutCallerSkip(t *testing.T) {
-	t.Parallel()
-
 	withLogger(t, func(logger *zap.Logger, out *bytes.Buffer) {
 		func() {
 			logger.Error("test log")
@@ -138,8 +131,6 @@ func TestStacktraceWithoutCallerSkip(t *testing.T) {
 }
 
 func TestStacktraceWithCallerSkip(t *testing.T) {
-	t.Parallel()
-
 	withLogger(t, func(logger *zap.Logger, out *bytes.Buffer) {
 		logger = logger.WithOptions(zap.AddCallerSkip(2))
 		func() {

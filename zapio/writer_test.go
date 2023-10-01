@@ -170,12 +170,10 @@ func TestWrite_Sync(t *testing.T) {
 	io.WriteString(&w, "foo")
 	io.WriteString(&w, "bar")
 
-	//nolint:paralleltest // shared state
 	t.Run("no sync", func(t *testing.T) {
 		assert.Zero(t, observed.Len(), "Expected no logs yet")
 	})
 
-	//nolint:paralleltest // shared state
 	t.Run("sync", func(t *testing.T) {
 		defer observed.TakeAll()
 
@@ -186,7 +184,6 @@ func TestWrite_Sync(t *testing.T) {
 		}, observed.AllUntimed(), "Log messages did not match")
 	})
 
-	//nolint:paralleltest // shared state
 	t.Run("sync on empty", func(t *testing.T) {
 		require.NoError(t, w.Sync(), "Sync must not fail")
 		assert.Zero(t, observed.Len(), "Expected no logs yet")

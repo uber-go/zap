@@ -27,8 +27,6 @@ import (
 )
 
 func TestAllLevelsCoveredByLevelString(t *testing.T) {
-	t.Parallel()
-
 	numLevels := int((_maxLevel - _minLevel) + 1)
 
 	isComplete := func(m map[Level]string) bool {

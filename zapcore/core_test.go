@@ -38,8 +38,6 @@ func makeInt64Field(key string, val int) Field {
 }
 
 func TestNopCore(t *testing.T) {
-	t.Parallel()
-
 	entry := Entry{
 		Message:    "test",
 		Level:      InfoLevel,
@@ -61,21 +59,14 @@ func TestNopCore(t *testing.T) {
 	core := NewNopCore()
 	assert.Equal(t, core, core.With([]Field{makeInt64Field("k", 42)}), "Expected no-op With.")
 	for _, level := range allLevels {
-		level := level
-		t.Run(level.String(), func(t *testing.T) {
-			t.Parallel()
-
-			assert.False(t, core.Enabled(level), "Expected all levels to be disabled in no-op core.")
-			assert.Equal(t, ce, core.Check(entry, ce), "Expected no-op Check to return checked entry unchanged.")
-			assert.NoError(t, core.Write(entry, nil), "Expected no-op Writes to always succeed.")
-			assert.NoError(t, core.Sync(), "Expected no-op Syncs to always succeed.")
-		})
+		assert.False(t, core.Enabled(level), "Expected all levels to be disabled in no-op core.")
+		assert.Equal(t, ce, core.Check(entry, ce), "Expected no-op Check to return checked entry unchanged.")
+		assert.NoError(t, core.Write(entry, nil), "Expected no-op Writes to always succeed.")
+		assert.NoError(t, core.Sync(), "Expected no-op Syncs to always succeed.")
 	}
 }
 
 func TestIOCore(t *testing.T) {
-	t.Parallel()
-
 	temp, err := os.CreateTemp(t.TempDir(), "test.log")
 	require.NoError(t, err)
 
@@ -91,7 +82,9 @@ func TestIOCore(t *testing.T) {
 	).With([]Field{makeInt64Field("k", 1)})
 	defer assert.NoError(t, core.Sync(), "Expected Syncing a temp file to succeed.")
 
-	assert.Equal(t, InfoLevel, LevelOf(core), "Incorrect Core Level")
+	t.Run("LevelOf", func(t *testing.T) {
+		assert.Equal(t, InfoLevel, LevelOf(core), "Incorrect Core Level")
+	})
 
 	if ce := core.Check(Entry{Level: DebugLevel, Message: "debug"}, nil); ce != nil {
 		ce.Write(makeInt64Field("k", 2))
@@ -115,8 +108,6 @@ func TestIOCore(t *testing.T) {
 }
 
 func TestIOCoreSyncFail(t *testing.T) {
-	t.Parallel()
-
 	sink := &ztest.Discarder{}
 	err := errors.New("failed")
 	sink.SetError(err)
@@ -136,43 +127,33 @@ func TestIOCoreSyncFail(t *testing.T) {
 }
 
 func TestIOCoreSyncsOutput(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
-		desc       string
 		entry      Entry
 		shouldSync bool
 	}{
-		{"Debug", Entry{Level: DebugLevel}, false},
-		{"Info", Entry{Level: InfoLevel}, false},
-		{"Warn", Entry{Level: WarnLevel}, false},
-		{"Error", Entry{Level: ErrorLevel}, false},
-		{"DPanic", Entry{Level: DPanicLevel}, true},
-		{"Panic", Entry{Level: PanicLevel}, true},
-		{"Fatal", Entry{Level: FatalLevel}, true},
+		{Entry{Level: DebugLevel}, false},
+		{Entry{Level: InfoLevel}, false},
+		{Entry{Level: WarnLevel}, false},
+		{Entry{Level: ErrorLevel}, false},
+		{Entry{Level: DPanicLevel}, true},
+		{Entry{Level: PanicLevel}, true},
+		{Entry{Level: FatalLevel}, true},
 	}
 
 	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
+		sink := &ztest.Discarder{}
+		core := NewCore(
+			NewJSONEncoder(testEncoderConfig()),
+			sink,
+			DebugLevel,
+		)
 
-			sink := &ztest.Discarder{}
-			core := NewCore(
-				NewJSONEncoder(testEncoderConfig()),
-				sink,
-				DebugLevel,
-			)
-
-			assert.NoError(t, core.Write(tt.entry, nil), "Unexpected error writing entry.")
-			assert.Equal(t, tt.shouldSync, sink.Called(), "Incorrect Sync behavior.")
-		})
+		assert.NoError(t, core.Write(tt.entry, nil), "Unexpected error writing entry.")
+		assert.Equal(t, tt.shouldSync, sink.Called(), "Incorrect Sync behavior.")
 	}
 }
 
 func TestIOCoreWriteFailure(t *testing.T) {
-	t.Parallel()
-
 	core := NewCore(
 		NewJSONEncoder(testEncoderConfig()),
 		Lock(&ztest.FailWriter{}),

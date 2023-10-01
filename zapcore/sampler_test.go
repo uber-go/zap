@@ -67,38 +67,28 @@ func writeSequence(core Core, n int, lvl Level) {
 }
 
 func TestSampler(t *testing.T) {
-	t.Parallel()
+	for _, lvl := range []Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel, PanicLevel, FatalLevel} {
+		sampler, logs := fakeSampler(DebugLevel, time.Minute, 2, 3)
 
-	levels := []Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel, PanicLevel, FatalLevel}
-	for _, lvl := range levels {
-		lvl := lvl
-		t.Run(lvl.String(), func(t *testing.T) {
-			t.Parallel()
+		// Ensure that counts aren't shared between levels.
+		probeLevel := DebugLevel
+		if lvl == DebugLevel {
+			probeLevel = InfoLevel
+		}
+		for i := 0; i < 10; i++ {
+			writeSequence(sampler, 1, probeLevel)
+		}
+		// Clear any output.
+		logs.TakeAll()
 
-			sampler, logs := fakeSampler(DebugLevel, time.Minute, 2, 3)
-
-			// Ensure that counts aren't shared between levels.
-			probeLevel := DebugLevel
-			if lvl == DebugLevel {
-				probeLevel = InfoLevel
-			}
-			for i := 0; i < 10; i++ {
-				writeSequence(sampler, 1, probeLevel)
-			}
-			// Clear any output.
-			logs.TakeAll()
-
-			for i := 1; i < 10; i++ {
-				writeSequence(sampler, i, lvl)
-			}
-			assertSequence(t, logs.TakeAll(), lvl, 1, 2, 5, 8)
-		})
+		for i := 1; i < 10; i++ {
+			writeSequence(sampler, i, lvl)
+		}
+		assertSequence(t, logs.TakeAll(), lvl, 1, 2, 5, 8)
 	}
 }
 
 func TestLevelOfSampler(t *testing.T) {
-	t.Parallel()
-
 	levels := []Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel, PanicLevel, FatalLevel}
 	for _, lvl := range levels {
 		lvl := lvl
@@ -112,8 +102,6 @@ func TestLevelOfSampler(t *testing.T) {
 }
 
 func TestSamplerDisabledLevels(t *testing.T) {
-	t.Parallel()
-
 	sampler, logs := fakeSampler(InfoLevel, time.Minute, 1, 100)
 
 	// Shouldn't be counted, because debug logging isn't enabled.
@@ -123,8 +111,6 @@ func TestSamplerDisabledLevels(t *testing.T) {
 }
 
 func TestSamplerTicking(t *testing.T) {
-	t.Parallel()
-
 	// Ensure that we're resetting the sampler's counter every tick.
 	sampler, logs := fakeSampler(DebugLevel, 10*time.Millisecond, 5, 10)
 
@@ -181,8 +167,6 @@ func (*countingCore) Enabled(Level) bool  { return true }
 func (*countingCore) Sync() error         { return nil }
 
 func TestSamplerConcurrent(t *testing.T) {
-	t.Parallel()
-
 	const (
 		logsPerTick   = 10
 		numMessages   = 5
@@ -264,8 +248,6 @@ func TestSamplerConcurrent(t *testing.T) {
 }
 
 func TestSamplerRaces(t *testing.T) {
-	t.Parallel()
-
 	sampler, _ := fakeSampler(DebugLevel, time.Minute, 1, 1000)
 
 	var wg sync.WaitGroup
@@ -287,8 +269,6 @@ func TestSamplerRaces(t *testing.T) {
 }
 
 func TestSamplerUnknownLevels(t *testing.T) {
-	t.Parallel()
-
 	// Prove that out-of-bounds levels don't panic.
 	unknownLevels := []Level{
 		DebugLevel - 1,
@@ -296,10 +276,7 @@ func TestSamplerUnknownLevels(t *testing.T) {
 	}
 
 	for _, lvl := range unknownLevels {
-		lvl := lvl
 		t.Run(lvl.String(), func(t *testing.T) {
-			t.Parallel()
-
 			sampler, logs := fakeSampler(lvl, time.Minute, 2, 3)
 			for i := 1; i < 10; i++ {
 				writeSequence(sampler, i, lvl)
@@ -312,8 +289,6 @@ func TestSamplerUnknownLevels(t *testing.T) {
 }
 
 func TestSamplerWithZeroThereafter(t *testing.T) {
-	t.Parallel()
-
 	var counter countingCore
 
 	// Logs two messages per second.

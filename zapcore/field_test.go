@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"math"
 	"net/url"
-	"strconv"
 	"testing"
 	"time"
 
@@ -95,8 +94,6 @@ func (eobj *errObj) Error() string {
 }
 
 func TestUnknownFieldType(t *testing.T) {
-	t.Parallel()
-
 	unknown := Field{Key: "k", String: "foo"}
 	assert.Equal(t, UnknownType, unknown.Type, "Expected zero value of FieldType to be UnknownType.")
 	assert.Panics(t, func() {
@@ -105,8 +102,6 @@ func TestUnknownFieldType(t *testing.T) {
 }
 
 func TestFieldAddingError(t *testing.T) {
-	t.Parallel()
-
 	var empty interface{}
 	tests := []struct {
 		t     FieldType
@@ -123,23 +118,16 @@ func TestFieldAddingError(t *testing.T) {
 		{t: StringerType, iface: &obj{3}, want: empty, err: "PANIC=<nil>"},
 		{t: ErrorType, iface: &errObj{kind: 1}, want: empty, err: "PANIC=panic in Error() method"},
 	}
-	for i, tt := range tests {
-		i, tt := i, tt
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			t.Parallel()
-
-			f := Field{Key: "k", Interface: tt.iface, Type: tt.t}
-			enc := NewMapObjectEncoder()
-			assert.NotPanics(t, func() { f.AddTo(enc) }, "Unexpected panic when adding fields returns an error.")
-			assert.Equal(t, tt.want, enc.Fields["k"], "On error, expected zero value in field.Key.")
-			assert.Equal(t, tt.err, enc.Fields["kError"], "Expected error message in log context.")
-		})
+	for _, tt := range tests {
+		f := Field{Key: "k", Interface: tt.iface, Type: tt.t}
+		enc := NewMapObjectEncoder()
+		assert.NotPanics(t, func() { f.AddTo(enc) }, "Unexpected panic when adding fields returns an error.")
+		assert.Equal(t, tt.want, enc.Fields["k"], "On error, expected zero value in field.Key.")
+		assert.Equal(t, tt.err, enc.Fields["kError"], "Expected error message in log context.")
 	}
 }
 
 func TestFields(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		t     FieldType
 		i     int64
@@ -179,27 +167,20 @@ func TestFields(t *testing.T) {
 		{t: ErrorType, iface: (*errObj)(nil), want: "<nil>"},
 	}
 
-	for i, tt := range tests {
-		i, tt := i, tt
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			t.Parallel()
+	for _, tt := range tests {
+		enc := NewMapObjectEncoder()
+		f := Field{Key: "k", Type: tt.t, Integer: tt.i, Interface: tt.iface, String: tt.s}
+		f.AddTo(enc)
+		assert.Equal(t, tt.want, enc.Fields["k"], "Unexpected output from field %+v.", f)
 
-			enc := NewMapObjectEncoder()
-			f := Field{Key: "k", Type: tt.t, Integer: tt.i, Interface: tt.iface, String: tt.s}
-			f.AddTo(enc)
-			assert.Equal(t, tt.want, enc.Fields["k"], "Unexpected output from field %+v.", f)
+		delete(enc.Fields, "k")
+		assert.Equal(t, 0, len(enc.Fields), "Unexpected extra fields present.")
 
-			delete(enc.Fields, "k")
-			assert.Equal(t, 0, len(enc.Fields), "Unexpected extra fields present.")
-
-			assert.True(t, f.Equals(f), "Field does not equal itself")
-		})
+		assert.True(t, f.Equals(f), "Field does not equal itself")
 	}
 }
 
 func TestInlineMarshaler(t *testing.T) {
-	t.Parallel()
-
 	enc := NewMapObjectEncoder()
 
 	topLevelStr := Field{Key: "k", Type: StringType, String: "s"}
@@ -221,8 +202,6 @@ func TestInlineMarshaler(t *testing.T) {
 }
 
 func TestEquals(t *testing.T) {
-	t.Parallel()
-
 	// Values outside the UnixNano range were encoded incorrectly (#737, #803).
 	timeOutOfRangeHigh := time.Unix(0, math.MaxInt64).Add(time.Nanosecond)
 	timeOutOfRangeLow := time.Unix(0, math.MinInt64).Add(-time.Nanosecond)
@@ -342,13 +321,8 @@ func TestEquals(t *testing.T) {
 		},
 	}
 
-	for i, tt := range tests {
-		i, tt := i, tt
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			t.Parallel()
-
-			assert.Equal(t, tt.want, tt.a.Equals(tt.b), "a.Equals(b) a: %#v b: %#v", tt.a, tt.b)
-			assert.Equal(t, tt.want, tt.b.Equals(tt.a), "b.Equals(a) a: %#v b: %#v", tt.a, tt.b)
-		})
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, tt.a.Equals(tt.b), "a.Equals(b) a: %#v b: %#v", tt.a, tt.b)
+		assert.Equal(t, tt.want, tt.b.Equals(tt.a), "b.Equals(a) a: %#v b: %#v", tt.a, tt.b)
 	}
 }
