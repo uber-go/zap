@@ -30,6 +30,8 @@ import (
 )
 
 func TestTake(t *testing.T) {
+	t.Parallel()
+
 	trace := Take(0)
 	lines := strings.Split(trace, "\n")
 	require.NotEmpty(t, lines, "Expected stacktrace to have at least one frame.")
@@ -42,6 +44,8 @@ func TestTake(t *testing.T) {
 }
 
 func TestTakeWithSkip(t *testing.T) {
+	t.Parallel()
+
 	trace := Take(1)
 	lines := strings.Split(trace, "\n")
 	require.NotEmpty(t, lines, "Expected stacktrace to have at least one frame.")
@@ -54,6 +58,8 @@ func TestTakeWithSkip(t *testing.T) {
 }
 
 func TestTakeWithSkipInnerFunc(t *testing.T) {
+	t.Parallel()
+
 	var trace string
 	func() {
 		trace = Take(2)
@@ -69,6 +75,8 @@ func TestTakeWithSkipInnerFunc(t *testing.T) {
 }
 
 func TestTakeDeepStack(t *testing.T) {
+	t.Parallel()
+
 	const (
 		N                  = 500
 		withStackDepthName = "go.uber.org/zap/internal/stacktrace.withStackDepth"

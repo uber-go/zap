@@ -53,6 +53,8 @@ func BenchmarkBoolsReflect(b *testing.B) {
 }
 
 func TestArrayWrappers(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		desc     string
 		field    Field
@@ -101,11 +103,16 @@ func TestArrayWrappers(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		enc := zapcore.NewMapObjectEncoder()
-		tt.field.Key = "k"
-		tt.field.AddTo(enc)
-		assert.Equal(t, tt.expected, enc.Fields["k"], "%s: unexpected map contents.", tt.desc)
-		assert.Equal(t, 1, len(enc.Fields), "%s: found extra keys in map: %v", tt.desc, enc.Fields)
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			enc := zapcore.NewMapObjectEncoder()
+			tt.field.Key = "k"
+			tt.field.AddTo(enc)
+			assert.Equal(t, tt.expected, enc.Fields["k"], "unexpected map contents")
+			assert.Equal(t, 1, len(enc.Fields), "found extra keys in map: %v", enc.Fields)
+		})
 	}
 }
 

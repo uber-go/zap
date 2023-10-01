@@ -22,6 +22,7 @@ package zap
 
 import (
 	"errors"
+	"strconv"
 	"testing"
 
 	"go.uber.org/zap/internal/exit"
@@ -34,6 +35,8 @@ import (
 )
 
 func TestSugarWith(t *testing.T) {
+	t.Parallel()
+
 	// Convenience functions to create expected error logs.
 	ignored := func(msg interface{}) observer.LoggedEntry {
 		return observer.LoggedEntry{
@@ -141,16 +144,21 @@ func TestSugarWith(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
-			logger.With(tt.args...).Info("")
-			output := logs.AllUntimed()
-			if len(tt.errLogs) > 0 {
-				for i := range tt.errLogs {
-					assert.Equal(t, tt.errLogs[i], output[i], "Unexpected error log at position %d for scenario %s.", i, tt.desc)
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+				logger.With(tt.args...).Info("")
+				output := logs.AllUntimed()
+				if len(tt.errLogs) > 0 {
+					for i := range tt.errLogs {
+						assert.Equal(t, tt.errLogs[i], output[i], "Unexpected error log at position %d for scenario %s.", i, tt.desc)
+					}
 				}
-			}
-			assert.Equal(t, len(tt.errLogs)+1, len(output), "Expected only one non-error message to be logged in scenario %s.", tt.desc)
-			assert.Equal(t, tt.expected, output[len(tt.errLogs)].Context, "Unexpected message context in scenario %s.", tt.desc)
+				assert.Equal(t, len(tt.errLogs)+1, len(output), "Expected only one non-error message to be logged in scenario %s.", tt.desc)
+				assert.Equal(t, tt.expected, output[len(tt.errLogs)].Context, "Unexpected message context in scenario %s.", tt.desc)
+			})
 		})
 	}
 }
@@ -185,6 +193,8 @@ func TestSugaredLoggerLevel(t *testing.T) {
 }
 
 func TestSugarFieldsInvalidPairs(t *testing.T) {
+	t.Parallel()
+
 	withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
 		logger.With(42, "foo", []string{"bar"}, "baz").Info("")
 		output := logs.AllUntimed()
@@ -205,6 +215,8 @@ func TestSugarFieldsInvalidPairs(t *testing.T) {
 }
 
 func TestSugarStructuredLogging(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		msg       string
 		expectMsg string
@@ -221,27 +233,34 @@ func TestSugarStructuredLogging(t *testing.T) {
 		expectedFields = []Field{String("foo", "bar"), Error(err), Bool("baz", false)}
 	)
 
-	for _, tt := range tests {
-		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
-			logger.With(context...).Debugw(tt.msg, extra...)
-			logger.With(context...).Infow(tt.msg, extra...)
-			logger.With(context...).Warnw(tt.msg, extra...)
-			logger.With(context...).Errorw(tt.msg, extra...)
-			logger.With(context...).DPanicw(tt.msg, extra...)
+	for i, tt := range tests {
+		i, tt := i, tt
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
 
-			expected := make([]observer.LoggedEntry, 5)
-			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
-				expected[i] = observer.LoggedEntry{
-					Entry:   zapcore.Entry{Message: tt.expectMsg, Level: lvl},
-					Context: expectedFields,
+			withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+				logger.With(context...).Debugw(tt.msg, extra...)
+				logger.With(context...).Infow(tt.msg, extra...)
+				logger.With(context...).Warnw(tt.msg, extra...)
+				logger.With(context...).Errorw(tt.msg, extra...)
+				logger.With(context...).DPanicw(tt.msg, extra...)
+
+				expected := make([]observer.LoggedEntry, 5)
+				for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+					expected[i] = observer.LoggedEntry{
+						Entry:   zapcore.Entry{Message: tt.expectMsg, Level: lvl},
+						Context: expectedFields,
+					}
 				}
-			}
-			assert.Equal(t, expected, logs.AllUntimed(), "Unexpected log output.")
+				assert.Equal(t, expected, logs.AllUntimed(), "Unexpected log output.")
+			})
 		})
 	}
 }
 
 func TestSugarConcatenatingLogging(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		args   []interface{}
 		expect string
@@ -253,27 +272,34 @@ func TestSugarConcatenatingLogging(t *testing.T) {
 	context := []interface{}{"foo", "bar"}
 	expectedFields := []Field{String("foo", "bar")}
 
-	for _, tt := range tests {
-		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
-			logger.With(context...).Debug(tt.args...)
-			logger.With(context...).Info(tt.args...)
-			logger.With(context...).Warn(tt.args...)
-			logger.With(context...).Error(tt.args...)
-			logger.With(context...).DPanic(tt.args...)
+	for i, tt := range tests {
+		i, tt := i, tt
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
 
-			expected := make([]observer.LoggedEntry, 5)
-			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
-				expected[i] = observer.LoggedEntry{
-					Entry:   zapcore.Entry{Message: tt.expect, Level: lvl},
-					Context: expectedFields,
+			withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+				logger.With(context...).Debug(tt.args...)
+				logger.With(context...).Info(tt.args...)
+				logger.With(context...).Warn(tt.args...)
+				logger.With(context...).Error(tt.args...)
+				logger.With(context...).DPanic(tt.args...)
+
+				expected := make([]observer.LoggedEntry, 5)
+				for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+					expected[i] = observer.LoggedEntry{
+						Entry:   zapcore.Entry{Message: tt.expect, Level: lvl},
+						Context: expectedFields,
+					}
 				}
-			}
-			assert.Equal(t, expected, logs.AllUntimed(), "Unexpected log output.")
+				assert.Equal(t, expected, logs.AllUntimed(), "Unexpected log output.")
+			})
 		})
 	}
 }
 
 func TestSugarTemplatedLogging(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		format string
 		args   []interface{}
@@ -289,27 +315,34 @@ func TestSugarTemplatedLogging(t *testing.T) {
 	context := []interface{}{"foo", "bar"}
 	expectedFields := []Field{String("foo", "bar")}
 
-	for _, tt := range tests {
-		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
-			logger.With(context...).Debugf(tt.format, tt.args...)
-			logger.With(context...).Infof(tt.format, tt.args...)
-			logger.With(context...).Warnf(tt.format, tt.args...)
-			logger.With(context...).Errorf(tt.format, tt.args...)
-			logger.With(context...).DPanicf(tt.format, tt.args...)
+	for i, tt := range tests {
+		i, tt := i, tt
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
 
-			expected := make([]observer.LoggedEntry, 5)
-			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
-				expected[i] = observer.LoggedEntry{
-					Entry:   zapcore.Entry{Message: tt.expect, Level: lvl},
-					Context: expectedFields,
+			withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+				logger.With(context...).Debugf(tt.format, tt.args...)
+				logger.With(context...).Infof(tt.format, tt.args...)
+				logger.With(context...).Warnf(tt.format, tt.args...)
+				logger.With(context...).Errorf(tt.format, tt.args...)
+				logger.With(context...).DPanicf(tt.format, tt.args...)
+
+				expected := make([]observer.LoggedEntry, 5)
+				for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+					expected[i] = observer.LoggedEntry{
+						Entry:   zapcore.Entry{Message: tt.expect, Level: lvl},
+						Context: expectedFields,
+					}
 				}
-			}
-			assert.Equal(t, expected, logs.AllUntimed(), "Unexpected log output.")
+				assert.Equal(t, expected, logs.AllUntimed(), "Unexpected log output.")
+			})
 		})
 	}
 }
 
 func TestSugarLnLogging(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		args   []interface{}
 		expect string
@@ -325,27 +358,34 @@ func TestSugarLnLogging(t *testing.T) {
 	context := []interface{}{"foo", "bar"}
 	expectedFields := []Field{String("foo", "bar")}
 
-	for _, tt := range tests {
-		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
-			logger.With(context...).Debugln(tt.args...)
-			logger.With(context...).Infoln(tt.args...)
-			logger.With(context...).Warnln(tt.args...)
-			logger.With(context...).Errorln(tt.args...)
-			logger.With(context...).DPanicln(tt.args...)
+	for i, tt := range tests {
+		i, tt := i, tt
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
 
-			expected := make([]observer.LoggedEntry, 5)
-			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
-				expected[i] = observer.LoggedEntry{
-					Entry:   zapcore.Entry{Message: tt.expect, Level: lvl},
-					Context: expectedFields,
+			withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+				logger.With(context...).Debugln(tt.args...)
+				logger.With(context...).Infoln(tt.args...)
+				logger.With(context...).Warnln(tt.args...)
+				logger.With(context...).Errorln(tt.args...)
+				logger.With(context...).DPanicln(tt.args...)
+
+				expected := make([]observer.LoggedEntry, 5)
+				for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+					expected[i] = observer.LoggedEntry{
+						Entry:   zapcore.Entry{Message: tt.expect, Level: lvl},
+						Context: expectedFields,
+					}
 				}
-			}
-			assert.Equal(t, expected, logs.AllUntimed(), "Unexpected log output.")
+				assert.Equal(t, expected, logs.AllUntimed(), "Unexpected log output.")
+			})
 		})
 	}
 }
 
 func TestSugarLnLoggingIgnored(t *testing.T) {
+	t.Parallel()
+
 	withSugar(t, WarnLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
 		logger.Infoln("hello")
 		assert.Zero(t, logs.Len(), "Expected zero log statements.")
@@ -353,6 +393,8 @@ func TestSugarLnLoggingIgnored(t *testing.T) {
 }
 
 func TestSugarPanicLogging(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		loggerLevel zapcore.Level
 		f           func(*SugaredLogger)
@@ -372,21 +414,27 @@ func TestSugarPanicLogging(t *testing.T) {
 		{DebugLevel, func(s *SugaredLogger) { s.Panicln("foo") }, "foo"},
 	}
 
-	for _, tt := range tests {
-		withSugar(t, tt.loggerLevel, nil, func(sugar *SugaredLogger, logs *observer.ObservedLogs) {
-			assert.Panics(t, func() { tt.f(sugar) }, "Expected panic-level logger calls to panic.")
-			if tt.expectedMsg != "" {
-				assert.Equal(t, []observer.LoggedEntry{{
-					Context: []Field{},
-					Entry:   zapcore.Entry{Message: tt.expectedMsg, Level: PanicLevel},
-				}}, logs.AllUntimed(), "Unexpected log output.")
-			} else {
-				assert.Equal(t, 0, logs.Len(), "Didn't expect any log output.")
-			}
+	for i, tt := range tests {
+		i, tt := i, tt
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+
+			withSugar(t, tt.loggerLevel, nil, func(sugar *SugaredLogger, logs *observer.ObservedLogs) {
+				assert.Panics(t, func() { tt.f(sugar) }, "Expected panic-level logger calls to panic.")
+				if tt.expectedMsg != "" {
+					assert.Equal(t, []observer.LoggedEntry{{
+						Context: []Field{},
+						Entry:   zapcore.Entry{Message: tt.expectedMsg, Level: PanicLevel},
+					}}, logs.AllUntimed(), "Unexpected log output.")
+				} else {
+					assert.Equal(t, 0, logs.Len(), "Didn't expect any log output.")
+				}
+			})
 		})
 	}
 }
 
+//nolint:paralleltest // stubs exit funcs
 func TestSugarFatalLogging(t *testing.T) {
 	tests := []struct {
 		loggerLevel zapcore.Level
@@ -424,6 +472,8 @@ func TestSugarFatalLogging(t *testing.T) {
 }
 
 func TestSugarAddCaller(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		options []Option
 		pat     string
@@ -433,22 +483,29 @@ func TestSugarAddCaller(t *testing.T) {
 		{opts(AddCaller(), AddCallerSkip(1)), `.+/common_test.go:[\d]+$`},
 		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(5)), `.+/src/runtime/.*:[\d]+$`},
 	}
-	for _, tt := range tests {
-		withSugar(t, DebugLevel, tt.options, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
-			logger.Info("")
-			output := logs.AllUntimed()
-			assert.Equal(t, 1, len(output), "Unexpected number of logs written out.")
-			assert.Regexp(
-				t,
-				tt.pat,
-				output[0].Caller,
-				"Expected to find package name and file name in output.",
-			)
+	for i, tt := range tests {
+		i, tt := i, tt
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+
+			withSugar(t, DebugLevel, tt.options, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+				logger.Info("")
+				output := logs.AllUntimed()
+				assert.Equal(t, 1, len(output), "Unexpected number of logs written out.")
+				assert.Regexp(
+					t,
+					tt.pat,
+					output[0].Caller,
+					"Expected to find package name and file name in output.",
+				)
+			})
 		})
 	}
 }
 
 func TestSugarAddCallerFail(t *testing.T) {
+	t.Parallel()
+
 	errBuf := &ztest.Buffer{}
 	withSugar(t, DebugLevel, opts(AddCaller(), AddCallerSkip(1e3), ErrorOutput(errBuf)), func(log *SugaredLogger, logs *observer.ObservedLogs) {
 		log.Info("Failure.")
@@ -467,6 +524,8 @@ func TestSugarAddCallerFail(t *testing.T) {
 }
 
 func TestSugarWithOptionsIncreaseLevel(t *testing.T) {
+	t.Parallel()
+
 	withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
 		logger = logger.WithOptions(IncreaseLevel(WarnLevel))
 		logger.Info("logger.Info")
@@ -483,6 +542,8 @@ func TestSugarWithOptionsIncreaseLevel(t *testing.T) {
 }
 
 func TestSugarLnWithOptionsIncreaseLevel(t *testing.T) {
+	t.Parallel()
+
 	withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
 		logger = logger.WithOptions(IncreaseLevel(WarnLevel))
 		logger.Infoln("logger.Infoln")

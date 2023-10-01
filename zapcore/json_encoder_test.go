@@ -37,6 +37,8 @@ import (
 // zapcore_test package, so that it can import the toplevel zap package for
 // field constructor convenience.
 func TestJSONEncodeEntry(t *testing.T) {
+	t.Parallel()
+
 	type bar struct {
 		Key string  `json:"key"`
 		Val float64 `json:"val"`
@@ -126,7 +128,10 @@ func TestJSONEncodeEntry(t *testing.T) {
 	})
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			buf, err := enc.EncodeEntry(tt.ent, tt.fields)
 			if assert.NoError(t, err, "Unexpected JSON encoding error.") {
 				assert.JSONEq(t, tt.expected, buf.String(), "Incorrect encoded JSON entry.")
@@ -137,6 +142,8 @@ func TestJSONEncodeEntry(t *testing.T) {
 }
 
 func TestNoEncodeLevelSupplied(t *testing.T) {
+	t.Parallel()
+
 	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
 		MessageKey:     "M",
 		LevelKey:       "L",
@@ -166,6 +173,8 @@ func TestNoEncodeLevelSupplied(t *testing.T) {
 }
 
 func TestJSONEmptyConfig(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		field    zapcore.Field
@@ -184,7 +193,10 @@ func TestJSONEmptyConfig(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{})
 
 			buf, err := enc.EncodeEntry(zapcore.Entry{
@@ -213,6 +225,8 @@ func (enc *emptyReflectedEncoder) Encode(obj interface{}) error {
 }
 
 func TestJSONCustomReflectedEncoder(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		field    zapcore.Field

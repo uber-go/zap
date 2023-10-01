@@ -21,6 +21,7 @@
 package zapcore_test
 
 import (
+	"strconv"
 	"testing"
 
 	. "go.uber.org/zap/zapcore"
@@ -31,6 +32,8 @@ import (
 )
 
 func TestHooks(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		entryLevel Level
 		coreLevel  Level
@@ -41,42 +44,47 @@ func TestHooks(t *testing.T) {
 		{WarnLevel, InfoLevel, true},
 	}
 
-	for _, tt := range tests {
-		fac, logs := observer.New(tt.coreLevel)
+	for i, tt := range tests {
+		i, tt := i, tt
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
 
-		// sanity check
-		require.Equal(t, tt.coreLevel, LevelOf(fac), "Original logger has the wrong level")
+			fac, logs := observer.New(tt.coreLevel)
 
-		intField := makeInt64Field("foo", 42)
-		ent := Entry{Message: "bar", Level: tt.entryLevel}
+			// sanity check
+			require.Equal(t, tt.coreLevel, LevelOf(fac), "Original logger has the wrong level")
 
-		var called int
-		f := func(e Entry) error {
-			called++
-			assert.Equal(t, ent, e, "Hook called with unexpected Entry.")
-			return nil
-		}
+			intField := makeInt64Field("foo", 42)
+			ent := Entry{Message: "bar", Level: tt.entryLevel}
 
-		h := RegisterHooks(fac, f)
-		if ce := h.With([]Field{intField}).Check(ent, nil); ce != nil {
-			ce.Write()
-		}
+			var called int
+			f := func(e Entry) error {
+				called++
+				assert.Equal(t, ent, e, "Hook called with unexpected Entry.")
+				return nil
+			}
 
-		t.Run("LevelOf", func(t *testing.T) {
-			assert.Equal(t, tt.coreLevel, LevelOf(h), "Wrapped logger has the wrong log level")
+			h := RegisterHooks(fac, f)
+			if ce := h.With([]Field{intField}).Check(ent, nil); ce != nil {
+				ce.Write()
+			}
+
+			t.Run("LevelOf", func(t *testing.T) {
+				assert.Equal(t, tt.coreLevel, LevelOf(h), "Wrapped logger has the wrong log level")
+			})
+
+			if tt.expectCall {
+				assert.Equal(t, 1, called, "Expected to call hook once.")
+				assert.Equal(
+					t,
+					[]observer.LoggedEntry{{Entry: ent, Context: []Field{intField}}},
+					logs.AllUntimed(),
+					"Unexpected logs written out.",
+				)
+			} else {
+				assert.Equal(t, 0, called, "Didn't expect to call hook.")
+				assert.Equal(t, 0, logs.Len(), "Unexpected logs written out.")
+			}
 		})
-
-		if tt.expectCall {
-			assert.Equal(t, 1, called, "Expected to call hook once.")
-			assert.Equal(
-				t,
-				[]observer.LoggedEntry{{Entry: ent, Context: []Field{intField}}},
-				logs.AllUntimed(),
-				"Unexpected logs written out.",
-			)
-		} else {
-			assert.Equal(t, 0, called, "Didn't expect to call hook.")
-			assert.Equal(t, 0, logs.Len(), "Unexpected logs written out.")
-		}
 	}
 }

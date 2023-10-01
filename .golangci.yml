@@ -18,7 +18,8 @@ linters:
 
     # Our own extras:
     - gofumpt
-    - nolintlint # lints nolint directives
+    - nolintlint   # lints nolint directives
+    - paralleltest # requires t.Parallel on all tests
     - revive
 
 linters-settings:

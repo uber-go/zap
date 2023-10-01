@@ -28,6 +28,8 @@ import (
 )
 
 func TestSyncer(t *testing.T) {
+	t.Parallel()
+
 	err := errors.New("sentinel")
 	s := &Syncer{}
 	s.SetError(err)
@@ -36,6 +38,8 @@ func TestSyncer(t *testing.T) {
 }
 
 func TestDiscarder(t *testing.T) {
+	t.Parallel()
+
 	d := &Discarder{}
 	payload := []byte("foo")
 	n, err := d.Write(payload)
@@ -44,6 +48,8 @@ func TestDiscarder(t *testing.T) {
 }
 
 func TestFailWriter(t *testing.T) {
+	t.Parallel()
+
 	w := &FailWriter{}
 	payload := []byte("foo")
 	n, err := w.Write(payload)
@@ -52,6 +58,8 @@ func TestFailWriter(t *testing.T) {
 }
 
 func TestShortWriter(t *testing.T) {
+	t.Parallel()
+
 	w := &ShortWriter{}
 	payload := []byte("foo")
 	n, err := w.Write(payload)
@@ -60,6 +68,8 @@ func TestShortWriter(t *testing.T) {
 }
 
 func TestBuffer(t *testing.T) {
+	t.Parallel()
+
 	buf := &Buffer{}
 	buf.WriteString("foo\n")
 	buf.WriteString("bar\n")

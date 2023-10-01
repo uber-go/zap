@@ -29,9 +29,12 @@ import (
 )
 
 func TestRegisterDefaultEncoders(t *testing.T) {
+	t.Parallel()
+
 	testEncodersRegistered(t, "console", "json")
 }
 
+//nolint:paralleltest // modifies global registry
 func TestRegisterEncoder(t *testing.T) {
 	testEncoders(func() {
 		assert.NoError(t, RegisterEncoder("foo", newNilEncoder), "expected to be able to register the encoder foo")
@@ -39,6 +42,7 @@ func TestRegisterEncoder(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // modifies global registry
 func TestDuplicateRegisterEncoder(t *testing.T) {
 	testEncoders(func() {
 		assert.NoError(t, RegisterEncoder("foo", newNilEncoder), "expected to be able to register the encoder foo")
@@ -47,9 +51,12 @@ func TestDuplicateRegisterEncoder(t *testing.T) {
 }
 
 func TestRegisterEncoderNoName(t *testing.T) {
+	t.Parallel()
+
 	assert.Equal(t, errNoEncoderNameSpecified, RegisterEncoder("", newNilEncoder), "expected an error when registering an encoder with no name")
 }
 
+//nolint:paralleltest // modifies global registry
 func TestNewEncoder(t *testing.T) {
 	testEncoders(func() {
 		assert.NoError(t, RegisterEncoder("foo", newNilEncoder), "expected to be able to register the encoder foo")
@@ -60,11 +67,15 @@ func TestNewEncoder(t *testing.T) {
 }
 
 func TestNewEncoderNotRegistered(t *testing.T) {
+	t.Parallel()
+
 	_, err := newEncoder("foo", zapcore.EncoderConfig{})
 	assert.Error(t, err, "expected an error when trying to create an encoder of an unregistered name")
 }
 
 func TestNewEncoderNoName(t *testing.T) {
+	t.Parallel()
+
 	_, err := newEncoder("", zapcore.EncoderConfig{})
 	assert.Equal(t, errNoEncoderNameSpecified, err, "expected an error when creating an encoder with no name")
 }

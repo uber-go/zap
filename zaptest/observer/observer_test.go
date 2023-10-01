@@ -38,12 +38,12 @@ func assertEmpty(t testing.TB, logs *ObservedLogs) {
 }
 
 func TestObserver(t *testing.T) {
+	t.Parallel()
+
 	observer, logs := New(zap.InfoLevel)
 	assertEmpty(t, logs)
 
-	t.Run("LevelOf", func(t *testing.T) {
-		assert.Equal(t, zap.InfoLevel, zapcore.LevelOf(observer), "Observer reported the wrong log level.")
-	})
+	assert.Equal(t, zap.InfoLevel, zapcore.LevelOf(observer), "Observer reported the wrong log level.")
 
 	assert.NoError(t, observer.Sync(), "Unexpected failure in no-op Sync")
 
@@ -72,6 +72,8 @@ func TestObserver(t *testing.T) {
 }
 
 func TestObserverWith(t *testing.T) {
+	t.Parallel()
+
 	sf1, logs := New(zap.InfoLevel)
 
 	// need to pad out enough initial fields so that the underlying slice cap()
@@ -124,6 +126,8 @@ func TestObserverWith(t *testing.T) {
 }
 
 func TestFilters(t *testing.T) {
+	t.Parallel()
+
 	logs := []LoggedEntry{
 		{
 			Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "log a"},
@@ -252,7 +256,12 @@ func TestFilters(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := tt.filtered.AllUntimed()
-		assert.Equal(t, tt.want, got, tt.msg)
+		tt := tt
+		t.Run(tt.msg, func(t *testing.T) {
+			t.Parallel()
+
+			got := tt.filtered.AllUntimed()
+			assert.Equal(t, tt.want, got, tt.msg)
+		})
 	}
 }

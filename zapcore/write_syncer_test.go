@@ -43,6 +43,8 @@ func requireWriteWorks(t testing.TB, ws WriteSyncer) {
 }
 
 func TestAddSyncWriteSyncer(t *testing.T) {
+	t.Parallel()
+
 	buf := &bytes.Buffer{}
 	concrete := &writeSyncSpy{Writer: buf}
 	ws := AddSync(concrete)
@@ -56,6 +58,8 @@ func TestAddSyncWriteSyncer(t *testing.T) {
 }
 
 func TestAddSyncWriter(t *testing.T) {
+	t.Parallel()
+
 	// If we pass a plain io.Writer, make sure that we still get a WriteSyncer
 	// with a no-op Sync.
 	buf := &bytes.Buffer{}
@@ -65,6 +69,8 @@ func TestAddSyncWriter(t *testing.T) {
 }
 
 func TestNewMultiWriteSyncerWorksForSingleWriter(t *testing.T) {
+	t.Parallel()
+
 	w := &ztest.Buffer{}
 
 	ws := NewMultiWriteSyncer(w)
@@ -75,6 +81,8 @@ func TestNewMultiWriteSyncerWorksForSingleWriter(t *testing.T) {
 }
 
 func TestMultiWriteSyncerWritesBoth(t *testing.T) {
+	t.Parallel()
+
 	first := &bytes.Buffer{}
 	second := &bytes.Buffer{}
 	ws := NewMultiWriteSyncer(AddSync(first), AddSync(second))
@@ -89,12 +97,16 @@ func TestMultiWriteSyncerWritesBoth(t *testing.T) {
 }
 
 func TestMultiWriteSyncerFailsWrite(t *testing.T) {
+	t.Parallel()
+
 	ws := NewMultiWriteSyncer(AddSync(&ztest.FailWriter{}))
 	_, err := ws.Write([]byte("test"))
 	assert.Error(t, err, "Write error should propagate")
 }
 
 func TestMultiWriteSyncerFailsShortWrite(t *testing.T) {
+	t.Parallel()
+
 	ws := NewMultiWriteSyncer(AddSync(&ztest.ShortWriter{}))
 	n, err := ws.Write([]byte("test"))
 	assert.NoError(t, err, "Expected fake-success from short write")
@@ -102,6 +114,8 @@ func TestMultiWriteSyncerFailsShortWrite(t *testing.T) {
 }
 
 func TestWritestoAllSyncs_EvenIfFirstErrors(t *testing.T) {
+	t.Parallel()
+
 	failer := &ztest.FailWriter{}
 	second := &bytes.Buffer{}
 	ws := NewMultiWriteSyncer(AddSync(failer), AddSync(second))
@@ -112,6 +126,8 @@ func TestWritestoAllSyncs_EvenIfFirstErrors(t *testing.T) {
 }
 
 func TestMultiWriteSyncerSync_PropagatesErrors(t *testing.T) {
+	t.Parallel()
+
 	badsink := &ztest.Buffer{}
 	badsink.SetError(errors.New("sink is full"))
 	ws := NewMultiWriteSyncer(&ztest.Discarder{}, badsink)
@@ -120,11 +136,15 @@ func TestMultiWriteSyncerSync_PropagatesErrors(t *testing.T) {
 }
 
 func TestMultiWriteSyncerSync_NoErrorsOnDiscard(t *testing.T) {
+	t.Parallel()
+
 	ws := NewMultiWriteSyncer(&ztest.Discarder{})
 	assert.NoError(t, ws.Sync(), "Expected error-free sync to /dev/null")
 }
 
 func TestMultiWriteSyncerSync_AllCalled(t *testing.T) {
+	t.Parallel()
+
 	failed, second := &ztest.Buffer{}, &ztest.Buffer{}
 
 	failed.SetError(errors.New("disposal broken"))

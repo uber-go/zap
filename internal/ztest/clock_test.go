@@ -29,6 +29,8 @@ import (
 )
 
 func TestMockClock_NewTicker(t *testing.T) {
+	t.Parallel()
+
 	var n atomic.Int32
 	clock := NewMockClock()
 
@@ -57,6 +59,8 @@ func TestMockClock_NewTicker(t *testing.T) {
 }
 
 func TestMockClock_NewTicker_slowConsumer(t *testing.T) {
+	t.Parallel()
+
 	clock := NewMockClock()
 
 	ticker := clock.NewTicker(time.Microsecond)
@@ -75,6 +79,8 @@ func TestMockClock_NewTicker_slowConsumer(t *testing.T) {
 }
 
 func TestMockClock_Add_negative(t *testing.T) {
+	t.Parallel()
+
 	clock := NewMockClock()
 	assert.Panics(t, func() { clock.Add(-1) })
 }

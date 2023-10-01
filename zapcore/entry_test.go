@@ -46,6 +46,8 @@ func assertGoexit(t *testing.T, f func()) {
 }
 
 func TestPutNilEntry(t *testing.T) {
+	t.Parallel()
+
 	// Pooling nil entries defeats the purpose.
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -74,22 +76,28 @@ func TestPutNilEntry(t *testing.T) {
 }
 
 func TestEntryCaller(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
+		name   string
 		caller EntryCaller
 		full   string
 		short  string
 	}{
 		{
+			name:   "unknown",
 			caller: NewEntryCaller(100, "/path/to/foo.go", 42, false),
 			full:   "undefined",
 			short:  "undefined",
 		},
 		{
+			name:   "absolute",
 			caller: NewEntryCaller(100, "/path/to/foo.go", 42, true),
 			full:   "/path/to/foo.go:42",
 			short:  "to/foo.go:42",
 		},
 		{
+			name:   "relative",
 			caller: NewEntryCaller(100, "to/foo.go", 42, true),
 			full:   "to/foo.go:42",
 			short:  "to/foo.go:42",
@@ -97,25 +105,37 @@ func TestEntryCaller(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		assert.Equal(t, tt.full, tt.caller.String(), "Unexpected string from EntryCaller.")
-		assert.Equal(t, tt.full, tt.caller.FullPath(), "Unexpected FullPath from EntryCaller.")
-		assert.Equal(t, tt.short, tt.caller.TrimmedPath(), "Unexpected TrimmedPath from EntryCaller.")
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, tt.full, tt.caller.String(), "Unexpected string from EntryCaller.")
+			assert.Equal(t, tt.full, tt.caller.FullPath(), "Unexpected FullPath from EntryCaller.")
+			assert.Equal(t, tt.short, tt.caller.TrimmedPath(), "Unexpected TrimmedPath from EntryCaller.")
+		})
 	}
 }
 
+//nolint:paralleltest // stubs exit func
 func TestCheckedEntryWrite(t *testing.T) {
 	t.Run("nil is safe", func(t *testing.T) {
+		t.Parallel()
+
 		var ce *CheckedEntry
 		assert.NotPanics(t, func() { ce.Write() }, "Unexpected panic writing nil CheckedEntry.")
 	})
 
 	t.Run("WriteThenPanic", func(t *testing.T) {
+		t.Parallel()
+
 		var ce *CheckedEntry
 		ce = ce.After(Entry{}, WriteThenPanic)
 		assert.Panics(t, func() { ce.Write() }, "Expected to panic when WriteThenPanic is set.")
 	})
 
 	t.Run("WriteThenGoexit", func(t *testing.T) {
+		t.Parallel()
+
 		var ce *CheckedEntry
 		ce = ce.After(Entry{}, WriteThenGoexit)
 		assertGoexit(t, func() { ce.Write() })
@@ -132,6 +152,8 @@ func TestCheckedEntryWrite(t *testing.T) {
 	})
 
 	t.Run("After", func(t *testing.T) {
+		t.Parallel()
+
 		var ce *CheckedEntry
 		hook := &customHook{}
 		ce = ce.After(Entry{}, hook)

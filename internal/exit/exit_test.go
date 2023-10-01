@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap/internal/exit"
 )
 
+//nolint:paralleltest // stubs global exit
 func TestStub(t *testing.T) {
 	type want struct {
 		exit bool

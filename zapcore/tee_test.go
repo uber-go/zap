@@ -39,17 +39,26 @@ func withTee(f func(core Core, debugLogs, warnLogs *observer.ObservedLogs)) {
 }
 
 func TestTeeUnusualInput(t *testing.T) {
+	t.Parallel()
+
 	// Verify that Tee handles receiving one and no inputs correctly.
 	t.Run("one input", func(t *testing.T) {
+		t.Parallel()
+
 		obs, _ := observer.New(DebugLevel)
 		assert.Equal(t, obs, NewTee(obs), "Expected to return single inputs unchanged.")
 	})
+
 	t.Run("no input", func(t *testing.T) {
+		t.Parallel()
+
 		assert.Equal(t, NewNopCore(), NewTee(), "Expected to return NopCore.")
 	})
 }
 
 func TestLevelOfTee(t *testing.T) {
+	t.Parallel()
+
 	debugLogger, _ := observer.New(DebugLevel)
 	warnLogger, _ := observer.New(WarnLevel)
 
@@ -88,6 +97,8 @@ func TestLevelOfTee(t *testing.T) {
 }
 
 func TestTeeCheck(t *testing.T) {
+	t.Parallel()
+
 	withTee(func(tee Core, debugLogs, warnLogs *observer.ObservedLogs) {
 		debugEntry := Entry{Level: DebugLevel, Message: "log-at-debug"}
 		infoEntry := Entry{Level: InfoLevel, Message: "log-at-info"}
@@ -114,6 +125,8 @@ func TestTeeCheck(t *testing.T) {
 }
 
 func TestTeeWrite(t *testing.T) {
+	t.Parallel()
+
 	// Calling the tee's Write method directly should always log, regardless of
 	// the configured level.
 	withTee(func(tee Core, debugLogs, warnLogs *observer.ObservedLogs) {
@@ -133,6 +146,8 @@ func TestTeeWrite(t *testing.T) {
 }
 
 func TestTeeWith(t *testing.T) {
+	t.Parallel()
+
 	withTee(func(tee Core, debugLogs, warnLogs *observer.ObservedLogs) {
 		f := makeInt64Field("k", 42)
 		tee = tee.With([]Field{f})
@@ -150,6 +165,8 @@ func TestTeeWith(t *testing.T) {
 }
 
 func TestTeeEnabled(t *testing.T) {
+	t.Parallel()
+
 	infoLogger, _ := observer.New(InfoLevel)
 	warnLogger, _ := observer.New(WarnLevel)
 	tee := NewTee(infoLogger, warnLogger)
@@ -167,11 +184,18 @@ func TestTeeEnabled(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		assert.Equal(t, tt.enabled, tee.Enabled(tt.lvl), "Unexpected Enabled result for level %s.", tt.lvl)
+		tt := tt
+		t.Run(tt.lvl.String(), func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, tt.enabled, tee.Enabled(tt.lvl), "Unexpected Enabled result for level %s.", tt.lvl)
+		})
 	}
 }
 
 func TestTeeSync(t *testing.T) {
+	t.Parallel()
+
 	infoLogger, _ := observer.New(InfoLevel)
 	warnLogger, _ := observer.New(WarnLevel)
 	tee := NewTee(infoLogger, warnLogger)

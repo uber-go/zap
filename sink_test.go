@@ -44,6 +44,7 @@ func stubSinkRegistry(t testing.TB) *sinkRegistry {
 	return r
 }
 
+//nolint:paralleltest // stubs global registry
 func TestRegisterSink(t *testing.T) {
 	stubSinkRegistry(t)
 
@@ -84,6 +85,8 @@ func TestRegisterSink(t *testing.T) {
 }
 
 func TestRegisterSinkErrors(t *testing.T) {
+	t.Parallel()
+
 	nopFactory := func(_ *url.URL) (Sink, error) {
 		return nopCloserSink{zapcore.AddSync(io.Discard)}, nil
 	}
@@ -98,7 +101,10 @@ func TestRegisterSinkErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run("scheme-"+tt.scheme, func(t *testing.T) {
+			t.Parallel()
+
 			r := newSinkRegistry()
 			err := r.RegisterSink(tt.scheme, nopFactory)
 			assert.ErrorContains(t, err, tt.err)

@@ -65,6 +65,7 @@ func (tc flagTestCase) run(t testing.TB, set *flag.FlagSet, actual *zapcore.Leve
 	}
 }
 
+//nolint:paralleltest // modifies global flag set
 func TestLevelFlag(t *testing.T) {
 	tests := []flagTestCase{
 		{
@@ -87,6 +88,7 @@ func TestLevelFlag(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // modifies global flag set
 func TestLevelFlagsAreIndependent(t *testing.T) {
 	origCommandLine := flag.CommandLine
 	flag.CommandLine = flag.NewFlagSet("test", flag.ContinueOnError)

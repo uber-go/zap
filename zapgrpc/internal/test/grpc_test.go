@@ -33,6 +33,8 @@ import (
 )
 
 func TestLoggerV2(t *testing.T) {
+	t.Parallel()
+
 	core, observedLogs := observer.New(zapcore.InfoLevel)
 	zlog := zap.New(core)
 
