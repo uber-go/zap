@@ -47,8 +47,6 @@ func makeCountingHook() (func(zapcore.Entry) error, *atomic.Int64) {
 }
 
 func TestLoggerAtomicLevel(t *testing.T) {
-	t.Parallel()
-
 	// Test that the dynamic level applies to all ancestors and descendants.
 	dl := NewAtomicLevel()
 
@@ -88,8 +86,6 @@ func TestLoggerAtomicLevel(t *testing.T) {
 }
 
 func TestLoggerLevel(t *testing.T) {
-	t.Parallel()
-
 	levels := []zapcore.Level{
 		DebugLevel,
 		InfoLevel,
@@ -117,8 +113,6 @@ func TestLoggerLevel(t *testing.T) {
 }
 
 func TestLoggerInitialFields(t *testing.T) {
-	t.Parallel()
-
 	fieldOpts := opts(Fields(Int("foo", 42), String("bar", "baz")))
 	withLogger(t, DebugLevel, fieldOpts, func(logger *Logger, logs *observer.ObservedLogs) {
 		logger.Info("")
@@ -132,8 +126,6 @@ func TestLoggerInitialFields(t *testing.T) {
 }
 
 func TestLoggerWith(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name          string
 		initialFields []Field
@@ -161,10 +153,7 @@ func TestLoggerWith(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			withLogger(t, DebugLevel, opts(Fields(tt.initialFields...)), func(logger *Logger, logs *observer.ObservedLogs) {
 				// Child loggers should have copy-on-write semantics, so two children
 				// shouldn't stomp on each other's fields or affect the parent's fields.
@@ -187,8 +176,6 @@ func TestLoggerWith(t *testing.T) {
 }
 
 func TestLoggerWithCaptures(t *testing.T) {
-	t.Parallel()
-
 	type withF func(*Logger, ...Field) *Logger
 	tests := []struct {
 		name        string
@@ -350,10 +337,7 @@ func TestLoggerWithCaptures(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
 				MessageKey: "m",
 			})
@@ -389,53 +373,35 @@ func TestLoggerWithCaptures(t *testing.T) {
 }
 
 func TestLoggerLogPanic(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		desc     string
+	for _, tt := range []struct {
 		do       func(*Logger)
+		should   bool
 		expected string
 	}{
-		{
-			desc:     "Check",
-			do:       func(logger *Logger) { logger.Check(PanicLevel, "foo").Write() },
-			expected: "foo",
-		},
-		{
-			desc:     "Log",
-			do:       func(logger *Logger) { logger.Log(PanicLevel, "bar") },
-			expected: "bar",
-		},
-		{
-			desc:     "Panic",
-			do:       func(logger *Logger) { logger.Panic("baz") },
-			expected: "baz",
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-
-			withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
+		{func(logger *Logger) { logger.Check(PanicLevel, "foo").Write() }, true, "foo"},
+		{func(logger *Logger) { logger.Log(PanicLevel, "bar") }, true, "bar"},
+		{func(logger *Logger) { logger.Panic("baz") }, true, "baz"},
+	} {
+		withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
+			if tt.should {
 				assert.Panics(t, func() { tt.do(logger) }, "Expected panic")
+			} else {
+				assert.NotPanics(t, func() { tt.do(logger) }, "Expected no panic")
+			}
 
-				output := logs.AllUntimed()
-				assert.Equal(t, 1, len(output), "Unexpected number of logs.")
-				assert.Equal(t, 0, len(output[0].Context), "Unexpected context on first log.")
-				assert.Equal(
-					t,
-					zapcore.Entry{Message: tt.expected, Level: PanicLevel},
-					output[0].Entry,
-					"Unexpected output from panic-level Log.",
-				)
-			})
+			output := logs.AllUntimed()
+			assert.Equal(t, 1, len(output), "Unexpected number of logs.")
+			assert.Equal(t, 0, len(output[0].Context), "Unexpected context on first log.")
+			assert.Equal(
+				t,
+				zapcore.Entry{Message: tt.expected, Level: PanicLevel},
+				output[0].Entry,
+				"Unexpected output from panic-level Log.",
+			)
 		})
 	}
 }
 
-//nolint:paralleltest // stubs out exit funcs
 func TestLoggerLogFatal(t *testing.T) {
 	for _, tt := range []struct {
 		do       func(*Logger)
@@ -464,8 +430,6 @@ func TestLoggerLogFatal(t *testing.T) {
 }
 
 func TestLoggerLeveledMethods(t *testing.T) {
-	t.Parallel()
-
 	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		tests := []struct {
 			method        func(string, ...Field)
@@ -492,8 +456,6 @@ func TestLoggerLeveledMethods(t *testing.T) {
 }
 
 func TestLoggerLogLevels(t *testing.T) {
-	t.Parallel()
-
 	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		levels := []zapcore.Level{
 			DebugLevel,
@@ -517,8 +479,6 @@ func TestLoggerLogLevels(t *testing.T) {
 }
 
 func TestLoggerAlwaysPanics(t *testing.T) {
-	t.Parallel()
-
 	// Users can disable writing out panic-level logs, but calls to logger.Panic()
 	// should still call panic().
 	withLogger(t, FatalLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
@@ -534,7 +494,6 @@ func TestLoggerAlwaysPanics(t *testing.T) {
 	})
 }
 
-//nolint:paralleltest // stubs out exit funcs
 func TestLoggerAlwaysFatals(t *testing.T) {
 	// Users can disable writing out fatal-level logs, but calls to logger.Fatal()
 	// should still terminate the process.
@@ -557,8 +516,6 @@ func TestLoggerAlwaysFatals(t *testing.T) {
 }
 
 func TestLoggerDPanic(t *testing.T) {
-	t.Parallel()
-
 	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		assert.NotPanics(t, func() { logger.DPanic("") })
 		assert.Equal(
@@ -580,8 +537,6 @@ func TestLoggerDPanic(t *testing.T) {
 }
 
 func TestLoggerNoOpsDisabledLevels(t *testing.T) {
-	t.Parallel()
-
 	withLogger(t, WarnLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		logger.Info("silence!")
 		assert.Equal(
@@ -594,8 +549,6 @@ func TestLoggerNoOpsDisabledLevels(t *testing.T) {
 }
 
 func TestLoggerNames(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		names    []string
 		expected string
@@ -635,8 +588,6 @@ func TestLoggerNames(t *testing.T) {
 }
 
 func TestLoggerWriteFailure(t *testing.T) {
-	t.Parallel()
-
 	errSink := &ztest.Buffer{}
 	logger := New(
 		zapcore.NewCore(
@@ -654,8 +605,6 @@ func TestLoggerWriteFailure(t *testing.T) {
 }
 
 func TestLoggerSync(t *testing.T) {
-	t.Parallel()
-
 	withLogger(t, DebugLevel, nil, func(logger *Logger, _ *observer.ObservedLogs) {
 		assert.NoError(t, logger.Sync(), "Expected syncing a test logger to succeed.")
 		assert.NoError(t, logger.Sugar().Sync(), "Expected syncing a sugared logger to succeed.")
@@ -663,8 +612,6 @@ func TestLoggerSync(t *testing.T) {
 }
 
 func TestLoggerSyncFail(t *testing.T) {
-	t.Parallel()
-
 	noSync := &ztest.Buffer{}
 	err := errors.New("fail")
 	noSync.SetError(err)
@@ -678,8 +625,6 @@ func TestLoggerSyncFail(t *testing.T) {
 }
 
 func TestLoggerAddCaller(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		options []Option
 		pat     string
@@ -694,31 +639,24 @@ func TestLoggerAddCaller(t *testing.T) {
 		{opts(AddCaller(), AddCallerSkip(1)), `.+/common_test.go:[\d]+$`},
 		{opts(AddCaller(), AddCallerSkip(1), AddCallerSkip(3)), `.+/src/runtime/.*:[\d]+$`},
 	}
-	for i, tt := range tests {
-		i, tt := i, tt
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			t.Parallel()
-
-			withLogger(t, DebugLevel, tt.options, func(logger *Logger, logs *observer.ObservedLogs) {
-				// Make sure that sugaring and desugaring resets caller skip properly.
-				logger = logger.Sugar().Desugar()
-				logger.Info("")
-				output := logs.AllUntimed()
-				assert.Equal(t, 1, len(output), "Unexpected number of logs written out.")
-				assert.Regexp(
-					t,
-					tt.pat,
-					output[0].Caller,
-					"Expected to find package name and file name in output.",
-				)
-			})
+	for _, tt := range tests {
+		withLogger(t, DebugLevel, tt.options, func(logger *Logger, logs *observer.ObservedLogs) {
+			// Make sure that sugaring and desugaring resets caller skip properly.
+			logger = logger.Sugar().Desugar()
+			logger.Info("")
+			output := logs.AllUntimed()
+			assert.Equal(t, 1, len(output), "Unexpected number of logs written out.")
+			assert.Regexp(
+				t,
+				tt.pat,
+				output[0].Caller,
+				"Expected to find package name and file name in output.",
+			)
 		})
 	}
 }
 
 func TestLoggerAddCallerFunction(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		options         []Option
 		loggerFunction  string
@@ -770,42 +708,35 @@ func TestLoggerAddCallerFunction(t *testing.T) {
 			sugaredFunction: "runtime.goexit",
 		},
 	}
-	for i, tt := range tests {
-		i, tt := i, tt
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			t.Parallel()
+	for _, tt := range tests {
+		withLogger(t, DebugLevel, tt.options, func(logger *Logger, logs *observer.ObservedLogs) {
+			// Make sure that sugaring and desugaring resets caller skip properly.
+			logger = logger.Sugar().Desugar()
+			infoLog(logger, "")
+			infoLogSugared(logger.Sugar(), "")
+			infoLog(logger.Sugar().Desugar(), "")
 
-			withLogger(t, DebugLevel, tt.options, func(logger *Logger, logs *observer.ObservedLogs) {
-				// Make sure that sugaring and desugaring resets caller skip properly.
-				logger = logger.Sugar().Desugar()
-				infoLog(logger, "")
-				infoLogSugared(logger.Sugar(), "")
-				infoLog(logger.Sugar().Desugar(), "")
-
-				entries := logs.AllUntimed()
-				assert.Equal(t, 3, len(entries), "Unexpected number of logs written out.")
-				for _, entry := range []observer.LoggedEntry{entries[0], entries[2]} {
-					assert.Regexp(
-						t,
-						tt.loggerFunction,
-						entry.Caller.Function,
-						"Expected to find function name in output.",
-					)
-				}
+			entries := logs.AllUntimed()
+			assert.Equal(t, 3, len(entries), "Unexpected number of logs written out.")
+			for _, entry := range []observer.LoggedEntry{entries[0], entries[2]} {
 				assert.Regexp(
 					t,
-					tt.sugaredFunction,
-					entries[1].Caller.Function,
+					tt.loggerFunction,
+					entry.Caller.Function,
 					"Expected to find function name in output.",
 				)
-			})
+			}
+			assert.Regexp(
+				t,
+				tt.sugaredFunction,
+				entries[1].Caller.Function,
+				"Expected to find function name in output.",
+			)
 		})
 	}
 }
 
 func TestLoggerAddCallerFail(t *testing.T) {
-	t.Parallel()
-
 	errBuf := &ztest.Buffer{}
 	withLogger(t, DebugLevel, opts(AddCaller(), AddCallerSkip(1e3), ErrorOutput(errBuf)), func(log *Logger, logs *observer.ObservedLogs) {
 		log.Info("Failure.")
@@ -829,8 +760,6 @@ func TestLoggerAddCallerFail(t *testing.T) {
 }
 
 func TestLoggerReplaceCore(t *testing.T) {
-	t.Parallel()
-
 	replace := WrapCore(func(zapcore.Core) zapcore.Core {
 		return zapcore.NewNopCore()
 	})
@@ -843,8 +772,6 @@ func TestLoggerReplaceCore(t *testing.T) {
 }
 
 func TestLoggerIncreaseLevel(t *testing.T) {
-	t.Parallel()
-
 	withLogger(t, DebugLevel, opts(IncreaseLevel(WarnLevel)), func(logger *Logger, logs *observer.ObservedLogs) {
 		logger.Info("logger.Info")
 		logger.Warn("logger.Warn")
@@ -860,8 +787,6 @@ func TestLoggerIncreaseLevel(t *testing.T) {
 }
 
 func TestLoggerHooks(t *testing.T) {
-	t.Parallel()
-
 	hook, seen := makeCountingHook()
 	withLogger(t, DebugLevel, opts(Hooks(hook)), func(logger *Logger, logs *observer.ObservedLogs) {
 		logger.Debug("")
@@ -871,8 +796,6 @@ func TestLoggerHooks(t *testing.T) {
 }
 
 func TestLoggerConcurrent(t *testing.T) {
-	t.Parallel()
-
 	withLogger(t, DebugLevel, nil, func(logger *Logger, logs *observer.ObservedLogs) {
 		child := logger.With(String("foo", "bar"))
 
@@ -902,7 +825,6 @@ func TestLoggerConcurrent(t *testing.T) {
 	})
 }
 
-//nolint:paralleltest // stubs global exit func
 func TestLoggerFatalOnNoop(t *testing.T) {
 	exitStub := exit.Stub()
 	defer exitStub.Unstub()
@@ -915,8 +837,6 @@ func TestLoggerFatalOnNoop(t *testing.T) {
 }
 
 func TestLoggerCustomOnFatal(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		msg          string
 		onFatal      zapcore.CheckWriteAction
@@ -935,10 +855,7 @@ func TestLoggerCustomOnFatal(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.msg, func(t *testing.T) {
-			t.Parallel()
-
 			withLogger(t, InfoLevel, opts(OnFatal(tt.onFatal)), func(logger *Logger, logs *observer.ObservedLogs) {
 				var finished bool
 				recovered := make(chan interface{})
@@ -972,8 +889,6 @@ func (h *customWriteHook) OnWrite(_ *zapcore.CheckedEntry, _ []Field) {
 }
 
 func TestLoggerWithFatalHook(t *testing.T) {
-	t.Parallel()
-
 	var h customWriteHook
 	withLogger(t, InfoLevel, opts(WithFatalHook(&h)), func(logger *Logger, logs *observer.ObservedLogs) {
 		logger.Fatal("great sadness")
@@ -983,13 +898,9 @@ func TestLoggerWithFatalHook(t *testing.T) {
 }
 
 func TestNopLogger(t *testing.T) {
-	t.Parallel()
-
 	logger := NewNop()
 
 	t.Run("basic levels", func(t *testing.T) {
-		t.Parallel()
-
 		logger.Debug("foo", String("k", "v"))
 		logger.Info("bar", Int("x", 42))
 		logger.Warn("baz", Strings("ks", []string{"a", "b"}))
@@ -997,14 +908,10 @@ func TestNopLogger(t *testing.T) {
 	})
 
 	t.Run("DPanic", func(t *testing.T) {
-		t.Parallel()
-
 		logger.With(String("component", "whatever")).DPanic("stuff")
 	})
 
 	t.Run("Panic", func(t *testing.T) {
-		t.Parallel()
-
 		assert.Panics(t, func() {
 			logger.Panic("great sadness")
 		}, "Nop logger should still cause panics.")
@@ -1012,17 +919,11 @@ func TestNopLogger(t *testing.T) {
 }
 
 func TestMust(t *testing.T) {
-	t.Parallel()
-
 	t.Run("must without an error does not panic", func(t *testing.T) {
-		t.Parallel()
-
 		assert.NotPanics(t, func() { Must(NewNop(), nil) }, "must paniced with no error")
 	})
 
 	t.Run("must with an error panics", func(t *testing.T) {
-		t.Parallel()
-
 		assert.Panics(t, func() { Must(nil, errors.New("an error")) }, "must did not panic with an error")
 	})
 }

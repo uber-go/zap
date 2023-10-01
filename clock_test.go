@@ -37,8 +37,6 @@ func (c constantClock) NewTicker(d time.Duration) *time.Ticker {
 }
 
 func TestWithClock(t *testing.T) {
-	t.Parallel()
-
 	date := time.Date(2077, 1, 23, 10, 15, 13, 441, time.UTC)
 	clock := constantClock(date)
 	withLogger(t, DebugLevel, []Option{WithClock(clock)}, func(log *Logger, logs *observer.ObservedLogs) {

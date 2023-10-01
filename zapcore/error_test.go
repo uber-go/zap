@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -66,8 +65,6 @@ func (e customMultierr) Errors() []error {
 }
 
 func TestErrorEncoding(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		k     string
 		t     FieldType // defaults to ErrorType
@@ -143,26 +140,19 @@ func TestErrorEncoding(t *testing.T) {
 		},
 	}
 
-	for i, tt := range tests {
-		i, tt := i, tt
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			t.Parallel()
+	for _, tt := range tests {
+		if tt.t == UnknownType {
+			tt.t = ErrorType
+		}
 
-			if tt.t == UnknownType {
-				tt.t = ErrorType
-			}
-
-			enc := NewMapObjectEncoder()
-			f := Field{Key: tt.k, Type: tt.t, Interface: tt.iface}
-			f.AddTo(enc)
-			assert.Equal(t, tt.want, enc.Fields, "Unexpected output from field %+v.", f)
-		})
+		enc := NewMapObjectEncoder()
+		f := Field{Key: tt.k, Type: tt.t, Interface: tt.iface}
+		f.AddTo(enc)
+		assert.Equal(t, tt.want, enc.Fields, "Unexpected output from field %+v.", f)
 	}
 }
 
 func TestRichErrorSupport(t *testing.T) {
-	t.Parallel()
-
 	f := Field{
 		Type:      ErrorType,
 		Interface: fmt.Errorf("failed: %w", errors.New("egad")),

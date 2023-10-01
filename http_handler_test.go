@@ -36,8 +36,6 @@ import (
 )
 
 func TestAtomicLevelServeHTTP(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		desc          string
 		method        string
@@ -155,10 +153,7 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-
 			lvl := zap.NewAtomicLevel()
 			lvl.SetLevel(zapcore.InfoLevel)
 

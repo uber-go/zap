@@ -30,86 +30,32 @@ import (
 )
 
 func TestBufferWrites(t *testing.T) {
-	t.Parallel()
+	buf := NewPool().Get()
 
 	tests := []struct {
 		desc string
-		f    func(*Buffer)
+		f    func()
 		want string
 	}{
-		{
-			desc: "AppendByte",
-			f:    func(buf *Buffer) { buf.AppendByte('v') },
-			want: "v",
-		},
-		{
-			desc: "AppendString",
-			f:    func(buf *Buffer) { buf.AppendString("foo") },
-			want: "foo",
-		},
-		{
-			desc: "AppendIntPositive",
-			f:    func(buf *Buffer) { buf.AppendInt(42) },
-			want: "42",
-		},
-		{
-			desc: "AppendIntNegative",
-			f:    func(buf *Buffer) { buf.AppendInt(-42) },
-			want: "-42",
-		},
-		{
-			desc: "AppendUint",
-			f:    func(buf *Buffer) { buf.AppendUint(42) },
-			want: "42",
-		},
-		{
-			desc: "AppendBool",
-			f:    func(buf *Buffer) { buf.AppendBool(true) },
-			want: "true",
-		},
-		{
-			desc: "AppendFloat64",
-			f:    func(buf *Buffer) { buf.AppendFloat(3.14, 64) },
-			want: "3.14",
-		},
+		{"AppendByte", func() { buf.AppendByte('v') }, "v"},
+		{"AppendString", func() { buf.AppendString("foo") }, "foo"},
+		{"AppendIntPositive", func() { buf.AppendInt(42) }, "42"},
+		{"AppendIntNegative", func() { buf.AppendInt(-42) }, "-42"},
+		{"AppendUint", func() { buf.AppendUint(42) }, "42"},
+		{"AppendBool", func() { buf.AppendBool(true) }, "true"},
+		{"AppendFloat64", func() { buf.AppendFloat(3.14, 64) }, "3.14"},
 		// Intentionally introduce some floating-point error.
-		{
-			desc: "AppendFloat32",
-			f:    func(buf *Buffer) { buf.AppendFloat(float64(float32(3.14)), 32) },
-			want: "3.14",
-		},
-		{
-			desc: "AppendWrite",
-			f:    func(buf *Buffer) { buf.Write([]byte("foo")) },
-			want: "foo",
-		},
-		{
-			desc: "AppendTime",
-			f:    func(buf *Buffer) { buf.AppendTime(time.Date(2000, 1, 2, 3, 4, 5, 6, time.UTC), time.RFC3339) },
-			want: "2000-01-02T03:04:05Z",
-		},
-		{
-			desc: "WriteByte",
-			f:    func(buf *Buffer) { buf.WriteByte('v') },
-			want: "v",
-		},
-		{
-			desc: "WriteString",
-			f:    func(buf *Buffer) { buf.WriteString("foo") },
-			want: "foo",
-		},
+		{"AppendFloat32", func() { buf.AppendFloat(float64(float32(3.14)), 32) }, "3.14"},
+		{"AppendWrite", func() { buf.Write([]byte("foo")) }, "foo"},
+		{"AppendTime", func() { buf.AppendTime(time.Date(2000, 1, 2, 3, 4, 5, 6, time.UTC), time.RFC3339) }, "2000-01-02T03:04:05Z"},
+		{"WriteByte", func() { buf.WriteByte('v') }, "v"},
+		{"WriteString", func() { buf.WriteString("foo") }, "foo"},
 	}
 
-	pool := NewPool()
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-
-			buf := pool.Get()
-			defer buf.Free()
-
-			tt.f(buf)
+			buf.Reset()
+			tt.f()
 			assert.Equal(t, tt.want, buf.String(), "Unexpected buffer.String().")
 			assert.Equal(t, tt.want, string(buf.Bytes()), "Unexpected string(buffer.Bytes()).")
 			assert.Equal(t, len(tt.want), buf.Len(), "Unexpected buffer length.")

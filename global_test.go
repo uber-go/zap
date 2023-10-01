@@ -37,7 +37,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//nolint:paralleltest // modifies global logger
 func TestReplaceGlobals(t *testing.T) {
 	initialL := *L()
 	initialS := *S()
@@ -67,7 +66,6 @@ func TestReplaceGlobals(t *testing.T) {
 	assert.Equal(t, initialS, *S(), "Expected func returned from ReplaceGlobals to restore initial S.")
 }
 
-//nolint:paralleltest // modifies global logger
 func TestGlobalsConcurrentUse(t *testing.T) {
 	var (
 		stop atomic.Bool
@@ -100,8 +98,6 @@ func TestGlobalsConcurrentUse(t *testing.T) {
 }
 
 func TestNewStdLog(t *testing.T) {
-	t.Parallel()
-
 	withLogger(t, DebugLevel, []Option{AddCaller()}, func(l *Logger, logs *observer.ObservedLogs) {
 		std := NewStdLog(l)
 		std.Print("redirected")
@@ -110,8 +106,6 @@ func TestNewStdLog(t *testing.T) {
 }
 
 func TestNewStdLogAt(t *testing.T) {
-	t.Parallel()
-
 	// include DPanicLevel here, but do not include Development in options
 	levels := []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel}
 	for _, level := range levels {
@@ -125,8 +119,6 @@ func TestNewStdLogAt(t *testing.T) {
 }
 
 func TestNewStdLogAtPanics(t *testing.T) {
-	t.Parallel()
-
 	// include DPanicLevel here and enable Development in options
 	levels := []zapcore.Level{DPanicLevel, PanicLevel}
 	for _, level := range levels {
@@ -140,8 +132,6 @@ func TestNewStdLogAtPanics(t *testing.T) {
 }
 
 func TestNewStdLogAtFatal(t *testing.T) {
-	t.Parallel()
-
 	withLogger(t, DebugLevel, []Option{AddCaller()}, func(l *Logger, logs *observer.ObservedLogs) {
 		stub := exit.WithStub(func() {
 			std, err := NewStdLogAt(l, FatalLevel)
@@ -155,13 +145,10 @@ func TestNewStdLogAtFatal(t *testing.T) {
 }
 
 func TestNewStdLogAtInvalid(t *testing.T) {
-	t.Parallel()
-
 	_, err := NewStdLogAt(NewNop(), zapcore.Level(99))
 	assert.ErrorContains(t, err, "99", "Expected level code in error message")
 }
 
-//nolint:paralleltest // modifies global std logger
 func TestRedirectStdLog(t *testing.T) {
 	initialFlags := log.Flags()
 	initialPrefix := log.Prefix()
@@ -180,7 +167,6 @@ func TestRedirectStdLog(t *testing.T) {
 	assert.Equal(t, initialPrefix, log.Prefix(), "Expected to reset initial prefix.")
 }
 
-//nolint:paralleltest // modifies global std logger
 func TestRedirectStdLogCaller(t *testing.T) {
 	withLogger(t, DebugLevel, []Option{AddCaller()}, func(l *Logger, logs *observer.ObservedLogs) {
 		defer RedirectStdLog(l)()
@@ -191,7 +177,6 @@ func TestRedirectStdLogCaller(t *testing.T) {
 	})
 }
 
-//nolint:paralleltest // modifies global std logger
 func TestRedirectStdLogAt(t *testing.T) {
 	initialFlags := log.Flags()
 	initialPrefix := log.Prefix()
@@ -216,7 +201,6 @@ func TestRedirectStdLogAt(t *testing.T) {
 	assert.Equal(t, initialPrefix, log.Prefix(), "Expected to reset initial prefix.")
 }
 
-//nolint:paralleltest // modifies global std logger
 func TestRedirectStdLogAtCaller(t *testing.T) {
 	// include DPanicLevel here, but do not include Development in options
 	levels := []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel}
@@ -233,7 +217,6 @@ func TestRedirectStdLogAtCaller(t *testing.T) {
 	}
 }
 
-//nolint:paralleltest // modifies global std logger
 func TestRedirectStdLogAtPanics(t *testing.T) {
 	initialFlags := log.Flags()
 	initialPrefix := log.Prefix()
@@ -254,7 +237,6 @@ func TestRedirectStdLogAtPanics(t *testing.T) {
 	assert.Equal(t, initialPrefix, log.Prefix(), "Expected to reset initial prefix.")
 }
 
-//nolint:paralleltest // modifies global std logger
 func TestRedirectStdLogAtFatal(t *testing.T) {
 	initialFlags := log.Flags()
 	initialPrefix := log.Prefix()
@@ -275,7 +257,6 @@ func TestRedirectStdLogAtFatal(t *testing.T) {
 	assert.Equal(t, initialPrefix, log.Prefix(), "Expected to reset initial prefix.")
 }
 
-//nolint:paralleltest // modifies global std logger
 func TestRedirectStdLogAtInvalid(t *testing.T) {
 	restore, err := RedirectStdLogAt(NewNop(), zapcore.Level(99))
 	defer func() {

@@ -45,8 +45,6 @@ var _defaultEncoderConfig = EncoderConfig{
 }
 
 func TestJSONClone(t *testing.T) {
-	t.Parallel()
-
 	// The parent encoder is created with plenty of excess capacity.
 	parent := &jsonEncoder{buf: bufferpool.Get()}
 	clone := parent.Clone()
@@ -60,8 +58,6 @@ func TestJSONClone(t *testing.T) {
 }
 
 func TestJSONEscaping(t *testing.T) {
-	t.Parallel()
-
 	enc := &jsonEncoder{buf: bufferpool.Get()}
 	// Test all the edge cases of JSON escaping directly.
 	cases := map[string]string{
@@ -96,7 +92,6 @@ func TestJSONEscaping(t *testing.T) {
 		"foo\xed\xa0\x80": `foo\ufffd\ufffd\ufffd`,
 	}
 
-	//nolint:paralleltest // shared state
 	t.Run("String", func(t *testing.T) {
 		for input, output := range cases {
 			enc.truncate()
@@ -105,7 +100,6 @@ func TestJSONEscaping(t *testing.T) {
 		}
 	})
 
-	//nolint:paralleltest // shared state
 	t.Run("ByteString", func(t *testing.T) {
 		for input, output := range cases {
 			enc.truncate()
@@ -116,8 +110,6 @@ func TestJSONEscaping(t *testing.T) {
 }
 
 func TestJSONEncoderObjectFields(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		desc     string
 		expected string
@@ -290,18 +282,13 @@ func TestJSONEncoderObjectFields(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-
 			assertOutput(t, _defaultEncoderConfig, tt.expected, tt.f)
 		})
 	}
 }
 
 func TestJSONEncoderTimeFormats(t *testing.T) {
-	t.Parallel()
-
 	date := time.Date(2000, time.January, 2, 3, 4, 5, 6, time.UTC)
 
 	f := func(e Encoder) {
@@ -344,18 +331,13 @@ func TestJSONEncoderTimeFormats(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-
 			assertOutput(t, tt.cfg, tt.expected, f)
 		})
 	}
 }
 
 func TestJSONEncoderArrays(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		desc     string
 		expected string // expect f to be called twice
@@ -458,10 +440,7 @@ func TestJSONEncoderArrays(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-
 			f := func(enc Encoder) error {
 				return enc.AddArray("array", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
 					tt.f(arr)
@@ -478,8 +457,6 @@ func TestJSONEncoderArrays(t *testing.T) {
 }
 
 func TestJSONEncoderTimeArrays(t *testing.T) {
-	t.Parallel()
-
 	times := []time.Time{
 		time.Unix(1008720000, 0).UTC(), // 2001-12-19
 		time.Unix(1040169600, 0).UTC(), // 2002-12-18
@@ -514,10 +491,7 @@ func TestJSONEncoderTimeArrays(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-
 			cfg := _defaultEncoderConfig
 			cfg.EncodeTime = tt.encoder
 
@@ -679,8 +653,6 @@ func asciiRoundTripsCorrectlyByteString(s ASCII) bool {
 }
 
 func TestJSONQuick(t *testing.T) {
-	t.Parallel()
-
 	check := func(f interface{}) {
 		err := quick.Check(f, &quick.Config{MaxCountScale: 100.0})
 		assert.NoError(t, err)

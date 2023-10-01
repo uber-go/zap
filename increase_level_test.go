@@ -40,8 +40,6 @@ func newLoggedEntry(level zapcore.Level, msg string, fields ...zapcore.Field) ob
 }
 
 func TestIncreaseLevelTryDecrease(t *testing.T) {
-	t.Parallel()
-
 	errorOut := &bytes.Buffer{}
 	opts := []Option{
 		ErrorOutput(zapcore.AddSync(errorOut)),
@@ -68,8 +66,6 @@ func TestIncreaseLevelTryDecrease(t *testing.T) {
 }
 
 func TestIncreaseLevel(t *testing.T) {
-	t.Parallel()
-
 	errorOut := &bytes.Buffer{}
 	opts := []Option{
 		ErrorOutput(zapcore.AddSync(errorOut)),

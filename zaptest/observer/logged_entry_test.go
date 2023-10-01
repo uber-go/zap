@@ -30,8 +30,6 @@ import (
 )
 
 func TestLoggedEntryContextMap(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		msg    string
 		fields []zapcore.Field
@@ -80,10 +78,7 @@ func TestLoggedEntryContextMap(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.msg, func(t *testing.T) {
-			t.Parallel()
-
 			entry := LoggedEntry{
 				Context: tt.fields,
 			}

@@ -28,13 +28,11 @@ import (
 	"go.uber.org/zap/internal/ztest"
 )
 
-//nolint:paralleltest // changes time scaling
 func TestTimeout(t *testing.T) {
 	defer ztest.Initialize("2")()
 	assert.Equal(t, time.Duration(100), Timeout(50), "Expected to scale up timeout.")
 }
 
-//nolint:paralleltest // changes time scaling
 func TestSleep(t *testing.T) {
 	defer ztest.Initialize("2")()
 	const sleepFor = 50 * time.Millisecond
