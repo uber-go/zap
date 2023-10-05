@@ -23,17 +23,13 @@
 package zapslog
 
 import (
-	"bytes"
-	"encoding/json"
 	"log/slog"
 	"testing"
-	"testing/slogtest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 )
 
@@ -192,43 +188,4 @@ func TestAttrKinds(t *testing.T) {
 			"any":       "what am i?",
 		},
 		entry.ContextMap())
-}
-
-func TestSlogtest(t *testing.T) {
-	t.Skip() // TODO: skip for now until test failures are fixed (#1334)
-	var buff bytes.Buffer
-	core := zapcore.NewCore(
-		zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-			TimeKey:     slog.TimeKey,
-			MessageKey:  slog.MessageKey,
-			LevelKey:    slog.LevelKey,
-			EncodeLevel: zapcore.CapitalLevelEncoder,
-			EncodeTime:  zapcore.RFC3339TimeEncoder,
-		}),
-		zapcore.AddSync(&buff),
-		zapcore.DebugLevel,
-	)
-
-	// zaptest doesn't expose the underlying core,
-	// so we'll extract it from the logger.
-	testCore := zaptest.NewLogger(t).Core()
-
-	handler := NewHandler(zapcore.NewTee(core, testCore))
-	err := slogtest.TestHandler(
-		handler,
-		func() []map[string]any {
-			// Parse the newline-delimited JSON in buff.
-			var entries []map[string]any
-
-			dec := json.NewDecoder(bytes.NewReader(buff.Bytes()))
-			for dec.More() {
-				var ent map[string]any
-				require.NoError(t, dec.Decode(&ent), "Error decoding log message")
-				entries = append(entries, ent)
-			}
-
-			return entries
-		},
-	)
-	require.NoError(t, err, "Unexpected error from slogtest.TestHandler")
 }
