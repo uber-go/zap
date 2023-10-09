@@ -126,17 +126,18 @@ func TestJSONEncodeEntry(t *testing.T) {
 	}
 
 	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-		MessageKey:     "M",
-		LevelKey:       "L",
-		TimeKey:        "T",
-		NameKey:        "N",
-		CallerKey:      "C",
-		FunctionKey:    "F",
-		StacktraceKey:  "S",
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.SecondsDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+		MessageKey:       "M",
+		LevelKey:         "L",
+		TimeKey:          "T",
+		NameKey:          "N",
+		CallerKey:        "C",
+		FunctionKey:      "F",
+		StacktraceKey:    "S",
+		EncodeLevel:      zapcore.LowercaseLevelEncoder,
+		EncodeTime:       zapcore.ISO8601TimeEncoder,
+		EncodeDuration:   zapcore.SecondsDurationEncoder,
+		EncodeCaller:     zapcore.ShortCallerEncoder,
+		EncodeStacktrace: zapcore.FullStacktraceEncoder,
 	})
 
 	for _, tt := range tests {
@@ -152,16 +153,17 @@ func TestJSONEncodeEntry(t *testing.T) {
 
 func TestNoEncodeLevelSupplied(t *testing.T) {
 	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-		MessageKey:     "M",
-		LevelKey:       "L",
-		TimeKey:        "T",
-		NameKey:        "N",
-		CallerKey:      "C",
-		FunctionKey:    "F",
-		StacktraceKey:  "S",
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.SecondsDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+		MessageKey:       "M",
+		LevelKey:         "L",
+		TimeKey:          "T",
+		NameKey:          "N",
+		CallerKey:        "C",
+		FunctionKey:      "F",
+		StacktraceKey:    "S",
+		EncodeTime:       zapcore.ISO8601TimeEncoder,
+		EncodeDuration:   zapcore.SecondsDurationEncoder,
+		EncodeCaller:     zapcore.ShortCallerEncoder,
+		EncodeStacktrace: zapcore.FullStacktraceEncoder,
 	})
 
 	ent := zapcore.Entry{
