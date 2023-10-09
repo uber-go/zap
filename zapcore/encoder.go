@@ -270,6 +270,18 @@ func (e *DurationEncoder) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// A StacktraceEncoder serializes a stacktrace
+//
+// This function must make exactly one call
+// to a PrimitiveArrayEncoder's Append* method.
+type StacktraceEncoder func(string, PrimitiveArrayEncoder)
+
+// FullStacktraceEncoder passes down the full stacktrace as a string to the enc
+func FullStacktraceEncoder(stacktrace string, enc PrimitiveArrayEncoder) {
+	// TODO: consider using a byte-oriented API to save an allocation.
+	enc.AppendString(stacktrace)
+}
+
 // A CallerEncoder serializes an EntryCaller to a primitive type.
 //
 // This function must make exactly one call
@@ -343,10 +355,11 @@ type EncoderConfig struct {
 	// Configure the primitive representations of common complex types. For
 	// example, some users may want all time.Times serialized as floating-point
 	// seconds since epoch, while others may prefer ISO8601 strings.
-	EncodeLevel    LevelEncoder    `json:"levelEncoder" yaml:"levelEncoder"`
-	EncodeTime     TimeEncoder     `json:"timeEncoder" yaml:"timeEncoder"`
-	EncodeDuration DurationEncoder `json:"durationEncoder" yaml:"durationEncoder"`
-	EncodeCaller   CallerEncoder   `json:"callerEncoder" yaml:"callerEncoder"`
+	EncodeLevel      LevelEncoder      `json:"levelEncoder" yaml:"levelEncoder"`
+	EncodeTime       TimeEncoder       `json:"timeEncoder" yaml:"timeEncoder"`
+	EncodeDuration   DurationEncoder   `json:"durationEncoder" yaml:"durationEncoder"`
+	EncodeCaller     CallerEncoder     `json:"callerEncoder" yaml:"callerEncoder"`
+	EncodeStacktrace StacktraceEncoder `json:"stacktraceEncoder" yaml:"stacktraceEncoder"`
 	// Unlike the other primitive type encoders, EncodeName is optional. The
 	// zero value falls back to FullNameEncoder.
 	EncodeName NameEncoder `json:"nameEncoder" yaml:"nameEncoder"`
