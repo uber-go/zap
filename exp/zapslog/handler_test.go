@@ -23,15 +23,19 @@
 package zapslog
 
 import (
+	"context"
 	"log/slog"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 )
+
+type testContextKey string
 
 func TestAddCaller(t *testing.T) {
 	t.Parallel()
@@ -188,4 +192,20 @@ func TestAttrKinds(t *testing.T) {
 			"any":       "what am i?",
 		},
 		entry.ContextMap())
+}
+
+func TestContextExtractor(t *testing.T) {
+	key := testContextKey("testkey")
+	fac, logs := observer.New(zapcore.DebugLevel)
+	ctx := context.WithValue(context.Background(), key, "testvalue")
+
+	sl := slog.New(NewHandler(fac, WithContextExtractor(func(ctx context.Context) []zapcore.Field {
+		v := ctx.Value(key).(string)
+		return []zapcore.Field{zap.String("testkey", v)}
+	})))
+	sl.InfoContext(ctx, "msg")
+	lines := logs.TakeAll()
+
+	require.Len(t, lines, 1)
+	require.Equal(t, "testvalue", lines[0].ContextMap()["testkey"])
 }
