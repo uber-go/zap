@@ -125,7 +125,11 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 		line.AppendByte('\n')
 
 		arr = getSliceEncoder()
-		c.EncodeStacktrace(ent.Stack, arr)
+		stacktraceEncoder := c.EncodeStacktrace
+		if stacktraceEncoder == nil {
+			stacktraceEncoder = FullStacktraceEncoder
+		}
+		stacktraceEncoder(ent.Stack, arr)
 		for i := range arr.elems {
 			if i > 0 {
 				line.AppendString(c.ConsoleSeparator)

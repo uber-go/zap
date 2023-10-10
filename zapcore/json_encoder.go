@@ -433,7 +433,7 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 		if cur == final.buf.Len() {
 			// User-supplied EncodeStacktrace was a no-op. Fall back to strings to
 			// keep output JSON valid.
-			final.AppendString(ent.Stack)
+			final.AppendString("")
 		}
 	}
 	final.buf.AppendByte('}')
