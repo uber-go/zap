@@ -124,19 +124,15 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	if ent.Stack != "" && c.StacktraceKey != "" {
 		line.AppendByte('\n')
 
-		if c.EncodeStacktrace != nil {
-			arr = getSliceEncoder()
-			c.EncodeStacktrace(ent.Stack, arr)
-			for i := range arr.elems {
-				if i > 0 {
-					line.AppendString(c.ConsoleSeparator)
-				}
-				fmt.Fprint(line, arr.elems[i])
+		arr = getSliceEncoder()
+		c.EncodeStacktrace(ent.Stack, arr)
+		for i := range arr.elems {
+			if i > 0 {
+				line.AppendString(c.ConsoleSeparator)
 			}
-			putSliceEncoder(arr)
-		} else {
-			line.AppendString(ent.Stack)
+			fmt.Fprint(line, arr.elems[i])
 		}
+		putSliceEncoder(arr)
 	}
 
 	line.AppendString(c.LineEnding)
