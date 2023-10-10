@@ -573,6 +573,48 @@ func TestEncoderConfiguration(t *testing.T) {
 			expectedJSON:    `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","S":"fake-stack"}` + DefaultLineEnding,
 			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\nfake-stack" + DefaultLineEnding,
 		},
+		{
+			desc: "ensure no error with noop EncodeStacktrace",
+			cfg: EncoderConfig{
+				LevelKey:         "L",
+				TimeKey:          "T",
+				MessageKey:       "M",
+				NameKey:          "N",
+				CallerKey:        "C",
+				FunctionKey:      "F",
+				StacktraceKey:    "S",
+				LineEnding:       base.LineEnding,
+				EncodeTime:       base.EncodeTime,
+				EncodeDuration:   base.EncodeDuration,
+				EncodeLevel:      base.EncodeLevel,
+				EncodeCaller:     base.EncodeCaller,
+				EncodeStacktrace: func(string, PrimitiveArrayEncoder) {},
+			},
+			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","S":""}` + "\n",
+
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\n" + "\n",
+		},
+		{
+			desc: "ensure no panic with nil EncodeStacktrace",
+			cfg: EncoderConfig{
+				LevelKey:         "L",
+				TimeKey:          "T",
+				MessageKey:       "M",
+				NameKey:          "N",
+				CallerKey:        "C",
+				FunctionKey:      "F",
+				StacktraceKey:    "S",
+				LineEnding:       base.LineEnding,
+				EncodeTime:       base.EncodeTime,
+				EncodeDuration:   base.EncodeDuration,
+				EncodeLevel:      base.EncodeLevel,
+				EncodeCaller:     base.EncodeCaller,
+				EncodeStacktrace: nil,
+			},
+			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","S":"fake-stack"}` + "\n",
+
+			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\nfake-stack" + "\n",
+		},
 	}
 
 	for i, tt := range tests {
@@ -743,6 +785,10 @@ func TestCallerEncoders(t *testing.T) {
 			"Unexpected output serializing file name as %v with %q.", tt.expected, tt.name,
 		)
 	}
+}
+
+func TestStacktraceEncoders(t *testing.T) {
+
 }
 
 func TestNameEncoders(t *testing.T) {
