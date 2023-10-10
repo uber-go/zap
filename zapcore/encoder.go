@@ -278,8 +278,18 @@ type StacktraceEncoder func(string, PrimitiveArrayEncoder)
 
 // FullStacktraceEncoder passes down the full stacktrace as a string to the enc
 func FullStacktraceEncoder(stacktrace string, enc PrimitiveArrayEncoder) {
-	// TODO: consider using a byte-oriented API to save an allocation.
 	enc.AppendString(stacktrace)
+}
+
+// UnmarshalText unmarshals text to a StacktraceEncoder. Currently, it will only default to FullStacktraceEncoder.
+func (e *StacktraceEncoder) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "full":
+		*e = FullStacktraceEncoder
+	default:
+		*e = FullStacktraceEncoder
+	}
+	return nil
 }
 
 // A CallerEncoder serializes an EntryCaller to a primitive type.
