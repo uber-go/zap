@@ -422,7 +422,14 @@ func (enc *jsonEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	if ent.Stack != "" && final.StacktraceKey != "" {
 		final.addKey(final.StacktraceKey)
 		cur := final.buf.Len()
-		final.EncodeStacktrace(ent.Stack, final)
+
+		// if no stacktrace encoder is provided, fall back to FullStacktraceEncoder to protect backwards compatibility
+		stacktraceEncoder := final.EncodeStacktrace
+		if stacktraceEncoder == nil {
+			stacktraceEncoder = FullStacktraceEncoder
+		}
+
+		stacktraceEncoder(ent.Stack, final)
 		if cur == final.buf.Len() {
 			// User-supplied EncodeStacktrace was a no-op. Fall back to strings to
 			// keep output JSON valid.
