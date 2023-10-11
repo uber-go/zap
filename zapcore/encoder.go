@@ -276,7 +276,7 @@ func (e *DurationEncoder) UnmarshalText(text []byte) error {
 // to a PrimitiveArrayEncoder's Append* method.
 type StacktraceEncoder func(string, PrimitiveArrayEncoder)
 
-// FullStacktraceEncoder passes down the full stacktrace as a string to the enc
+// FullStacktraceEncoder passes down the full stacktrace as a string to the encoder.
 func FullStacktraceEncoder(stacktrace string, enc PrimitiveArrayEncoder) {
 	enc.AppendString(stacktrace)
 }
