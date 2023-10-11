@@ -281,7 +281,9 @@ func FullStacktraceEncoder(stacktrace string, enc PrimitiveArrayEncoder) {
 	enc.AppendString(stacktrace)
 }
 
-// UnmarshalText unmarshals text to a StacktraceEncoder. Currently, it will only default to FullStacktraceEncoder.
+// UnmarshalText unmarshals a StacktraceEncoder from its name.
+// The following names are supported: "full"
+// Defaults to "full" for unknown names.
 func (e *StacktraceEncoder) UnmarshalText(text []byte) error {
 	switch string(text) {
 	case "full":
