@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.uber.org/multierr"
-	"go.uber.org/zap/zapcore"
+	//revive:disable:dot-imports
 	. "go.uber.org/zap/zapcore"
 )
 
@@ -205,6 +205,6 @@ func (enc brokenArrayObjectEncoder) AddArray(key string, marshaler ArrayMarshale
 		}))
 }
 
-func (enc brokenArrayObjectEncoder) AppendObject(zapcore.ObjectMarshaler) error {
+func (enc brokenArrayObjectEncoder) AppendObject(ObjectMarshaler) error {
 	return enc.Err
 }

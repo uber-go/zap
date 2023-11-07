@@ -29,6 +29,8 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	//revive:disable:dot-imports
 	. "go.uber.org/zap/zaptest/observer"
 )
 

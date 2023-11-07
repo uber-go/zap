@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"go.uber.org/zap/internal/ztest"
+	//revive:disable:dot-imports
 	. "go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
