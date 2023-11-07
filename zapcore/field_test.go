@@ -31,6 +31,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	//revive:disable:dot-imports
 	. "go.uber.org/zap/zapcore"
 )
 
@@ -88,9 +90,8 @@ type errObj struct {
 func (eobj *errObj) Error() string {
 	if eobj.kind == 1 {
 		panic("panic in Error() method")
-	} else {
-		return eobj.errMsg
 	}
+	return eobj.errMsg
 }
 
 func TestUnknownFieldType(t *testing.T) {

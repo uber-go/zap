@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	//revive:disable:dot-imports
 	. "go.uber.org/zap/zapcore"
 )
 
