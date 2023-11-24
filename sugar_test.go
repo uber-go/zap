@@ -187,7 +187,7 @@ func TestSugarWithCaptures(t *testing.T) {
 			},
 		},
 		{
-			name:        "lazy with captures arguments at time of With or Logging",
+			name:        "lazy with captures arguments at time of Logging",
 			withMethods: []withAny{(*SugaredLogger).WithLazy},
 			wantJSON: []string{
 				`{
