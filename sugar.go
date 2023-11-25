@@ -115,6 +115,21 @@ func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
 	return &SugaredLogger{base: s.base.With(s.sweetenFields(args)...)}
 }
 
+// WithLazy adds a variadic number of fields to the logging context lazily.
+// The fields are evaluated only if the logger is further chained with [With]
+// or is written to with any of the log level methods.
+// Until that occurs, the logger may retain references to objects inside the fields,
+// and logging will reflect the state of an object at the time of logging,
+// not the time of WithLazy().
+//
+// Similar to [With], fields added to the child don't affect the parent,
+// and vice versa. Also, the keys in key-value pairs should be strings. In development,
+// passing a non-string key panics, while in production it logs an error and skips the pair.
+// Passing an orphaned key has the same behavior.
+func (s *SugaredLogger) WithLazy(args ...interface{}) *SugaredLogger {
+	return &SugaredLogger{base: s.base.WithLazy(s.sweetenFields(args)...)}
+}
+
 // Level reports the minimum enabled level for this logger.
 //
 // For NopLoggers, this is [zapcore.InvalidLevel].
