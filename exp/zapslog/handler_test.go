@@ -194,12 +194,12 @@ func TestAttrKinds(t *testing.T) {
 		entry.ContextMap())
 }
 
-func TestContextExtractor(t *testing.T) {
+func TestContextFieldExtractor(t *testing.T) {
 	key := testContextKey("testkey")
 	fac, logs := observer.New(zapcore.DebugLevel)
 	ctx := context.WithValue(context.Background(), key, "testvalue")
 
-	sl := slog.New(NewHandler(fac, WithContextExtractor(func(ctx context.Context) []zapcore.Field {
+	sl := slog.New(NewHandler(fac, WithContextFieldExtractor(func(ctx context.Context) []zapcore.Field {
 		v := ctx.Value(key).(string)
 		return []zapcore.Field{zap.String("testkey", v)}
 	})))
