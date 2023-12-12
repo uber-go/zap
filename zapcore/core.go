@@ -84,7 +84,7 @@ func (c *ioCore) Level() Level {
 
 func (c *ioCore) With(fields []Field) Core {
 	clone := c.clone()
-	clone.fields = fields
+	clone.fields = append(clone.fields, fields...)
 	addFields(clone.enc, fields)
 	return clone
 }
@@ -127,5 +127,6 @@ func (c *ioCore) clone() *ioCore {
 		LevelEnabler: c.LevelEnabler,
 		enc:          c.enc.Clone(),
 		out:          c.out,
+		fields:       c.fields,
 	}
 }

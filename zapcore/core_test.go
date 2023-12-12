@@ -175,6 +175,10 @@ func TestIOCoreFields(t *testing.T) {
 	).With(fields)
 
 	expectedFields := core.Fields()
-	assert.Greater(t, len(expectedFields), 0, "Expected non-empty fields.")
+	assert.Len(t, expectedFields, 1, "Expected one field.")
 	assert.Equal(t, fields, expectedFields, "Unexpected Fields.")
+
+	core = core.With([]Field{makeInt64Field("w", 2)})
+	expectedFields = core.Fields()
+	assert.Len(t, expectedFields, 2, "Expected two fields.")
 }
