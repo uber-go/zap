@@ -199,7 +199,7 @@ func TestContextFieldExtractor(t *testing.T) {
 	fac, logs := observer.New(zapcore.DebugLevel)
 	ctx := context.WithValue(context.Background(), key, "testvalue")
 
-	sl := slog.New(NewHandler(fac, WithContextFieldExtractor(func(ctx context.Context) []zapcore.Field {
+	sl := slog.New(NewHandler(fac, WithContextFieldExtractors(func(ctx context.Context) []zapcore.Field {
 		v := ctx.Value(key).(string)
 		return []zapcore.Field{zap.String("testkey", v)}
 	})))

@@ -42,7 +42,7 @@ type Handler struct {
 	addCaller              bool
 	addStackAt             slog.Level
 	callerSkip             int
-	contextFieldExtractors ContextFieldExtractor
+	contextFieldExtractors []ContextFieldExtractor
 }
 
 // NewHandler builds a [Handler] that writes to the supplied [zapcore.Core]
