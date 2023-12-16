@@ -103,6 +103,11 @@ func (sr *sinkRegistry) newSink(rawURL string) (Sink, error) {
 	if err != nil {
 		return nil, fmt.Errorf("can't parse %q as a URL: %v", rawURL, err)
 	}
+
+	if u.Scheme == schemeFile && !filepath.IsAbs(u.Path) {
+		return nil, fmt.Errorf("file URI %q attempts a relative path", rawURL)
+	}
+
 	if u.Scheme == "" {
 		u.Scheme = schemeFile
 	}
