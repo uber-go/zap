@@ -23,6 +23,9 @@ package zap
 import (
 	"fmt"
 	"io"
+	"net/url"
+	"path/filepath"
+	"strings"
 
 	"go.uber.org/zap/zapcore"
 
@@ -48,6 +51,10 @@ import (
 // os.Stdout and os.Stderr. When specified without a scheme, relative file
 // paths also work.
 func Open(paths ...string) (zapcore.WriteSyncer, func(), error) {
+	if err := checkOpenPaths(paths); err != nil {
+		return nil, nil, err
+	}
+
 	writers, closeAll, err := open(paths)
 	if err != nil {
 		return nil, nil, err
@@ -82,6 +89,23 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 	}
 
 	return writers, closeAll, nil
+}
+
+func checkOpenPaths(paths []string) error {
+	var openErr error
+	for _, path := range paths {
+		if !strings.HasPrefix(path, "file:") {
+			continue
+		}
+		u, err := url.Parse(path)
+		if err != nil {
+			return err
+		}
+		if !(filepath.IsAbs(u.Path) && !strings.Contains(u.Path, "..")) {
+			openErr = multierr.Append(openErr, fmt.Errorf(`file URI %q attempts a relative path or contains ".." dot segments`, path))
+		}
+	}
+	return openErr
 }
 
 // CombineWriteSyncers is a utility that combines multiple WriteSyncers into a

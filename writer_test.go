@@ -224,6 +224,46 @@ func TestOpenOtherErrors(t *testing.T) {
 	}
 }
 
+func TestOpenPathTraversalValidation(t *testing.T) {
+	tests := []struct {
+		msg     string
+		paths   []string
+		wantErr string
+	}{
+		{
+			msg: "invalid relative path root",
+			paths: []string{
+				"file:/../some/path",
+				"file:///../some/path",
+			},
+			wantErr: `file URI "file:/../some/path" attempts a relative path or contains ".." dot segments; file URI "file:///../some/path" attempts a relative path or contains ".." dot segments`,
+		},
+		{
+			msg: "invalid absolute path root with double dot segments",
+			paths: []string{
+				"file:/some/../../path",
+				"file://some/../../path",
+				"file:///some/../../path",
+			},
+			wantErr: `file URI "file:/some/../../path" attempts a relative path or contains ".." dot segments; file URI "file://some/../../path" attempts a relative path or contains ".." dot segments; file URI "file:///some/../../path" attempts a relative path or contains ".." dot segments`,
+		},
+		{
+			msg: "invalid double dot as the host element",
+			paths: []string{
+				"file://../some/path",
+			},
+			wantErr: `open sink "file://../some/path": file URLs must leave host empty or use localhost: got file://../some/path`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			_, _, err := Open(tt.paths...)
+			assert.EqualError(t, err, tt.wantErr)
+		})
+	}
+}
+
 type testWriter struct {
 	expected string
 	t        testing.TB
