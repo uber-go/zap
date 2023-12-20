@@ -104,12 +104,9 @@ func (sr *sinkRegistry) newSink(rawURL string) (Sink, error) {
 		return nil, fmt.Errorf("can't parse %q as a URL: %v", rawURL, err)
 	}
 
-	if u.Scheme == schemeFile && !filepath.IsAbs(u.Path) {
-		return nil, fmt.Errorf("file URI %q attempts a relative path", rawURL)
-	}
-
+	// No scheme specified. Assume absolute or relative file path.
 	if u.Scheme == "" {
-		u.Scheme = schemeFile
+		return sr.newFileSinkFromPath(rawURL)
 	}
 
 	sr.mu.Lock()
@@ -148,6 +145,10 @@ func (sr *sinkRegistry) newFileSinkFromURL(u *url.URL) (Sink, error) {
 	}
 	if hn := u.Hostname(); hn != "" && hn != "localhost" {
 		return nil, fmt.Errorf("file URLs must leave host empty or use localhost: got %v", u)
+	}
+
+	if strings.Contains(u.Path, "..") {
+		return nil, fmt.Errorf("file URLs must not contain '..': got %v", u)
 	}
 
 	return sr.newFileSinkFromPath(u.Path)
