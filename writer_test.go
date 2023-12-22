@@ -224,7 +224,7 @@ func TestOpenOtherErrors(t *testing.T) {
 	}
 }
 
-func TestOpenRelativeValidated(t *testing.T) {
+func TestOpenDoubleDotSegmentsDisallowed(t *testing.T) {
 	tests := []struct {
 		msg     string
 		paths   []string
@@ -238,7 +238,7 @@ func TestOpenRelativeValidated(t *testing.T) {
 			wantErr: `open sink "file://../some/path": file URLs must leave host empty or use localhost: got file://../some/path`,
 		},
 		{
-			msg: "dots not allowed",
+			msg: "double dot segments not allowed",
 			paths: []string{
 				"file:///../../../yoursecret",
 			},
@@ -250,62 +250,6 @@ func TestOpenRelativeValidated(t *testing.T) {
 		t.Run(tt.msg, func(t *testing.T) {
 			_, _, err := Open(tt.paths...)
 			assert.EqualError(t, err, tt.wantErr)
-		})
-	}
-}
-
-func TestOpenDotSegmentsSanitized(t *testing.T) {
-	t.Skip("TODO")
-
-	tempName := filepath.Join(t.TempDir(), "test.log")
-	assert.False(t, fileExists(tempName))
-	require.True(t, filepath.IsAbs(tempName), "Expected absolute temp file path.")
-
-	tests := []struct {
-		msg              string
-		paths            []string
-		toWrite          []byte
-		wantFileContents string
-	}{
-		{
-			msg:              "no hostname one double dot segment",
-			paths:            []string{"file:/.." + tempName},
-			toWrite:          []byte("a"),
-			wantFileContents: "a",
-		},
-		{
-			msg:              "no hostname two double dot segments",
-			paths:            []string{"file:/../.." + tempName},
-			toWrite:          []byte("b"),
-			wantFileContents: "ab",
-		},
-		{
-			msg:              "empty host name one double dot segment",
-			paths:            []string{"file:///.." + tempName},
-			toWrite:          []byte("c"),
-			wantFileContents: "abc",
-		},
-		{
-			msg:              "empty hostname two double dot segments",
-			paths:            []string{"file:///../.." + tempName},
-			toWrite:          []byte("d"),
-			wantFileContents: "abcd",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.msg, func(t *testing.T) {
-			ws, cleanup, err := Open(tt.paths...)
-			require.NoError(t, err)
-			defer cleanup()
-
-			_, err = ws.Write(tt.toWrite)
-			require.NoError(t, err)
-
-			b, err := os.ReadFile(tempName)
-			require.NoError(t, err)
-
-			assert.Equal(t, string(b), tt.wantFileContents)
 		})
 	}
 }
