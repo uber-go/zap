@@ -82,7 +82,7 @@ func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 		o.applyLoggerOption(&cfg)
 	}
 
-	writer := newTestingWriter(t)
+	writer := NewTestingWriter(t)
 	zapOptions := []zap.Option{
 		// Send zap errors to the same writer and mark the test as failed if
 		// that happens.
@@ -100,27 +100,27 @@ func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 	)
 }
 
-// testingWriter is a WriteSyncer that writes to the given testing.TB.
-type testingWriter struct {
+// TestingWriter is a WriteSyncer that writes to the given testing.TB.
+type TestingWriter struct {
 	t TestingT
 
-	// If true, the test will be marked as failed if this testingWriter is
+	// If true, the test will be marked as failed if this TestingWriter is
 	// ever used.
 	markFailed bool
 }
 
-func newTestingWriter(t TestingT) testingWriter {
-	return testingWriter{t: t}
+func NewTestingWriter(t TestingT) TestingWriter {
+	return TestingWriter{t: t}
 }
 
 // WithMarkFailed returns a copy of this testingWriter with markFailed set to
 // the provided value.
-func (w testingWriter) WithMarkFailed(v bool) testingWriter {
+func (w TestingWriter) WithMarkFailed(v bool) TestingWriter {
 	w.markFailed = v
 	return w
 }
 
-func (w testingWriter) Write(p []byte) (n int, err error) {
+func (w TestingWriter) Write(p []byte) (n int, err error) {
 	n = len(p)
 
 	// Strip trailing newline because t.Log always adds one.
@@ -135,6 +135,6 @@ func (w testingWriter) Write(p []byte) (n int, err error) {
 	return n, nil
 }
 
-func (w testingWriter) Sync() error {
+func (w TestingWriter) Sync() error {
 	return nil
 }
