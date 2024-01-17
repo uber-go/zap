@@ -109,17 +109,33 @@ type TestingWriter struct {
 	markFailed bool
 }
 
+// NewTestingWriter builds a new TestingWriter that writes to the given
+// testing.TB.
+//
+// Use this if you need more flexibility when creating *zap.Logger
+// than zaptest.NewLogger() provides.
+//
+// E.g., if you want to use custom core with zaptest.TestingWriter:
+//
+//	encoder := newCustomEncoder()
+//	writer := zaptest.NewTestingWriter(t)
+//	level := zap.NewAtomicLevelAt(zapcore.DebugLevel)
+//
+//	core := newCustomCore(encoder, writer, level)
+//
+//	logger := zap.New(core, zap.AddCaller())
 func NewTestingWriter(t TestingT) TestingWriter {
 	return TestingWriter{t: t}
 }
 
-// WithMarkFailed returns a copy of this testingWriter with markFailed set to
+// WithMarkFailed returns a copy of this TestingWriter with markFailed set to
 // the provided value.
 func (w TestingWriter) WithMarkFailed(v bool) TestingWriter {
 	w.markFailed = v
 	return w
 }
 
+// Write writes bytes from p to the underlying testing.TB.
 func (w TestingWriter) Write(p []byte) (n int, err error) {
 	n = len(p)
 
@@ -135,6 +151,7 @@ func (w TestingWriter) Write(p []byte) (n int, err error) {
 	return n, nil
 }
 
+// Sync commits the current contents (a no-op for TestingWriter).
 func (w TestingWriter) Sync() error {
 	return nil
 }
