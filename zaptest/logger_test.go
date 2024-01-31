@@ -106,7 +106,7 @@ func TestTestLoggerSupportsWrappedZapOptions(t *testing.T) {
 
 func TestTestingWriter(t *testing.T) {
 	ts := newTestLogSpy(t)
-	w := newTestingWriter(ts)
+	w := NewTestingWriter(ts)
 
 	n, err := io.WriteString(w, "hello\n\n")
 	assert.NoError(t, err, "WriteString must not fail")
