@@ -48,10 +48,7 @@ func NewHandler(core zapcore.Core, opts ...Option) *Handler {
 		core:       core,
 		addStackAt: slog.LevelError,
 	}
-	for _, v := range opts {
-		v.apply(h)
-	}
-	return h
+	return h.WithOptions(opts...)
 }
 
 var _ slog.Handler = (*Handler)(nil)
@@ -182,9 +179,23 @@ func (h *Handler) WithGroup(group string) slog.Handler {
 	return h.withFields(zap.Namespace(group))
 }
 
+// WithOptions returns a new Handler with the given options.
+func (h *Handler) WithOptions(opts ...Option) *Handler {
+	cloned := h.clone()
+	for _, v := range opts {
+		v.apply(cloned)
+	}
+	return cloned
+}
+
 // withFields returns a cloned Handler with the given fields.
 func (h *Handler) withFields(fields ...zapcore.Field) *Handler {
-	cloned := *h
+	cloned := h.clone()
 	cloned.core = h.core.With(fields)
+	return cloned
+}
+
+func (h *Handler) clone() *Handler {
+	cloned := *h
 	return &cloned
 }
