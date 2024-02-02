@@ -150,6 +150,39 @@ func TestWithName(t *testing.T) {
 	})
 }
 
+func TestInlineGroup(t *testing.T) {
+	t.Parallel()
+	fac, observedLogs := observer.New(zapcore.DebugLevel)
+	t.Run("inline-group", func(t *testing.T) {
+		sl := slog.New(NewHandler(fac))
+		sl.Info("msg", "a", "b", slog.Group("", slog.String("c", "d")), "e", "f")
+
+		logs := observedLogs.TakeAll()
+		require.Len(t, logs, 1, "Expected exactly one entry to be logged")
+		entry := logs[0]
+		assert.Equal(t, "", entry.LoggerName, "Unexpected logger name")
+		assert.Equal(t, map[string]any{
+			"a": "b",
+			"c": "d",
+			"e": "f",
+		}, logs[0].ContextMap(), "Unexpected context")
+	})
+	t.Run("inline-group-recursive", func(t *testing.T) {
+		sl := slog.New(NewHandler(fac))
+		sl.Info("msg", "a", "b", slog.Group("", slog.Group("", slog.Group("", slog.String("c", "d"))), slog.Group("", "e", "f")))
+
+		logs := observedLogs.TakeAll()
+		require.Len(t, logs, 1, "Expected exactly one entry to be logged")
+		entry := logs[0]
+		assert.Equal(t, "", entry.LoggerName, "Unexpected logger name")
+		assert.Equal(t, map[string]any{
+			"a": "b",
+			"c": "d",
+			"e": "f",
+		}, logs[0].ContextMap(), "Unexpected context")
+	})
+}
+
 type Token string
 
 func (Token) LogValue() slog.Value {

@@ -88,6 +88,10 @@ func convertAttrToField(attr slog.Attr) zapcore.Field {
 	case slog.KindUint64:
 		return zap.Uint64(attr.Key, attr.Value.Uint64())
 	case slog.KindGroup:
+		if attr.Key == "" {
+			// Inlines recursively.
+			return zap.Inline(groupObject(attr.Value.Group()))
+		}
 		return zap.Object(attr.Key, groupObject(attr.Value.Group()))
 	case slog.KindLogValuer:
 		return convertAttrToField(slog.Attr{
