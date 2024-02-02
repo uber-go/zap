@@ -183,6 +183,36 @@ func TestInlineGroup(t *testing.T) {
 	})
 }
 
+func TestWithGroup(t *testing.T) {
+	t.Parallel()
+	fac, observedLogs := observer.New(zapcore.DebugLevel)
+	t.Run("empty-group-record", func(t *testing.T) {
+		sl := slog.New(NewHandler(fac))
+		sl.With("a", "b").WithGroup("G").With("c", "d").WithGroup("H").Info("msg")
+
+		logs := observedLogs.TakeAll()
+		require.Len(t, logs, 1, "Expected exactly one entry to be logged")
+		entry := logs[0]
+		assert.Equal(t, "", entry.LoggerName, "Unexpected logger name")
+		assert.Equal(t, map[string]any{
+			"G": map[string]any{
+				"c": "d",
+			},
+			"a": "b",
+		}, logs[0].ContextMap(), "Unexpected context")
+	})
+	t.Run("only-records-to-ignore", func(t *testing.T) {
+		sl := slog.New(NewHandler(fac))
+		sl.WithGroup("H").With(slog.Attr{}).Info("msg")
+
+		logs := observedLogs.TakeAll()
+		require.Len(t, logs, 1, "Expected exactly one entry to be logged")
+		entry := logs[0]
+		assert.Equal(t, "", entry.LoggerName, "Unexpected logger name")
+		assert.Equal(t, map[string]any{}, logs[0].ContextMap(), "Unexpected context")
+	})
+}
+
 type Token string
 
 func (Token) LogValue() slog.Value {

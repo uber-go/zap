@@ -26,6 +26,7 @@ import (
 	"context"
 	"log/slog"
 	"runtime"
+	"slices"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/internal/stacktrace"
@@ -39,6 +40,7 @@ type Handler struct {
 	addCaller  bool
 	addStackAt slog.Level
 	callerSkip int
+	holdGroup  string // holds latest group.
 }
 
 // NewHandler builds a [Handler] that writes to the supplied [zapcore.Core]
@@ -161,11 +163,17 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 		ce.Stack = stacktrace.Take(3 + h.callerSkip)
 	}
 
-	fields := make([]zapcore.Field, 0, record.NumAttrs())
+	fields := make([]zapcore.Field, 0, record.NumAttrs()+1)
 	record.Attrs(func(attr slog.Attr) bool {
-		fields = append(fields, convertAttrToField(attr))
+		f := convertAttrToField(attr)
+		if h.holdGroup != "" && f != zap.Skip() {
+			fields = slices.Insert(fields, 0, zap.Namespace(h.holdGroup))
+			h.holdGroup = ""
+		}
+		fields = append(fields, f)
 		return true
 	})
+
 	ce.Write(fields...)
 	return nil
 }
@@ -175,7 +183,12 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	fields := make([]zapcore.Field, 0, len(attrs))
 	for _, attr := range attrs {
-		fields = append(fields, convertAttrToField(attr))
+		f := convertAttrToField(attr)
+		if h.holdGroup != "" && f != zap.Skip() {
+			fields = slices.Insert(fields, 0, zap.Namespace(h.holdGroup))
+			h.holdGroup = ""
+		}
+		fields = append(fields, f)
 	}
 	return h.withFields(fields...)
 }
@@ -183,7 +196,12 @@ func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 // WithGroup returns a new Handler with the given group appended to
 // the receiver's existing groups.
 func (h *Handler) WithGroup(group string) slog.Handler {
-	return h.withFields(zap.Namespace(group))
+	cloned := *h
+	if h.holdGroup != "" {
+		cloned.core = h.core.With([]zapcore.Field{zap.Namespace(group)})
+	}
+	cloned.holdGroup = group
+	return &cloned
 }
 
 // withFields returns a cloned Handler with the given fields.
