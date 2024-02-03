@@ -26,7 +26,6 @@ import (
 	"context"
 	"log/slog"
 	"runtime"
-	"slices"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/internal/stacktrace"
@@ -167,7 +166,7 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	record.Attrs(func(attr slog.Attr) bool {
 		f := convertAttrToField(attr)
 		if h.holdGroup != "" && f != zap.Skip() {
-			fields = slices.Insert(fields, 0, zap.Namespace(h.holdGroup))
+			fields = append(fields, zap.Namespace(h.holdGroup))
 			h.holdGroup = ""
 		}
 		fields = append(fields, f)
@@ -181,11 +180,11 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 // WithAttrs returns a new Handler whose attributes consist of
 // both the receiver's attributes and the arguments.
 func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	fields := make([]zapcore.Field, 0, len(attrs))
+	fields := make([]zapcore.Field, 0, len(attrs)+1)
 	for _, attr := range attrs {
 		f := convertAttrToField(attr)
 		if h.holdGroup != "" && f != zap.Skip() {
-			fields = slices.Insert(fields, 0, zap.Namespace(h.holdGroup))
+			fields = append(fields, zap.Namespace(h.holdGroup))
 			h.holdGroup = ""
 		}
 		fields = append(fields, f)
