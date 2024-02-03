@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.20.x", "1.21.x"]
+        go: ["1.20.x", "1.21.x", "1.22.0-rc.2"]
         include:
         - go: 1.21.x
 
