@@ -26,6 +26,7 @@ import (
 	"context"
 	"log/slog"
 	"runtime"
+	"slices"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/internal/stacktrace"
@@ -163,15 +164,19 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	}
 
 	fields := make([]zapcore.Field, 0, record.NumAttrs()+1)
+	var addedNamespace bool
 	record.Attrs(func(attr slog.Attr) bool {
 		f := convertAttrToField(attr)
-		if h.holdGroup != "" && f != zap.Skip() {
-			fields = append(fields, zap.Namespace(h.holdGroup))
-			h.holdGroup = ""
+		if !addedNamespace && f != zap.Skip() {
+			addedNamespace = true
 		}
 		fields = append(fields, f)
 		return true
 	})
+	if h.holdGroup != "" && addedNamespace {
+		// group is before than other fields.
+		fields = slices.Insert(fields, 0, zap.Namespace(h.holdGroup))
+	}
 
 	ce.Write(fields...)
 	return nil
@@ -181,31 +186,35 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 // both the receiver's attributes and the arguments.
 func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	fields := make([]zapcore.Field, 0, len(attrs)+1)
+	var addedNamespace bool
 	for _, attr := range attrs {
 		f := convertAttrToField(attr)
-		if h.holdGroup != "" && f != zap.Skip() {
-			fields = append(fields, zap.Namespace(h.holdGroup))
-			h.holdGroup = ""
+		if !addedNamespace && f != zap.Skip() {
+			addedNamespace = true
 		}
 		fields = append(fields, f)
 	}
-	return h.withFields(fields...)
+	if h.holdGroup != "" && addedNamespace {
+		// group is before than other fields.
+		fields = slices.Insert(fields, 0, zap.Namespace(h.holdGroup))
+		return h.withFields("", fields...)
+	}
+	return h.withFields(h.holdGroup, fields...)
 }
 
 // WithGroup returns a new Handler with the given group appended to
 // the receiver's existing groups.
 func (h *Handler) WithGroup(group string) slog.Handler {
-	cloned := *h
 	if h.holdGroup != "" {
-		cloned.core = h.core.With([]zapcore.Field{zap.Namespace(h.holdGroup)})
+		return h.withFields(group, zap.Namespace(h.holdGroup))
 	}
-	cloned.holdGroup = group
-	return &cloned
+	return h.withFields(group)
 }
 
-// withFields returns a cloned Handler with the given fields.
-func (h *Handler) withFields(fields ...zapcore.Field) *Handler {
+// withFields returns a cloned Handler with the given groups and fields.
+func (h *Handler) withFields(newGroup string, fields ...zapcore.Field) *Handler {
 	cloned := *h
+	cloned.holdGroup = newGroup
 	cloned.core = h.core.With(fields)
 	return &cloned
 }
