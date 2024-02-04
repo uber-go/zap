@@ -26,6 +26,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"log/slog"
+	"sync"
 	"testing"
 	"testing/slogtest"
 	"time"
@@ -237,6 +238,106 @@ func TestWithGroup(t *testing.T) {
 		require.Len(t, logs, 1, "Expected exactly one entry to be logged")
 		assert.Equal(t, map[string]any{}, logs[0].ContextMap(), "Unexpected context")
 	})
+
+	t.Run("reuse", func(t *testing.T) {
+		sl := slog.New(NewHandler(fac)).WithGroup("G")
+
+		sl.With("a", "b").Info("msg1", "c", "d")
+		sl.With("e", "f").Info("msg2", "g", "h")
+
+		logs := observedLogs.TakeAll()
+		require.Len(t, logs, 2, "Expected exactly two entries to be logged")
+
+		assert.Equal(t, map[string]any{
+			"G": map[string]any{
+				"a": "b",
+				"c": "d",
+			},
+		}, logs[0].ContextMap(), "Unexpected context")
+		assert.Equal(t, "msg1", logs[0].Message, "Unexpected message")
+
+		assert.Equal(t, map[string]any{
+			"G": map[string]any{
+				"e": "f",
+				"g": "h",
+			},
+		}, logs[1].ContextMap(), "Unexpected context")
+		assert.Equal(t, "msg2", logs[1].Message, "Unexpected message")
+	})
+}
+
+// Run a few different loggers with concurrent logs
+// in an attempt to trip up 'go test -race' and discover any data races.
+func TestConcurrentLogs(t *testing.T) {
+	t.Parallel()
+
+	const (
+		NumWorkers = 10
+		NumLogs    = 100
+	)
+
+	tests := []struct {
+		name         string
+		buildHandler func(zapcore.Core) slog.Handler
+	}{
+		{
+			name: "default",
+			buildHandler: func(core zapcore.Core) slog.Handler {
+				return NewHandler(core)
+			},
+		},
+		{
+			name: "grouped",
+			buildHandler: func(core zapcore.Core) slog.Handler {
+				return NewHandler(core).WithGroup("G")
+			},
+		},
+		{
+			name: "named",
+			buildHandler: func(core zapcore.Core) slog.Handler {
+				return NewHandler(core, WithName("test-name"))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			fac, observedLogs := observer.New(zapcore.DebugLevel)
+			sl := slog.New(tt.buildHandler(fac))
+
+			// Use two wait groups to coordinate the workers:
+			//
+			// - ready: indicates when all workers should start logging.
+			// - done: indicates when all workers have finished logging.
+			var ready, done sync.WaitGroup
+			ready.Add(NumWorkers)
+			done.Add(NumWorkers)
+
+			for i := 0; i < NumWorkers; i++ {
+				i := i
+				go func() {
+					defer done.Done()
+
+					ready.Done() // I'm ready.
+					ready.Wait() // Are others?
+
+					for j := 0; j < NumLogs; j++ {
+						sl.Info("msg", "worker", i, "log", j)
+					}
+				}()
+			}
+
+			done.Wait()
+
+			// Ensure that all logs were recorded.
+			logs := observedLogs.TakeAll()
+			assert.Len(t, logs, NumWorkers*NumLogs,
+				"Wrong number of logs recorded")
+		})
+	}
 }
 
 type Token string
