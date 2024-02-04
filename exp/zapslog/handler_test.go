@@ -203,6 +203,18 @@ func TestWithGroup(t *testing.T) {
 			"a": "b",
 		}, logs[0].ContextMap(), "Unexpected context")
 	})
+
+	t.Run("nested empty", func(t *testing.T) {
+		sl := slog.New(NewHandler(fac))
+		sl.With("a", "b").WithGroup("G").WithGroup("in").Info("msg")
+
+		logs := observedLogs.TakeAll()
+		require.Len(t, logs, 1, "Expected exactly one entry to be logged")
+		assert.Equal(t, map[string]any{
+			"a": "b",
+		}, logs[0].ContextMap(), "Unexpected context")
+	})
+
 	t.Run("empty group", func(t *testing.T) {
 		sl := slog.New(NewHandler(fac))
 		sl.With("a", "b").WithGroup("G").With("c", "d").WithGroup("H").Info("msg")
