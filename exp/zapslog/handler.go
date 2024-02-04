@@ -197,7 +197,7 @@ func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 func (h *Handler) WithGroup(group string) slog.Handler {
 	cloned := *h
 	if h.holdGroup != "" {
-		cloned.core = h.core.With([]zapcore.Field{zap.Namespace(group)})
+		cloned.core = h.core.With([]zapcore.Field{zap.Namespace(h.holdGroup)})
 	}
 	cloned.holdGroup = group
 	return &cloned
