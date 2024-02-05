@@ -39,6 +39,13 @@ type Handler struct {
 	addCaller  bool
 	addStackAt slog.Level
 	callerSkip int
+
+	// List of unapplied groups.
+	//
+	// These are applied only if we encounter a real field
+	// to avoid creating empty namespaces -- which is disallowed by slog's
+	// usage contract.
+	groups []string
 }
 
 // NewHandler builds a [Handler] that writes to the supplied [zapcore.Core]
@@ -88,6 +95,10 @@ func convertAttrToField(attr slog.Attr) zapcore.Field {
 	case slog.KindUint64:
 		return zap.Uint64(attr.Key, attr.Value.Uint64())
 	case slog.KindGroup:
+		if attr.Key == "" {
+			// Inlines recursively.
+			return zap.Inline(groupObject(attr.Value.Group()))
+		}
 		return zap.Object(attr.Key, groupObject(attr.Value.Group()))
 	case slog.KindLogValuer:
 		return convertAttrToField(slog.Attr{
@@ -157,34 +168,65 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 		ce.Stack = stacktrace.Take(3 + h.callerSkip)
 	}
 
-	fields := make([]zapcore.Field, 0, record.NumAttrs())
+	fields := make([]zapcore.Field, 0, record.NumAttrs()+len(h.groups))
+
+	var addedNamespace bool
 	record.Attrs(func(attr slog.Attr) bool {
-		fields = append(fields, convertAttrToField(attr))
+		f := convertAttrToField(attr)
+		if !addedNamespace && len(h.groups) > 0 && f != zap.Skip() {
+			// Namespaces are added only if at least one field is present
+			// to avoid creating empty groups.
+			fields = h.appendGroups(fields)
+			addedNamespace = true
+		}
+		fields = append(fields, f)
 		return true
 	})
+
 	ce.Write(fields...)
 	return nil
+}
+
+func (h *Handler) appendGroups(fields []zapcore.Field) []zapcore.Field {
+	for _, g := range h.groups {
+		fields = append(fields, zap.Namespace(g))
+	}
+	return fields
 }
 
 // WithAttrs returns a new Handler whose attributes consist of
 // both the receiver's attributes and the arguments.
 func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	fields := make([]zapcore.Field, 0, len(attrs))
+	fields := make([]zapcore.Field, 0, len(attrs)+len(h.groups))
+	var addedNamespace bool
 	for _, attr := range attrs {
-		fields = append(fields, convertAttrToField(attr))
+		f := convertAttrToField(attr)
+		if !addedNamespace && len(h.groups) > 0 && f != zap.Skip() {
+			// Namespaces are added only if at least one field is present
+			// to avoid creating empty groups.
+			fields = h.appendGroups(fields)
+			addedNamespace = true
+		}
+		fields = append(fields, f)
 	}
-	return h.withFields(fields...)
+
+	cloned := *h
+	cloned.core = h.core.With(fields)
+	if addedNamespace {
+		// These groups have been applied so we can clear them.
+		cloned.groups = nil
+	}
+	return &cloned
 }
 
 // WithGroup returns a new Handler with the given group appended to
 // the receiver's existing groups.
 func (h *Handler) WithGroup(group string) slog.Handler {
-	return h.withFields(zap.Namespace(group))
-}
+	newGroups := make([]string, len(h.groups)+1)
+	copy(newGroups, h.groups)
+	newGroups[len(h.groups)] = group
 
-// withFields returns a cloned Handler with the given fields.
-func (h *Handler) withFields(fields ...zapcore.Field) *Handler {
 	cloned := *h
-	cloned.core = h.core.With(fields)
+	cloned.groups = newGroups
 	return &cloned
 }
