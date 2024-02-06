@@ -50,7 +50,7 @@ type Handler struct {
 
 // NewHandler builds a [Handler] that writes to the supplied [zapcore.Core]
 // with options.
-func NewHandler(core zapcore.Core, opts ...Option) *Handler {
+func NewHandler(core zapcore.Core, opts ...HandlerOption) *Handler {
 	h := &Handler{
 		core:       core,
 		addStackAt: slog.LevelError,
