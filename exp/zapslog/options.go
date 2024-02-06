@@ -24,7 +24,7 @@ package zapslog
 
 import "log/slog"
 
-// An HandlerOption configures a slog Handler.
+// A HandlerOption configures a slog Handler.
 type HandlerOption interface {
 	apply(*Handler)
 }
