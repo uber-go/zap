@@ -39,6 +39,7 @@ type Handler struct {
 	addCaller  bool
 	addStackAt slog.Level
 	callerSkip int
+	leveler    ConvertLeveler
 
 	// List of unapplied groups.
 	//
@@ -54,6 +55,7 @@ func NewHandler(core zapcore.Core, opts ...HandlerOption) *Handler {
 	h := &Handler{
 		core:       core,
 		addStackAt: slog.LevelError,
+		leveler:    &DefaultConvertLeveler{},
 	}
 	for _, v := range opts {
 		v.apply(h)
@@ -113,31 +115,15 @@ func convertAttrToField(attr slog.Attr) zapcore.Field {
 	}
 }
 
-// convertSlogLevel maps slog Levels to zap Levels.
-// Note that there is some room between slog levels while zap levels are continuous, so we can't 1:1 map them.
-// See also https://go.googlesource.com/proposal/+/master/design/56345-structured-logging.md?pli=1#levels
-func convertSlogLevel(l slog.Level) zapcore.Level {
-	switch {
-	case l >= slog.LevelError:
-		return zapcore.ErrorLevel
-	case l >= slog.LevelWarn:
-		return zapcore.WarnLevel
-	case l >= slog.LevelInfo:
-		return zapcore.InfoLevel
-	default:
-		return zapcore.DebugLevel
-	}
-}
-
 // Enabled reports whether the handler handles records at the given level.
 func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
-	return h.core.Enabled(convertSlogLevel(level))
+	return h.core.Enabled(h.leveler.ConvertLevel(level))
 }
 
 // Handle handles the Record.
 func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	ent := zapcore.Entry{
-		Level:      convertSlogLevel(record.Level),
+		Level:      h.leveler.ConvertLevel(record.Level),
 		Time:       record.Time,
 		Message:    record.Message,
 		LoggerName: h.name,
