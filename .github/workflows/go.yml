@@ -16,9 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.20.x", "1.21.x"]
+        go: ["1.21.x", "1.22.x"]
         include:
-        - go: 1.21.x
+        - go: 1.22.x
 
     steps:
     - name: Checkout code
@@ -53,7 +53,7 @@ jobs:
     - uses: actions/setup-go@v4
       name: Set up Go
       with:
-        go-version: 1.21.x
+        go-version: 1.22.x
         cache: false  # managed by golangci-lint
 
     - uses: golangci/golangci-lint-action@v3
