@@ -82,7 +82,6 @@ func Example_slog() {
 
 type exampleDpanicLeveler struct{}
 
-// exampleDpanicLeveler
 func (c *exampleDpanicLeveler) ConvertLevel(l slog.Level) zapcore.Level {
 	switch {
 	case l >= slog.LevelError:
