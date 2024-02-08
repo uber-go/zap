@@ -37,7 +37,7 @@ type ConvertLeveler interface {
 	ConvertLevel(l slog.Level) zapcore.Level
 }
 
-// DefaultConvertLeveler maps.
+// DefaultConvertLeveler static maps from [log/slog.Level] to [go.uber.org/zap/zapcore.Level].
 // implements: [go.uber.org/zap/exp/zapslog.ConvertLeveler]
 type DefaultConvertLeveler struct{}
 
