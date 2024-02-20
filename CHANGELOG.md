@@ -13,6 +13,7 @@ Enhancements:
 Thanks to @defval, @dimmo, @arxeiss, and @MKrupauskas for their contributions to this release.
 
 [#1378]: https://github.com/uber-go/zap/pull/1378
+[#1399]: https://github.com/uber-go/zap/pull/1399
 [#1406]: https://github.com/uber-go/zap/pull/1406
 [#1416]: https://github.com/uber-go/zap/pull/1416
 
