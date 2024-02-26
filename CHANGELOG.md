@@ -3,6 +3,20 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.27.0 (20 Feb 2024)
+Enhancements:
+* [#1378][]: Add `WithLazy` method for `SugaredLogger`.
+* [#1399][]: zaptest: Add `NewTestingWriter` for customizing TestingWriter with more flexibility than `NewLogger`.
+* [#1406][]: Add `Log`, `Logw`, `Logln` methods for `SugaredLogger`.
+* [#1416][]: Add `WithPanicHook` option for testing panic logs.
+
+Thanks to @defval, @dimmo, @arxeiss, and @MKrupauskas for their contributions to this release.
+
+[#1378]: https://github.com/uber-go/zap/pull/1378
+[#1399]: https://github.com/uber-go/zap/pull/1399
+[#1406]: https://github.com/uber-go/zap/pull/1406
+[#1416]: https://github.com/uber-go/zap/pull/1416
+
 ## 1.26.0 (14 Sep 2023)
 Enhancements:
 * [#1297][]: Add Dict as a Field.
