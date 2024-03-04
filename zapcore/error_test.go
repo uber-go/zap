@@ -77,30 +77,12 @@ func (e customMultierr) Errors() []error {
 	}
 }
 
-type customObjMarshalerErr struct{}
-
-func (e customObjMarshalerErr) Error() string { return "object marshaler string" }
-
-func (e customObjMarshalerErr) MarshalLogObject(enc ObjectEncoder) error {
-	enc.AddString("nested", "object marshaler nested")
-	return nil
-}
-
 func TestErrorEncoding(t *testing.T) {
 	tests := []struct {
 		key   string
 		iface any
 		want  map[string]any
 	}{
-		{
-			key:   "k",
-			iface: customObjMarshalerErr{},
-			want: map[string]any{
-				"k": map[string]any{
-					"nested": "object marshaler nested",
-				},
-			},
-		},
 		{
 			key:   "k",
 			iface: errTooManyUsers(2),

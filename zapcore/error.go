@@ -27,12 +27,8 @@ import (
 	"go.uber.org/zap/internal/pool"
 )
 
-// Encodes the given error into fields of an object.
-//
-// If the error implements ObjectMarshaler, this takes precedence and a field
-// with the given name is added with the corresponding MarshalLogObject.
-//
-// Otherwise, a field with the given name is added for the error message.
+// Encodes the given error into fields of an object. A field with the given
+// name is added for the error message.
 //
 // If the error implements fmt.Formatter, a field with the name ${key}Verbose
 // is also added with the full verbose error message.
@@ -40,16 +36,6 @@ import (
 // Finally, if the error implements errorGroup (from go.uber.org/multierr) or
 // causer (from github.com/pkg/errors), a ${key}Causes field is added with an
 // array of objects containing the errors this error was comprised of.
-//
-// In the case of a ObjectMarshaler,
-//
-//	{
-//	  "error": {
-//	    ...
-//	  }
-//	}
-//
-// Otherwise,
 //
 //	{
 //	  "error": err.Error(),
@@ -74,9 +60,6 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 			retErr = fmt.Errorf("PANIC=%v", rerr)
 		}
 	}()
-	if obj, ok := err.(ObjectMarshaler); ok {
-		return enc.AddObject(key, obj)
-	}
 
 	basic := err.Error()
 	enc.AddString(key, basic)
@@ -96,7 +79,7 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 }
 
 type errorGroup interface {
-	// Errors provides read-only access to the underlying list of errors, preferably
+	// Provides read-only access to the underlying list of errors, preferably
 	// without causing any allocs.
 	Errors() []error
 }
