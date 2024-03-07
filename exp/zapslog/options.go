@@ -70,3 +70,11 @@ func AddStacktraceAt(lvl slog.Level) HandlerOption {
 		log.addStackAt = lvl
 	})
 }
+
+// WithConvertLeveler configures the ConvertLeveler to convert log levels
+// from [log/slog.Level] to [go.uber.org/zap/zapcore.Level].
+func WithConvertLeveler(leveler ConvertLeveler) HandlerOption {
+	return handlerOptionFunc(func(handler *Handler) {
+		handler.leveler = leveler
+	})
+}
