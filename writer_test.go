@@ -224,6 +224,36 @@ func TestOpenOtherErrors(t *testing.T) {
 	}
 }
 
+func TestOpenDoubleDotSegmentsDisallowed(t *testing.T) {
+	tests := []struct {
+		msg     string
+		paths   []string
+		wantErr string
+	}{
+		{
+			msg: "invalid double dot as the host element",
+			paths: []string{
+				"file://../some/path",
+			},
+			wantErr: `open sink "file://../some/path": file URLs must leave host empty or use localhost: got file://../some/path`,
+		},
+		{
+			msg: "double dot segments not allowed",
+			paths: []string{
+				"file:///../../../yoursecret",
+			},
+			wantErr: `open sink "file:///../../../yoursecret": file URLs must not contain '..': got file:///../../../yoursecret`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			_, _, err := Open(tt.paths...)
+			assert.EqualError(t, err, tt.wantErr)
+		})
+	}
+}
+
 type testWriter struct {
 	expected string
 	t        testing.TB
