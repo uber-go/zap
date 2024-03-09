@@ -479,6 +479,11 @@ func TestJSONEncoderTimeArrays(t *testing.T) {
 			want:    `[1008720000000,1040169600000,1071619200000]`,
 		},
 		{
+			desc:    "epoch millis as int64",
+			encoder: EpochMillisInt64TimeEncoder,
+			want:    `[1008720000000,1040169600000,1071619200000]`,
+		},
+		{
 			desc:    "iso8601",
 			encoder: ISO8601TimeEncoder,
 			want:    `["2001-12-19T00:00:00.000Z","2002-12-18T00:00:00.000Z","2003-12-17T00:00:00.000Z"]`,
