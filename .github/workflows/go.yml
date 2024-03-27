@@ -61,8 +61,7 @@ jobs:
     - uses: golangci/golangci-lint-action@v4
       name: Install golangci-lint
       with:
-        version: latest
-        args: --version  # make lint will run the linter
+        version: latest  # make lint will run the linter
 
     - run: make lint
       name: Lint
