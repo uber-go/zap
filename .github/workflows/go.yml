@@ -62,7 +62,9 @@ jobs:
       name: Install golangci-lint
       with:
         version: latest
-        args: --version  # make lint will run the linter
+        # Hack: Use the official action to download, but not run.
+        # make lint below will handle actually running the linter.
+        args: --help
 
     - run: make lint
       name: Lint
