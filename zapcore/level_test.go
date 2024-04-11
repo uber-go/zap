@@ -57,13 +57,14 @@ func TestLevelText(t *testing.T) {
 		{"info", InfoLevel},
 		{"", InfoLevel}, // make the zero value useful
 		{"warn", WarnLevel},
+		{"warning", WarnLevel}, // compatibility handling for packages that emit "warning" instead of "warn"
 		{"error", ErrorLevel},
 		{"dpanic", DPanicLevel},
 		{"panic", PanicLevel},
 		{"fatal", FatalLevel},
 	}
 	for _, tt := range tests {
-		if tt.text != "" {
+		if tt.text != "" && tt.text != "warning" {
 			lvl := tt.level
 			marshaled, err := lvl.MarshalText()
 			assert.NoError(t, err, "Unexpected error marshaling level %v to text.", &lvl)
