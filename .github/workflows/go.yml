@@ -25,7 +25,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Setup Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go }}
         cache-dependency-path: '**/go.sum'
@@ -52,7 +52,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       name: Check out repository
-    - uses: actions/setup-go@v4
+    - uses: actions/setup-go@v5
       name: Set up Go
       with:
         go-version: 1.22.x
