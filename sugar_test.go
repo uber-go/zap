@@ -22,6 +22,8 @@ package zap
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
 	"testing"
 
 	"go.uber.org/zap/internal/exit"
@@ -53,6 +55,9 @@ func TestSugarWith(t *testing.T) {
 			Context: []Field{Error(err)},
 		}
 	}
+
+	type withAny func(*SugaredLogger, ...interface{}) *SugaredLogger
+	withMethods := []withAny{(*SugaredLogger).With, (*SugaredLogger).WithLazy}
 
 	tests := []struct {
 		desc     string
@@ -141,16 +146,94 @@ func TestSugarWith(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
-			logger.With(tt.args...).Info("")
-			output := logs.AllUntimed()
-			if len(tt.errLogs) > 0 {
-				for i := range tt.errLogs {
-					assert.Equal(t, tt.errLogs[i], output[i], "Unexpected error log at position %d for scenario %s.", i, tt.desc)
+		for _, withMethod := range withMethods {
+			withSugar(t, DebugLevel, nil, func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+				withMethod(logger, tt.args...).Info("")
+				output := logs.AllUntimed()
+				if len(tt.errLogs) > 0 {
+					for i := range tt.errLogs {
+						assert.Equal(t, tt.errLogs[i], output[i], "Unexpected error log at position %d for scenario %s.", i, tt.desc)
+					}
+				}
+				assert.Equal(t, len(tt.errLogs)+1, len(output), "Expected only one non-error message to be logged in scenario %s.", tt.desc)
+				assert.Equal(t, tt.expected, output[len(tt.errLogs)].Context, "Unexpected message context in scenario %s.", tt.desc)
+			})
+		}
+	}
+}
+
+func TestSugarWithCaptures(t *testing.T) {
+	type withAny func(*SugaredLogger, ...interface{}) *SugaredLogger
+
+	tests := []struct {
+		name        string
+		withMethods []withAny
+		wantJSON    []string
+	}{
+		{
+			name:        "with captures arguments at time of With",
+			withMethods: []withAny{(*SugaredLogger).With},
+			wantJSON: []string{
+				`{
+					"m": "hello 0",
+					"a0": [0],
+					"b0": [1]
+				}`,
+				`{
+					"m": "world 0",
+					"a0": [0],
+					"c0": [2]
+				}`,
+			},
+		},
+		{
+			name:        "lazy with captures arguments at time of Logging",
+			withMethods: []withAny{(*SugaredLogger).WithLazy},
+			wantJSON: []string{
+				`{
+					"m": "hello 0",
+					"a0": [1],
+					"b0": [1]
+				}`,
+				`{
+					"m": "world 0",
+					"a0": [1],
+					"c0": [2]
+				}`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+				MessageKey: "m",
+			})
+
+			var bs ztest.Buffer
+			logger := New(zapcore.NewCore(enc, &bs, DebugLevel)).Sugar()
+
+			for i, withMethod := range tt.withMethods {
+				iStr := strconv.Itoa(i)
+				x := 10 * i
+				arr := zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
+					enc.AppendInt(x)
+					return nil
+				})
+
+				logger = withMethod(logger, Array("a"+iStr, arr))
+				x++
+				logger.Infow(fmt.Sprintf("hello %d", i), Array("b"+iStr, arr))
+				x++
+				logger = withMethod(logger, Array("c"+iStr, arr))
+				logger.Infow(fmt.Sprintf("world %d", i))
+			}
+
+			if lines := bs.Lines(); assert.Len(t, lines, len(tt.wantJSON)) {
+				for i, want := range tt.wantJSON {
+					assert.JSONEq(t, want, lines[i], "Unexpected output from the %d'th log.", i)
 				}
 			}
-			assert.Equal(t, len(tt.errLogs)+1, len(output), "Expected only one non-error message to be logged in scenario %s.", tt.desc)
-			assert.Equal(t, tt.expected, output[len(tt.errLogs)].Context, "Unexpected message context in scenario %s.", tt.desc)
 		})
 	}
 }
@@ -228,9 +311,10 @@ func TestSugarStructuredLogging(t *testing.T) {
 			logger.With(context...).Warnw(tt.msg, extra...)
 			logger.With(context...).Errorw(tt.msg, extra...)
 			logger.With(context...).DPanicw(tt.msg, extra...)
+			logger.With(context...).Logw(WarnLevel, tt.msg, extra...)
 
-			expected := make([]observer.LoggedEntry, 5)
-			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+			expected := make([]observer.LoggedEntry, 6)
+			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel, WarnLevel} {
 				expected[i] = observer.LoggedEntry{
 					Entry:   zapcore.Entry{Message: tt.expectMsg, Level: lvl},
 					Context: expectedFields,
@@ -260,9 +344,10 @@ func TestSugarConcatenatingLogging(t *testing.T) {
 			logger.With(context...).Warn(tt.args...)
 			logger.With(context...).Error(tt.args...)
 			logger.With(context...).DPanic(tt.args...)
+			logger.With(context...).Log(InfoLevel, tt.args...)
 
-			expected := make([]observer.LoggedEntry, 5)
-			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+			expected := make([]observer.LoggedEntry, 6)
+			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel, InfoLevel} {
 				expected[i] = observer.LoggedEntry{
 					Entry:   zapcore.Entry{Message: tt.expect, Level: lvl},
 					Context: expectedFields,
@@ -296,9 +381,10 @@ func TestSugarTemplatedLogging(t *testing.T) {
 			logger.With(context...).Warnf(tt.format, tt.args...)
 			logger.With(context...).Errorf(tt.format, tt.args...)
 			logger.With(context...).DPanicf(tt.format, tt.args...)
+			logger.With(context...).Logf(ErrorLevel, tt.format, tt.args...)
 
-			expected := make([]observer.LoggedEntry, 5)
-			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+			expected := make([]observer.LoggedEntry, 6)
+			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel, ErrorLevel} {
 				expected[i] = observer.LoggedEntry{
 					Entry:   zapcore.Entry{Message: tt.expect, Level: lvl},
 					Context: expectedFields,
@@ -332,9 +418,10 @@ func TestSugarLnLogging(t *testing.T) {
 			logger.With(context...).Warnln(tt.args...)
 			logger.With(context...).Errorln(tt.args...)
 			logger.With(context...).DPanicln(tt.args...)
+			logger.With(context...).Logln(InfoLevel, tt.args...)
 
-			expected := make([]observer.LoggedEntry, 5)
-			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel} {
+			expected := make([]observer.LoggedEntry, 6)
+			for i, lvl := range []zapcore.Level{DebugLevel, InfoLevel, WarnLevel, ErrorLevel, DPanicLevel, InfoLevel} {
 				expected[i] = observer.LoggedEntry{
 					Entry:   zapcore.Entry{Message: tt.expect, Level: lvl},
 					Context: expectedFields,

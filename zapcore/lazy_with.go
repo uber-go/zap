@@ -18,31 +18,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zapslog
+package zapcore
 
-import (
-	"testing"
+import "sync"
 
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
-	"golang.org/x/exp/slog"
-)
+type lazyWithCore struct {
+	Core
+	sync.Once
+	fields []Field
+}
 
-func TestAddSource(t *testing.T) {
-	r := require.New(t)
-	fac, logs := observer.New(zapcore.DebugLevel)
-	sl := slog.New(HandlerOptions{
-		AddSource: true,
-	}.New(fac))
-	sl.Info("msg")
+// NewLazyWith wraps a Core with a "lazy" Core that will only encode fields if
+// the logger is written to (or is further chained in a lon-lazy manner).
+func NewLazyWith(core Core, fields []Field) Core {
+	return &lazyWithCore{
+		Core:   core,
+		fields: fields,
+	}
+}
 
-	r.Len(logs.AllUntimed(), 1, "Expected exactly one entry to be logged")
-	entry := logs.AllUntimed()[0]
-	r.Equal("msg", entry.Entry.Message, "Unexpected message")
-	r.Regexp(
-		`/slog_test.go:\d+$`,
-		entry.Caller.String(),
-		"Unexpected caller annotation.",
-	)
+func (d *lazyWithCore) initOnce() {
+	d.Once.Do(func() {
+		d.Core = d.Core.With(d.fields)
+	})
+}
+
+func (d *lazyWithCore) With(fields []Field) Core {
+	d.initOnce()
+	return d.Core.With(fields)
+}
+
+func (d *lazyWithCore) Check(e Entry, ce *CheckedEntry) *CheckedEntry {
+	d.initOnce()
+	return d.Core.Check(e, ce)
 }

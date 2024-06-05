@@ -31,6 +31,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	//revive:disable:dot-imports
 	. "go.uber.org/zap/zapcore"
 )
 
@@ -88,9 +90,8 @@ type errObj struct {
 func (eobj *errObj) Error() string {
 	if eobj.kind == 1 {
 		panic("panic in Error() method")
-	} else {
-		return eobj.errMsg
 	}
+	return eobj.errMsg
 }
 
 func TestUnknownFieldType(t *testing.T) {
@@ -307,6 +308,16 @@ func TestEquals(t *testing.T) {
 		{
 			a:    zap.Any("k", map[string]string{"a": "b"}),
 			b:    zap.Any("k", map[string]string{"a": "d"}),
+			want: false,
+		},
+		{
+			a:    zap.Dict("k", zap.String("a", "b")),
+			b:    zap.Dict("k", zap.String("a", "b")),
+			want: true,
+		},
+		{
+			a:    zap.Dict("k", zap.String("a", "b")),
+			b:    zap.Dict("k", zap.String("a", "d")),
 			want: false,
 		},
 	}

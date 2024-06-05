@@ -97,7 +97,7 @@ func TestStacktraceFiltersVendorZap(t *testing.T) {
 
 		testDir := filepath.Join(goPath, "src/go.uber.org/zap_test/")
 		vendorDir := filepath.Join(testDir, "vendor")
-		require.NoError(t, os.MkdirAll(testDir, 0777), "Failed to create source director")
+		require.NoError(t, os.MkdirAll(testDir, 0o777), "Failed to create source director")
 
 		curFile := getSelfFilename(t)
 		setupSymlink(t, curFile, filepath.Join(testDir, curFile))
@@ -175,7 +175,7 @@ func getSelfFilename(t *testing.T) string {
 
 func setupSymlink(t *testing.T, src, dst string) {
 	// Make sure the destination directory exists.
-	os.MkdirAll(filepath.Dir(dst), 0777)
+	require.NoError(t, os.MkdirAll(filepath.Dir(dst), 0o777))
 
 	// Get absolute path of the source for the symlink, otherwise we can create a symlink
 	// that uses relative paths.

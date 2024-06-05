@@ -109,6 +109,20 @@ func TestJSONEncodeEntry(t *testing.T) {
 				}),
 			},
 		},
+		{
+			desc: "zero_time_omitted",
+			expected: `{
+				"L": "info",
+				"N": "name",
+				"M": "message"
+			}`,
+			ent: zapcore.Entry{
+				Level:      zapcore.InfoLevel,
+				Time:       time.Time{},
+				LoggerName: "name",
+				Message:    "message",
+			},
+		},
 	}
 
 	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{

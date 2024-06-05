@@ -22,16 +22,15 @@ package benchmarks
 
 import (
 	"io"
-
-	"golang.org/x/exp/slog"
+	"log/slog"
 )
 
 func newSlog(fields ...slog.Attr) *slog.Logger {
-	return slog.New(slog.NewJSONHandler(io.Discard).WithAttrs(fields))
+	return slog.New(slog.NewJSONHandler(io.Discard, nil).WithAttrs(fields))
 }
 
 func newDisabledSlog(fields ...slog.Attr) *slog.Logger {
-	return slog.New(slog.HandlerOptions{Level: slog.LevelError}.NewJSONHandler(io.Discard).WithAttrs(fields))
+	return slog.New(slog.NewJSONHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelError}).WithAttrs(fields))
 }
 
 func fakeSlogFields() []slog.Attr {
@@ -46,5 +45,20 @@ func fakeSlogFields() []slog.Attr {
 		slog.Any("user2", _oneUser),
 		slog.Any("users", _tenUsers),
 		slog.Any("error", errExample),
+	}
+}
+
+func fakeSlogArgs() []any {
+	return []any{
+		"int", _tenInts[0],
+		"ints", _tenInts,
+		"string", _tenStrings[0],
+		"strings", _tenStrings,
+		"time", _tenTimes[0],
+		"times", _tenTimes,
+		"user1", _oneUser,
+		"user2", _oneUser,
+		"users", _tenUsers,
+		"error", errExample,
 	}
 }

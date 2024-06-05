@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Uber Technologies, Inc.
+// Copyright (c) 2023 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package zap
+package stacktrace
 
 import (
 	"bytes"
@@ -29,20 +29,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTakeStacktrace(t *testing.T) {
-	trace := takeStacktrace(0)
+func TestTake(t *testing.T) {
+	trace := Take(0)
 	lines := strings.Split(trace, "\n")
 	require.NotEmpty(t, lines, "Expected stacktrace to have at least one frame.")
 	assert.Contains(
 		t,
 		lines[0],
-		"go.uber.org/zap.TestTakeStacktrace",
+		"go.uber.org/zap/internal/stacktrace.TestTake",
 		"Expected stacktrace to start with the test.",
 	)
 }
 
-func TestTakeStacktraceWithSkip(t *testing.T) {
-	trace := takeStacktrace(1)
+func TestTakeWithSkip(t *testing.T) {
+	trace := Take(1)
 	lines := strings.Split(trace, "\n")
 	require.NotEmpty(t, lines, "Expected stacktrace to have at least one frame.")
 	assert.Contains(
@@ -53,10 +53,10 @@ func TestTakeStacktraceWithSkip(t *testing.T) {
 	)
 }
 
-func TestTakeStacktraceWithSkipInnerFunc(t *testing.T) {
+func TestTakeWithSkipInnerFunc(t *testing.T) {
 	var trace string
 	func() {
-		trace = takeStacktrace(2)
+		trace = Take(2)
 	}()
 	lines := strings.Split(trace, "\n")
 	require.NotEmpty(t, lines, "Expected stacktrace to have at least one frame.")
@@ -68,13 +68,13 @@ func TestTakeStacktraceWithSkipInnerFunc(t *testing.T) {
 	)
 }
 
-func TestTakeStacktraceDeepStack(t *testing.T) {
+func TestTakeDeepStack(t *testing.T) {
 	const (
 		N                  = 500
-		withStackDepthName = "go.uber.org/zap.withStackDepth"
+		withStackDepthName = "go.uber.org/zap/internal/stacktrace.withStackDepth"
 	)
 	withStackDepth(N, func() {
-		trace := takeStacktrace(0)
+		trace := Take(0)
 		for found := 0; found < N; found++ {
 			i := strings.Index(trace, withStackDepthName)
 			if i < 0 {
@@ -86,9 +86,9 @@ func TestTakeStacktraceDeepStack(t *testing.T) {
 	})
 }
 
-func BenchmarkTakeStacktrace(b *testing.B) {
+func BenchmarkTake(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		takeStacktrace(0)
+		Take(0)
 	}
 }
 

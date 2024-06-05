@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.uber.org/multierr"
+	//revive:disable:dot-imports
 	. "go.uber.org/zap/zapcore"
 )
 
@@ -42,7 +43,20 @@ func (e errTooManyUsers) Format(s fmt.State, verb rune) {
 	// Implement fmt.Formatter, but don't add any information beyond the basic
 	// Error method.
 	if verb == 'v' && s.Flag('+') {
-		io.WriteString(s, e.Error())
+		_, _ = io.WriteString(s, e.Error())
+	}
+}
+
+type errTooFewUsers int
+
+func (e errTooFewUsers) Error() string {
+	return fmt.Sprintf("%d too few users", int(e))
+}
+
+func (e errTooFewUsers) Format(s fmt.State, verb rune) {
+	if verb == 'v' && s.Flag('+') {
+		_, _ = io.WriteString(s, "verbose: ")
+		_, _ = io.WriteString(s, e.Error())
 	}
 }
 
@@ -65,60 +79,67 @@ func (e customMultierr) Errors() []error {
 
 func TestErrorEncoding(t *testing.T) {
 	tests := []struct {
-		k     string
-		t     FieldType // defaults to ErrorType
-		iface interface{}
-		want  map[string]interface{}
+		key   string
+		iface any
+		want  map[string]any
 	}{
 		{
-			k:     "k",
+			key:   "k",
 			iface: errTooManyUsers(2),
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k": "2 too many users",
 			},
 		},
 		{
-			k: "err",
+			key:   "k",
+			iface: errTooFewUsers(2),
+			want: map[string]any{
+				"k":        "2 too few users",
+				"kVerbose": "verbose: 2 too few users",
+			},
+		},
+		{
+			key: "err",
 			iface: multierr.Combine(
 				errors.New("foo"),
 				errors.New("bar"),
 				errors.New("baz"),
 			),
-			want: map[string]interface{}{
+			want: map[string]any{
 				"err": "foo; bar; baz",
-				"errCauses": []interface{}{
-					map[string]interface{}{"error": "foo"},
-					map[string]interface{}{"error": "bar"},
-					map[string]interface{}{"error": "baz"},
+				"errCauses": []any{
+					map[string]any{"error": "foo"},
+					map[string]any{"error": "bar"},
+					map[string]any{"error": "baz"},
 				},
 			},
 		},
 		{
-			k:     "e",
+			key:   "e",
 			iface: customMultierr{},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"e": "great sadness",
-				"eCauses": []interface{}{
-					map[string]interface{}{"error": "foo"},
-					map[string]interface{}{
+				"eCauses": []any{
+					map[string]any{"error": "foo"},
+					map[string]any{
 						"error": "bar; baz",
-						"errorCauses": []interface{}{
-							map[string]interface{}{"error": "bar"},
-							map[string]interface{}{"error": "baz"},
+						"errorCauses": []any{
+							map[string]any{"error": "bar"},
+							map[string]any{"error": "baz"},
 						},
 					},
 				},
 			},
 		},
 		{
-			k:     "k",
+			key:   "k",
 			iface: fmt.Errorf("failed: %w", errors.New("egad")),
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k": "failed: egad",
 			},
 		},
 		{
-			k: "error",
+			key: "error",
 			iface: multierr.Combine(
 				fmt.Errorf("hello: %w",
 					multierr.Combine(errors.New("foo"), errors.New("bar")),
@@ -126,26 +147,22 @@ func TestErrorEncoding(t *testing.T) {
 				errors.New("baz"),
 				fmt.Errorf("world: %w", errors.New("qux")),
 			),
-			want: map[string]interface{}{
+			want: map[string]any{
 				"error": "hello: foo; bar; baz; world: qux",
-				"errorCauses": []interface{}{
-					map[string]interface{}{
+				"errorCauses": []any{
+					map[string]any{
 						"error": "hello: foo; bar",
 					},
-					map[string]interface{}{"error": "baz"},
-					map[string]interface{}{"error": "world: qux"},
+					map[string]any{"error": "baz"},
+					map[string]any{"error": "world: qux"},
 				},
 			},
 		},
 	}
 
 	for _, tt := range tests {
-		if tt.t == UnknownType {
-			tt.t = ErrorType
-		}
-
 		enc := NewMapObjectEncoder()
-		f := Field{Key: tt.k, Type: tt.t, Interface: tt.iface}
+		f := Field{Key: tt.key, Type: ErrorType, Interface: tt.iface}
 		f.AddTo(enc)
 		assert.Equal(t, tt.want, enc.Fields, "Unexpected output from field %+v.", f)
 	}
@@ -160,4 +177,50 @@ func TestRichErrorSupport(t *testing.T) {
 	enc := NewMapObjectEncoder()
 	f.AddTo(enc)
 	assert.Equal(t, "failed: egad", enc.Fields["k"], "Unexpected basic error message.")
+}
+
+func TestErrArrayBrokenEncoder(t *testing.T) {
+	t.Parallel()
+
+	f := Field{
+		Key:  "foo",
+		Type: ErrorType,
+		Interface: multierr.Combine(
+			errors.New("foo"),
+			errors.New("bar"),
+		),
+	}
+
+	failWith := errors.New("great sadness")
+	enc := NewMapObjectEncoder()
+	f.AddTo(brokenArrayObjectEncoder{
+		Err:           failWith,
+		ObjectEncoder: enc,
+	})
+
+	// Failure to add the field to the encoder
+	// causes the error to be added as a string field.
+	assert.Equal(t, "great sadness", enc.Fields["fooError"],
+		"Unexpected error message.")
+}
+
+// brokenArrayObjectEncoder is an ObjectEncoder
+// that builds a broken ArrayEncoder.
+type brokenArrayObjectEncoder struct {
+	ObjectEncoder
+	ArrayEncoder
+
+	Err error // error to return
+}
+
+func (enc brokenArrayObjectEncoder) AddArray(key string, marshaler ArrayMarshaler) error {
+	return enc.ObjectEncoder.AddArray(key,
+		ArrayMarshalerFunc(func(ae ArrayEncoder) error {
+			enc.ArrayEncoder = ae
+			return marshaler.MarshalLogArray(enc)
+		}))
+}
+
+func (enc brokenArrayObjectEncoder) AppendObject(ObjectMarshaler) error {
+	return enc.Err
 }

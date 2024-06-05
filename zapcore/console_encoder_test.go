@@ -21,21 +21,65 @@ package zapcore_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	//revive:disable:dot-imports
 	. "go.uber.org/zap/zapcore"
 )
 
-var (
-	testEntry = Entry{
-		LoggerName: "main",
-		Level:      InfoLevel,
-		Message:    `hello`,
-		Time:       _epoch,
-		Stack:      "fake-stack",
-		Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42, Function: "foo.Foo"},
+var testEntry = Entry{
+	LoggerName: "main",
+	Level:      InfoLevel,
+	Message:    `hello`,
+	Time:       _epoch,
+	Stack:      "fake-stack",
+	Caller:     EntryCaller{Defined: true, File: "foo.go", Line: 42, Function: "foo.Foo"},
+}
+
+func TestConsoleEncodeEntry(t *testing.T) {
+	tests := []struct {
+		desc     string
+		expected string
+		ent      Entry
+		fields   []Field
+	}{
+		{
+			desc:     "info no fields",
+			expected: "2018-06-19T16:33:42Z\tinfo\tbob\tlob law\n",
+			ent: Entry{
+				Level:      InfoLevel,
+				Time:       time.Date(2018, 6, 19, 16, 33, 42, 99, time.UTC),
+				LoggerName: "bob",
+				Message:    "lob law",
+			},
+		},
+		{
+			desc:     "zero_time_omitted",
+			expected: "info\tname\tmessage\n",
+			ent: Entry{
+				Level:      InfoLevel,
+				Time:       time.Time{},
+				LoggerName: "name",
+				Message:    "message",
+			},
+		},
 	}
-)
+
+	cfg := testEncoderConfig()
+	cfg.EncodeTime = RFC3339TimeEncoder
+	enc := NewConsoleEncoder(cfg)
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			buf, err := enc.EncodeEntry(tt.ent, tt.fields)
+			if assert.NoError(t, err, "Unexpected console encoding error.") {
+				assert.Equal(t, tt.expected, buf.String(), "Incorrect encoded entry.")
+			}
+			buf.Free()
+		})
+	}
+}
 
 func TestConsoleSeparator(t *testing.T) {
 	tests := []struct {

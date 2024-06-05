@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"go.uber.org/zap/internal/ztest"
+	//revive:disable:dot-imports
 	. "go.uber.org/zap/zapcore"
 
 	"github.com/stretchr/testify/assert"
@@ -148,7 +149,7 @@ func TestIOCoreSyncsOutput(t *testing.T) {
 			DebugLevel,
 		)
 
-		core.Write(tt.entry, nil)
+		assert.NoError(t, core.Write(tt.entry, nil), "Unexpected error writing entry.")
 		assert.Equal(t, tt.shouldSync, sink.Called(), "Incorrect Sync behavior.")
 	}
 }

@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"go.uber.org/zap/internal/ztest"
+	//revive:disable:dot-imports
 	. "go.uber.org/zap/zapcore"
 )
 

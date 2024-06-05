@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/internal/stacktrace"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -86,6 +87,7 @@ func TestFieldConstructors(t *testing.T) {
 		uint16Val     = uint16(1)
 		uint8Val      = uint8(1)
 		uintptrVal    = uintptr(1)
+		nilErr        error
 	)
 
 	tests := []struct {
@@ -126,6 +128,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Inline", Field{Type: zapcore.InlineMarshalerType, Interface: name}, Inline(name)},
 		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
 		{"Any:ArrayMarshaler", Any("k", bools([]bool{true})), Array("k", bools([]bool{true}))},
+		{"Any:Dict", Any("k", []Field{String("k", "v")}), Dict("k", String("k", "v"))},
 		{"Any:Stringer", Any("k", addr), Stringer("k", addr)},
 		{"Any:Bool", Any("k", true), Bool("k", true)},
 		{"Any:Bools", Any("k", []bool{true}), Bools("k", []bool{true})},
@@ -166,6 +169,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:Uintptr", Any("k", uintptr(1)), Uintptr("k", 1)},
 		{"Any:Uintptrs", Any("k", []uintptr{1}), Uintptrs("k", []uintptr{1})},
 		{"Any:Time", Any("k", time.Unix(0, 0)), Time("k", time.Unix(0, 0))},
+		{"Any:TimeFullType", Any("k", time.Time{}), Time("k", time.Time{})},
 		{"Any:Times", Any("k", []time.Time{time.Unix(0, 0)}), Times("k", []time.Time{time.Unix(0, 0)})},
 		{"Any:Duration", Any("k", time.Second), Duration("k", time.Second)},
 		{"Any:Durations", Any("k", []time.Duration{time.Second}), Durations("k", []time.Duration{time.Second})},
@@ -222,6 +226,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Ptr:Time", Timep("k", &timeVal), Time("k", timeVal)},
 		{"Any:PtrTime", Any("k", (*time.Time)(nil)), nilField("k")},
 		{"Any:PtrTime", Any("k", &timeVal), Time("k", timeVal)},
+		{"Any:PtrTimeFullType", Any("k", &time.Time{}), Time("k", time.Time{})},
 		{"Ptr:Uint", Uintp("k", nil), nilField("k")},
 		{"Ptr:Uint", Uintp("k", &uintVal), Uint("k", uintVal)},
 		{"Any:PtrUint", Any("k", (*uint)(nil)), nilField("k")},
@@ -246,14 +251,17 @@ func TestFieldConstructors(t *testing.T) {
 		{"Ptr:Uintptr", Uintptrp("k", &uintptrVal), Uintptr("k", uintptrVal)},
 		{"Any:PtrUintptr", Any("k", (*uintptr)(nil)), nilField("k")},
 		{"Any:PtrUintptr", Any("k", &uintptrVal), Uintptr("k", uintptrVal)},
+		{"Any:ErrorNil", Any("k", nilErr), nilField("k")},
 		{"Namespace", Namespace("k"), Field{Key: "k", Type: zapcore.NamespaceType}},
 	}
 
 	for _, tt := range tests {
-		if !assert.Equal(t, tt.expect, tt.field, "Unexpected output from convenience field constructor %s.", tt.name) {
-			t.Logf("type expected: %T\nGot: %T", tt.expect.Interface, tt.field.Interface)
-		}
-		assertCanBeReused(t, tt.field)
+		t.Run(tt.name, func(t *testing.T) {
+			if !assert.Equal(t, tt.expect, tt.field, "Unexpected output from convenience field constructor") {
+				t.Logf("type expected: %T\nGot: %T", tt.expect.Interface, tt.field.Interface)
+			}
+			assertCanBeReused(t, tt.field)
+		})
 	}
 }
 
@@ -262,7 +270,7 @@ func TestStackField(t *testing.T) {
 	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
 	r := regexp.MustCompile(`field_test.go:(\d+)`)
-	assert.Equal(t, r.ReplaceAllString(takeStacktrace(0), "field_test.go"), r.ReplaceAllString(f.String, "field_test.go"), "Unexpected stack trace")
+	assert.Equal(t, r.ReplaceAllString(stacktrace.Take(0), "field_test.go"), r.ReplaceAllString(f.String, "field_test.go"), "Unexpected stack trace")
 	assertCanBeReused(t, f)
 }
 
@@ -271,7 +279,7 @@ func TestStackSkipField(t *testing.T) {
 	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
 	r := regexp.MustCompile(`field_test.go:(\d+)`)
-	assert.Equal(t, r.ReplaceAllString(takeStacktrace(0), "field_test.go"), r.ReplaceAllString(f.String, "field_test.go"), f.String, "Unexpected stack trace")
+	assert.Equal(t, r.ReplaceAllString(stacktrace.Take(0), "field_test.go"), r.ReplaceAllString(f.String, "field_test.go"), f.String, "Unexpected stack trace")
 	assertCanBeReused(t, f)
 }
 
@@ -279,6 +287,30 @@ func TestStackSkipFieldWithSkip(t *testing.T) {
 	f := StackSkip("stacktrace", 1)
 	assert.Equal(t, "stacktrace", f.Key, "Unexpected field key.")
 	assert.Equal(t, zapcore.StringType, f.Type, "Unexpected field type.")
-	assert.Equal(t, takeStacktrace(1), f.String, "Unexpected stack trace")
+	assert.Equal(t, stacktrace.Take(1), f.String, "Unexpected stack trace")
 	assertCanBeReused(t, f)
+}
+
+func TestDict(t *testing.T) {
+	tests := []struct {
+		desc     string
+		field    Field
+		expected any
+	}{
+		{"empty", Dict(""), map[string]any{}},
+		{"single", Dict("", String("k", "v")), map[string]any{"k": "v"}},
+		{"multiple", Dict("", String("k", "v"), String("k2", "v2")), map[string]any{"k": "v", "k2": "v2"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			enc := zapcore.NewMapObjectEncoder()
+			tt.field.Key = "k"
+			tt.field.AddTo(enc)
+			assert.Equal(t, tt.expected, enc.Fields["k"], "unexpected map contents")
+			assert.Len(t, enc.Fields, 1, "found extra keys in map: %v", enc.Fields)
+
+			assertCanBeReused(t, tt.field)
+		})
+	}
 }

@@ -22,6 +22,9 @@ package zap
 
 import (
 	"errors"
+	"runtime"
+	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -197,6 +200,48 @@ func BenchmarkAddCallerAndStacktrace(b *testing.B) {
 	})
 }
 
+func Benchmark5WithsUsed(b *testing.B) {
+	benchmarkWithUsed(b, (*Logger).With, 5, true)
+}
+
+// This benchmark will be used in future as a
+// baseline for improving
+func Benchmark5WithsNotUsed(b *testing.B) {
+	benchmarkWithUsed(b, (*Logger).With, 5, false)
+}
+
+func Benchmark5WithLazysUsed(b *testing.B) {
+	benchmarkWithUsed(b, (*Logger).WithLazy, 5, true)
+}
+
+// This benchmark will be used in future as a
+// baseline for improving
+func Benchmark5WithLazysNotUsed(b *testing.B) {
+	benchmarkWithUsed(b, (*Logger).WithLazy, 5, false)
+}
+
+func benchmarkWithUsed(b *testing.B, withMethod func(*Logger, ...zapcore.Field) *Logger, N int, use bool) {
+	keys := make([]string, N)
+	values := make([]string, N)
+	for i := 0; i < N; i++ {
+		keys[i] = "k" + strconv.Itoa(i)
+		values[i] = "v" + strconv.Itoa(i)
+	}
+
+	b.ResetTimer()
+
+	withBenchedLogger(b, func(log *Logger) {
+		for i := 0; i < N; i++ {
+			log = withMethod(log, String(keys[i], values[i]))
+		}
+		if use {
+			log.Info("used")
+			return
+		}
+		runtime.KeepAlive(log)
+	})
+}
+
 func Benchmark10Fields(b *testing.B) {
 	withBenchedLogger(b, func(log *Logger) {
 		log.Info("Ten fields, passed at the log site.",
@@ -236,5 +281,81 @@ func Benchmark100Fields(b *testing.B) {
 			second[i] = Int("foo", i+batchSize)
 		}
 		logger.With(first...).Info("Child loggers with lots of context.", second...)
+	}
+}
+
+func BenchmarkAny(b *testing.B) {
+	key := "some-long-string-longer-than-16"
+
+	tests := []struct {
+		name   string
+		typed  func() Field
+		anyArg any
+	}{
+		{
+			name:   "string",
+			typed:  func() Field { return String(key, "yet-another-long-string") },
+			anyArg: "yet-another-long-string",
+		},
+		{
+			name:   "stringer",
+			typed:  func() Field { return Stringer(key, InfoLevel) },
+			anyArg: InfoLevel,
+		},
+	}
+
+	for _, tt := range tests {
+		b.Run(tt.name, func(b *testing.B) {
+			b.Run("field-only", func(b *testing.B) {
+				b.Run("typed", func(b *testing.B) {
+					withBenchedLogger(b, func(log *Logger) {
+						f := tt.typed()
+						runtime.KeepAlive(f)
+					})
+				})
+				b.Run("any", func(b *testing.B) {
+					withBenchedLogger(b, func(log *Logger) {
+						f := Any(key, tt.anyArg)
+						runtime.KeepAlive(f)
+					})
+				})
+			})
+			b.Run("log", func(b *testing.B) {
+				b.Run("typed", func(b *testing.B) {
+					withBenchedLogger(b, func(log *Logger) {
+						log.Info("", tt.typed())
+					})
+				})
+				b.Run("any", func(b *testing.B) {
+					withBenchedLogger(b, func(log *Logger) {
+						log.Info("", Any(key, tt.anyArg))
+					})
+				})
+			})
+			b.Run("log-go", func(b *testing.B) {
+				b.Run("typed", func(b *testing.B) {
+					withBenchedLogger(b, func(log *Logger) {
+						var wg sync.WaitGroup
+						wg.Add(1)
+						go func() {
+							log.Info("", tt.typed())
+							wg.Done()
+						}()
+						wg.Wait()
+					})
+				})
+				b.Run("any", func(b *testing.B) {
+					withBenchedLogger(b, func(log *Logger) {
+						var wg sync.WaitGroup
+						wg.Add(1)
+						go func() {
+							log.Info("", Any(key, tt.anyArg))
+							wg.Done()
+						}()
+						wg.Wait()
+					})
+				})
+			})
+		})
 	}
 }

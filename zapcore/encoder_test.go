@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
+	//revive:disable:dot-imports
 	. "go.uber.org/zap/zapcore"
 )
 
@@ -285,10 +286,11 @@ func TestEncoderConfiguration(t *testing.T) {
 			},
 			extra: func(enc Encoder) {
 				enc.AddTime("extra", _epoch)
-				enc.AddArray("extras", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
+				err := enc.AddArray("extras", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
 					enc.AppendTime(_epoch)
 					return nil
 				}))
+				assert.NoError(t, err)
 			},
 			expectedJSON: `{"L":"info","T":"1970-01-01 00:00:00 +0000 UTC","N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","extra":"1970-01-01 00:00:00 +0000 UTC","extras":["1970-01-01 00:00:00 +0000 UTC"],"S":"fake-stack"}` + "\n",
 			expectedConsole: "1970-01-01 00:00:00 +0000 UTC\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\t" + // plain-text preamble
@@ -313,10 +315,11 @@ func TestEncoderConfiguration(t *testing.T) {
 			},
 			extra: func(enc Encoder) {
 				enc.AddDuration("extra", time.Second)
-				enc.AddArray("extras", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
+				err := enc.AddArray("extras", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
 					enc.AppendDuration(time.Minute)
 					return nil
 				}))
+				assert.NoError(t, err)
 			},
 			expectedJSON: `{"L":"info","T":0,"N":"main","C":"foo.go:42","F":"foo.Foo","M":"hello","extra":"1s","extras":["1m0s"],"S":"fake-stack"}` + "\n",
 			expectedConsole: "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\t" + // preamble
@@ -720,10 +723,11 @@ func TestNameEncoders(t *testing.T) {
 
 func assertAppended(t testing.TB, expected interface{}, f func(ArrayEncoder), msgAndArgs ...interface{}) {
 	mem := NewMapObjectEncoder()
-	mem.AddArray("k", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
+	err := mem.AddArray("k", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
 		f(arr)
 		return nil
 	}))
+	assert.NoError(t, err, msgAndArgs...)
 	arr := mem.Fields["k"].([]interface{})
 	require.Equal(t, 1, len(arr), "Expected to append exactly one element to array.")
 	assert.Equal(t, expected, arr[0], msgAndArgs...)
