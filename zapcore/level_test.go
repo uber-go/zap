@@ -75,6 +75,16 @@ func TestLevelText(t *testing.T) {
 		assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, tt.text)
 		assert.Equal(t, tt.level, unmarshaled, `Text %q unmarshaled to an unexpected level.`, tt.text)
 	}
+
+	// Some logging libraries are using "warning" instead of "warn" as level indicator. Handle this case
+	// for cross compatability.
+	t.Run("unmarshal warning compatability", func(t *testing.T) {
+		var unmarshaled Level
+		input := []byte("warning")
+		err := unmarshaled.UnmarshalText(input)
+		assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, string(input))
+		assert.Equal(t, WarnLevel, unmarshaled, `Text %q unmarshaled to an unexpected level.`, string(input))
+	})
 }
 
 func TestParseLevel(t *testing.T) {

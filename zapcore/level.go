@@ -183,7 +183,7 @@ func (l *Level) unmarshalText(text []byte) bool {
 		*l = DebugLevel
 	case "info", "INFO", "": // make the zero value useful
 		*l = InfoLevel
-	case "warn", "WARN":
+	case "warn", "warning", "WARN":
 		*l = WarnLevel
 	case "error", "ERROR":
 		*l = ErrorLevel
