@@ -84,7 +84,6 @@ func TestLevelText(t *testing.T) {
 		err := unmarshaled.UnmarshalText(input)
 		assert.NoError(t, err, `Unexpected error unmarshaling text %q to level.`, string(input))
 		assert.Equal(t, WarnLevel, unmarshaled, `Text %q unmarshaled to an unexpected level.`, string(input))
-
 	})
 }
 
