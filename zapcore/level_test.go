@@ -96,6 +96,7 @@ func TestParseLevel(t *testing.T) {
 		{"info", InfoLevel, ""},
 		{"DEBUG", DebugLevel, ""},
 		{"FOO", 0, `unrecognized level: "FOO"`},
+		{"WARNING", WarnLevel, ""},
 	}
 	for _, tt := range tests {
 		parsedLevel, err := ParseLevel(tt.text)
