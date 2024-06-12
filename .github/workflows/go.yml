@@ -59,7 +59,7 @@ jobs:
         go-version: 1.22.x
         cache: false  # managed by golangci-lint
 
-    - uses: golangci/golangci-lint-action@v5
+    - uses: golangci/golangci-lint-action@v6
       name: Install golangci-lint
       with:
         version: latest
