@@ -33,6 +33,9 @@ import (
 // improves the navigability of this package's API documentation.
 type Field = zapcore.Field
 
+// FieldsFunc is an alias for the Fields slice
+type FieldsFunc func() []Field
+
 var (
 	_minTimeInt64 = time.Unix(0, math.MinInt64)
 	_maxTimeInt64 = time.Unix(0, math.MaxInt64)
