@@ -171,6 +171,10 @@ func TestFilters(t *testing.T) {
 			Entry:   zapcore.Entry{Level: zap.ErrorLevel, Message: "warp core breach"},
 			Context: []zapcore.Field{zap.Int("b", 42)},
 		},
+		{
+			Entry:   zapcore.Entry{Level: zap.ErrorLevel, Message: "msg", LoggerName: "my.logger"},
+			Context: []zapcore.Field{zap.Int("b", 42)},
+		},
 	}
 
 	logger, sink := New(zap.InfoLevel)
@@ -250,6 +254,11 @@ func TestFilters(t *testing.T) {
 			msg:      "filter level",
 			filtered: sink.FilterLevelExact(zap.WarnLevel),
 			want:     logs[9:10],
+		},
+		{
+			msg:      "filter logger name",
+			filtered: sink.FilterLoggerName("my.logger"),
+			want:     logs[11:12],
 		},
 	}
 
