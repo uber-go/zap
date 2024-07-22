@@ -91,6 +91,13 @@ func (o *ObservedLogs) FilterMessage(msg string) *ObservedLogs {
 	})
 }
 
+// FilterLoggerName filters entries to those logged through logger with the specified logger name.
+func (o *ObservedLogs) FilterLoggerName(name string) *ObservedLogs {
+	return o.Filter(func(e LoggedEntry) bool {
+		return e.LoggerName == name
+	})
+}
+
 // FilterMessageSnippet filters entries to those that have a message containing the specified snippet.
 func (o *ObservedLogs) FilterMessageSnippet(snippet string) *ObservedLogs {
 	return o.Filter(func(e LoggedEntry) bool {
