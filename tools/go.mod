@@ -10,4 +10,6 @@ require (
 	golang.org/x/tools v0.23.0 // indirect
 )
 
-go 1.20
+go 1.21
+
+toolchain go1.22.2
