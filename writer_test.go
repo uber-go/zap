@@ -171,7 +171,7 @@ func TestOpenFails(t *testing.T) {
 
 	for _, tt := range tests {
 		_, cleanup, err := Open(tt.paths...)
-		require.Nil(t, cleanup, "Cleanup function should never be nil")
+		require.Nil(t, cleanup, "Cleanup function should be nil")
 		assert.Error(t, err, "Open with invalid URL should fail.")
 	}
 }
