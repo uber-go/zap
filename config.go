@@ -237,12 +237,12 @@ func NewDevelopmentConfig() Config {
 
 // Build constructs a logger from the Config and Options.
 func (cfg Config) Build(opts ...Option) (*Logger, error) {
-	enc, err := cfg.buildEncoder()
+	enc, err := cfg.buildEncoder(filterOptions[wrapEncoderOption](opts...)...)
 	if err != nil {
 		return nil, err
 	}
 
-	sink, errSink, err := cfg.openSinks()
+	sink, errSink, err := cfg.openSinks(filterOptions[wrapSinkerOption](opts...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (cfg Config) Build(opts ...Option) (*Logger, error) {
 		cfg.buildOptions(errSink)...,
 	)
 	if len(opts) > 0 {
-		log = log.WithOptions(opts...)
+		log = log.WithOptions(filterOptions[Option](opts...)...)
 	}
 	return log, nil
 }
@@ -312,19 +312,38 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 	return opts
 }
 
-func (cfg Config) openSinks() (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
+func (cfg Config) openSinks(opts ...wrapSinkerOption) (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
 	sink, closeOut, err := Open(cfg.OutputPaths...)
 	if err != nil {
 		return nil, nil, err
 	}
-	errSink, _, err := Open(cfg.ErrorOutputPaths...)
+	errSink, errCloseOut, err := Open(cfg.ErrorOutputPaths...)
 	if err != nil {
 		closeOut()
 		return nil, nil, err
 	}
+
+	for _, opt := range opts {
+		sink, errSink, err = opt.wrapSink(cfg.OutputPaths, sink, cfg.ErrorOutputPaths, errSink)
+		if err != nil {
+			closeOut()
+			errCloseOut()
+			return nil, nil, err
+		}
+	}
 	return sink, errSink, nil
 }
 
-func (cfg Config) buildEncoder() (zapcore.Encoder, error) {
-	return newEncoder(cfg.Encoding, cfg.EncoderConfig)
+func (cfg Config) buildEncoder(opts ...wrapEncoderOption) (zapcore.Encoder, error) {
+	enc, err := newEncoder(cfg.Encoding, cfg.EncoderConfig)
+	if err != nil {
+		return nil, err
+	}
+	for _, opt := range opts {
+		enc, err = opt.wrapEncoder(cfg.Encoding, cfg.EncoderConfig, enc)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return enc, nil
 }
