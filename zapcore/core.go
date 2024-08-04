@@ -42,6 +42,8 @@ type Core interface {
 	Write(Entry, []Field) error
 	// Sync flushes buffered logs (if any).
 	Sync() error
+	// Fields returns any added structured context from the Core.
+	Fields() []Field
 }
 
 type nopCore struct{}
@@ -50,6 +52,7 @@ type nopCore struct{}
 func NewNopCore() Core                                        { return nopCore{} }
 func (nopCore) Enabled(Level) bool                            { return false }
 func (n nopCore) With([]Field) Core                           { return n }
+func (n nopCore) Fields() []Field                             { return nil }
 func (nopCore) Check(_ Entry, ce *CheckedEntry) *CheckedEntry { return ce }
 func (nopCore) Write(Entry, []Field) error                    { return nil }
 func (nopCore) Sync() error                                   { return nil }
@@ -65,8 +68,9 @@ func NewCore(enc Encoder, ws WriteSyncer, enab LevelEnabler) Core {
 
 type ioCore struct {
 	LevelEnabler
-	enc Encoder
-	out WriteSyncer
+	enc    Encoder
+	out    WriteSyncer
+	fields []Field
 }
 
 var (
@@ -80,8 +84,13 @@ func (c *ioCore) Level() Level {
 
 func (c *ioCore) With(fields []Field) Core {
 	clone := c.clone()
+	clone.fields = append(clone.fields, fields...)
 	addFields(clone.enc, fields)
 	return clone
+}
+
+func (c *ioCore) Fields() []Field {
+	return c.fields
 }
 
 func (c *ioCore) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
@@ -118,5 +127,6 @@ func (c *ioCore) clone() *ioCore {
 		LevelEnabler: c.LevelEnabler,
 		enc:          c.enc.Clone(),
 		out:          c.out,
+		fields:       c.fields,
 	}
 }
