@@ -431,6 +431,10 @@ func (d dictObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
+func DictObject(val ...Field) zapcore.ObjectMarshaler {
+	return dictObject(val)
+}
+
 // We discovered an issue where zap.Any can cause a performance degradation
 // when used in new goroutines.
 //
