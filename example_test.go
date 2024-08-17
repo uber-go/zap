@@ -404,18 +404,9 @@ func ExampleDictObject() {
 			),
 		))
 
-	d1, err := time.ParseDuration("68ms")
-	if(err != nil) {
-		panic(err)
-	}
-	d2, err := time.ParseDuration("79ms")
-	if(err != nil) {
-		panic(err)
-	}
-	d3, err := time.ParseDuration("57ms")
-	if(err != nil) {
-		panic(err)
-	}
+	d1 := 68 * time.Millisecond
+	d2 := 79 * time.Millisecond
+	d3 := 57 * time.Millisecond
 
 	logger.Info("worker status checks",
 		zap.Objects("job batch enqueued",

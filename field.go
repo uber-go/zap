@@ -431,8 +431,9 @@ func (d dictObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-// DictObject exposes the [zapcore.ObjectMarshaler] for an array of [Field] to
-// use with functions like [Object] and [Objects].
+// DictObject constructs a [zapcore.ObjectMarshaler] with the given list of fields.
+// The resulting object marshaler can be used as input to [Object], [Objects], or
+// any other functions that expect an object marshaler.
 func DictObject(val ...Field) zapcore.ObjectMarshaler {
 	return dictObject(val)
 }
