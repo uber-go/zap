@@ -314,3 +314,45 @@ func TestDict(t *testing.T) {
 		})
 	}
 }
+
+func TestDictObject(t *testing.T) {
+	tests := []struct {
+		desc     string
+		field    Field
+		expected any
+	}{
+		{
+			"empty",
+			Object("", DictObject()),
+			map[string]any{},
+		},
+		{
+			"object",
+			Object("", DictObject(String("k", "v"))),
+			map[string]any{"k": "v"},
+		},
+		{
+			"objects",
+			Objects("", []zapcore.ObjectMarshaler{
+				DictObject(String("k", "v")),
+				DictObject(String("k2", "v2")),
+			}),
+			[]any{
+				map[string]any{"k": "v"},
+				map[string]any{"k2": "v2"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			enc := zapcore.NewMapObjectEncoder()
+			tt.field.Key = "k"
+			tt.field.AddTo(enc)
+			assert.Equal(t, tt.expected, enc.Fields["k"], "unexpected map contents")
+			assert.Len(t, enc.Fields, 1, "found extra keys in map: %v", enc.Fields)
+
+			assertCanBeReused(t, tt.field)
+		})
+	}
+}

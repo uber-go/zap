@@ -320,6 +320,16 @@ func TestEquals(t *testing.T) {
 			b:    zap.Dict("k", zap.String("a", "d")),
 			want: false,
 		},
+		{
+			a:    zap.Object("k", zap.DictObject(zap.String("a", "b"))),
+			b:    zap.Object("k", zap.DictObject(zap.String("a", "b"))),
+			want: true,
+		},
+		{
+			a:    zap.Object("k", zap.DictObject(zap.String("a", "b"))),
+			b:    zap.Object("k", zap.DictObject(zap.String("a", "d"))),
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {
