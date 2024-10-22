@@ -43,9 +43,6 @@ tidy-lint:
 license-lint:
 	./checklicense.sh
 
-$(GOVULNCHECK):
-	cd tools && go install golang.org/x/vuln/cmd/govulncheck
-
 .PHONY: test
 test:
 	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && go test -race ./...) &&) true
