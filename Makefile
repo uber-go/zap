@@ -4,7 +4,6 @@ PROJECT_ROOT = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 export GOBIN ?= $(PROJECT_ROOT)/bin
 export PATH := $(GOBIN):$(PATH)
 
-GOVULNCHECK = $(GOBIN)/govulncheck
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 
 # Directories containing independent Go modules.
@@ -72,5 +71,5 @@ updatereadme:
 	cat .readme.tmpl | go run internal/readme/readme.go > README.md
 
 .PHONY: vulncheck
-vulncheck: $(GOVULNCHECK)
-	$(GOVULNCHECK) ./...
+vulncheck:
+	govulncheck ./...
