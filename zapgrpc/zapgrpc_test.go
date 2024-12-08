@@ -21,14 +21,12 @@
 package zapgrpc
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestLoggerInfoExpected(t *testing.T) {
@@ -145,89 +143,13 @@ func TestLoggerFatalExpected(t *testing.T) {
 		"foo bar",
 		"s1 s2 1 2 3 s3 4 s5 6",
 	}, func(logger *Logger) {
-		logger.Fatal("hello")
-		logger.Fatal("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
-		logger.Fatalf("%s world", "hello")
-		logger.Fatalln()
-		logger.Fatalln("foo")
-		logger.Fatalln("foo", "bar")
-		logger.Fatalln("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
-	})
-}
-
-func TestLoggerV(t *testing.T) {
-	tests := []struct {
-		zapLevel     zapcore.Level
-		grpcEnabled  []int
-		grpcDisabled []int
-	}{
-		{
-			zapLevel:     zapcore.DebugLevel,
-			grpcEnabled:  []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError, grpcLvlFatal},
-			grpcDisabled: []int{}, // everything is enabled, nothing is disabled
-		},
-		{
-			zapLevel:     zapcore.InfoLevel,
-			grpcEnabled:  []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError, grpcLvlFatal},
-			grpcDisabled: []int{}, // everything is enabled, nothing is disabled
-		},
-		{
-			zapLevel:     zapcore.WarnLevel,
-			grpcEnabled:  []int{grpcLvlWarn, grpcLvlError, grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo},
-		},
-		{
-			zapLevel:     zapcore.ErrorLevel,
-			grpcEnabled:  []int{grpcLvlError, grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn},
-		},
-		{
-			zapLevel:     zapcore.DPanicLevel,
-			grpcEnabled:  []int{grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError},
-		},
-		{
-			zapLevel:     zapcore.PanicLevel,
-			grpcEnabled:  []int{grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError},
-		},
-		{
-			zapLevel:     zapcore.FatalLevel,
-			grpcEnabled:  []int{grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError},
-		},
-	}
-	for _, tst := range tests {
-		for _, grpcLvl := range tst.grpcEnabled {
-			t.Run(fmt.Sprintf("enabled %s %d", tst.zapLevel, grpcLvl), func(t *testing.T) {
-				checkLevel(t, tst.zapLevel, true, func(logger *Logger) bool {
-					return logger.V(grpcLvl)
-				})
-			})
-		}
-		for _, grpcLvl := range tst.grpcDisabled {
-			t.Run(fmt.Sprintf("disabled %s %d", tst.zapLevel, grpcLvl), func(t *testing.T) {
-				checkLevel(t, tst.zapLevel, false, func(logger *Logger) bool {
-					return logger.V(grpcLvl)
-				})
-			})
-		}
-	}
-}
-
-func checkLevel(
-	t testing.TB,
-	enab zapcore.LevelEnabler,
-	expectedBool bool,
-	f func(*Logger) bool,
-) {
-	withLogger(enab, nil, func(logger *Logger, observedLogs *observer.ObservedLogs) {
-		actualBool := f(logger)
-		if expectedBool {
-			require.True(t, actualBool)
-		} else {
-			require.False(t, actualBool)
-		}
+		require.Panics(t, func() { logger.Fatal("hello") })
+		require.Panics(t, func() { logger.Fatal("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6) })
+		require.Panics(t, func() { logger.Fatalf("%s world", "hello") })
+		require.Panics(t, func() { logger.Fatalln() })
+		require.Panics(t, func() { logger.Fatalln("foo") })
+		require.Panics(t, func() { logger.Fatalln("foo", "bar") })
+		require.Panics(t, func() { logger.Fatalln("s1", "s2", 1, 2, 3, "s3", 4, "s5", 6) })
 	})
 }
 
@@ -239,9 +161,6 @@ func checkMessages(
 	expectedMessages []string,
 	f func(*Logger),
 ) {
-	if expectedLevel == zapcore.FatalLevel {
-		expectedLevel = zapcore.WarnLevel
-	}
 	withLogger(enab, opts, func(logger *Logger, observedLogs *observer.ObservedLogs) {
 		f(logger)
 		logEntries := observedLogs.All()
@@ -259,5 +178,5 @@ func withLogger(
 	f func(*Logger, *observer.ObservedLogs),
 ) {
 	core, observedLogs := observer.New(enab)
-	f(NewLogger(zap.New(core), append(opts, withWarn())...), observedLogs)
+	f(NewLogger(zap.New(core, zap.WithFatalHook(zapcore.WriteThenPanic)), opts...), observedLogs)
 }

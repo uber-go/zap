@@ -23,27 +23,12 @@ package zapgrpc // import "go.uber.org/zap/zapgrpc"
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
-
-// See https://github.com/grpc/grpc-go/blob/v1.35.0/grpclog/loggerv2.go#L77-L86
-const (
-	grpcLvlInfo int = iota
-	grpcLvlWarn
-	grpcLvlError
-	grpcLvlFatal
-)
-
-// _grpcToZapLevel maps gRPC log levels to zap log levels.
-// See https://pkg.go.dev/go.uber.org/zap@v1.16.0/zapcore#Level
-var _grpcToZapLevel = map[int]zapcore.Level{
-	grpcLvlInfo:  zapcore.InfoLevel,
-	grpcLvlWarn:  zapcore.WarnLevel,
-	grpcLvlError: zapcore.ErrorLevel,
-	grpcLvlFatal: zapcore.FatalLevel,
-}
 
 // An Option overrides a Logger's default configuration.
 type Option interface {
@@ -72,23 +57,17 @@ func WithDebug() Option {
 	})
 }
 
-// withWarn redirects the fatal level to the warn level, which makes testing
-// easier. This is intentionally unexported.
-func withWarn() Option {
+// WithVerbosity configures verbosity level.
+func WithVerbosity(v int) Option {
 	return optionFunc(func(logger *Logger) {
-		logger.fatal = &printer{
-			enab:   logger.levelEnabler,
-			level:  zapcore.WarnLevel,
-			print:  logger.delegate.Warn,
-			printf: logger.delegate.Warnf,
-		}
+		logger.v = v
 	})
 }
 
 // NewLogger returns a new Logger.
 func NewLogger(l *zap.Logger, options ...Option) *Logger {
 	logger := &Logger{
-		delegate:     l.Sugar(),
+		delegate:     l.Sugar().WithOptions(zap.AddCallerSkip(2)),
 		levelEnabler: l.Core(),
 	}
 	logger.print = &printer{
@@ -97,11 +76,9 @@ func NewLogger(l *zap.Logger, options ...Option) *Logger {
 		print:  logger.delegate.Info,
 		printf: logger.delegate.Infof,
 	}
-	logger.fatal = &printer{
-		enab:   logger.levelEnabler,
-		level:  zapcore.FatalLevel,
-		print:  logger.delegate.Fatal,
-		printf: logger.delegate.Fatalf,
+	vLevel := os.Getenv("GRPC_GO_LOG_VERBOSITY_LEVEL")
+	if vl, err := strconv.Atoi(vLevel); err == nil {
+		logger.v = vl
 	}
 	for _, option := range options {
 		option.apply(logger)
@@ -139,7 +116,7 @@ type Logger struct {
 	delegate     *zap.SugaredLogger
 	levelEnabler zapcore.LevelEnabler
 	print        *printer
-	fatal        *printer
+	v            int
 	// printToDebug bool
 	// fatalToWarn  bool
 }
@@ -182,6 +159,11 @@ func (l *Logger) Infof(format string, args ...interface{}) {
 	l.delegate.Infof(format, args...)
 }
 
+// InfoDepth implements DepthLoggerV2
+func (l *Logger) InfoDepth(depth int, args ...interface{}) {
+	l.delegate.WithOptions(zap.AddCallerSkip(depth)).Info(args...)
+}
+
 // Warning implements grpclog.LoggerV2.
 func (l *Logger) Warning(args ...interface{}) {
 	l.delegate.Warn(args...)
@@ -197,6 +179,11 @@ func (l *Logger) Warningln(args ...interface{}) {
 // Warningf implements grpclog.LoggerV2.
 func (l *Logger) Warningf(format string, args ...interface{}) {
 	l.delegate.Warnf(format, args...)
+}
+
+// WarningDepth implements DepthLoggerV2
+func (l *Logger) WarningDepth(depth int, args ...interface{}) {
+	l.delegate.WithOptions(zap.AddCallerSkip(depth)).Warn(args...)
 }
 
 // Error implements grpclog.LoggerV2.
@@ -216,24 +203,39 @@ func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.delegate.Errorf(format, args...)
 }
 
+// ErrorDepth implements Experimental DepthLoggerV2
+func (l *Logger) ErrorDepth(depth int, args ...interface{}) {
+	l.delegate.WithOptions(zap.AddCallerSkip(depth)).Error(args...)
+}
+
 // Fatal implements grpclog.LoggerV2.
 func (l *Logger) Fatal(args ...interface{}) {
-	l.fatal.Print(args...)
+	l.delegate.Fatal(args...)
 }
 
 // Fatalln implements grpclog.LoggerV2.
 func (l *Logger) Fatalln(args ...interface{}) {
-	l.fatal.Println(args...)
+	if !l.levelEnabler.Enabled(zapcore.FatalLevel) {
+		return
+	}
+	l.delegate.Fatal(sprintln(args))
 }
 
 // Fatalf implements grpclog.LoggerV2.
 func (l *Logger) Fatalf(format string, args ...interface{}) {
-	l.fatal.Printf(format, args...)
+	l.delegate.Fatal(fmt.Sprintf(format, args...))
+}
+
+// FatalDepth implements Experimental DepthLoggerV2
+func (l *Logger) FatalDepth(depth int, args ...interface{}) {
+	l.delegate.WithOptions(zap.AddCallerSkip(depth)).Fatal(fmt.Sprint(args...))
 }
 
 // V implements grpclog.LoggerV2.
-func (l *Logger) V(level int) bool {
-	return l.levelEnabler.Enabled(_grpcToZapLevel[level])
+func (l *Logger) V(v int) bool {
+	// Check whether the verbosity of the current log ('level') is within the specified threshold ('l.verbosity').
+	// As in https://github.com/grpc/grpc-go/blob/41e044e1c82fcf6a5801d6cbd7ecf952505eecb1/grpclog/loggerv2.go#L199-L201.
+	return v <= l.v
 }
 
 func sprintln(args []interface{}) string {
