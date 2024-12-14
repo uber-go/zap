@@ -58,6 +58,10 @@ func (c *levelFilterCore) With(fields []Field) Core {
 	return &levelFilterCore{c.core.With(fields), c.level}
 }
 
+func (c *levelFilterCore) Fields() []Field {
+	return c.core.Fields()
+}
+
 func (c *levelFilterCore) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	if !c.Enabled(ent.Level) {
 		return ce
