@@ -138,6 +138,13 @@ func TestTestLoggerErrorOutput(t *testing.T) {
 	}
 }
 
+func TestDPanic(t *testing.T) {
+	log := NewLogger(t)
+	assert.Panics(t, func() {
+		log.DPanic("foo")
+	})
+}
+
 // testLogSpy is a testing.TB that captures logged messages.
 type testLogSpy struct {
 	testing.TB
