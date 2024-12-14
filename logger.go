@@ -240,11 +240,33 @@ func (log *Logger) Debug(msg string, fields ...Field) {
 	}
 }
 
+// FDebug works like a Debug func, but calculate fields values only for appropriate log level
+func (log *Logger) FDebug(msg string, fields ...FieldsFunc) {
+	if ce := log.check(DebugLevel, msg); ce != nil {
+		var ff []Field
+		for _, f := range fields {
+			ff = append(ff, f()...)
+		}
+		ce.Write(ff...)
+	}
+}
+
 // Info logs a message at InfoLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Info(msg string, fields ...Field) {
 	if ce := log.check(InfoLevel, msg); ce != nil {
 		ce.Write(fields...)
+	}
+}
+
+// FInfo works like an Info func, but calculate fields values only for appropriate log level
+func (log *Logger) FInfo(msg string, fields ...FieldsFunc) {
+	if ce := log.check(InfoLevel, msg); ce != nil {
+		var ff []Field
+		for _, f := range fields {
+			ff = append(ff, f()...)
+		}
+		ce.Write(ff...)
 	}
 }
 
@@ -256,11 +278,33 @@ func (log *Logger) Warn(msg string, fields ...Field) {
 	}
 }
 
+// FWarn works like a Warn func, but calculate fields values only for appropriate log level
+func (log *Logger) FWarn(msg string, fields ...FieldsFunc) {
+	if ce := log.check(WarnLevel, msg); ce != nil {
+		var ff []Field
+		for _, f := range fields {
+			ff = append(ff, f()...)
+		}
+		ce.Write(ff...)
+	}
+}
+
 // Error logs a message at ErrorLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Error(msg string, fields ...Field) {
 	if ce := log.check(ErrorLevel, msg); ce != nil {
 		ce.Write(fields...)
+	}
+}
+
+// FError works like an Error func, but calculate fields values only for appropriate log level
+func (log *Logger) FError(msg string, fields ...FieldsFunc) {
+	if ce := log.check(ErrorLevel, msg); ce != nil {
+		var ff []Field
+		for _, f := range fields {
+			ff = append(ff, f()...)
+		}
+		ce.Write(ff...)
 	}
 }
 
@@ -276,6 +320,17 @@ func (log *Logger) DPanic(msg string, fields ...Field) {
 	}
 }
 
+// FDPanic works like a DPanic func, but calculate fields values only for appropriate log level
+func (log *Logger) FDPanic(msg string, fields ...FieldsFunc) {
+	if ce := log.check(DPanicLevel, msg); ce != nil {
+		var ff []Field
+		for _, f := range fields {
+			ff = append(ff, f()...)
+		}
+		ce.Write(ff...)
+	}
+}
+
 // Panic logs a message at PanicLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 //
@@ -283,6 +338,17 @@ func (log *Logger) DPanic(msg string, fields ...Field) {
 func (log *Logger) Panic(msg string, fields ...Field) {
 	if ce := log.check(PanicLevel, msg); ce != nil {
 		ce.Write(fields...)
+	}
+}
+
+// FPanic works like a Panic func, but calculate fields values only for appropriate log level
+func (log *Logger) FPanic(msg string, fields ...FieldsFunc) {
+	if ce := log.check(PanicLevel, msg); ce != nil {
+		var ff []Field
+		for _, f := range fields {
+			ff = append(ff, f()...)
+		}
+		ce.Write(ff...)
 	}
 }
 
@@ -294,6 +360,17 @@ func (log *Logger) Panic(msg string, fields ...Field) {
 func (log *Logger) Fatal(msg string, fields ...Field) {
 	if ce := log.check(FatalLevel, msg); ce != nil {
 		ce.Write(fields...)
+	}
+}
+
+// FFatal works like a Fatal func, but calculate fields values only for appropriate log level
+func (log *Logger) FFatal(msg string, fields ...FieldsFunc) {
+	if ce := log.check(FatalLevel, msg); ce != nil {
+		var ff []Field
+		for _, f := range fields {
+			ff = append(ff, f()...)
+		}
+		ce.Write(ff...)
 	}
 }
 
