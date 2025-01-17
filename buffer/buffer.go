@@ -142,7 +142,7 @@ func (b *Buffer) TrimNewline() {
 //
 // Callers must not retain references to the Buffer after calling Free.
 func (b *Buffer) Free() {
-	if len(b.bs) <= _size {
+	if len(b.bs) <= 4*_size {
 		b.pool.put(b)
 	}
 }
