@@ -35,7 +35,7 @@ import (
 // If specified, the Sampler will invoke the Hook after each decision.
 //
 // Values configured here are per-second. See zapcore.NewSamplerWithOptions for
-// details.
+// details
 type SamplingConfig struct {
 	Initial    int                                           `json:"initial" yaml:"initial"`
 	Thereafter int                                           `json:"thereafter" yaml:"thereafter"`
