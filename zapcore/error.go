@@ -44,7 +44,7 @@ import (
 //	    ...
 //	  ],
 //	}
-func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
+func encodeError(key string, err error, enc ObjectEncoder, opts ...bool) (retErr error) {
 	// Try to capture panics (from nil references or otherwise) when calling
 	// the Error() method
 	defer func() {
@@ -68,8 +68,12 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 	case errorGroup:
 		return enc.AddArray(key+"Causes", errArray(e.Errors()))
 	case fmt.Formatter:
+		disableVerbose := false
+		if len(opts) > 0 {
+			disableVerbose = opts[0]
+		}
 		verbose := fmt.Sprintf("%+v", e)
-		if verbose != basic {
+		if !disableVerbose && verbose != basic {
 			// This is a rich error type, like those produced by
 			// github.com/pkg/errors.
 			enc.AddString(key+"Verbose", verbose)
