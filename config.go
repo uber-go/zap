@@ -91,6 +91,8 @@ type Config struct {
 	ErrorOutputPaths []string `json:"errorOutputPaths" yaml:"errorOutputPaths"`
 	// InitialFields is a collection of fields to add to the root logger.
 	InitialFields map[string]interface{} `json:"initialFields" yaml:"initialFields"`
+	// DisableVerbose stops printing error verbose in the error log.
+	DisableVerbose bool `json:"disableVerbose" yaml:"disableVerbose"`
 }
 
 // NewProductionEncoderConfig returns an opinionated EncoderConfig for
@@ -166,6 +168,7 @@ func NewProductionConfig() Config {
 		EncoderConfig:    NewProductionEncoderConfig(),
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
+		DisableVerbose:   true,
 	}
 }
 
@@ -232,6 +235,7 @@ func NewDevelopmentConfig() Config {
 		EncoderConfig:    NewDevelopmentEncoderConfig(),
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
+		DisableVerbose:   true,
 	}
 }
 
@@ -276,8 +280,13 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 	if cfg.Development {
 		stackLevel = WarnLevel
 	}
+
 	if !cfg.DisableStacktrace {
 		opts = append(opts, AddStacktrace(stackLevel))
+	}
+
+	if cfg.DisableVerbose {
+		opts = append(opts, DisableVerbose())
 	}
 
 	if scfg := cfg.Sampling; scfg != nil {
