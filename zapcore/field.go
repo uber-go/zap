@@ -102,11 +102,12 @@ const (
 // context. Most fields are lazily marshaled, so it's inexpensive to add fields
 // to disabled debug-level log statements.
 type Field struct {
-	Key       string
-	Type      FieldType
-	Integer   int64
-	String    string
-	Interface interface{}
+	Key            string
+	Type           FieldType
+	Integer        int64
+	String         string
+	Interface      interface{}
+	DisableVerbose bool
 }
 
 // AddTo exports a field through the ObjectEncoder interface. It's primarily
@@ -173,7 +174,7 @@ func (f Field) AddTo(enc ObjectEncoder) {
 	case StringerType:
 		err = encodeStringer(f.Key, f.Interface, enc)
 	case ErrorType:
-		err = encodeError(f.Key, f.Interface.(error), enc)
+		err = encodeError(f.Key, f.Interface.(error), enc, f.DisableVerbose)
 	case SkipType:
 		break
 	default:
