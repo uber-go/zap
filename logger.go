@@ -54,6 +54,8 @@ type Logger struct {
 	callerSkip int
 
 	clock zapcore.Clock
+
+	DisableVerbose bool
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
@@ -260,6 +262,9 @@ func (log *Logger) Warn(msg string, fields ...Field) {
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Error(msg string, fields ...Field) {
 	if ce := log.check(ErrorLevel, msg); ce != nil {
+		for i := range fields {
+			fields[i].DisableVerbose = log.DisableVerbose
+		}
 		ce.Write(fields...)
 	}
 }
