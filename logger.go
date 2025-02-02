@@ -55,7 +55,7 @@ type Logger struct {
 
 	clock zapcore.Clock
 
-	DisableVerbose bool
+	DisableErrorVerbose bool
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
@@ -263,7 +263,7 @@ func (log *Logger) Warn(msg string, fields ...Field) {
 func (log *Logger) Error(msg string, fields ...Field) {
 	if ce := log.check(ErrorLevel, msg); ce != nil {
 		for i := range fields {
-			fields[i].DisableVerbose = log.DisableVerbose
+			fields[i].DisableErrorVerbose = log.DisableErrorVerbose
 		}
 		ce.Write(fields...)
 	}

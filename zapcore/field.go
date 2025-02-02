@@ -107,7 +107,7 @@ type Field struct {
 	Integer        int64
 	String         string
 	Interface      interface{}
-	DisableVerbose bool
+	DisableErrorVerbose bool
 }
 
 // AddTo exports a field through the ObjectEncoder interface. It's primarily
@@ -174,7 +174,7 @@ func (f Field) AddTo(enc ObjectEncoder) {
 	case StringerType:
 		err = encodeStringer(f.Key, f.Interface, enc)
 	case ErrorType:
-		err = encodeError(f.Key, f.Interface.(error), enc, f.DisableVerbose)
+		err = encodeError(f.Key, f.Interface.(error), enc, f.DisableErrorVerbose)
 	case SkipType:
 		break
 	default:

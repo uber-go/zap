@@ -68,12 +68,12 @@ func encodeError(key string, err error, enc ObjectEncoder, opts ...bool) (retErr
 	case errorGroup:
 		return enc.AddArray(key+"Causes", errArray(e.Errors()))
 	case fmt.Formatter:
-		disableVerbose := false
+		disableErrorVerbose := false
 		if len(opts) > 0 {
-			disableVerbose = opts[0]
+			disableErrorVerbose = opts[0]
 		}
 		verbose := fmt.Sprintf("%+v", e)
-		if !disableVerbose && verbose != basic {
+		if !disableErrorVerbose && verbose != basic {
 			// This is a rich error type, like those produced by
 			// github.com/pkg/errors.
 			enc.AddString(key+"Verbose", verbose)

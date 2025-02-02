@@ -91,8 +91,8 @@ type Config struct {
 	ErrorOutputPaths []string `json:"errorOutputPaths" yaml:"errorOutputPaths"`
 	// InitialFields is a collection of fields to add to the root logger.
 	InitialFields map[string]interface{} `json:"initialFields" yaml:"initialFields"`
-	// DisableVerbose stops printing error verbose in the error log.
-	DisableVerbose bool `json:"disableVerbose" yaml:"disableVerbose"`
+	// DisableErrorVerbose stops printing error verbose in the error log.
+	DisableErrorVerbose bool `json:"disableErrorVerbose" yaml:"disableErrorVerbose"`
 }
 
 // NewProductionEncoderConfig returns an opinionated EncoderConfig for
@@ -168,7 +168,7 @@ func NewProductionConfig() Config {
 		EncoderConfig:    NewProductionEncoderConfig(),
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
-		DisableVerbose:   true,
+		DisableErrorVerbose:   true,
 	}
 }
 
@@ -235,7 +235,7 @@ func NewDevelopmentConfig() Config {
 		EncoderConfig:    NewDevelopmentEncoderConfig(),
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
-		DisableVerbose:   true,
+		DisableErrorVerbose:   true,
 	}
 }
 
@@ -285,8 +285,8 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 		opts = append(opts, AddStacktrace(stackLevel))
 	}
 
-	if cfg.DisableVerbose {
-		opts = append(opts, DisableVerbose())
+	if cfg.DisableErrorVerbose {
+		opts = append(opts, DisableErrorVerbose())
 	}
 
 	if scfg := cfg.Sampling; scfg != nil {
