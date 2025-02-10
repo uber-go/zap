@@ -179,7 +179,7 @@ func (f Field) AddTo(enc ObjectEncoder) {
 		err = encodeError(f.Key, f.Interface.(error), enc, false)
 	case ErrorTypeWithoutVerbose:
 		ec := f.Interface.(ErrorConfig)
-		err = encodeError(f.Key, ec.Error, enc, true)
+		err = encodeError(f.Key, ec.Error, enc, ec.DisableErrorVerbose)
 	case SkipType:
 		break
 	default:
