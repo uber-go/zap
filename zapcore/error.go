@@ -138,3 +138,10 @@ func (e *errArrayElem) Free() {
 	e.err = nil
 	_errArrayElemPool.Put(e)
 }
+
+// ErrorConfig is a type that contains an error and 
+// the flag if its error verbose is encoded in the log.
+type ErrorConfig struct {
+	Error error
+	DisableErrorVerbose bool
+}
