@@ -161,6 +161,37 @@ func TestErrorEncoding(t *testing.T) {
 	}
 }
 
+func TestErrorEncodingWithoutVerbose(t *testing.T) {
+	tests := []struct {
+		key            string
+		iface          any
+		want           map[string]any
+	}{
+		{
+			key:            "k",
+			iface:          ErrorConfig{Error: errTooFewUsers(2), DisableErrorVerbose: true},
+			want: map[string]any{
+				"k":        "2 too few users",
+			},
+		},
+		{
+			key:            "k",
+			iface:          ErrorConfig{Error: errTooFewUsers(2), DisableErrorVerbose: false},
+			want: map[string]any{
+				"k":        "2 too few users",
+				"kVerbose": "verbose: 2 too few users",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		enc := NewMapObjectEncoder()
+		f := Field{Key: tt.key, Type: ErrorTypeWithoutVerbose, Interface: tt.iface}
+		f.AddTo(enc)
+		assert.Equal(t, tt.want, enc.Fields, "Unexpected output from field %+v.", f)
+	}
+}
+
 func TestRichErrorSupport(t *testing.T) {
 	f := Field{
 		Type:      ErrorType,
