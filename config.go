@@ -164,11 +164,11 @@ func NewProductionConfig() Config {
 			Initial:    100,
 			Thereafter: 100,
 		},
-		Encoding:         "json",
-		EncoderConfig:    NewProductionEncoderConfig(),
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
-		DisableErrorVerbose:   true,
+		Encoding:            "json",
+		EncoderConfig:       NewProductionEncoderConfig(),
+		OutputPaths:         []string{"stderr"},
+		ErrorOutputPaths:    []string{"stderr"},
+		DisableErrorVerbose: true,
 	}
 }
 
@@ -229,13 +229,13 @@ func NewDevelopmentEncoderConfig() zapcore.EncoderConfig {
 // on the default encoder configuration.
 func NewDevelopmentConfig() Config {
 	return Config{
-		Level:            NewAtomicLevelAt(DebugLevel),
-		Development:      true,
-		Encoding:         "console",
-		EncoderConfig:    NewDevelopmentEncoderConfig(),
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
-		DisableErrorVerbose:   true,
+		Level:               NewAtomicLevelAt(DebugLevel),
+		Development:         true,
+		Encoding:            "console",
+		EncoderConfig:       NewDevelopmentEncoderConfig(),
+		OutputPaths:         []string{"stderr"},
+		ErrorOutputPaths:    []string{"stderr"},
+		DisableErrorVerbose: true,
 	}
 }
 

@@ -451,7 +451,7 @@ func (log *Logger) convertErrorToErrorConfig(msg string, fields []Field) []Field
 		switch f.Interface.(type) {
 		case error:
 			ec := zapcore.ErrorConfig{
-				Error: f.Interface.(error),
+				Error:               f.Interface.(error),
 				DisableErrorVerbose: log.DisableErrorVerbose,
 			}
 			fs = append(fs, ErrorConfig(msg, ec))
