@@ -262,10 +262,12 @@ func (log *Logger) Warn(msg string, fields ...Field) {
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Error(msg string, fields ...Field) {
 	if ce := log.check(ErrorLevel, msg); ce != nil {
-		for i := range fields {
-			fields[i].DisableErrorVerbose = log.DisableErrorVerbose
+		if log.DisableErrorVerbose {
+			fs := log.convertErrorToErrorConfig(msg, fields)
+			ce.Write(fs...)
+		} else {
+			ce.Write(fields...)
 		}
-		ce.Write(fields...)
 	}
 }
 
@@ -441,4 +443,21 @@ func terminalHookOverride(defaultHook, override zapcore.CheckWriteHook) zapcore.
 		return defaultHook
 	}
 	return override
+}
+
+func (log *Logger) convertErrorToErrorConfig(msg string, fields []Field) []Field {
+	fs := []Field{}
+	for _, f := range fields {
+		switch f.Interface.(type) {
+		case error:
+			ec := zapcore.ErrorConfig{
+				Error: f.Interface.(error),
+				DisableErrorVerbose: log.DisableErrorVerbose,
+			}
+			fs = append(fs, ErrorConfig(msg, ec))
+		default:
+			fs = append(fs, f)
+		}
+	}
+	return fs
 }
