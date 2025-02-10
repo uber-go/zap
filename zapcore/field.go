@@ -110,7 +110,6 @@ type Field struct {
 	Integer        int64
 	String         string
 	Interface      interface{}
-	DisableErrorVerbose bool
 }
 
 // AddTo exports a field through the ObjectEncoder interface. It's primarily
