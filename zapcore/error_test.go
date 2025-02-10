@@ -81,29 +81,11 @@ func TestErrorEncoding(t *testing.T) {
 	tests := []struct {
 		key            string
 		iface          any
-		disableErrorVerbose bool
 		want           map[string]any
 	}{
 		{
 			key:            "k",
-			iface:          errTooManyUsers(2),
-			disableErrorVerbose: true,
-			want: map[string]any{
-				"k": "2 too many users",
-			},
-		},
-		{
-			key:            "k",
 			iface:          errTooFewUsers(2),
-			disableErrorVerbose: true,
-			want: map[string]any{
-				"k": "2 too few users",
-			},
-		},
-		{
-			key:            "k",
-			iface:          errTooFewUsers(2),
-			disableErrorVerbose: false,
 			want: map[string]any{
 				"k":        "2 too few users",
 				"kVerbose": "verbose: 2 too few users",
@@ -116,7 +98,6 @@ func TestErrorEncoding(t *testing.T) {
 				errors.New("bar"),
 				errors.New("baz"),
 			),
-			disableErrorVerbose: true,
 			want: map[string]any{
 				"err": "foo; bar; baz",
 				"errCauses": []any{
@@ -129,7 +110,6 @@ func TestErrorEncoding(t *testing.T) {
 		{
 			key:            "e",
 			iface:          customMultierr{},
-			disableErrorVerbose: true,
 			want: map[string]any{
 				"e": "great sadness",
 				"eCauses": []any{
@@ -147,7 +127,6 @@ func TestErrorEncoding(t *testing.T) {
 		{
 			key:            "k",
 			iface:          fmt.Errorf("failed: %w", errors.New("egad")),
-			disableErrorVerbose: true,
 			want: map[string]any{
 				"k": "failed: egad",
 			},
@@ -161,7 +140,6 @@ func TestErrorEncoding(t *testing.T) {
 				errors.New("baz"),
 				fmt.Errorf("world: %w", errors.New("qux")),
 			),
-			disableErrorVerbose: true,
 			want: map[string]any{
 				"error": "hello: foo; bar; baz; world: qux",
 				"errorCauses": []any{
@@ -177,7 +155,7 @@ func TestErrorEncoding(t *testing.T) {
 
 	for _, tt := range tests {
 		enc := NewMapObjectEncoder()
-		f := Field{Key: tt.key, Type: ErrorType, Interface: tt.iface, DisableErrorVerbose: tt.disableErrorVerbose}
+		f := Field{Key: tt.key, Type: ErrorType, Interface: tt.iface}
 		f.AddTo(enc)
 		assert.Equal(t, tt.want, enc.Fields, "Unexpected output from field %+v.", f)
 	}
