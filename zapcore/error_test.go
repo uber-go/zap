@@ -79,13 +79,20 @@ func (e customMultierr) Errors() []error {
 
 func TestErrorEncoding(t *testing.T) {
 	tests := []struct {
-		key            string
-		iface          any
-		want           map[string]any
+		key   string
+		iface any
+		want  map[string]any
 	}{
 		{
-			key:            "k",
-			iface:          errTooFewUsers(2),
+			key:   "k",
+			iface: errTooManyUsers(2),
+			want: map[string]any{
+				"k": "2 too many users",
+			},
+		},
+		{
+			key:   "k",
+			iface: errTooFewUsers(2),
 			want: map[string]any{
 				"k":        "2 too few users",
 				"kVerbose": "verbose: 2 too few users",
@@ -108,8 +115,8 @@ func TestErrorEncoding(t *testing.T) {
 			},
 		},
 		{
-			key:            "e",
-			iface:          customMultierr{},
+			key:   "e",
+			iface: customMultierr{},
 			want: map[string]any{
 				"e": "great sadness",
 				"eCauses": []any{
@@ -125,8 +132,8 @@ func TestErrorEncoding(t *testing.T) {
 			},
 		},
 		{
-			key:            "k",
-			iface:          fmt.Errorf("failed: %w", errors.New("egad")),
+			key:   "k",
+			iface: fmt.Errorf("failed: %w", errors.New("egad")),
 			want: map[string]any{
 				"k": "failed: egad",
 			},
@@ -163,20 +170,20 @@ func TestErrorEncoding(t *testing.T) {
 
 func TestErrorEncodingWithoutVerbose(t *testing.T) {
 	tests := []struct {
-		key            string
-		iface          any
-		want           map[string]any
+		key   string
+		iface any
+		want  map[string]any
 	}{
 		{
-			key:            "k",
-			iface:          ErrorConfig{Error: errTooFewUsers(2), DisableErrorVerbose: true},
+			key:   "k",
+			iface: ErrorConfig{Error: errTooFewUsers(2), DisableErrorVerbose: true},
 			want: map[string]any{
-				"k":        "2 too few users",
+				"k": "2 too few users",
 			},
 		},
 		{
-			key:            "k",
-			iface:          ErrorConfig{Error: errTooFewUsers(2), DisableErrorVerbose: false},
+			key:   "k",
+			iface: ErrorConfig{Error: errTooFewUsers(2), DisableErrorVerbose: false},
 			want: map[string]any{
 				"k":        "2 too few users",
 				"kVerbose": "verbose: 2 too few users",
