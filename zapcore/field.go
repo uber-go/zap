@@ -90,6 +90,9 @@ const (
 	StringerType
 	// ErrorType indicates that the field carries an error.
 	ErrorType
+	// ErrorTypeWithoutVerbose indicates that the field carries an error.
+	// However, this does not print the error verbose when it is encoded.
+	ErrorTypeWithoutVerbose
 	// SkipType indicates that the field is a no-op.
 	SkipType
 
@@ -174,7 +177,10 @@ func (f Field) AddTo(enc ObjectEncoder) {
 	case StringerType:
 		err = encodeStringer(f.Key, f.Interface, enc)
 	case ErrorType:
-		err = encodeError(f.Key, f.Interface.(error), enc, f.DisableErrorVerbose)
+		err = encodeError(f.Key, f.Interface.(error), enc, false)
+	case ErrorTypeWithoutVerbose:
+		ec := f.Interface.(ErrorConfig)
+		err = encodeError(f.Key, ec.Error, enc, true)
 	case SkipType:
 		break
 	default:
