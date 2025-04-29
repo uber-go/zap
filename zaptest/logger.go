@@ -33,8 +33,9 @@ type LoggerOption interface {
 }
 
 type loggerOptions struct {
-	Level      zapcore.LevelEnabler
-	zapOptions []zap.Option
+	Level       zapcore.LevelEnabler
+	zapOptions  []zap.Option
+	development bool
 }
 
 type loggerOptionFunc func(*loggerOptions)
@@ -58,6 +59,14 @@ func WrapOptions(zapOpts ...zap.Option) LoggerOption {
 	})
 }
 
+// Development controls whether zap.Development option will be added to a test
+// logger built by NewLogger. Default is true.
+func Development(enable bool) LoggerOption {
+	return loggerOptionFunc(func(opts *loggerOptions) {
+		opts.development = enable
+	})
+}
+
 // NewLogger builds a new Logger that logs all messages to the given
 // testing.TB.
 //
@@ -74,9 +83,13 @@ func WrapOptions(zapOpts ...zap.Option) LoggerOption {
 // You may also pass zap.Option's to customize test logger.
 //
 //	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
+//
+// The logger is put into development mode so DPanic causes immediate panic.
+// You can opt out of this using Development(false) option.
 func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 	cfg := loggerOptions{
-		Level: zapcore.DebugLevel,
+		Level:       zapcore.DebugLevel,
+		development: true,
 	}
 	for _, o := range opts {
 		o.applyLoggerOption(&cfg)
@@ -87,6 +100,10 @@ func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 		// Send zap errors to the same writer and mark the test as failed if
 		// that happens.
 		zap.ErrorOutput(writer.WithMarkFailed(true)),
+	}
+	if cfg.development {
+		// Enable development mode to make DPanic fatal in tests.
+		zapOptions = append(zapOptions, zap.Development())
 	}
 	zapOptions = append(zapOptions, cfg.zapOptions...)
 
