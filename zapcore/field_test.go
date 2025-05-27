@@ -158,6 +158,7 @@ func TestFields(t *testing.T) {
 		{t: Uint8Type, i: 42, want: uint8(42)},
 		{t: UintptrType, i: 42, want: uintptr(42)},
 		{t: ReflectType, iface: users(2), want: users(2)},
+		{t: ReflectType, iface: nil, want: nil},
 		{t: NamespaceType, want: map[string]interface{}{}},
 		{t: StringerType, iface: users(2), want: "2 users"},
 		{t: StringerType, iface: &obj{}, want: "obj"},
@@ -328,6 +329,16 @@ func TestEquals(t *testing.T) {
 		{
 			a:    zap.Object("k", zap.DictObject(zap.String("a", "b"))),
 			b:    zap.Object("k", zap.DictObject(zap.String("a", "d"))),
+			want: false,
+		},
+		{
+			a:    zap.Object("k", nil),
+			b:    zap.Object("k", nil),
+			want: true,
+		},
+		{
+			a:    zap.Object("k", users(10)),
+			b:    zap.Object("k", nil),
 			want: false,
 		},
 	}
