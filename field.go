@@ -398,6 +398,9 @@ func Durationp(key string, val *time.Duration) Field {
 // struct-like user-defined types to the logging context. The struct's
 // MarshalLogObject method is called lazily.
 func Object(key string, val zapcore.ObjectMarshaler) Field {
+	if val == nil {
+		return nilField(key)
+	}
 	return Field{Key: key, Type: zapcore.ObjectMarshalerType, Interface: val}
 }
 

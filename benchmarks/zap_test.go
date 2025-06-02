@@ -134,6 +134,7 @@ func fakeFields() []zap.Field {
 		zap.Times("times", _tenTimes),
 		zap.Object("user1", _oneUser),
 		zap.Object("user2", _oneUser),
+		zap.Object("user3", nil),
 		zap.Array("users", _tenUsers),
 		zap.Error(errExample),
 	}
