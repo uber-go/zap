@@ -351,7 +351,7 @@ func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interf
 	}
 
 	msg := getMessage(template, fmtArgs)
-	if ce := s.base.Check(lvl, msg); ce != nil {
+	if ce := s.base.check(lvl, msg, 0); ce != nil {
 		ce.Write(s.sweetenFields(context)...)
 	}
 }
@@ -363,7 +363,7 @@ func (s *SugaredLogger) logln(lvl zapcore.Level, fmtArgs []interface{}, context 
 	}
 
 	msg := getMessageln(fmtArgs)
-	if ce := s.base.Check(lvl, msg); ce != nil {
+	if ce := s.base.check(lvl, msg, 0); ce != nil {
 		ce.Write(s.sweetenFields(context)...)
 	}
 }
