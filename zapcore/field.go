@@ -116,11 +116,12 @@ func (f Field) AddTo(enc ObjectEncoder) {
 
 	switch f.Type {
 	case ArrayMarshalerType:
-		err = enc.AddArray(f.Key, f.Interface.(ArrayMarshaler))
+		err = encodeArrayMarshaler(f.Key, f.Interface, enc)
 	case ObjectMarshalerType:
-		err = enc.AddObject(f.Key, f.Interface.(ObjectMarshaler))
+		err = encodeObjectMarshaler(f.Key, f.Interface, enc)
 	case InlineMarshalerType:
-		err = f.Interface.(ObjectMarshaler).MarshalLogObject(enc)
+		err = encodeInlineMarshaler(f.Key, f.Interface, enc)
+
 	case BinaryType:
 		enc.AddBinary(f.Key, f.Interface.([]byte))
 	case BoolType:
@@ -230,4 +231,71 @@ func encodeStringer(key string, stringer interface{}, enc ObjectEncoder) (retErr
 
 	enc.AddString(key, stringer.(fmt.Stringer).String())
 	return nil
+}
+
+func encodeObjectMarshaler(key string, objectMarshaller interface{}, enc ObjectEncoder) (retErr error) {
+	// Try to capture panics (from nil references or otherwise) when calling
+	// the MarshalLogObject() method, similar to https://golang.org/src/fmt/print.go#L540
+	defer func() {
+		if err := recover(); err != nil {
+			// If it's a nil pointer, just say "<nil>". The likeliest causes are a
+			// MarshalLogObject that fails to guard against nil or a nil pointer for a
+			// value receiver, and in either case, "<nil>" is a nice result.
+			if v := reflect.ValueOf(objectMarshaller); v.Kind() == reflect.Ptr && v.IsNil() {
+				enc.AddString(key, "<nil>")
+				return
+			}
+			retErr = fmt.Errorf("PANIC=%v", err)
+		}
+	}()
+
+	retErr = enc.AddObject(key, objectMarshaller.(ObjectMarshaler))
+	return
+}
+
+type emptyArrayMarshaler struct{}
+
+func (emptyArrayMarshaler) MarshalLogArray(_ ArrayEncoder) error {
+	return nil
+}
+
+func encodeArrayMarshaler(key string, arrayMarshaller interface{}, enc ObjectEncoder) (retErr error) {
+	// Try to capture panics (from nil references or otherwise) when calling
+	// the MarshalLogArray() method, similar to https://golang.org/src/fmt/print.go#L540
+	defer func() {
+		if err := recover(); err != nil {
+			// If it's a nil pointer, just say "<nil>". The likeliest causes are a
+			// MarshalLogArray that fails to guard against nil or a nil pointer for a
+			// value receiver, and in either case, "<nil>" is a nice result.
+			if v := reflect.ValueOf(arrayMarshaller); v.Kind() == reflect.Ptr && v.IsNil() {
+				enc.AddString(key, "<nil>")
+				return
+			}
+			_ = enc.AddArray(key, emptyArrayMarshaler{})
+			retErr = fmt.Errorf("PANIC=%v", err)
+		}
+	}()
+
+	retErr = enc.AddArray(key, arrayMarshaller.(ArrayMarshaler))
+	return
+}
+
+func encodeInlineMarshaler(key string, objectMarshaller interface{}, enc ObjectEncoder) (retErr error) {
+	// Try to capture panics (from nil references or otherwise) when calling
+	// the MarshalLogObject() method, similar to https://golang.org/src/fmt/print.go#L540
+	defer func() {
+		if err := recover(); err != nil {
+			// If it's a nil pointer, just say "<nil>". The likeliest causes are a
+			// MarshalLogObject that fails to guard against nil or a nil pointer for a
+			// value receiver, and in either case, "<nil>" is a nice result.
+			if v := reflect.ValueOf(objectMarshaller); v.Kind() == reflect.Ptr && v.IsNil() {
+				enc.AddString(key, "<nil>")
+				return
+			}
+			retErr = fmt.Errorf("PANIC=%v", err)
+		}
+	}()
+
+	retErr = objectMarshaller.(ObjectMarshaler).MarshalLogObject(enc)
+	return
 }
