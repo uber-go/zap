@@ -326,13 +326,32 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	// called it.
 	const callerSkipOffset = 2
 
-	// Check the level first to reduce the cost of disabled log calls.
-	// Since Panic and higher may exit, we skip the optimization for those levels.
-	if lvl < zapcore.DPanicLevel && !log.core.Enabled(lvl) {
-		return nil
+	// Fast path for common log levels (Debug, Info) that are frequently used
+	// but often filtered out. This avoids expensive operations when logs
+	// won't be written.
+	if lvl < zapcore.DPanicLevel {
+		if !log.core.Enabled(lvl) {
+			return nil
+		}
+		
+		// Fast path for Debug/Info levels without caller/stack annotations
+		// Most common case optimization: no caller or stack tracing needed
+		if !log.addCaller && !log.addStack.Enabled(lvl) {
+			ent := zapcore.Entry{
+				LoggerName: log.name,
+				Time:       log.clock.Now(),
+				Level:      lvl,
+				Message:    msg,
+			}
+			if ce := log.core.Check(ent, nil); ce != nil {
+				ce.ErrorOutput = log.errorOutput
+				return ce
+			}
+			return nil
+		}
 	}
 
-	// Create basic checked entry thru the core; this will be non-nil if the
+	// Create basic checked entry through the core; this will be non-nil if the
 	// log message will actually be written somewhere.
 	ent := zapcore.Entry{
 		LoggerName: log.name,
@@ -343,7 +362,23 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	ce := log.core.Check(ent, nil)
 	willWrite := ce != nil
 
-	// Set up any required terminal behavior.
+	// Short-circuit if we're not going to write this message
+	if !willWrite {
+		// Set up any required terminal behavior even if we're not writing.
+		switch ent.Level {
+		case zapcore.PanicLevel:
+			return ce.After(ent, terminalHookOverride(zapcore.WriteThenPanic, log.onPanic))
+		case zapcore.FatalLevel:
+			return ce.After(ent, terminalHookOverride(zapcore.WriteThenFatal, log.onFatal))
+		case zapcore.DPanicLevel:
+			if log.development {
+				return ce.After(ent, terminalHookOverride(zapcore.WriteThenPanic, log.onPanic))
+			}
+		}
+		return ce
+	}
+
+	// Handle terminal behaviors for entries that will be written
 	switch ent.Level {
 	case zapcore.PanicLevel:
 		ce = ce.After(ent, terminalHookOverride(zapcore.WriteThenPanic, log.onPanic))
@@ -355,17 +390,11 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 		}
 	}
 
-	// Only do further annotation if we're going to write this message; checked
-	// entries that exist only for terminal behavior don't benefit from
-	// annotation.
-	if !willWrite {
-		return ce
-	}
-
 	// Thread the error output through to the CheckedEntry.
 	ce.ErrorOutput = log.errorOutput
 
 	addStack := log.addStack.Enabled(ce.Level)
+	// Skip expensive caller/stack collection if not needed
 	if !log.addCaller && !addStack {
 		return ce
 	}

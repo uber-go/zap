@@ -112,76 +112,143 @@ type Field struct {
 // AddTo exports a field through the ObjectEncoder interface. It's primarily
 // useful to library authors, and shouldn't be necessary in most applications.
 func (f Field) AddTo(enc ObjectEncoder) {
+	// Avoid allocating err unless needed
 	var err error
 
+	// Fast-path: handle most common types without allocations or assertions.
 	switch f.Type {
-	case ArrayMarshalerType:
-		err = enc.AddArray(f.Key, f.Interface.(ArrayMarshaler))
-	case ObjectMarshalerType:
-		err = enc.AddObject(f.Key, f.Interface.(ObjectMarshaler))
-	case InlineMarshalerType:
-		err = f.Interface.(ObjectMarshaler).MarshalLogObject(enc)
-	case BinaryType:
-		enc.AddBinary(f.Key, f.Interface.([]byte))
 	case BoolType:
 		enc.AddBool(f.Key, f.Integer == 1)
-	case ByteStringType:
-		enc.AddByteString(f.Key, f.Interface.([]byte))
-	case Complex128Type:
-		enc.AddComplex128(f.Key, f.Interface.(complex128))
-	case Complex64Type:
-		enc.AddComplex64(f.Key, f.Interface.(complex64))
-	case DurationType:
-		enc.AddDuration(f.Key, time.Duration(f.Integer))
-	case Float64Type:
-		enc.AddFloat64(f.Key, math.Float64frombits(uint64(f.Integer)))
-	case Float32Type:
-		enc.AddFloat32(f.Key, math.Float32frombits(uint32(f.Integer)))
+		return
 	case Int64Type:
 		enc.AddInt64(f.Key, f.Integer)
+		return
 	case Int32Type:
 		enc.AddInt32(f.Key, int32(f.Integer))
+		return
 	case Int16Type:
 		enc.AddInt16(f.Key, int16(f.Integer))
+		return
 	case Int8Type:
 		enc.AddInt8(f.Key, int8(f.Integer))
+		return
+	case Uint64Type:
+		enc.AddUint64(f.Key, uint64(f.Integer))
+		return
+	case Uint32Type:
+		enc.AddUint32(f.Key, uint32(f.Integer))
+		return
+	case Uint16Type:
+		enc.AddUint16(f.Key, uint16(f.Integer))
+		return
+	case Uint8Type:
+		enc.AddUint8(f.Key, uint8(f.Integer))
+		return
+	case Float64Type:
+		enc.AddFloat64(f.Key, math.Float64frombits(uint64(f.Integer)))
+		return
+	case Float32Type:
+		enc.AddFloat32(f.Key, math.Float32frombits(uint32(f.Integer)))
+		return
 	case StringType:
 		enc.AddString(f.Key, f.String)
+		return
+	case DurationType:
+		enc.AddDuration(f.Key, time.Duration(f.Integer))
+		return
 	case TimeType:
 		if f.Interface != nil {
-			enc.AddTime(f.Key, time.Unix(0, f.Integer).In(f.Interface.(*time.Location)))
+			loc, ok := f.Interface.(*time.Location)
+			if ok && loc != nil {
+				enc.AddTime(f.Key, time.Unix(0, f.Integer).In(loc))
+			} else {
+				enc.AddTime(f.Key, time.Unix(0, f.Integer))
+			}
 		} else {
 			// Fall back to UTC if location is nil.
 			enc.AddTime(f.Key, time.Unix(0, f.Integer))
 		}
+		return
+	case NamespaceType:
+		enc.OpenNamespace(f.Key)
+		return
+	case SkipType:
+		return
+	}
+
+	// Slower path with interface usage/assertion.
+	switch f.Type {
+	case ArrayMarshalerType:
+		if arr, ok := f.Interface.(ArrayMarshaler); ok {
+			err = enc.AddArray(f.Key, arr)
+		} else {
+			err = fmt.Errorf("Field.Interface is not ArrayMarshaler for %s", f.Key)
+		}
+	case ObjectMarshalerType:
+		if obj, ok := f.Interface.(ObjectMarshaler); ok {
+			err = enc.AddObject(f.Key, obj)
+		} else {
+			err = fmt.Errorf("Field.Interface is not ObjectMarshaler for %s", f.Key)
+		}
+	case InlineMarshalerType:
+		if inl, ok := f.Interface.(ObjectMarshaler); ok {
+			err = inl.MarshalLogObject(enc)
+		} else {
+			err = fmt.Errorf("Field.Interface is not ObjectMarshaler for %s", f.Key)
+		}
+	case BinaryType:
+		if b, ok := f.Interface.([]byte); ok {
+			enc.AddBinary(f.Key, b)
+		} else {
+			err = fmt.Errorf("Field.Interface is not []byte for %s", f.Key)
+		}
+	case ByteStringType:
+		if b, ok := f.Interface.([]byte); ok {
+			enc.AddByteString(f.Key, b)
+		} else {
+			err = fmt.Errorf("Field.Interface is not []byte for %s", f.Key)
+		}
+	case Complex128Type:
+		if c, ok := f.Interface.(complex128); ok {
+			enc.AddComplex128(f.Key, c)
+		} else {
+			err = fmt.Errorf("Field.Interface is not complex128 for %s", f.Key)
+		}
+	case Complex64Type:
+		if c, ok := f.Interface.(complex64); ok {
+			enc.AddComplex64(f.Key, c)
+		} else {
+			err = fmt.Errorf("Field.Interface is not complex64 for %s", f.Key)
+		}
 	case TimeFullType:
-		enc.AddTime(f.Key, f.Interface.(time.Time))
-	case Uint64Type:
-		enc.AddUint64(f.Key, uint64(f.Integer))
-	case Uint32Type:
-		enc.AddUint32(f.Key, uint32(f.Integer))
-	case Uint16Type:
-		enc.AddUint16(f.Key, uint16(f.Integer))
-	case Uint8Type:
-		enc.AddUint8(f.Key, uint8(f.Integer))
+		if t, ok := f.Interface.(time.Time); ok {
+			enc.AddTime(f.Key, t)
+		} else {
+			err = fmt.Errorf("Field.Interface is not time.Time for %s", f.Key)
+		}
 	case UintptrType:
 		enc.AddUintptr(f.Key, uintptr(f.Integer))
 	case ReflectType:
 		err = enc.AddReflected(f.Key, f.Interface)
-	case NamespaceType:
-		enc.OpenNamespace(f.Key)
 	case StringerType:
 		err = encodeStringer(f.Key, f.Interface, enc)
 	case ErrorType:
-		err = encodeError(f.Key, f.Interface.(error), enc)
-	case SkipType:
-		break
+		if e, ok := f.Interface.(error); ok {
+			err = encodeError(f.Key, e, enc)
+		} else {
+			err = fmt.Errorf("Field.Interface is not error for %s", f.Key)
+		}
 	default:
 		panic(fmt.Sprintf("unknown field type: %v", f))
 	}
 
 	if err != nil {
-		enc.AddString(fmt.Sprintf("%sError", f.Key), err.Error())
+		// Avoid Sprintf allocation if possible
+		key := f.Key
+		if key == "" {
+			key = "Field"
+		}
+		enc.AddString(key+"Error", err.Error())
 	}
 }
 
@@ -197,15 +264,25 @@ func (f Field) Equals(other Field) bool {
 
 	switch f.Type {
 	case BinaryType, ByteStringType:
-		return bytes.Equal(f.Interface.([]byte), other.Interface.([]byte))
+		// Safely handle type assertions with explicit checks
+		fb, fok := f.Interface.([]byte)
+		ob, ook := other.Interface.([]byte)
+		if !fok || !ook {
+			return false
+		}
+		return bytes.Equal(fb, ob)
 	case ArrayMarshalerType, ObjectMarshalerType, ErrorType, ReflectType:
+		// For complex types we still need DeepEqual
+		// This is typically used in tests, not in hot paths
 		return reflect.DeepEqual(f.Interface, other.Interface)
 	default:
+		// For primitive types, direct comparison is efficient
 		return f == other
 	}
 }
 
 func addFields(enc ObjectEncoder, fields []Field) {
+	// Using direct indexing to avoid creating a copy of the Field
 	for i := range fields {
 		fields[i].AddTo(enc)
 	}
