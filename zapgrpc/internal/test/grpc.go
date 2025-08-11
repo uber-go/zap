@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package grpc tests Zap's zapgrpc package without requring a dependency on
+// Package grpc tests Zap's zapgrpc package without requiring a dependency on
 // grpc from Zap itself.
 package grpc
 

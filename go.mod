@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.1
-	go.uber.org/goleak v1.2.0
+	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.10.0
 	gopkg.in/yaml.v3 v3.0.1
 )

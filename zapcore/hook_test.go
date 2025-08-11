@@ -23,6 +23,7 @@ package zapcore_test
 import (
 	"testing"
 
+	//revive:disable:dot-imports
 	. "go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 

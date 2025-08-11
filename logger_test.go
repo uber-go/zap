@@ -836,6 +836,130 @@ func TestLoggerFatalOnNoop(t *testing.T) {
 	assert.Equal(t, 1, exitStub.Code, "must exit with status 1 for WriteThenNoop")
 }
 
+func TestLoggerCustomOnPanic(t *testing.T) {
+	tests := []struct {
+		msg          string
+		level        zapcore.Level
+		opts         []Option
+		finished     bool
+		want         []observer.LoggedEntry
+		recoverValue any
+	}{
+		{
+			msg:      "panic with nil hook",
+			level:    PanicLevel,
+			opts:     opts(WithPanicHook(nil)),
+			finished: false,
+			want: []observer.LoggedEntry{
+				{
+					Entry:   zapcore.Entry{Level: PanicLevel, Message: "foobar"},
+					Context: []Field{},
+				},
+			},
+			recoverValue: "foobar",
+		},
+		{
+			msg:      "panic with noop hook",
+			level:    PanicLevel,
+			opts:     opts(WithPanicHook(zapcore.WriteThenNoop)),
+			finished: false,
+			want: []observer.LoggedEntry{
+				{
+					Entry:   zapcore.Entry{Level: PanicLevel, Message: "foobar"},
+					Context: []Field{},
+				},
+			},
+			recoverValue: "foobar",
+		},
+		{
+			msg:      "no panic with goexit hook",
+			level:    PanicLevel,
+			opts:     opts(WithPanicHook(zapcore.WriteThenGoexit)),
+			finished: false,
+			want: []observer.LoggedEntry{
+				{
+					Entry:   zapcore.Entry{Level: PanicLevel, Message: "foobar"},
+					Context: []Field{},
+				},
+			},
+			recoverValue: nil,
+		},
+		{
+			msg:      "dpanic no panic in development mode with goexit hook",
+			level:    DPanicLevel,
+			opts:     opts(WithPanicHook(zapcore.WriteThenGoexit), Development()),
+			finished: false,
+			want: []observer.LoggedEntry{
+				{
+					Entry:   zapcore.Entry{Level: DPanicLevel, Message: "foobar"},
+					Context: []Field{},
+				},
+			},
+			recoverValue: nil,
+		},
+		{
+			msg:      "dpanic panic in development mode with noop hook",
+			level:    DPanicLevel,
+			opts:     opts(WithPanicHook(zapcore.WriteThenNoop), Development()),
+			finished: false,
+			want: []observer.LoggedEntry{
+				{
+					Entry:   zapcore.Entry{Level: DPanicLevel, Message: "foobar"},
+					Context: []Field{},
+				},
+			},
+			recoverValue: "foobar",
+		},
+		{
+			msg:      "dpanic no exit in production mode with goexit hook",
+			level:    DPanicLevel,
+			opts:     opts(WithPanicHook(zapcore.WriteThenPanic)),
+			finished: true,
+			want: []observer.LoggedEntry{
+				{
+					Entry:   zapcore.Entry{Level: DPanicLevel, Message: "foobar"},
+					Context: []Field{},
+				},
+			},
+			recoverValue: nil,
+		},
+		{
+			msg:      "dpanic no panic in production mode with panic hook",
+			level:    DPanicLevel,
+			opts:     opts(WithPanicHook(zapcore.WriteThenPanic)),
+			finished: true,
+			want: []observer.LoggedEntry{
+				{
+					Entry:   zapcore.Entry{Level: DPanicLevel, Message: "foobar"},
+					Context: []Field{},
+				},
+			},
+			recoverValue: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			withLogger(t, InfoLevel, tt.opts, func(logger *Logger, logs *observer.ObservedLogs) {
+				var finished bool
+				recovered := make(chan any)
+				go func() {
+					defer func() {
+						recovered <- recover()
+					}()
+
+					logger.Log(tt.level, "foobar")
+					finished = true
+				}()
+
+				assert.Equal(t, tt.recoverValue, <-recovered, "unexpected value from recover()")
+				assert.Equal(t, tt.finished, finished, "expect goroutine finished state doesn't match")
+				assert.Equal(t, tt.want, logs.AllUntimed(), "unexpected logs")
+			})
+		})
+	}
+}
+
 func TestLoggerCustomOnFatal(t *testing.T) {
 	tests := []struct {
 		msg          string

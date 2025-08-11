@@ -71,7 +71,7 @@ func BenchmarkBuffers(b *testing.B) {
 	// bunch of extra allocations). Nevertheless, let's make sure that we're
 	// not losing any precious nanoseconds.
 	str := strings.Repeat("a", 1024)
-	slice := make([]byte, 1024)
+	slice := make([]byte, 0, 1024)
 	buf := bytes.NewBuffer(slice)
 	custom := NewPool().Get()
 	b.Run("ByteSlice", func(b *testing.B) {

@@ -1,6 +1,15 @@
-# :zap: zap [![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov]
+# :zap: zap
+
+
+<div align="center">
 
 Blazing fast, structured, leveled logging in Go.
+
+![Zap logo](assets/logo.png)
+
+[![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov]
+
+</div>
 
 ## Installation
 
@@ -123,7 +132,7 @@ standard.
 
 <hr>
 
-Released under the [MIT License](LICENSE.txt).
+Released under the [MIT License](LICENSE).
 
 <sup id="footnote-versions">1</sup> In particular, keep in mind that we may be
 benchmarking against slightly older versions of other packages. Versions are

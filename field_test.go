@@ -98,7 +98,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Skip", Field{Type: zapcore.SkipType}, Skip()},
 		{"Binary", Field{Key: "k", Type: zapcore.BinaryType, Interface: []byte("ab12")}, Binary("k", []byte("ab12"))},
 		{"Bool", Field{Key: "k", Type: zapcore.BoolType, Integer: 1}, Bool("k", true)},
-		{"Bool", Field{Key: "k", Type: zapcore.BoolType, Integer: 1}, Bool("k", true)},
+		{"Bool", Field{Key: "k", Type: zapcore.BoolType, Integer: 0}, Bool("k", false)},
 		{"ByteString", Field{Key: "k", Type: zapcore.ByteStringType, Interface: []byte("ab12")}, ByteString("k", []byte("ab12"))},
 		{"Complex128", Field{Key: "k", Type: zapcore.Complex128Type, Interface: 1 + 2i}, Complex128("k", 1+2i)},
 		{"Complex64", Field{Key: "k", Type: zapcore.Complex64Type, Interface: complex64(1 + 2i)}, Complex64("k", 1+2i)},
@@ -253,6 +253,7 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:PtrUintptr", Any("k", &uintptrVal), Uintptr("k", uintptrVal)},
 		{"Any:ErrorNil", Any("k", nilErr), nilField("k")},
 		{"Namespace", Namespace("k"), Field{Key: "k", Type: zapcore.NamespaceType}},
+		{"Object:Nil", Object("k", nil), nilField("k")},
 	}
 
 	for _, tt := range tests {
@@ -300,6 +301,48 @@ func TestDict(t *testing.T) {
 		{"empty", Dict(""), map[string]any{}},
 		{"single", Dict("", String("k", "v")), map[string]any{"k": "v"}},
 		{"multiple", Dict("", String("k", "v"), String("k2", "v2")), map[string]any{"k": "v", "k2": "v2"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			enc := zapcore.NewMapObjectEncoder()
+			tt.field.Key = "k"
+			tt.field.AddTo(enc)
+			assert.Equal(t, tt.expected, enc.Fields["k"], "unexpected map contents")
+			assert.Len(t, enc.Fields, 1, "found extra keys in map: %v", enc.Fields)
+
+			assertCanBeReused(t, tt.field)
+		})
+	}
+}
+
+func TestDictObject(t *testing.T) {
+	tests := []struct {
+		desc     string
+		field    Field
+		expected any
+	}{
+		{
+			"empty",
+			Object("", DictObject()),
+			map[string]any{},
+		},
+		{
+			"object",
+			Object("", DictObject(String("k", "v"))),
+			map[string]any{"k": "v"},
+		},
+		{
+			"objects",
+			Objects("", []zapcore.ObjectMarshaler{
+				DictObject(String("k", "v")),
+				DictObject(String("k2", "v2")),
+			}),
+			[]any{
+				map[string]any{"k": "v"},
+				map[string]any{"k2": "v2"},
+			},
+		},
 	}
 
 	for _, tt := range tests {

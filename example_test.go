@@ -388,6 +388,51 @@ func ExampleObjects() {
 	// {"level":"debug","msg":"opening connections","addrs":[{"ip":"123.45.67.89","port":4040},{"ip":"127.0.0.1","port":4041},{"ip":"192.168.0.1","port":4042}]}
 }
 
+func ExampleDictObject() {
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	// Use DictObject to create zapcore.ObjectMarshaler implementations from Field arrays,
+	// then use the Object and Objects field constructors to turn them back into a Field.
+
+	logger.Debug("worker received job",
+		zap.Object("w1",
+			zap.DictObject(
+				zap.Int("id", 402000),
+				zap.String("description", "compress image data"),
+				zap.Int("priority", 3),
+			),
+		))
+
+	d1 := 68 * time.Millisecond
+	d2 := 79 * time.Millisecond
+	d3 := 57 * time.Millisecond
+
+	logger.Info("worker status checks",
+		zap.Objects("job batch enqueued",
+			[]zapcore.ObjectMarshaler{
+				zap.DictObject(
+					zap.String("worker", "w1"),
+					zap.Int("load", 419),
+					zap.Duration("latency", d1),
+				),
+				zap.DictObject(
+					zap.String("worker", "w2"),
+					zap.Int("load", 520),
+					zap.Duration("latency", d2),
+				),
+				zap.DictObject(
+					zap.String("worker", "w3"),
+					zap.Int("load", 310),
+					zap.Duration("latency", d3),
+				),
+			},
+		))
+	// Output:
+	// {"level":"debug","msg":"worker received job","w1":{"id":402000,"description":"compress image data","priority":3}}
+	// {"level":"info","msg":"worker status checks","job batch enqueued":[{"worker":"w1","load":419,"latency":"68ms"},{"worker":"w2","load":520,"latency":"79ms"},{"worker":"w3","load":310,"latency":"57ms"}]}
+}
+
 func ExampleObjectValues() {
 	logger := zap.NewExample()
 	defer logger.Sync()
