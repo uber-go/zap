@@ -69,11 +69,12 @@ func (o *obj) String() string {
 		return "nil obj"
 	}
 
-	if o.kind == 1 {
+	switch o.kind {
+	case 1:
 		panic("panic with string")
-	} else if o.kind == 2 {
+	case 2:
 		panic(errors.New("panic with error"))
-	} else if o.kind == 3 {
+	case 3:
 		// panic with an arbitrary object that causes a panic itself
 		// when being converted to a string
 		panic((*url.URL)(nil))
