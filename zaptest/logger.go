@@ -137,6 +137,7 @@ func (w TestingWriter) WithMarkFailed(v bool) TestingWriter {
 
 // Write writes bytes from p to the underlying testing.TB.
 func (w TestingWriter) Write(p []byte) (n int, err error) {
+	w.t.Helper()
 	n = len(p)
 
 	// Strip trailing newline because t.Log always adds one.
