@@ -23,7 +23,8 @@ package zapcore
 import "sync"
 
 type lazyWithCore struct {
-	core   Core
+	core         Core
+	originalCore Core
 	sync.Once
 	fields []Field
 }
@@ -32,8 +33,9 @@ type lazyWithCore struct {
 // the logger is written to (or is further chained in a lon-lazy manner).
 func NewLazyWith(core Core, fields []Field) Core {
 	return &lazyWithCore{
-		core:   core,
-		fields: fields,
+		core:         core,
+		originalCore: core,
+		fields:       fields,
 	}
 }
 
@@ -49,13 +51,15 @@ func (d *lazyWithCore) With(fields []Field) Core {
 }
 
 func (d *lazyWithCore) Check(e Entry, ce *CheckedEntry) *CheckedEntry {
+	if !d.originalCore.Enabled(e.Level) {
+		return ce
+	}
 	d.initOnce()
 	return d.core.Check(e, ce)
 }
 
 func (d *lazyWithCore) Enabled(level Level) bool {
-	d.initOnce()
-	return d.core.Enabled(level)
+	return d.originalCore.Enabled(level)
 }
 
 func (d *lazyWithCore) Write(e Entry, fields []Field) error {
