@@ -65,6 +65,7 @@ func TestLazyCore(t *testing.T) {
 		initialFields []zapcore.Field
 		withChains    [][]zapcore.Field
 		wantLogs      []observer.LoggedEntry
+		wantSkipInit  bool
 	}{
 		{
 			name:     "no logging, no with, inner core with never called, inner core check never called",
@@ -93,6 +94,38 @@ func TestLazyCore(t *testing.T) {
 				{makeInt64Field("c", 33), makeInt64Field("d", 44)},
 			},
 			wantLogs: []observer.LoggedEntry{},
+		},
+		{
+			name: "1 log, discarded, no-chains, inner core with never called",
+			entries: []zapcore.Entry{
+				{Level: zapcore.DebugLevel, Message: "log-at-debug"},
+			},
+			initialFields: []zapcore.Field{
+				makeInt64Field("a", 11), makeInt64Field("b", 22),
+			},
+			wantLogs:     []observer.LoggedEntry{},
+			wantSkipInit: true,
+		},
+		{
+			name: "1 log, logged, no-chains, inner core with called",
+			entries: []zapcore.Entry{
+				{Level: zapcore.WarnLevel, Message: "log-at-warn"},
+			},
+			initialFields: []zapcore.Field{
+				makeInt64Field("a", 11), makeInt64Field("b", 22),
+			},
+			wantLogs: []observer.LoggedEntry{
+				{
+					Entry: zapcore.Entry{
+						Level:   zapcore.WarnLevel,
+						Message: "log-at-warn",
+					},
+					Context: []zapcore.Field{
+						makeInt64Field("a", 11),
+						makeInt64Field("b", 22),
+					},
+				},
+			},
 		},
 		{
 			name: "2 logs, 1 dropped, 2-chained with, inner core with called once, inner core check never called",
@@ -142,7 +175,7 @@ func TestLazyCore(t *testing.T) {
 						ce.Write()
 					}
 				}
-				if len(tt.entries) > 0 || len(tt.withChains) > 0 {
+				if !tt.wantSkipInit && (len(tt.entries) > 0 || len(tt.withChains) > 0) {
 					checkCounts(1, "expected with calls because the logger had entries or with chains")
 				} else {
 					checkCounts(0, "expected no with calls because the logger is not used yet")
