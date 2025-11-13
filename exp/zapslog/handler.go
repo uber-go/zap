@@ -32,13 +32,17 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// ContextFieldExtractor can be used to extract a field from a context.
+type ContextFieldExtractor func(ctx context.Context) []zapcore.Field
+
 // Handler implements the slog.Handler by writing to a zap Core.
 type Handler struct {
-	core       zapcore.Core
-	name       string // logger name
-	addCaller  bool
-	addStackAt slog.Level
-	callerSkip int
+	core                   zapcore.Core
+	name                   string // logger name
+	addCaller              bool
+	addStackAt             slog.Level
+	callerSkip             int
+	contextFieldExtractors []ContextFieldExtractor
 
 	// List of unapplied groups.
 	//
@@ -168,7 +172,13 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 		ce.Stack = stacktrace.Take(3 + h.callerSkip)
 	}
 
-	fields := make([]zapcore.Field, 0, record.NumAttrs()+len(h.groups))
+	var contextFields []zapcore.Field
+	for _, extractor := range h.contextFieldExtractors {
+		contextFields = append(contextFields, extractor(ctx)...)
+	}
+
+	fields := make([]zapcore.Field, 0, record.NumAttrs()+len(contextFields))
+	fields = append(fields, contextFields...)
 
 	var addedNamespace bool
 	record.Attrs(func(attr slog.Attr) bool {
