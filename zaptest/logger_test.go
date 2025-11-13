@@ -146,6 +146,10 @@ type testLogSpy struct {
 	Messages []string
 }
 
+func (t *testLogSpy) Helper() {
+	t.TB.Helper()
+}
+
 func newTestLogSpy(t testing.TB) *testLogSpy {
 	return &testLogSpy{TB: t}
 }
