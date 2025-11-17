@@ -23,7 +23,7 @@ package zapcore
 import "sync"
 
 type lazyWithCore struct {
-	core   Core
+	core Core
 	sync.Once
 	fields []Field
 }
