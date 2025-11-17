@@ -21,6 +21,7 @@
 package zapcore_test
 
 import (
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -151,4 +152,35 @@ func TestLazyCore(t *testing.T) {
 			}, tt.initialFields...)
 		})
 	}
+}
+
+// TestLazyCoreRace tests concurrent access to lazyWithCore methods
+// This is a regression test for issue #1426
+func TestLazyCoreRace(t *testing.T) {
+	core, _ := observer.New(zapcore.InfoLevel)
+	lazyCore := zapcore.NewLazyWith(core, []zapcore.Field{
+		makeInt64Field("lazy", 42),
+	})
+
+	var wg sync.WaitGroup
+	const numGoroutines = 50
+
+	// Test concurrent access to Enabled() method which was the source of the race
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			// These operations should not race
+			_ = lazyCore.Enabled(zapcore.InfoLevel)
+			_ = lazyCore.Enabled(zapcore.DebugLevel)
+
+			// Also test other methods for good measure
+			if ce := lazyCore.Check(zapcore.Entry{Level: zapcore.InfoLevel, Message: "test"}, nil); ce != nil {
+				_ = lazyCore.Write(zapcore.Entry{Level: zapcore.InfoLevel, Message: "test"}, nil)
+			}
+		}()
+	}
+
+	wg.Wait()
 }
