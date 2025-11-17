@@ -23,7 +23,7 @@ package zapcore
 import "sync"
 
 type lazyWithCore struct {
-	core   Core
+	core Core
 	sync.Once
 	fields []Field
 }
@@ -38,7 +38,7 @@ func NewLazyWith(core Core, fields []Field) Core {
 }
 
 func (d *lazyWithCore) initOnce() {
-	d.Once.Do(func() {
+	d.Do(func() {
 		d.core = d.core.With(d.fields)
 	})
 }
