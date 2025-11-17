@@ -40,10 +40,6 @@ type TestingT interface {
 
 	// Marks the test as failed and stops execution of that test.
 	FailNow()
-
-	// Helper marks the calling function as a test helper function.
-	// When printing file and line information, that function will be skipped.
-	Helper()
 }
 
 // Note: We currently only rely on Logf. We are including Errorf and FailNow
