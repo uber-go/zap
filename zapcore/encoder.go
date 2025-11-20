@@ -114,6 +114,13 @@ func EpochMillisTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 	enc.AppendFloat64(millis)
 }
 
+// EpochMillisInt64TimeEncoder serializes a time.Time to a 64-bit signed integer number of
+// milliseconds since the Unix epoch.
+func EpochMillisInt64TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
+	millis := t.UnixMilli()
+	enc.AppendInt64(millis)
+}
+
 // EpochNanosTimeEncoder serializes a time.Time to an integer number of
 // nanoseconds since the Unix epoch.
 func EpochNanosTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
