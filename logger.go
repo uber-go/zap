@@ -144,9 +144,9 @@ func NewExample(options ...Option) *Logger {
 // single application to use both Loggers and SugaredLoggers, converting
 // between them on the boundaries of performance-sensitive code.
 func (log *Logger) Sugar() *SugaredLogger {
-	core := log.clone()
-	core.callerSkip += 2
-	return &SugaredLogger{core}
+	l := log.clone()
+	l.callerSkip += 2
+	return &SugaredLogger{l}
 }
 
 // Named adds a new path segment to the logger's name. Segments are joined by
@@ -167,11 +167,11 @@ func (log *Logger) Named(s string) *Logger {
 // WithOptions clones the current Logger, applies the supplied Options, and
 // returns the resulting Logger. It's safe to use concurrently.
 func (log *Logger) WithOptions(opts ...Option) *Logger {
-	c := log.clone()
+	l := log.clone()
 	for _, opt := range opts {
-		opt.apply(c)
+		opt.apply(l)
 	}
-	return c
+	return l
 }
 
 // With creates a child logger and adds structured context to it. Fields added
