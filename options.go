@@ -184,3 +184,17 @@ func WithClock(clock zapcore.Clock) Option {
 		log.clock = clock
 	})
 }
+
+// WithDisableErrorVerbose configures the Logger to turn off the error verbose or not,
+// depending on the value of disableErrorVerbose. This is a generalized form of DisableErrorVerbose.
+func WithDisableErrorVerbose(disableErrorVerbose bool) Option {
+	return optionFunc(func(log *Logger) {
+		log.DisableErrorVerbose = disableErrorVerbose
+	})
+}
+
+// DisableErrorVerbose configures the Logger to turn off the error verbose.
+// See also WithDisableErrorVerbose.
+func DisableErrorVerbose() Option {
+	return WithDisableErrorVerbose(true)
+}
