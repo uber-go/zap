@@ -30,6 +30,7 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
+	"go.uber.org/zap/zapcore"
 )
 
 type Password string
@@ -69,6 +70,7 @@ func Example_slog() {
 			"foo": "bar",
 		}))
 	sl.LogAttrs(ctx, slog.LevelDebug, "not show up")
+	sl.LogAttrs(ctx, slog.LevelDebug, "not show up")
 
 	// Output:
 	// {"level":"info","msg":"user","name":"Al","secret":"REDACTED"}
@@ -76,4 +78,53 @@ func Example_slog() {
 	// {"level":"error","msg":"oops","err":"use of closed network connection","status":500}
 	// {"level":"info","msg":"message","group":{"pi":3.14,"1min":"1m0s"}}
 	// {"level":"warn","msg":"warn msg","s":{"u":1,"m":{"foo":"bar"}}}
+}
+
+type exampleDpanicLeveler struct{}
+
+func (c *exampleDpanicLeveler) ConvertLevel(l slog.Level) zapcore.Level {
+	switch {
+	case l >= slog.LevelError:
+		return zapcore.ErrorLevel
+	case l >= slog.LevelWarn:
+		return zapcore.WarnLevel
+	case l >= slog.LevelInfo:
+		return zapcore.InfoLevel
+	case l == -3:
+		return zapcore.DPanicLevel
+	case l == -5:
+		return zapcore.FatalLevel
+	default:
+		return zapcore.DebugLevel
+	}
+}
+
+func ExampleConvertLeveler() {
+	logger := zap.NewExample(zap.IncreaseLevel(zap.InfoLevel))
+	defer logger.Sync()
+
+	sl := slog.New(zapslog.NewHandler(logger.Core(), zapslog.WithConvertLeveler(&exampleDpanicLeveler{})))
+	ctx := context.Background()
+
+	sl.Info("user", "name", "Al", "secret", Password("secret"))
+	sl.Error("oops", "err", net.ErrClosed, "status", 500)
+	sl.LogAttrs(
+		ctx,
+		-3,
+		"oops",
+		slog.Any("err", net.ErrClosed),
+		slog.Int("status", 500),
+	)
+	sl.LogAttrs(
+		ctx,
+		-5,
+		"oops",
+		slog.Any("err", net.ErrClosed),
+		slog.Int("status", 500),
+	)
+	// Output:
+	// {"level":"info","msg":"user","name":"Al","secret":"REDACTED"}
+	// {"level":"error","msg":"oops","err":"use of closed network connection","status":500}
+	// {"level":"dpanic","msg":"oops","err":"use of closed network connection","status":500}
+	// {"level":"fatal","msg":"oops","err":"use of closed network connection","status":500}
 }
