@@ -43,16 +43,34 @@ func (u users) String() string {
 }
 
 func (u users) MarshalLogObject(enc ObjectEncoder) error {
-	if int(u) < 0 {
+	n := int(u)
+	if n < 0 {
 		return errors.New("too few users")
+	} else if n == 1 {
+		panic("panic with string")
+	} else if n == 2 {
+		panic(errors.New("panic with error"))
+	} else if n == 3 {
+		// panic with an arbitrary object that causes a panic itself
+		// when being converted to a string
+		panic((*url.URL)(nil))
 	}
 	enc.AddInt("users", int(u))
 	return nil
 }
 
 func (u users) MarshalLogArray(enc ArrayEncoder) error {
-	if int(u) < 0 {
+	n := int(u)
+	if n < 0 {
 		return errors.New("too few users")
+	} else if n == 1 {
+		panic("panic with string")
+	} else if n == 2 {
+		panic(errors.New("panic with error"))
+	} else if n == 3 {
+		// panic with an arbitrary object that causes a panic itself
+		// when being converted to a string
+		panic((*url.URL)(nil))
 	}
 	for i := 0; i < int(u); i++ {
 		enc.AppendString("user")
@@ -111,8 +129,17 @@ func TestFieldAddingError(t *testing.T) {
 		err   string
 	}{
 		{t: ArrayMarshalerType, iface: users(-1), want: []interface{}{}, err: "too few users"},
+		{t: ArrayMarshalerType, iface: users(1), want: []interface{}{}, err: "PANIC=panic with string"},
+		{t: ArrayMarshalerType, iface: users(2), want: []interface{}{}, err: "PANIC=panic with error"},
+		{t: ArrayMarshalerType, iface: users(3), want: []interface{}{}, err: "PANIC=<nil>"},
 		{t: ObjectMarshalerType, iface: users(-1), want: map[string]interface{}{}, err: "too few users"},
+		{t: ObjectMarshalerType, iface: users(1), want: map[string]interface{}{}, err: "PANIC=panic with string"},
+		{t: ObjectMarshalerType, iface: users(2), want: map[string]interface{}{}, err: "PANIC=panic with error"},
+		{t: ObjectMarshalerType, iface: users(3), want: map[string]interface{}{}, err: "PANIC=<nil>"},
 		{t: InlineMarshalerType, iface: users(-1), want: nil, err: "too few users"},
+		{t: InlineMarshalerType, iface: users(1), want: nil, err: "PANIC=panic with string"},
+		{t: InlineMarshalerType, iface: users(2), want: nil, err: "PANIC=panic with error"},
+		{t: InlineMarshalerType, iface: users(3), want: nil, err: "PANIC=<nil>"},
 		{t: StringerType, iface: obj{}, want: empty, err: "PANIC=interface conversion: zapcore_test.obj is not fmt.Stringer: missing method String"},
 		{t: StringerType, iface: &obj{1}, want: empty, err: "PANIC=panic with string"},
 		{t: StringerType, iface: &obj{2}, want: empty, err: "PANIC=panic with error"},
@@ -122,13 +149,14 @@ func TestFieldAddingError(t *testing.T) {
 	for _, tt := range tests {
 		f := Field{Key: "k", Interface: tt.iface, Type: tt.t}
 		enc := NewMapObjectEncoder()
-		assert.NotPanics(t, func() { f.AddTo(enc) }, "Unexpected panic when adding fields returns an error.")
-		assert.Equal(t, tt.want, enc.Fields["k"], "On error, expected zero value in field.Key.")
-		assert.Equal(t, tt.err, enc.Fields["kError"], "Expected error message in log context.")
+		require.NotPanics(t, func() { f.AddTo(enc) }, "Unexpected panic when adding fields returns an error.")
+		require.Equal(t, tt.want, enc.Fields["k"], "On error, expected zero value in field.Key.")
+		require.Equal(t, tt.err, enc.Fields["kError"], "Expected error message in log context.")
 	}
 }
 
 func TestFields(t *testing.T) {
+	var nilUsers *users
 	tests := []struct {
 		t     FieldType
 		i     int64
@@ -136,8 +164,11 @@ func TestFields(t *testing.T) {
 		iface interface{}
 		want  interface{}
 	}{
-		{t: ArrayMarshalerType, iface: users(2), want: []interface{}{"user", "user"}},
-		{t: ObjectMarshalerType, iface: users(2), want: map[string]interface{}{"users": 2}},
+		{t: ArrayMarshalerType, iface: users(4), want: []interface{}{"user", "user", "user", "user"}},
+		{t: ArrayMarshalerType, iface: nilUsers, want: "<nil>"},
+		{t: ObjectMarshalerType, iface: users(4), want: map[string]interface{}{"users": 4}},
+		{t: ObjectMarshalerType, iface: nilUsers, want: "<nil>"},
+
 		{t: BoolType, i: 0, want: false},
 		{t: ByteStringType, iface: []byte("foo"), want: "foo"},
 		{t: Complex128Type, iface: 1 + 2i, want: 1 + 2i},
@@ -191,6 +222,10 @@ func TestInlineMarshaler(t *testing.T) {
 	inlineObj := Field{Key: "ignored", Type: InlineMarshalerType, Interface: users(10)}
 	inlineObj.AddTo(enc)
 
+	var nilUsers *users
+	inlineObjPtr := Field{Key: "nilNotIgnored", Type: InlineMarshalerType, Interface: nilUsers}
+	inlineObjPtr.AddTo(enc)
+
 	nestedObj := Field{Key: "nested", Type: ObjectMarshalerType, Interface: users(11)}
 	nestedObj.AddTo(enc)
 
@@ -200,6 +235,7 @@ func TestInlineMarshaler(t *testing.T) {
 		"nested": map[string]interface{}{
 			"users": 11,
 		},
+		"nilNotIgnored": "<nil>",
 	}, enc.Fields)
 }
 
