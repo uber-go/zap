@@ -67,6 +67,8 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 	switch e := err.(type) {
 	case errorGroup:
 		return enc.AddArray(key+"Causes", errArray(e.Errors()))
+	case joinError:
+		return enc.AddArray(key+"Causes", errArray(e.Unwrap()))
 	case fmt.Formatter:
 		verbose := fmt.Sprintf("%+v", e)
 		if verbose != basic {
@@ -82,6 +84,11 @@ type errorGroup interface {
 	// Provides read-only access to the underlying list of errors, preferably
 	// without causing any allocs.
 	Errors() []error
+}
+
+type joinError interface {
+	// used by errors.Join() in standard error library
+	Unwrap() []error
 }
 
 // Note that errArray and errArrayElem are very similar to the version
