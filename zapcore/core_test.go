@@ -164,3 +164,21 @@ func TestIOCoreWriteFailure(t *testing.T) {
 	// Should log the error.
 	assert.Error(t, err, "Expected writing Entry to fail.")
 }
+
+func TestIOCoreFields(t *testing.T) {
+	fields := []Field{makeInt64Field("k", 1)}
+
+	core := NewCore(
+		NewJSONEncoder(testEncoderConfig()),
+		Lock(os.Stderr),
+		DebugLevel,
+	).With(fields)
+
+	expectedFields := core.Fields()
+	assert.Len(t, expectedFields, 1, "Expected one field.")
+	assert.Equal(t, fields, expectedFields, "Unexpected Fields.")
+
+	core = core.With([]Field{makeInt64Field("w", 2)})
+	expectedFields = core.Fields()
+	assert.Len(t, expectedFields, 2, "Expected two fields.")
+}
