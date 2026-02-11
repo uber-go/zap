@@ -20,6 +20,8 @@
 
 package zaptest
 
+import "io"
+
 // TestingT is a subset of the API provided by all *testing.T and *testing.B
 // objects.
 type TestingT interface {
@@ -40,6 +42,9 @@ type TestingT interface {
 
 	// Marks the test as failed and stops execution of that test.
 	FailNow()
+
+	// Output returns a Writer that writes to the test output stream.
+	Output() io.Writer
 }
 
 // Note: We currently only rely on Logf. We are including Errorf and FailNow
