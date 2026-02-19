@@ -94,6 +94,20 @@ func (eobj *errObj) Error() string {
 	return eobj.errMsg
 }
 
+// panickyObject panics inside MarshalLogObject.
+type panickyObject struct{}
+
+func (p panickyObject) MarshalLogObject(enc ObjectEncoder) error {
+	panic("panic in MarshalLogObject")
+}
+
+// panickyArray panics inside MarshalLogArray.
+type panickyArray struct{}
+
+func (p panickyArray) MarshalLogArray(enc ArrayEncoder) error {
+	panic("panic in MarshalLogArray")
+}
+
 func TestUnknownFieldType(t *testing.T) {
 	unknown := Field{Key: "k", String: "foo"}
 	assert.Equal(t, UnknownType, unknown.Type, "Expected zero value of FieldType to be UnknownType.")
@@ -118,6 +132,9 @@ func TestFieldAddingError(t *testing.T) {
 		{t: StringerType, iface: &obj{2}, want: empty, err: "PANIC=panic with error"},
 		{t: StringerType, iface: &obj{3}, want: empty, err: "PANIC=<nil>"},
 		{t: ErrorType, iface: &errObj{kind: 1}, want: empty, err: "PANIC=panic in Error() method"},
+		{t: ObjectMarshalerType, iface: panickyObject{}, want: map[string]interface{}{}, err: "PANIC=panic in MarshalLogObject"},
+		{t: ArrayMarshalerType, iface: panickyArray{}, want: nil, err: "PANIC=panic in MarshalLogArray"},
+		{t: InlineMarshalerType, iface: panickyObject{}, want: nil, err: "PANIC=panic in MarshalLogObject"},
 	}
 	for _, tt := range tests {
 		f := Field{Key: "k", Interface: tt.iface, Type: tt.t}

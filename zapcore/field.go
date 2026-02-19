@@ -116,11 +116,11 @@ func (f Field) AddTo(enc ObjectEncoder) {
 
 	switch f.Type {
 	case ArrayMarshalerType:
-		err = enc.AddArray(f.Key, f.Interface.(ArrayMarshaler))
+		err = encodeArray(f.Key, f.Interface.(ArrayMarshaler), enc)
 	case ObjectMarshalerType:
-		err = enc.AddObject(f.Key, f.Interface.(ObjectMarshaler))
+		err = encodeObject(f.Key, f.Interface.(ObjectMarshaler), enc)
 	case InlineMarshalerType:
-		err = f.Interface.(ObjectMarshaler).MarshalLogObject(enc)
+		err = encodeInlinedObject(f.Interface.(ObjectMarshaler), enc)
 	case BinaryType:
 		enc.AddBinary(f.Key, f.Interface.([]byte))
 	case BoolType:
@@ -209,6 +209,39 @@ func addFields(enc ObjectEncoder, fields []Field) {
 	for i := range fields {
 		fields[i].AddTo(enc)
 	}
+}
+
+func encodeObject(key string, obj ObjectMarshaler, enc ObjectEncoder) (retErr error) {
+	// Try to capture panics from badly coded MarshalLogObject implementations.
+	defer func() {
+		if err := recover(); err != nil {
+			retErr = fmt.Errorf("PANIC=%v", err)
+		}
+	}()
+
+	return enc.AddObject(key, obj)
+}
+
+func encodeInlinedObject(obj ObjectMarshaler, enc ObjectEncoder) (retErr error) {
+	// Try to capture panics from badly coded MarshalLogObject implementations.
+	defer func() {
+		if err := recover(); err != nil {
+			retErr = fmt.Errorf("PANIC=%v", err)
+		}
+	}()
+
+	return obj.MarshalLogObject(enc)
+}
+
+func encodeArray(key string, arr ArrayMarshaler, enc ObjectEncoder) (retErr error) {
+	// Try to capture panics from badly coded MarshalLogArray implementations.
+	defer func() {
+		if err := recover(); err != nil {
+			retErr = fmt.Errorf("PANIC=%v", err)
+		}
+	}()
+
+	return enc.AddArray(key, arr)
 }
 
 func encodeStringer(key string, stringer interface{}, enc ObjectEncoder) (retErr error) {
