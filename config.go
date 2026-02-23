@@ -176,7 +176,7 @@ func NewProductionConfig() Config {
 // intended to print human-readable output.
 // It will print log messages with the following information:
 //
-//   - The log level (e.g. "INFO", "ERROR").
+//   - The log level (e.g. "INFO", "ERROR"), colored for better readability.
 //   - The time in ISO8601 format (e.g. "2017-01-01T12:00:00Z").
 //   - The message passed to the log statement.
 //   - If available, a short path to the file and line number
@@ -208,7 +208,7 @@ func NewDevelopmentEncoderConfig() zapcore.EncoderConfig {
 		MessageKey:     "M",
 		StacktraceKey:  "S",
 		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.CapitalLevelEncoder,
+		EncodeLevel:    zapcore.CapitalColorLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeDuration: zapcore.StringDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
@@ -218,6 +218,7 @@ func NewDevelopmentEncoderConfig() zapcore.EncoderConfig {
 // NewDevelopmentConfig builds a reasonable default development logging
 // configuration.
 // Logging is enabled at DebugLevel and above, and uses a console encoder.
+// Log levels are colored for better readability in a terminal.
 // Logs are written to standard error.
 // Stacktraces are included on logs of WarnLevel and above.
 // DPanicLevel logs will panic.
