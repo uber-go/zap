@@ -142,6 +142,30 @@ core := zapcore.NewCore(
 logger := zap.New(core)
 ```
 
+### How should I handle the error from `defer logger.Sync()`?
+
+When logging to `stdout` or `stderr` (the default for `zap.NewProduction()`),
+`Sync` may return an error on Linux because the OS does not support `fsync`
+on a pipe. This is safe to ignore.
+
+The recommended pattern is to defer `Sync` on the base logger before
+creating a `SugaredLogger`, so there is no chicken-and-egg problem:
+```go
+logger, _ := zap.NewProduction()
+defer func() { _ = logger.Sync() }()
+sugar := logger.Sugar()
+```
+
+If you are writing logs to a **file-based sink**, handle the error explicitly
+to catch incomplete flushes before process exit:
+```go
+defer func() {
+    if err := logger.Sync(); err != nil {
+        fmt.Fprintf(os.Stderr, "failed to flush logs: %v\n", err)
+    }
+}()
+```
+
 ## Extensions
 
 We'd love to support every logging need within zap itself, but we're only
