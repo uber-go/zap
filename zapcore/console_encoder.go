@@ -101,6 +101,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 			arr.AppendString(ent.Caller.Function)
 		}
 	}
+
 	for i := range arr.elems {
 		if i > 0 {
 			line.AppendString(c.ConsoleSeparator)
@@ -119,10 +120,23 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	c.writeContext(line, fields)
 
 	// If there's no stacktrace key, honor that; this allows users to force
-	// single-line output.
+	// single-line output by avoiding printing the stacktrace.
 	if ent.Stack != "" && c.StacktraceKey != "" {
 		line.AppendByte('\n')
-		line.AppendString(ent.Stack)
+
+		arr = getSliceEncoder()
+		stacktraceEncoder := c.EncodeStacktrace
+		if stacktraceEncoder == nil {
+			stacktraceEncoder = FullStacktraceEncoder
+		}
+		stacktraceEncoder(ent.Stack, arr)
+		for i := range arr.elems {
+			if i > 0 {
+				line.AppendString(c.ConsoleSeparator)
+			}
+			fmt.Fprint(line, arr.elems[i])
+		}
+		putSliceEncoder(arr)
 	}
 
 	line.AppendString(c.LineEnding)
