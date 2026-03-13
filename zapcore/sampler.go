@@ -26,8 +26,7 @@ import (
 )
 
 const (
-	_numLevels        = _maxLevel - _minLevel + 1
-	_countersPerLevel = 4096
+	_counterBuckets = 4096
 )
 
 type counter struct {
@@ -35,25 +34,31 @@ type counter struct {
 	counter atomic.Uint64
 }
 
-type counters [_numLevels][_countersPerLevel]counter
+type counters [_counterBuckets]counter
 
 func newCounters() *counters {
 	return &counters{}
 }
 
 func (cs *counters) get(lvl Level, key string) *counter {
-	i := lvl - _minLevel
-	j := fnv32a(key) % _countersPerLevel
-	return &cs[i][j]
+	j := fnv32a(lvl, key) % _counterBuckets
+	return &cs[j]
 }
 
-// fnv32a, adapted from "hash/fnv", but without a []byte(string) alloc
-func fnv32a(s string) uint32 {
+// fnv32a returns a hash of its arguments. It is adapted from "hash/fnv", but
+// without a []byte(string) alloc.
+func fnv32a(lvl Level, s string) uint32 {
 	const (
 		offset32 = 2166136261
 		prime32  = 16777619
 	)
 	hash := uint32(offset32)
+
+	// Hash lvl
+	hash ^= uint32(lvl)
+	hash *= prime32
+
+	// Hash s
 	for i := 0; i < len(s); i++ {
 		hash ^= uint32(s[i])
 		hash *= prime32
