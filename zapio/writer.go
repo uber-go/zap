@@ -101,15 +101,12 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	// Determine which separator comes first (or if neither exists)
 	sepIdx := -1
 	sepLen := 0
-	sepIsCR := false
 
 	if nlIdx >= 0 && (crIdx < 0 || nlIdx <= crIdx) {
 		sepIdx = nlIdx
 		sepLen = 1
-		sepIsCR = false
 	} else if crIdx >= 0 {
 		sepIdx = crIdx
-		sepIsCR = true
 		// Check if this is a \r\n sequence (Windows line ending)
 		if sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
 			sepLen = 2
