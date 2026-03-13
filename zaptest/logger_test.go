@@ -50,11 +50,11 @@ func TestTestLogger(t *testing.T) {
 	}, "log.Panic should panic")
 
 	ts.AssertMessages(
-		"INFO	received work order",
-		"DEBUG	starting work",
-		"WARN	work may fail",
-		`ERROR	work failed	{"error": "great sadness"}`,
-		"PANIC	failed to do work",
+		"\x1b[34mINFO\x1b[0m	received work order",
+		"\x1b[35mDEBUG\x1b[0m	starting work",
+		"\x1b[33mWARN\x1b[0m	work may fail",
+		"\x1b[31mERROR\x1b[0m	work failed\t{\"error\": \"great sadness\"}",
+		"\x1b[31mPANIC\x1b[0m	failed to do work",
 	)
 }
 
@@ -74,9 +74,9 @@ func TestTestLoggerSupportsLevels(t *testing.T) {
 	}, "log.Panic should panic")
 
 	ts.AssertMessages(
-		"WARN	work may fail",
-		`ERROR	work failed	{"error": "great sadness"}`,
-		"PANIC	failed to do work",
+		"\x1b[33mWARN\x1b[0m	work may fail",
+		"\x1b[31mERROR\x1b[0m	work failed\t{\"error\": \"great sadness\"}",
+		"\x1b[31mPANIC\x1b[0m	failed to do work",
 	)
 }
 
@@ -96,11 +96,11 @@ func TestTestLoggerSupportsWrappedZapOptions(t *testing.T) {
 	}, "log.Panic should panic")
 
 	ts.AssertMessages(
-		`INFO	zaptest/logger_test.go:89	received work order	{"k1": "v1"}`,
-		`DEBUG	zaptest/logger_test.go:90	starting work	{"k1": "v1"}`,
-		`WARN	zaptest/logger_test.go:91	work may fail	{"k1": "v1"}`,
-		`ERROR	zaptest/logger_test.go:92	work failed	{"k1": "v1", "error": "great sadness"}`,
-		`PANIC	zaptest/logger_test.go:95	failed to do work	{"k1": "v1"}`,
+		"\x1b[34mINFO\x1b[0m\tzaptest/logger_test.go:89\treceived work order\t{\"k1\": \"v1\"}",
+		"\x1b[35mDEBUG\x1b[0m\tzaptest/logger_test.go:90\tstarting work\t{\"k1\": \"v1\"}",
+		"\x1b[33mWARN\x1b[0m\tzaptest/logger_test.go:91\twork may fail\t{\"k1\": \"v1\"}",
+		"\x1b[31mERROR\x1b[0m\tzaptest/logger_test.go:92\twork failed\t{\"k1\": \"v1\", \"error\": \"great sadness\"}",
+		"\x1b[31mPANIC\x1b[0m\tzaptest/logger_test.go:95\tfailed to do work\t{\"k1\": \"v1\"}",
 	)
 }
 
