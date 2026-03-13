@@ -217,10 +217,10 @@ type recordingCore struct {
 	fields []Field
 }
 
-func (c *recordingCore) Enabled(Level) bool                          { return true }
-func (c *recordingCore) With([]Field) Core                           { return c }
+func (c *recordingCore) Enabled(Level) bool                              { return true }
+func (c *recordingCore) With([]Field) Core                               { return c }
 func (c *recordingCore) Check(ent Entry, ce *CheckedEntry) *CheckedEntry { return ce.AddCore(ent, c) }
-func (c *recordingCore) Sync() error                                 { return nil }
+func (c *recordingCore) Sync() error                                     { return nil }
 func (c *recordingCore) Write(ent Entry, fields []Field) error {
 	c.entry = ent
 	c.fields = fields
