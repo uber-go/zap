@@ -90,6 +90,8 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 // unconsumed bytes.
 //
 // It handles both newlines (\n) and carriage returns (\r).
+// \n and \r\n cause the buffer to be flushed to the logger.
+// Standalone \r discards any buffered content without logging (for overwriting progress).
 func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	// Find the first occurrence of either \n or \r
 	nlIdx := bytes.IndexByte(line, '\n')
@@ -98,6 +100,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	// Determine which separator comes first (or if neither exists)
 	sepIdx := -1
 	sepLen := 0
+	crOnly := false
 
 	if nlIdx >= 0 && (crIdx < 0 || nlIdx <= crIdx) {
 		sepIdx = nlIdx
@@ -109,6 +112,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 			sepLen = 2
 		} else {
 			sepLen = 1
+			crOnly = true
 		}
 	}
 
@@ -120,6 +124,13 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 
 	// Split on the separator, buffer and flush the left.
 	line, remaining = line[:sepIdx], line[sepIdx+sepLen:]
+
+	if crOnly {
+		// A standalone \r discards any buffered content without logging.
+		// This handles progress bars that overwrite themselves.
+		w.buff.Reset()
+		return remaining
+	}
 
 	// Fast path: if we don't have a partial message from a previous write
 	// in the buffer, skip the buffer and log directly.
