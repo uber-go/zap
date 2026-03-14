@@ -125,7 +125,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	// in the buffer, skip the buffer and log directly.
 	if w.buff.Len() == 0 {
 		w.log(line)
-		return
+		return remaining
 	}
 
 	w.buff.Write(line)
