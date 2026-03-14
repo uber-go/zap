@@ -126,6 +126,90 @@ func TestWriter(t *testing.T) {
 				{Level: zap.InfoLevel, Message: ""},
 			},
 		},
+		{
+			desc: "carriage return creates line break",
+			writes: []string{
+				"foo\rbar\r",
+			},
+			want: []zapcore.Entry{
+				{Level: zap.InfoLevel, Message: "foo"},
+				{Level: zap.InfoLevel, Message: "bar"},
+			},
+		},
+		{
+			desc: "carriage return newline sequence creates single line break",
+			writes: []string{
+				"foo\r\nbar\r\n",
+			},
+			want: []zapcore.Entry{
+				{Level: zap.InfoLevel, Message: "foo"},
+				{Level: zap.InfoLevel, Message: "bar"},
+			},
+		},
+		{
+			desc: "progress-style output with multiple updates",
+			writes: []string{
+				"progress: 10%\rprogress: 25%\rprogress: 50%\r",
+			},
+			want: []zapcore.Entry{
+				{Level: zap.InfoLevel, Message: "progress: 10%"},
+				{Level: zap.InfoLevel, Message: "progress: 25%"},
+				{Level: zap.InfoLevel, Message: "progress: 50%"},
+			},
+		},
+		{
+			desc: "mixed newlines and carriage returns",
+			writes: []string{
+				"foo\nbar\r\rbaz\r\nqux\n",
+			},
+			want: []zapcore.Entry{
+				{Level: zap.InfoLevel, Message: "foo"},
+				{Level: zap.InfoLevel, Message: "bar"},
+				{Level: zap.InfoLevel, Message: ""},
+				{Level: zap.InfoLevel, Message: "baz"},
+				{Level: zap.InfoLevel, Message: "qux"},
+			},
+		},
+		{
+			desc: "carriage return with buffered content",
+			writes: []string{
+				"foo",
+				"ba",
+				"r\rqux",
+				"\n",
+			},
+			want: []zapcore.Entry{
+				{Level: zap.InfoLevel, Message: "foobar"},
+				{Level: zap.InfoLevel, Message: "qux"},
+			},
+		},
+		{
+			desc: "carriage return newline with buffered content",
+			writes: []string{
+				"foo",
+				"ba",
+				"r\r\nqux\r\n",
+			},
+			want: []zapcore.Entry{
+				{Level: zap.InfoLevel, Message: "foobar"},
+				{Level: zap.InfoLevel, Message: "qux"},
+			},
+		},
+		{
+			desc: "git clone progress simulation",
+			writes: []string{
+				"remote: Counting objects: 10%, done.\r",
+				"remote: Counting objects: 20%, done.\r",
+				"remote: Counting objects: 100%, done.\r\n",
+				"remote: Compressing objects\r\n",
+			},
+			want: []zapcore.Entry{
+				{Level: zap.InfoLevel, Message: "remote: Counting objects: 10%, done."},
+				{Level: zap.InfoLevel, Message: "remote: Counting objects: 20%, done."},
+				{Level: zap.InfoLevel, Message: "remote: Counting objects: 100%, done."},
+				{Level: zap.InfoLevel, Message: "remote: Compressing objects"},
+			},
+		},
 	}
 
 	for _, tt := range tests {

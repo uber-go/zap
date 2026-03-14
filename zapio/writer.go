@@ -31,7 +31,7 @@ import (
 
 // Writer is an io.Writer that writes to the provided Zap logger, splitting log
 // messages on line boundaries. The Writer will buffer writes in memory until
-// it encounters a newline, or the caller calls Sync or Close.
+// it encounters a newline, carriage return, or the caller calls Sync or Close.
 //
 // Use the Writer with packages like os/exec where an io.Writer is required,
 // and you want to log the output using your existing logger configuration. For
@@ -88,29 +88,55 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 
 // writeLine writes a single line from the input, returning the remaining,
 // unconsumed bytes.
+//
+// It handles both newlines (\n) and carriage returns (\r). The key logic:
+// - Look for the first newline (\n) or carriage return (\r)
+// - If \r\n is found (Windows line endings), treat it as a single separator
+// - If \r is found alone (progress updates), flush the current line and continue
 func (w *Writer) writeLine(line []byte) (remaining []byte) {
-	idx := bytes.IndexByte(line, '\n')
-	if idx < 0 {
-		// If there are no newlines, buffer the entire string.
+	// Find the first occurrence of either \n or \r
+	nlIdx := bytes.IndexByte(line, '\n')
+	crIdx := bytes.IndexByte(line, '\r')
+
+	// Determine which separator comes first (or if neither exists)
+	sepIdx := -1
+	sepLen := 0
+
+	if nlIdx >= 0 && (crIdx < 0 || nlIdx <= crIdx) {
+		sepIdx = nlIdx
+		sepLen = 1
+	} else if crIdx >= 0 {
+		sepIdx = crIdx
+		// Check if this is a \r\n sequence (Windows line ending)
+		if sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
+			sepLen = 2
+		} else {
+			sepLen = 1
+		}
+	}
+
+	if sepIdx < 0 {
+		// If there are no newlines or carriage returns, buffer the entire string.
 		w.buff.Write(line)
 		return nil
 	}
 
-	// Split on the newline, buffer and flush the left.
-	line, remaining = line[:idx], line[idx+1:]
+	// Split on the separator, buffer and flush the left.
+	line, remaining = line[:sepIdx], line[sepIdx+sepLen:]
 
 	// Fast path: if we don't have a partial message from a previous write
 	// in the buffer, skip the buffer and log directly.
 	if w.buff.Len() == 0 {
 		w.log(line)
-		return
+		return remaining
 	}
 
 	w.buff.Write(line)
 
 	// Log empty messages in the middle of the stream so that we don't lose
 	// information when the user writes "foo\n\nbar".
-	w.flush(true /* allowEmpty */)
+	// For carriage returns (progress updates), we also log the complete line.
+	w.flush(true) // allowEmpty
 
 	return remaining
 }
@@ -129,7 +155,7 @@ func (w *Writer) Sync() error {
 	// Don't allow empty messages on explicit Sync calls or on Close
 	// because we don't want an extraneous empty message at the end of the
 	// stream -- it's common for files to end with a newline.
-	w.flush(false /* allowEmpty */)
+	w.flush(false) // allowEmpty
 	return nil
 }
 
