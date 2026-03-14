@@ -107,7 +107,6 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 		sepLen = 1
 	} else if crIdx >= 0 {
 		sepIdx = crIdx
-
 		// Check if this is a \r\n sequence (Windows line ending)
 		if sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
 			sepLen = 2
