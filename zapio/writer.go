@@ -136,7 +136,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	// Log empty messages in the middle of the stream so that we don't lose
 	// information when the user writes "foo\n\nbar".
 	// For carriage returns (progress updates), we also log the complete line.
-	w.flush(true /* allowEmpty */)
+	w.flush(true) // allowEmpty
 
 	return remaining
 }
@@ -155,7 +155,7 @@ func (w *Writer) Sync() error {
 	// Don't allow empty messages on explicit Sync calls or on Close
 	// because we don't want an extraneous empty message at the end of the
 	// stream -- it's common for files to end with a newline.
-	w.flush(false /* allowEmpty */)
+	w.flush(false) // allowEmpty
 	return nil
 }
 
