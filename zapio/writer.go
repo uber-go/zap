@@ -89,10 +89,7 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 // writeLine writes a single line from the input, returning the remaining,
 // unconsumed bytes.
 //
-// It handles both newlines (\n) and carriage returns (\r). The key logic:
-// - Look for the first newline (\n) or carriage return (\r)
-// - If \r\n is found (Windows line endings), treat it as a single separator
-// - If \r is found alone (progress updates), flush the current line and continue
+// It handles both newlines (\n) and carriage returns (\r).
 func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	// Find the first occurrence of either \n or \r
 	nlIdx := bytes.IndexByte(line, '\n')
@@ -128,15 +125,14 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	// in the buffer, skip the buffer and log directly.
 	if w.buff.Len() == 0 {
 		w.log(line)
-		return remaining
+		return
 	}
 
 	w.buff.Write(line)
 
 	// Log empty messages in the middle of the stream so that we don't lose
 	// information when the user writes "foo\n\nbar".
-	// For carriage returns (progress updates), we also log the complete line.
-	w.flush(true) // allowEmpty
+	w.flush(true /* allowEmpty */)
 
 	return remaining
 }
@@ -155,7 +151,7 @@ func (w *Writer) Sync() error {
 	// Don't allow empty messages on explicit Sync calls or on Close
 	// because we don't want an extraneous empty message at the end of the
 	// stream -- it's common for files to end with a newline.
-	w.flush(false) // allowEmpty
+	w.flush(false /* allowEmpty */)
 	return nil
 }
 
