@@ -102,12 +102,22 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	sepLen := 0
 	crOnly := false
 
-	if nlIdx >= 0 && (crIdx < 0 || nlIdx <= crIdx) {
+	if nlIdx >= 0 && crIdx < 0 {
+		// Only \n exists
 		sepIdx = nlIdx
 		sepLen = 1
-	} else if crIdx >= 0 {
+	} else if nlIdx < 0 && crIdx >= 0 {
+		// Only \r exists
 		sepIdx = crIdx
-		// Check if this is a \r\n sequence (Windows line ending)
+		sepLen = 1
+		crOnly = true
+	} else if nlIdx < crIdx {
+		// \n comes before \r
+		sepIdx = nlIdx
+		sepLen = 1
+	} else {
+		// \r comes before \n - check for \r\n sequence
+		sepIdx = crIdx
 		if sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
 			sepLen = 2
 		} else {
