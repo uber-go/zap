@@ -104,20 +104,20 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	crOnly := false
 
 	if nlIdx >= 0 && crIdx < 0 {
-		// Only \n exists
+		// Contains \n but not \r
 		sepIdx = nlIdx
 		sepLen = 1
 	} else if nlIdx < 0 && crIdx >= 0 {
-		// Only \r exists
+		// Contains \r but not \n (standalone carriage return)
 		sepIdx = crIdx
 		sepLen = 1
 		crOnly = true
 	} else if nlIdx < crIdx {
-		// \n comes before \r
+		// \n occurs before \r
 		sepIdx = nlIdx
 		sepLen = 1
 	} else {
-		// \r comes before \n - check for \r\n sequence
+		// \r occurs before \n - check for \r\n sequence
 		sepIdx = crIdx
 		if sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
 			sepLen = 2
