@@ -147,3 +147,82 @@ type customHook struct {
 func (c *customHook) OnWrite(_ *CheckedEntry, _ []Field) {
 	c.called = true
 }
+
+func TestCheckedEntryBefore(t *testing.T) {
+	t.Run("nil is safe", func(t *testing.T) {
+		var ce *CheckedEntry
+		ce = ce.Before(Entry{Message: "hello"}, func(ent Entry, fields []Field) (Entry, []Field) {
+			ent.Message = "modified"
+			return ent, fields
+		})
+		assert.NotNil(t, ce)
+		assert.Equal(t, "hello", ce.Entry.Message)
+	})
+
+	t.Run("modifies entry and fields", func(t *testing.T) {
+		core := &recordingCore{}
+		var ce *CheckedEntry
+		ce = ce.AddCore(Entry{Message: "original"}, core)
+		ce = ce.Before(Entry{}, func(ent Entry, fields []Field) (Entry, []Field) {
+			ent.Message = "modified"
+			fields = append(fields, Field{Key: "added", Type: StringType, String: "value"})
+			return ent, fields
+		})
+		ce.Write(Field{Key: "initial", Type: StringType, String: "v"})
+
+		assert.Equal(t, "modified", core.entry.Message)
+		assert.Len(t, core.fields, 2)
+		assert.Equal(t, "initial", core.fields[0].Key)
+		assert.Equal(t, "added", core.fields[1].Key)
+	})
+
+	t.Run("multiple hooks chain in order", func(t *testing.T) {
+		core := &recordingCore{}
+		var ce *CheckedEntry
+		ce = ce.AddCore(Entry{Message: "start"}, core)
+		ce = ce.Before(Entry{}, func(ent Entry, fields []Field) (Entry, []Field) {
+			ent.Message = ent.Message + "-first"
+			return ent, fields
+		})
+		ce = ce.Before(Entry{}, func(ent Entry, fields []Field) (Entry, []Field) {
+			ent.Message = ent.Message + "-second"
+			return ent, fields
+		})
+		ce.Write()
+
+		assert.Equal(t, "start-first-second", core.entry.Message)
+	})
+
+	t.Run("hooks reset on pool reuse", func(t *testing.T) {
+		core := &recordingCore{}
+		var ce *CheckedEntry
+		ce = ce.AddCore(Entry{Message: "first"}, core)
+		ce = ce.Before(Entry{}, func(ent Entry, fields []Field) (Entry, []Field) {
+			ent.Message = "hooked"
+			return ent, fields
+		})
+		ce.Write()
+		assert.Equal(t, "hooked", core.entry.Message)
+
+		// Get a new entry from the pool — hooks should be cleared.
+		ce2 := getCheckedEntry()
+		assert.Empty(t, ce2.before)
+		putCheckedEntry(ce2)
+	})
+}
+
+// recordingCore captures the last entry and fields written to it.
+type recordingCore struct {
+	entry  Entry
+	fields []Field
+}
+
+func (c *recordingCore) Enabled(Level) bool                              { return true }
+func (c *recordingCore) With([]Field) Core                               { return c }
+func (c *recordingCore) Check(ent Entry, ce *CheckedEntry) *CheckedEntry { return ce.AddCore(ent, c) }
+func (c *recordingCore) Sync() error                                     { return nil }
+func (c *recordingCore) Write(ent Entry, fields []Field) error {
+	c.entry = ent
+	c.fields = fields
+	return nil
+}
