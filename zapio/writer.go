@@ -116,7 +116,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 		// \n occurs before \r
 		sepIdx = nlIdx
 		sepLen = 1
-	} else {
+	} else if nlIdx > crIdx {
 		// \r occurs before \n - check for \r\n sequence
 		sepIdx = crIdx
 		if sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
@@ -125,6 +125,11 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 			sepLen = 1
 			crOnly = true
 		}
+	} else {
+		// nlIdx == crIdx should be impossible since we're searching for different characters,
+		// but handle it gracefully by treating it as \n to avoid undefined behavior.
+		sepIdx = nlIdx
+		sepLen = 1
 	}
 
 	if sepIdx < 0 {
