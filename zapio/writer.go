@@ -148,18 +148,20 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 		return remaining
 	}
 
-	// Fast path: if we don't have a partial message from a previous write
-	// in the buffer, skip the buffer and log directly.
-	if w.buff.Len() == 0 {
+	// Fast path: log directly when we have content and no buffered message.
+	if w.buff.Len() == 0 && len(line) > 0 {
 		w.log(line)
 		return remaining
 	}
 
-	w.buff.Write(line)
-
-	// Log empty messages in the middle of the stream so that we don't lose
-	// information when the user writes "foo\n\nbar".
-	w.flush(true /* allowEmpty */)
+	// If we have an empty line but buffered content (e.g., "...something\r\n"),
+	// log an empty message so that we don't lose information when the user
+	// writes "foo\n\nbar".
+	// Skip logging if both buffer and line are empty (e.g., initial "\r\n").
+	if w.buff.Len() > 0 || len(line) > 0 {
+		w.buff.Write(line)
+		w.flush(true /* allowEmpty */)
+	}
 
 	return remaining
 }
