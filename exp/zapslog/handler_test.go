@@ -24,6 +24,7 @@ package zapslog
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log/slog"
 	"sync"
@@ -33,10 +34,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 )
+
+type testContextKey string
 
 func TestAddCaller(t *testing.T) {
 	t.Parallel()
@@ -416,4 +420,20 @@ func TestSlogtest(t *testing.T) {
 		},
 	)
 	require.NoError(t, err, "Unexpected error from slogtest.TestHandler")
+}
+
+func TestContextFieldExtractor(t *testing.T) {
+	key := testContextKey("testkey")
+	fac, logs := observer.New(zapcore.DebugLevel)
+	ctx := context.WithValue(context.Background(), key, "testvalue")
+
+	sl := slog.New(NewHandler(fac, WithContextFieldExtractors(func(ctx context.Context) []zapcore.Field {
+		v := ctx.Value(key).(string)
+		return []zapcore.Field{zap.String("testkey", v)}
+	})))
+	sl.InfoContext(ctx, "msg")
+	lines := logs.TakeAll()
+
+	require.Len(t, lines, 1)
+	require.Equal(t, "testvalue", lines[0].ContextMap()["testkey"])
 }
