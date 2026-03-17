@@ -80,20 +80,25 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 	}
 
 	n = len(bs)
+	wroteThisWrite := false
 	for len(bs) > 0 {
-		bs = w.writeLine(bs)
+		var wrote bool
+		bs, wrote = w.writeLine(bs, wroteThisWrite)
+		if wrote {
+			wroteThisWrite = true
+		}
 	}
 
 	return n, nil
 }
 
 // writeLine writes a single line from the input, returning the remaining,
-// unconsumed bytes.
+// unconsumed bytes and whether a log entry was produced.
 //
 // It handles both newlines (\n) and carriage returns (\r).
 // \n and \r\n cause the buffer to be flushed to the logger.
 // Standalone \r discards any buffered content without logging (for overwriting progress).
-func (w *Writer) writeLine(line []byte) (remaining []byte) {
+func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte, wrote bool) {
 	// Find the first occurrence of either \n or \r
 	nlIdx := bytes.IndexByte(line, '\n')
 	crIdx := bytes.IndexByte(line, '\r')
@@ -135,7 +140,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	if sepIdx < 0 {
 		// If there are no newlines or carriage returns, buffer the entire string.
 		w.buff.Write(line)
-		return nil
+		return nil, false
 	}
 
 	// Split on the separator, buffer and flush the left.
@@ -145,25 +150,36 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 		// A standalone \r discards any buffered content without logging.
 		// This handles progress bars that overwrite themselves.
 		w.buff.Reset()
-		return remaining
+		return remaining, false
 	}
 
 	// Fast path: log directly when we have content and no buffered message.
 	if w.buff.Len() == 0 && len(line) > 0 {
 		w.log(line)
-		return remaining
+		return remaining, true
 	}
 
-	// If we have an empty line but buffered content (e.g., "...something\r\n"),
-	// log an empty message so that we don't lose information when the user
-	// writes "foo\n\nbar".
-	// Skip logging if both buffer and line are empty (e.g., initial "\r\n").
+	// Buffer and flush: handles all other cases including:
+	// - Buffered content (e.g., "foo" + "\n" → log "foo")
+	// - Empty lines (e.g., after logging something, "\n\n" → log empty string)
+	// - Combined buffered + line (e.g., "foo" + "bar\n" → log "foobar")
+	//
+	// For consecutive newlines (wrotePreviously=true and empty buffer/line),
+	// we need to log an empty message to preserve the blank line.
+	// Leading newlines (wrotePreviously=false and empty buffer/line) are skipped.
 	if w.buff.Len() > 0 || len(line) > 0 {
 		w.buff.Write(line)
 		w.flush(true /* allowEmpty */)
+		return remaining, true
 	}
 
-	return remaining
+	// Consecutive newlines: we have an empty line after previously logging content.
+	if wrotePreviously {
+		w.log([]byte{})
+		return remaining, true
+	}
+
+	return remaining, false
 }
 
 // Close closes the writer, flushing any buffered data in the process.
