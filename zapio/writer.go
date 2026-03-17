@@ -104,7 +104,7 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 	crIdx := bytes.IndexByte(line, '\r')
 
 	// Determine which separator comes first (or if neither exists)
-	sepIdx := -1
+	var sepIdx int
 	sepLen := 0
 	crOnly := false
 
