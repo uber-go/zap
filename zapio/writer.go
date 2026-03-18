@@ -95,9 +95,10 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 // writeLine writes a single line from the input, returning the remaining,
 // unconsumed bytes and whether a log entry was produced.
 //
-// It handles both newlines (\n) and carriage returns (\r).
-// \n and \r\n cause the buffer to be flushed to the logger.
-// Standalone \r discards any buffered content without logging (for overwriting progress).
+// It handles both newlines (\n) and carriage returns (\r):
+// - \n: flushes the buffer to the logger
+// - \r\n: flushed as a single separator (Windows line endings)
+// - Standalone \r: clears any buffered content without logging (for progress bars)
 func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte, wrote bool) {
 	// Find the first occurrence of either \n or \r
 	nlIdx := bytes.IndexByte(line, '\n')
