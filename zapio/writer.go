@@ -104,44 +104,39 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 	nlIdx := bytes.IndexByte(line, '\n')
 	crIdx := bytes.IndexByte(line, '\r')
 
-	// Determine which separator comes first (or if neither exists)
-	var sepIdx int
+	// Determine which separator comes first (or if neither exists).
+	//
+	// First, find the earliest separator. This involves:
+	// 1. Find the minimum index among nlIdx and crIdx (treating -1 as absent)
+	// 2. If \r comes first (or both present at same position), check if it's \r\n
+	var sepIdx int = -1
 	sepLen := 0
 	crOnly := false
 
-	if nlIdx >= 0 && crIdx < 0 {
-		// Contains \n but not \r
+	// Find the minimum index (earliest separator)
+	if nlIdx >= 0 && (crIdx < 0 || nlIdx <= crIdx) {
 		sepIdx = nlIdx
-		sepLen = 1
-	} else if nlIdx < 0 && crIdx >= 0 {
-		// Contains \r but not \n (standalone carriage return)
+	} else if crIdx >= 0 {
 		sepIdx = crIdx
-		sepLen = 1
-		crOnly = true
-	} else if nlIdx < crIdx {
-		// \n occurs before \r
-		sepIdx = nlIdx
-		sepLen = 1
-	} else if nlIdx > crIdx {
-		// \r occurs before \n - check for \r\n sequence
-		sepIdx = crIdx
-		if sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
-			sepLen = 2
-		} else {
-			sepLen = 1
-			crOnly = true
-		}
-	} else {
-		// nlIdx == crIdx should be impossible since we're searching for different characters,
-		// but handle it gracefully by treating it as \n to avoid undefined behavior.
-		sepIdx = nlIdx
-		sepLen = 1
 	}
 
+	// Determine separator type and length
 	if sepIdx < 0 {
-		// If there are no newlines or carriage returns, buffer the entire string.
+		// No separator found
 		w.buff.Write(line)
 		return nil, false
+	}
+
+	// Check if this is a \r\n sequence (Windows line ending)
+	if line[sepIdx] == '\r' && sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
+		sepLen = 2
+		crOnly = false
+	} else if line[sepIdx] == '\r' {
+		sepLen = 1
+		crOnly = true
+	} else {
+		sepLen = 1
+		crOnly = false
 	}
 
 	// Split on the separator, buffer and flush the left.
