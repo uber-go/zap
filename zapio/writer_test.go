@@ -126,6 +126,69 @@ func TestWriter(t *testing.T) {
 				{Level: zap.InfoLevel, Message: ""},
 			},
 		},
+		{
+			desc: "carriage return clears buffer",
+			writes: []string{
+				"foo\rbar\n",
+			},
+			want: []zapcore.Entry{
+				{Level: zap.InfoLevel, Message: "bar"},
+			},
+		},
+		{
+			desc: "carriage return newline sequence creates single line break",
+			writes: []string{
+				"foo\r\nbar\r\n",
+			},
+			want: []zapcore.Entry{
+				{Level: zap.InfoLevel, Message: "foo"},
+				{Level: zap.InfoLevel, Message: "bar"},
+			},
+		},
+		{
+			desc: "progress-style output with multiple updates",
+			writes: []string{
+				"progress: 10%\rprogress: 25%\rprogress: 50%\r\n",
+			},
+			want: []zapcore.Entry{
+				{Level: zap.InfoLevel, Message: "progress: 50%"},
+			},
+		},
+		{
+			desc: "mixed newlines and carriage returns",
+			writes: []string{
+				"foo\nbar\r\rbaz\r\nqux\n",
+			},
+			want: []zapcore.Entry{
+				{Level: zap.InfoLevel, Message: "foo"},
+				{Level: zap.InfoLevel, Message: "baz"},
+				{Level: zap.InfoLevel, Message: "qux"},
+			},
+		},
+		{
+			desc: "carriage return with buffered content",
+			writes: []string{
+				"foo",
+				"ba",
+				"r\rqux",
+				"\n",
+			},
+			want: []zapcore.Entry{
+				{Level: zap.InfoLevel, Message: "qux"},
+			},
+		},
+		{
+			desc: "carriage return newline with buffered content",
+			writes: []string{
+				"foo",
+				"ba",
+				"r\r\nqux\r\n",
+			},
+			want: []zapcore.Entry{
+				{Level: zap.InfoLevel, Message: "foobar"},
+				{Level: zap.InfoLevel, Message: "qux"},
+			},
+		},
 	}
 
 	for _, tt := range tests {

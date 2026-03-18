@@ -31,7 +31,7 @@ import (
 
 // Writer is an io.Writer that writes to the provided Zap logger, splitting log
 // messages on line boundaries. The Writer will buffer writes in memory until
-// it encounters a newline, or the caller calls Sync or Close.
+// it encounters a newline, carriage return, or the caller calls Sync or Close.
 //
 // Use the Writer with packages like os/exec where an io.Writer is required,
 // and you want to log the output using your existing logger configuration. For
@@ -70,8 +70,9 @@ var (
 // Write writes the provided bytes to the underlying logger at the configured
 // log level and returns the length of the bytes.
 //
-// Write will split the input on newlines and post each line as a new log entry
-// to the logger.
+// Write will split the input on line boundaries (\n or \r\n) and post each line
+// as a new log entry to the logger. Standalone \r characters are treated specially
+// to handle progress bar output - they clear any buffered content without logging.
 func (w *Writer) Write(bs []byte) (n int, err error) {
 	// Skip all checks if the level isn't enabled.
 	if !w.Log.Core().Enabled(w.Level) {
@@ -79,40 +80,102 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 	}
 
 	n = len(bs)
+	wroteThisWrite := false
 	for len(bs) > 0 {
-		bs = w.writeLine(bs)
+		var wrote bool
+		bs, wrote = w.writeLine(bs, wroteThisWrite)
+		if wrote {
+			wroteThisWrite = true
+		}
 	}
 
 	return n, nil
 }
 
 // writeLine writes a single line from the input, returning the remaining,
-// unconsumed bytes.
-func (w *Writer) writeLine(line []byte) (remaining []byte) {
-	idx := bytes.IndexByte(line, '\n')
-	if idx < 0 {
-		// If there are no newlines, buffer the entire string.
+// unconsumed bytes and whether a log entry was produced.
+//
+// It handles both newlines (\n) and carriage returns (\r):
+// - \n: flushes the buffer to the logger
+// - \r\n: flushed as a single separator (Windows line endings)
+// - Standalone \r: clears any buffered content without logging (for progress bars)
+func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte, wrote bool) {
+	// Find the first occurrence of either \n or \r
+	nlIdx := bytes.IndexByte(line, '\n')
+	crIdx := bytes.IndexByte(line, '\r')
+
+	// Determine which separator comes first (or if neither exists).
+	//
+	// First, find the earliest separator. This involves:
+	// 1. Find the minimum index among nlIdx and crIdx (treating -1 as absent)
+	// 2. If \r comes first (or both present at same position), check if it's \r\n
+	var sepIdx int = -1
+	sepLen := 0
+	crOnly := false
+
+	// Find the minimum index (earliest separator)
+	if nlIdx >= 0 && (crIdx < 0 || nlIdx <= crIdx) {
+		sepIdx = nlIdx
+	} else if crIdx >= 0 {
+		sepIdx = crIdx
+	}
+
+	// Determine separator type and length
+	if sepIdx < 0 {
+		// No separator found
 		w.buff.Write(line)
-		return nil
+		return nil, false
 	}
 
-	// Split on the newline, buffer and flush the left.
-	line, remaining = line[:idx], line[idx+1:]
+	// Check if this is a \r\n sequence (Windows line ending)
+	if line[sepIdx] == '\r' && sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
+		sepLen = 2
+		crOnly = false
+	} else if line[sepIdx] == '\r' {
+		sepLen = 1
+		crOnly = true
+	} else {
+		sepLen = 1
+		crOnly = false
+	}
 
-	// Fast path: if we don't have a partial message from a previous write
-	// in the buffer, skip the buffer and log directly.
-	if w.buff.Len() == 0 {
+	// Split on the separator, buffer and flush the left.
+	line, remaining = line[:sepIdx], line[sepIdx+sepLen:]
+
+	if crOnly {
+		// A standalone \r discards any buffered content without logging.
+		// This handles progress bars that overwrite themselves.
+		w.buff.Reset()
+		return remaining, false
+	}
+
+	// Fast path: log directly when we have content and no buffered message.
+	if w.buff.Len() == 0 && len(line) > 0 {
 		w.log(line)
-		return
+		return remaining, true
 	}
 
-	w.buff.Write(line)
+	// Buffer and flush: handles all other cases including:
+	// - Buffered content (e.g., "foo" + "\n" → log "foo")
+	// - Empty lines (e.g., after logging something, "\n\n" → log empty string)
+	// - Combined buffered + line (e.g., "foo" + "bar\n" → log "foobar")
+	//
+	// For consecutive newlines (wrotePreviously=true and empty buffer/line),
+	// we need to log an empty message to preserve the blank line.
+	// Leading newlines (wrotePreviously=false and empty buffer/line) are skipped.
+	if w.buff.Len() > 0 || len(line) > 0 {
+		w.buff.Write(line)
+		w.flush(true /* allowEmpty */)
+		return remaining, true
+	}
 
-	// Log empty messages in the middle of the stream so that we don't lose
-	// information when the user writes "foo\n\nbar".
-	w.flush(true /* allowEmpty */)
+	// Consecutive newlines: we have an empty line after previously logging content.
+	if wrotePreviously {
+		w.log([]byte{})
+		return remaining, true
+	}
 
-	return remaining
+	return remaining, false
 }
 
 // Close closes the writer, flushing any buffered data in the process.
