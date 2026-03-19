@@ -109,7 +109,7 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 	// First, find the earliest separator. This involves:
 	// 1. Find the minimum index among nlIdx and crIdx (treating -1 as absent)
 	// 2. If \r comes first (or both present at same position), check if it's \r\n
-	var sepIdx int = -1
+	sepIdx := -1
 	sepLen := 0
 	crOnly := false
 
