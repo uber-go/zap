@@ -80,12 +80,12 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 	}
 
 	n = len(bs)
-	wroteThisWrite := false
+	wrotePreviously := false
 	for len(bs) > 0 {
 		var wrote bool
-		bs, wrote = w.writeLine(bs, wroteThisWrite)
+		bs, wrote = w.writeLine(bs, wrotePreviously)
 		if wrote {
-			wroteThisWrite = true
+			wrotePreviously = true
 		}
 	}
 
