@@ -141,10 +141,7 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 		return remaining, true
 	}
 
-	if wrotePreviously {
-		w.log([]byte{})
-	}
-	return remaining, wrotePreviously
+	return remaining, false
 }
 
 // Close closes the writer, flushing any buffered data in the process.
