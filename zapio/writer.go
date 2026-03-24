@@ -31,7 +31,7 @@ import (
 
 // Writer is an io.Writer that writes to the provided Zap logger, splitting log
 // messages on line boundaries. The Writer will buffer writes in memory until
-// it encounters a newline, carriage return, or the caller calls Sync or Close.
+// it encounters a newline, or the caller calls Sync or Close.
 //
 // Use the Writer with packages like os/exec where an io.Writer is required,
 // and you want to log the output using your existing logger configuration. For
@@ -70,9 +70,8 @@ var (
 // Write writes the provided bytes to the underlying logger at the configured
 // log level and returns the length of the bytes.
 //
-// Write will split the input on line boundaries (\n or \r\n) and post each line
-// as a new log entry to the logger. Standalone \r characters are treated specially
-// to handle progress bar output - they clear any buffered content without logging.
+// Write will split the input on line boundaries and post each line as a new
+// log entry to the logger. Lines end with newline (\n).
 func (w *Writer) Write(bs []byte) (n int, err error) {
 	// Skip all checks if the level isn't enabled.
 	if !w.Log.Core().Enabled(w.Level) {
@@ -167,10 +166,8 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 	// Consecutive newlines: we have an empty line after previously logging content.
 	if wrotePreviously {
 		w.log([]byte{})
-		return remaining, true
 	}
-
-	return remaining, false
+	return
 }
 
 // Close closes the writer, flushing any buffered data in the process.
