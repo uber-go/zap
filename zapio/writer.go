@@ -70,8 +70,8 @@ var (
 // Write writes the provided bytes to the underlying logger at the configured
 // log level and returns the length of the bytes.
 //
-// Write will split the input on line boundaries and post each line as a new
-// log entry to the logger. Lines end with newline (\n).
+// Write will split the input on newlines and post each line as a new log entry
+// to the logger.
 func (w *Writer) Write(bs []byte) (n int, err error) {
 	// Skip all checks if the level isn't enabled.
 	if !w.Log.Core().Enabled(w.Level) {
