@@ -167,7 +167,7 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 	if wrotePreviously {
 		w.log([]byte{})
 	}
-	return
+	return remaining, wrotePreviously
 }
 
 // Close closes the writer, flushing any buffered data in the process.
