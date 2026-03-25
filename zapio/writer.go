@@ -93,9 +93,6 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 
 // writeLine writes a single line from the input, returning the remaining,
 // unconsumed bytes and whether a log entry was produced.
-// It handles newlines (\n), carriage return-newline sequences (\r\n), and
-// bare carriage returns (\r). A bare carriage return resets the buffer without
-// logging anything.
 func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte, wrote bool) {
 	nlIdx := bytes.IndexByte(line, '\n')
 	crIdx := bytes.IndexByte(line, '\r')
@@ -113,7 +110,7 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 
 	if sepIdx < 0 {
 		w.buff.Write(line)
-		return nil, false
+		return
 	}
 
 	if line[sepIdx] == '\r' && sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
@@ -127,11 +124,10 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 
 	line, remaining = line[:sepIdx], line[sepIdx+sepLen:]
 
-	wrote = false
 	if crOnly {
 		// Bare carriage return: only reset the buffer, don't log anything.
 		w.buff.Reset()
-		return remaining, false
+		return
 	}
 
 	// Fast path: if we don't have a partial message from a previous write
