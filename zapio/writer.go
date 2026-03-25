@@ -122,26 +122,27 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 		sepLen = 1
 	}
 
-	line, remaining = line[:sepIdx], line[sepIdx+sepLen:]
-
 	if crOnly {
 		// Bare carriage return: only reset the buffer, don't log anything.
+		// Content before the bare CR is discarded (similar to terminal behavior).
 		w.buff.Reset()
-		return remaining, false
+		return line[sepIdx+sepLen:], false
 	}
 
 	// Fast path: if we don't have a partial message from a previous write
 	// in the buffer, skip the buffer and log directly.
-	if w.buff.Len() == 0 {
-		w.log(line)
+	if !wrote && !wrotePreviously && w.buff.Len() == 0 {
+		w.log(line[:sepIdx])
 		wrote = true
 	} else {
-		w.buff.Write(line)
+		w.buff.Write(line[:sepIdx])
 		// Log empty messages in the middle of the stream so that we don't lose
 		// information when the user writes "foo\n\nbar".
 		w.flush(true /* allowEmpty */)
 		wrote = true
 	}
+
+	remaining = line[sepIdx+sepLen:]
 
 	if !wrote && wrotePreviously {
 		// Consecutive newlines: we have an empty line after previously logging content.
