@@ -130,14 +130,24 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 		return remaining, false
 	}
 
-	if w.buff.Len() == 0 {
+	if w.buff.Len() > 0 {
+		w.buff.Write(line)
+		w.flush(true /* allowEmpty */)
+		return remaining, true
+	}
+
+	if len(line) > 0 {
 		w.log(line)
 		return remaining, true
 	}
 
-	w.buff.Write(line)
-	w.flush(true /* allowEmpty */)
-	return remaining, true
+	// Consecutive newlines: we have an empty line after previously logging content.
+	if wrotePreviously {
+		w.log([]byte{})
+		return remaining, true
+	}
+
+	return remaining, false
 }
 
 // Close closes the writer, flushing any buffered data in the process.
