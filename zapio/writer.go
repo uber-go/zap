@@ -130,14 +130,14 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 		return remaining, false
 	}
 
-	if w.buff.Len() == 0 && len(line) > 0 {
-		w.log(line)
+	if w.buff.Len() > 0 {
+		w.buff.Write(line)
+		w.flush(true /* allowEmpty */)
 		return remaining, true
 	}
 
-	if w.buff.Len() > 0 || len(line) > 0 {
-		w.buff.Write(line)
-		w.flush(true /* allowEmpty */)
+	if len(line) > 0 {
+		w.log(line)
 		return remaining, true
 	}
 
