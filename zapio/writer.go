@@ -116,7 +116,6 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 		return nil, false
 	}
 
-	// Determine separator type and length.
 	if line[sepIdx] == '\r' && sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
 		sepLen = 2
 	} else if line[sepIdx] == '\r' {
@@ -128,27 +127,33 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 
 	line, remaining = line[:sepIdx], line[sepIdx+sepLen:]
 
+	wrote = false
 	if crOnly {
 		// Bare carriage return: only reset the buffer, don't log anything.
 		w.buff.Reset()
 		return remaining, false
 	}
 
-	wrote = false
-	if w.buff.Len() > 0 {
-		w.buff.Write(line)
-		w.flush(true /* allowEmpty */)
-		wrote = true
-	} else if len(line) > 0 {
+	// Fast path: if we don't have a partial message from a previous write
+	// in the buffer, skip the buffer and log directly.
+	if w.buff.Len() == 0 {
 		w.log(line)
 		wrote = true
-	} else if wrotePreviously {
+	} else {
+		w.buff.Write(line)
+		// Log empty messages in the middle of the stream so that we don't lose
+		// information when the user writes "foo\n\nbar".
+		w.flush(true /* allowEmpty */)
+		wrote = true
+	}
+
+	if !wrote && wrotePreviously {
 		// Consecutive newlines: we have an empty line after previously logging content.
 		w.log([]byte{})
 		wrote = true
 	}
 
-	return remaining, wrote
+	return
 }
 
 // Close closes the writer, flushing any buffered data in the process.
