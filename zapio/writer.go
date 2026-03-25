@@ -125,29 +125,28 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 
 	line, remaining = line[:sepIdx], line[sepIdx+sepLen:]
 
+	// Handle bare carriage return: only reset buffer, no logging
 	if crOnly {
 		w.buff.Reset()
 		return remaining, false
 	}
 
+	// Handle newline or carriage return + newline: flush/log content
+	wrote = false
 	if w.buff.Len() > 0 {
 		w.buff.Write(line)
 		w.flush(true /* allowEmpty */)
-		return remaining, true
-	}
-
-	if len(line) > 0 {
+		wrote = true
+	} else if len(line) > 0 {
 		w.log(line)
-		return remaining, true
-	}
-
-	// Consecutive newlines: we have an empty line after previously logging content.
-	if wrotePreviously {
+		wrote = true
+	} else if wrotePreviously {
+		// Consecutive newlines: we have an empty line after previously logging content.
 		w.log([]byte{})
-		return remaining, true
+		wrote = true
 	}
 
-	return remaining, false
+	return remaining, wrote
 }
 
 // Close closes the writer, flushing any buffered data in the process.
