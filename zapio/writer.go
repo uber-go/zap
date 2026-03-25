@@ -110,7 +110,7 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 
 	if sepIdx < 0 {
 		w.buff.Write(line)
-		return
+		return nil, false
 	}
 
 	if line[sepIdx] == '\r' && sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
@@ -127,7 +127,7 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 	if crOnly {
 		// Bare carriage return: only reset the buffer, don't log anything.
 		w.buff.Reset()
-		return
+		return remaining, false
 	}
 
 	// Fast path: if we don't have a partial message from a previous write
@@ -149,7 +149,7 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 		wrote = true
 	}
 
-	return
+	return remaining, wrote
 }
 
 // Close closes the writer, flushing any buffered data in the process.

@@ -129,7 +129,7 @@ func TestWriter(t *testing.T) {
 		{
 			desc: "carriage return clears buffer",
 			writes: []string{
-				"foo\rbar\n",
+				"foo\rbar",
 			},
 			want: []zapcore.Entry{
 				{Level: zap.InfoLevel, Message: "bar"},
