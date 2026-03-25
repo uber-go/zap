@@ -128,7 +128,7 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 	if crOnly {
 		// Bare carriage return: only reset the buffer, don't log anything.
 		w.buff.Reset()
-		return remaining, wrote
+		return remaining, false
 	}
 
 	wrote = false
