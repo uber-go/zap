@@ -125,13 +125,12 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 
 	line, remaining = line[:sepIdx], line[sepIdx+sepLen:]
 
-	// Handle bare carriage return: only reset buffer, no logging
 	if crOnly {
+		// Bare carriage return: only reset the buffer, don't log anything.
 		w.buff.Reset()
-		return remaining, false
+		return remaining, wrote
 	}
 
-	// Handle newline or carriage return + newline: flush/log content
 	wrote = false
 	if w.buff.Len() > 0 {
 		w.buff.Write(line)
