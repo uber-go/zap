@@ -115,13 +115,15 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	if sepIdx < 0 {
 		// No separators found, buffer everything
 		w.buff.Write(line)
-		return nil
+		remaining = nil
+		return
 	}
 
 	if crOnly {
 		// Bare \r (progress bar style): reset buffer without logging
 		w.buff.Reset()
-		return line[sepIdx+1:]
+		remaining = line[sepIdx+1:]
+		return
 	}
 
 	// We have \n or \r\n - log the content before it
@@ -129,13 +131,15 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	// in the buffer, skip the buffer and log directly.
 	if w.buff.Len() == 0 {
 		w.log(line[:sepIdx])
-		return line[sepIdx+sepLen:]
+		remaining = line[sepIdx+sepLen:]
+		return
 	}
 	w.buff.Write(line[:sepIdx])
 	// Log empty messages in the middle of the stream so that we don't lose
 	// information when the user writes "foo\n\nbar".
 	w.flush(true /* allowEmpty */)
-	return line[sepIdx+sepLen:]
+	remaining = line[sepIdx+sepLen:]
+	return
 }
 
 // Close closes the writer, flushing any buffered data in the process.
