@@ -119,7 +119,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	line, remaining = line[:idx], line[idx+sepLen:]
 	if w.buff.Len() == 0 {
 		w.log(line)
-		return
+		return remaining
 	}
 	w.buff.Write(line)
 	// Log empty messages in the middle of the stream so that we don't lose
