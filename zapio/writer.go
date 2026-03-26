@@ -123,8 +123,6 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 	}
 
 	if crOnly {
-		// Bare carriage return: only reset the buffer, don't log anything.
-		// Content before the bare CR is discarded (similar to terminal behavior).
 		w.buff.Reset()
 		return line[sepIdx+sepLen:], false
 	}
@@ -150,7 +148,7 @@ func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte,
 		wrote = true
 	}
 
-	return remaining, wrote
+	return
 }
 
 // Close closes the writer, flushing any buffered data in the process.
