@@ -127,7 +127,7 @@ func TestWriter(t *testing.T) {
 			},
 		},
 		{
-			desc: "carriage return clears buffer",
+			desc: "carriage return resets buffer without logging",
 			writes: []string{
 				"foo\rbar",
 			},

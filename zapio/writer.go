@@ -79,76 +79,63 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 	}
 
 	n = len(bs)
-	wrotePreviously := false
 	for len(bs) > 0 {
-		var wrote bool
-		bs, wrote = w.writeLine(bs, wrotePreviously)
-		if wrote {
-			wrotePreviously = true
-		}
+		bs = w.writeLine(bs)
 	}
 
 	return n, nil
 }
 
 // writeLine writes a single line from the input, returning the remaining,
-// unconsumed bytes and whether a log entry was produced.
-func (w *Writer) writeLine(line []byte, wrotePreviously bool) (remaining []byte, wrote bool) {
+// unconsumed bytes.
+func (w *Writer) writeLine(line []byte) (remaining []byte) {
+	// Find the earliest separator
 	nlIdx := bytes.IndexByte(line, '\n')
 	crIdx := bytes.IndexByte(line, '\r')
 
-	// Find the earliest separator index.
 	sepIdx := -1
 	sepLen := 0
 	crOnly := false
 
 	if nlIdx >= 0 && (crIdx < 0 || nlIdx <= crIdx) {
+		// \n comes first, or only \n exists
 		sepIdx = nlIdx
+		sepLen = 1
 	} else if crIdx >= 0 {
+		// \r comes first or only \r exists
 		sepIdx = crIdx
+		// Check if this is \r\n
+		if sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
+			sepLen = 2
+		} else {
+			crOnly = true
+		}
 	}
 
 	if sepIdx < 0 {
+		// No separators found, buffer everything
 		w.buff.Write(line)
-		return nil, false
-	}
-
-	if line[sepIdx] == '\r' && sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
-		sepLen = 2
-	} else if line[sepIdx] == '\r' {
-		sepLen = 1
-		crOnly = true
-	} else {
-		sepLen = 1
+		return nil
 	}
 
 	if crOnly {
+		// Bare \r (progress bar style): reset buffer without logging
 		w.buff.Reset()
-		return line[sepIdx+sepLen:], false
+		return line[sepIdx+1:]
 	}
 
+	// We have \n or \r\n - log the content before it
 	// Fast path: if we don't have a partial message from a previous write
 	// in the buffer, skip the buffer and log directly.
-	if !wrote && !wrotePreviously && w.buff.Len() == 0 {
+	if w.buff.Len() == 0 {
 		w.log(line[:sepIdx])
-		wrote = true
-	} else {
-		w.buff.Write(line[:sepIdx])
-		// Log empty messages in the middle of the stream so that we don't lose
-		// information when the user writes "foo\n\nbar".
-		w.flush(true /* allowEmpty */)
-		wrote = true
+		return line[sepIdx+sepLen:]
 	}
-
-	remaining = line[sepIdx+sepLen:]
-
-	if !wrote && wrotePreviously {
-		// Consecutive newlines: we have an empty line after previously logging content.
-		w.log([]byte{})
-		wrote = true
-	}
-
-	return
+	w.buff.Write(line[:sepIdx])
+	// Log empty messages in the middle of the stream so that we don't lose
+	// information when the user writes "foo\n\nbar".
+	w.flush(true /* allowEmpty */)
+	return line[sepIdx+sepLen:]
 }
 
 // Close closes the writer, flushing any buffered data in the process.
