@@ -90,41 +90,44 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 // unconsumed bytes.
 func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	idx := bytes.IndexByte(line, '\n')
+
+	// Handle bare \r (carriage return not followed by newline) by resetting the buffer.
 	crIdx := bytes.IndexByte(line, '\r')
-	sepLen := 1
-
-	// Find bare \r index: carriage return not followed by newline.
-	bareCrIdx := -1
-	if crIdx >= 0 && (crIdx+1 == len(line) || line[crIdx+1] != '\n') {
-		bareCrIdx = crIdx
-	}
-
-	// Handle bare \r first if it comes before any \n.
-	if bareCrIdx >= 0 && (idx < 0 || bareCrIdx < idx) {
-		w.buff.Reset()
-		return line[bareCrIdx+1:]
+	if crIdx >= 0 && (idx < 0 || crIdx < idx) {
+		// Check if this is a bare \r (not followed by \n)
+		if crIdx+1 == len(line) || line[crIdx+1] != '\n' {
+			w.buff.Reset()
+			return line[crIdx+1:]
+		}
 	}
 
 	if idx < 0 {
+		// If there are no newlines, buffer the entire string.
 		w.buff.Write(line)
 		return nil
 	}
 
-	// Check if we have \r\n and consume both as separator.
+	// Split on the newline, handling \r\n as a single line ending.
+	sepLen := 1
 	if crIdx >= 0 && crIdx == idx-1 {
 		sepLen = 2
 		idx = idx - 1
 	}
-
 	line, remaining = line[:idx], line[idx+sepLen:]
+
+	// Fast path: if we don't have a partial message from a previous write
+	// in the buffer, skip the buffer and log directly.
 	if w.buff.Len() == 0 {
 		w.log(line)
-		return remaining
+		return
 	}
+
 	w.buff.Write(line)
+
 	// Log empty messages in the middle of the stream so that we don't lose
 	// information when the user writes "foo\n\nbar".
-	w.flush(true)
+	w.flush(true /* allowEmpty */)
+
 	return remaining
 }
 
@@ -142,7 +145,7 @@ func (w *Writer) Sync() error {
 	// Don't allow empty messages on explicit Sync calls or on Close
 	// because we don't want an extraneous empty message at the end of the
 	// stream -- it's common for files to end with a newline.
-	w.flush(false)
+	w.flush(false /* allowEmpty */)
 	return nil
 }
 
