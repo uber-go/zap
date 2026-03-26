@@ -126,17 +126,13 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 		return
 	}
 
-	// We have \n or \r\n - log the content before it
-	// Fast path: if we don't have a partial message from a previous write
-	// in the buffer, skip the buffer and log directly.
+	// We have \n or \r\n
 	if w.buff.Len() == 0 {
 		w.log(line[:sepIdx])
 		remaining = line[sepIdx+sepLen:]
 		return
 	}
 	w.buff.Write(line[:sepIdx])
-	// Log empty messages in the middle of the stream so that we don't lose
-	// information when the user writes "foo\n\nbar".
 	w.flush(true /* allowEmpty */)
 	remaining = line[sepIdx+sepLen:]
 	return
