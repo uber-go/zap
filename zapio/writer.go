@@ -89,50 +89,43 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 // writeLine writes a single line from the input, returning the remaining,
 // unconsumed bytes.
 func (w *Writer) writeLine(line []byte) (remaining []byte) {
-	// Find the earliest separator
-	nlIdx := bytes.IndexByte(line, '\n')
+	idx := bytes.IndexByte(line, '\n')
 	crIdx := bytes.IndexByte(line, '\r')
+	sepLen := 1
 
-	sepIdx := -1
-	sepLen := 0
-	crOnly := false
-
-	if nlIdx >= 0 && (crIdx < 0 || nlIdx <= crIdx) {
-		// \n comes first, or only \n exists
-		sepIdx = nlIdx
-		sepLen = 1
-	} else if crIdx >= 0 {
-		// \r comes first or only \r exists
-		sepIdx = crIdx
-		// Check if this is \r\n
-		if sepIdx+1 < len(line) && line[sepIdx+1] == '\n' {
-			sepLen = 2
-		} else {
-			crOnly = true
-		}
+	// Find bare \r index: carriage return not followed by newline.
+	bareCrIdx := -1
+	if crIdx >= 0 && (crIdx+1 == len(line) || line[crIdx+1] != '\n') {
+		bareCrIdx = crIdx
 	}
 
-	if sepIdx < 0 {
-		// No separators found, buffer everything
+	// Handle bare \r first if it comes before any \n.
+	if bareCrIdx >= 0 && (idx < 0 || bareCrIdx < idx) {
+		w.buff.Reset()
+		return line[bareCrIdx+1:]
+	}
+
+	if idx < 0 {
 		w.buff.Write(line)
 		return nil
 	}
 
-	if crOnly {
-		// Bare carriage return: reset buffer without logging
-		w.buff.Reset()
-		return line[sepIdx+1:]
+	// Check if we have \r\n and consume both as separator.
+	if crIdx >= 0 && crIdx == idx-1 {
+		sepLen = 2
+		idx = idx - 1
 	}
 
-	// We have \n or \r\n
+	line, remaining = line[:idx], line[idx+sepLen:]
 	if w.buff.Len() == 0 {
-		w.log(line[:sepIdx])
-		return line[sepIdx+sepLen:]
+		w.log(line)
+		return
 	}
-	w.buff.Write(line[:sepIdx])
-	// Log empty messages in the middle of the stream so that we don't lose information when the user writes foo\n\nbar.
+	w.buff.Write(line)
+	// Log empty messages in the middle of the stream so that we don't lose
+	// information when the user writes "foo\n\nbar".
 	w.flush(true /* allowEmpty */)
-	return line[sepIdx+sepLen:]
+	return remaining
 }
 
 // Close closes the writer, flushing any buffered data in the process.
