@@ -131,8 +131,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	}
 	w.buff.Write(line[:sepIdx])
 	w.flush(true /* allowEmpty */)
-	remaining = line[sepIdx+sepLen:]
-	return
+	return line[sepIdx+sepLen:]
 }
 
 // Close closes the writer, flushing any buffered data in the process.
