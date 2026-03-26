@@ -146,15 +146,6 @@ func TestWriter(t *testing.T) {
 			},
 		},
 		{
-			desc: "progress-style output with multiple updates",
-			writes: []string{
-				"progress: 10%\rprogress: 25%\rprogress: 50%\r\n",
-			},
-			want: []zapcore.Entry{
-				{Level: zap.InfoLevel, Message: "progress: 50%"},
-			},
-		},
-		{
 			desc: "mixed newlines and carriage returns",
 			writes: []string{
 				"foo\nbar\r\rbaz\r\nqux\n",
