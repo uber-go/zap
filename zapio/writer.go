@@ -115,22 +115,19 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	if sepIdx < 0 {
 		// No separators found, buffer everything
 		w.buff.Write(line)
-		remaining = nil
-		return
+		return nil
 	}
 
 	if crOnly {
-		// Bare \r (progress bar style): reset buffer without logging
+		// Bare carriage return: reset buffer without logging
 		w.buff.Reset()
-		remaining = line[sepIdx+1:]
-		return
+		return line[sepIdx+1:]
 	}
 
 	// We have \n or \r\n
 	if w.buff.Len() == 0 {
 		w.log(line[:sepIdx])
-		remaining = line[sepIdx+sepLen:]
-		return
+		return line[sepIdx+sepLen:]
 	}
 	w.buff.Write(line[:sepIdx])
 	w.flush(true /* allowEmpty */)
