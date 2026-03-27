@@ -152,7 +152,9 @@ func TestWriter(t *testing.T) {
 			},
 			want: []zapcore.Entry{
 				{Level: zap.InfoLevel, Message: "foo"},
-				// Bare \r should not produce any log entry
+				// \"bar\" is buffered but reset by bare \r, so no log
+				// Second bare \r also resets buffer, no log
+				{Level: zap.InfoLevel, Message: "baz"}, // \r\n logs the line
 				{Level: zap.InfoLevel, Message: "qux"},
 			},
 		},
@@ -165,7 +167,8 @@ func TestWriter(t *testing.T) {
 				"\n",
 			},
 			want: []zapcore.Entry{
-				// Bare \r should not produce any log entry
+				// Bare \r resets buffer, content after it is buffered and logged on newline
+				{Level: zap.InfoLevel, Message: "qux"},
 			},
 		},
 		{
