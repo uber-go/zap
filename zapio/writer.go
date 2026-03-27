@@ -97,6 +97,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	// Handle bare \r (not followed by \n) - reset buffer
 	if crIdx >= 0 && (idx < 0 || crIdx < idx) && (crIdx+1 == len(line) || line[crIdx+1] != '\n') {
 		// It's a bare \r - reset buffer
+		w.discardBuf = true
 		w.buff.Reset()
 		// Process content after bare \r, but only buffer at real line terminators
 		return w.writeLineAfterBareCR(line[crIdx+1:])
@@ -149,6 +150,7 @@ func (w *Writer) writeLineAfterBareCR(line []byte) (remaining []byte) {
 	// Check for another bare \r - if found, reset buffer and continue
 	if crIdx >= 0 && (idx < 0 || crIdx < idx) && (crIdx+1 == len(line) || line[crIdx+1] != '\n') {
 		// Another bare \r - reset buffer and continue
+		w.discardBuf = true
 		w.buff.Reset()
 		return w.writeLineAfterBareCR(line[crIdx+1:])
 	}
