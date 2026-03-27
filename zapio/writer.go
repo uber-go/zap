@@ -93,10 +93,10 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	idx := bytes.IndexByte(line, '\n')
 	crIdx := bytes.IndexByte(line, '\r')
 
-	// Handle bare \r (not followed by \n) - reset buffer silently
+	// Handle bare \r (not followed by \n)
 	if crIdx >= 0 && (idx < 0 || crIdx < idx) && (crIdx+1 == len(line) || line[crIdx+1] != '\n') {
 		w.buff.Reset()
-		return w.writeLine(line[crIdx+1:])
+		return line[crIdx+1:]
 	}
 
 	// Handle \r\n sequences - these are line terminators that should log
@@ -107,7 +107,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 			w.buff.Write(line[:crIdx])
 			w.flush(true /* allowEmpty */)
 		}
-		return w.writeLine(line[crIdx+2:])
+		return line[crIdx+2:]
 	}
 
 	if idx < 0 {
@@ -123,7 +123,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	// in the buffer, skip the buffer and log directly.
 	if w.buff.Len() == 0 {
 		w.log(line)
-		return remaining
+		return
 	}
 
 	w.buff.Write(line)
@@ -132,7 +132,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	// information when the user writes "foo\n\nbar".
 	w.flush(true /* allowEmpty */)
 
-	return remaining
+	return
 }
 
 // Close closes the writer, flushing any buffered data in the process.
