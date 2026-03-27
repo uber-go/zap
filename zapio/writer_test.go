@@ -129,10 +129,11 @@ func TestWriter(t *testing.T) {
 		{
 			desc: "carriage return resets buffer without logging",
 			writes: []string{
-				"foo\rbar",
+				"foo\rbar\n",
 			},
 			want: []zapcore.Entry{
-				// Bare \r should not produce any log entry
+				// Bare \r resets buffer, only "bar" is logged
+				{Level: zap.InfoLevel, Message: "bar"},
 			},
 		},
 		{
@@ -152,7 +153,7 @@ func TestWriter(t *testing.T) {
 			},
 			want: []zapcore.Entry{
 				{Level: zap.InfoLevel, Message: "foo"},
-				// \"bar\" is buffered but reset by bare \r, so no log
+				// "bar" is buffered but reset by bare \r, so no log
 				// Second bare \r also resets buffer, no log
 				{Level: zap.InfoLevel, Message: "baz"}, // \r\n logs the line
 				{Level: zap.InfoLevel, Message: "qux"},

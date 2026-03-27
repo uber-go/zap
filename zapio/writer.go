@@ -59,8 +59,7 @@ type Writer struct {
 	// If unspecified, defaults to Info.
 	Level zapcore.Level
 
-	buff       bytes.Buffer
-	discardBuf bool // true if we're discarding buffered content (after bare \r)
+	buff bytes.Buffer
 }
 
 var (
@@ -94,18 +93,14 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	idx := bytes.IndexByte(line, '\n')
 	crIdx := bytes.IndexByte(line, '\r')
 
-	// Handle bare \r (not followed by \n) - reset buffer
+	// Handle bare \r (not followed by \n) - reset buffer silently
 	if crIdx >= 0 && (idx < 0 || crIdx < idx) && (crIdx+1 == len(line) || line[crIdx+1] != '\n') {
-		// It's a bare \r - reset buffer
-		w.discardBuf = true
 		w.buff.Reset()
-		// Process content after bare \r, but only buffer at real line terminators
-		return w.writeLineAfterBareCR(line[crIdx+1:])
+		return w.writeLine(line[crIdx+1:])
 	}
 
-	// Handle \r\n sequences - these are real line terminators that should log
+	// Handle \r\n sequences - these are line terminators that should log
 	if crIdx >= 0 && crIdx+1 < len(line) && line[crIdx+1] == '\n' {
-		w.discardBuf = false
 		if w.buff.Len() == 0 {
 			w.log(line[:crIdx])
 		} else {
@@ -121,8 +116,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 		return nil
 	}
 
-	// Split on the newline - real line terminator clears discard flag
-	w.discardBuf = false
+	// Split on the newline
 	line, remaining = line[:idx], line[idx+1:]
 
 	// Fast path: if we don't have a partial message from a previous write
@@ -141,53 +135,6 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	return remaining
 }
 
-// writeLineAfterBareCR processes content after a bare \r character.
-// This buffers content but only logs when a real line terminator (\n or \r\n) is found.
-func (w *Writer) writeLineAfterBareCR(line []byte) (remaining []byte) {
-	idx := bytes.IndexByte(line, '\n')
-	crIdx := bytes.IndexByte(line, '\r')
-
-	// Check for another bare \r - if found, reset buffer and continue
-	if crIdx >= 0 && (idx < 0 || crIdx < idx) && (crIdx+1 == len(line) || line[crIdx+1] != '\n') {
-		// Another bare \r - reset buffer and continue
-		w.discardBuf = true
-		w.buff.Reset()
-		return w.writeLineAfterBareCR(line[crIdx+1:])
-	}
-
-	// Check for \r\n sequence
-	if crIdx >= 0 && crIdx+1 < len(line) && line[crIdx+1] == '\n' {
-		// \r\n is a real line terminator - clear discard flag and log the content up to it
-		w.discardBuf = false
-		if w.buff.Len() == 0 {
-			w.log(line[:crIdx])
-		} else {
-			w.buff.Write(line[:crIdx])
-			w.flush(true /* allowEmpty */)
-		}
-		return w.writeLine(line[crIdx+2:])
-	}
-
-	if idx < 0 {
-		// No \n or \r\n - buffer the content for potential future line terminator
-		// Set discard flag so Sync/Close won't log it if no real terminator arrives
-		w.discardBuf = true
-		w.buff.Write(line)
-		return nil
-	}
-
-	// Found \n alone - a real line terminator, clear discard flag and log the content
-	w.discardBuf = false
-	if w.buff.Len() == 0 {
-		w.log(line[:idx])
-	} else {
-		w.buff.Write(line[:idx])
-		w.flush(true /* allowEmpty */)
-	}
-
-	return w.writeLine(line[idx+1:])
-}
-
 // Close closes the writer, flushing any buffered data in the process.
 //
 // Always call Close once you're done with the Writer to ensure that it flushes
@@ -202,14 +149,7 @@ func (w *Writer) Sync() error {
 	// Don't allow empty messages on explicit Sync calls or on Close
 	// because we don't want an extraneous empty message at the end of the
 	// stream -- it's common for files to end with a newline.
-	// Also don't log if content is being discarded (after bare \r)
-	if !w.discardBuf {
-		w.flush(false /* allowEmpty */)
-	} else {
-		// Clear the discard flag and any buffered content
-		w.discardBuf = false
-		w.buff.Reset()
-	}
+	w.flush(false /* allowEmpty */)
 	return nil
 }
 
