@@ -132,7 +132,7 @@ func TestWriter(t *testing.T) {
 				"foo\rbar",
 			},
 			want: []zapcore.Entry{
-				{Level: zap.InfoLevel, Message: "bar"},
+				// Bare \r should not produce any log entry
 			},
 		},
 		{
@@ -152,7 +152,7 @@ func TestWriter(t *testing.T) {
 			},
 			want: []zapcore.Entry{
 				{Level: zap.InfoLevel, Message: "foo"},
-				{Level: zap.InfoLevel, Message: "baz"},
+				// Bare \r should not produce any log entry
 				{Level: zap.InfoLevel, Message: "qux"},
 			},
 		},
@@ -165,7 +165,7 @@ func TestWriter(t *testing.T) {
 				"\n",
 			},
 			want: []zapcore.Entry{
-				{Level: zap.InfoLevel, Message: "qux"},
+				// Bare \r should not produce any log entry
 			},
 		},
 		{

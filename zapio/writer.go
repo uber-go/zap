@@ -97,7 +97,10 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 		// Check if this is a bare \r (not followed by \n)
 		if crIdx+1 == len(line) || line[crIdx+1] != '\n' {
 			w.buff.Reset()
-			return line[crIdx+1:]
+			// For bare \r, consume the \r character and any content before it
+			// but do NOT process any remaining content after the \r
+			// This ensures no log entry is produced for content after bare \r
+			return nil
 		}
 	}
 
@@ -145,7 +148,7 @@ func (w *Writer) Sync() error {
 	// Don't allow empty messages on explicit Sync calls or on Close
 	// because we don't want an extraneous empty message at the end of the
 	// stream -- it's common for files to end with a newline.
-	w.flush(false)
+	w.flush(false /* allowEmpty */)
 	return nil
 }
 
