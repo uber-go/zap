@@ -89,7 +89,6 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 // writeLine writes a single line from the input, returning the remaining,
 // unconsumed bytes.
 func (w *Writer) writeLine(line []byte) (remaining []byte) {
-	// Find the first occurrence of each special character
 	idx := bytes.IndexByte(line, '\n')
 	crIdx := bytes.IndexByte(line, '\r')
 
@@ -111,25 +110,18 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	}
 
 	if idx < 0 {
-		// If there are no newlines, buffer the entire string.
 		w.buff.Write(line)
 		return nil
 	}
 
-	// Split on the newline
 	line, remaining = line[:idx], line[idx+1:]
 
-	// Fast path: if we don't have a partial message from a previous write
-	// in the buffer, skip the buffer and log directly.
 	if w.buff.Len() == 0 {
 		w.log(line)
 		return
 	}
 
 	w.buff.Write(line)
-
-	// Log empty messages in the middle of the stream so that we don't lose
-	// information when the user writes "foo\n\nbar".
 	w.flush(true /* allowEmpty */)
 	return
 }
