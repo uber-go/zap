@@ -109,7 +109,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 			w.log(line[:crIdx])
 		} else {
 			w.buff.Write(line[:crIdx])
-			w.flush(true /* allowEmpty */)
+			w.flush(true)
 		}
 		return line[crIdx+2:]
 	}
