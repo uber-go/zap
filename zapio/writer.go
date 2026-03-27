@@ -59,7 +59,8 @@ type Writer struct {
 	// If unspecified, defaults to Info.
 	Level zapcore.Level
 
-	buff bytes.Buffer
+	buff       bytes.Buffer
+	skipNextLF bool
 }
 
 var (
@@ -90,16 +91,17 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 // unconsumed bytes.
 func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	idx := bytes.IndexByte(line, '\n')
+	crIdx := bytes.IndexByte(line, '\r')
 
 	// Handle bare \r (carriage return not followed by newline) by resetting the buffer.
-	crIdx := bytes.IndexByte(line, '\r')
 	if crIdx >= 0 && (idx < 0 || crIdx < idx) {
-		// Check if this is a bare \r (not followed by \n)
 		if crIdx+1 == len(line) || line[crIdx+1] != '\n' {
 			w.buff.Reset()
-			// For bare \r, consume the \r character and any content before it
-			// but do NOT process any remaining content after the \r
-			// This ensures no log entry is produced for content after bare \r
+			// Find the next newline after the bare \r and continue from there.
+			nextIdx := bytes.IndexByte(line[crIdx+1:], '\n')
+			if nextIdx >= 0 {
+				return w.writeLine(line[crIdx+1+nextIdx+1:])
+			}
 			return nil
 		}
 	}
@@ -110,7 +112,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 		return nil
 	}
 
-	// Split on the newline, handling \r\n as a single line ending.
+	// Split on the newline, buffer and flush the left.
 	sepLen := 1
 	if crIdx >= 0 && crIdx == idx-1 {
 		sepLen = 2
@@ -129,9 +131,9 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 
 	// Log empty messages in the middle of the stream so that we don't lose
 	// information when the user writes "foo\n\nbar".
-	w.flush(true)
+	w.flush(true /* allowEmpty */)
 
-	return
+	return remaining
 }
 
 // Close closes the writer, flushing any buffered data in the process.
