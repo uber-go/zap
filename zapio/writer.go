@@ -131,7 +131,6 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	// Log empty messages in the middle of the stream so that we don't lose
 	// information when the user writes "foo\n\nbar".
 	w.flush(true /* allowEmpty */)
-
 	return
 }
 
