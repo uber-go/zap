@@ -117,6 +117,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 
 	if w.buff.Len() == 0 {
 		w.log(line)
+		return remaining
 	}
 
 	w.buff.Write(line)
