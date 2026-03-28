@@ -70,10 +70,8 @@ var (
 // Write writes the provided bytes to the underlying logger at the configured
 // log level and returns the length of the bytes.
 //
-// Write will split the input on line boundaries and post each line as a new log
-// entry to the logger. Bare carriage returns (\r) are used to reset the buffer
-// without logging, for handling progress-style output. Only newlines (\n) or
-// CRLF sequences (\r\n) will trigger log entries.
+// Write will split the input on newlines and post each line as a new log entry
+// to the logger.
 func (w *Writer) Write(bs []byte) (n int, err error) {
 	// Skip all checks if the level isn't enabled.
 	if !w.Log.Core().Enabled(w.Level) {
@@ -90,14 +88,10 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 
 // writeLine writes a single line from the input, returning the remaining,
 // unconsumed bytes.
-//
-// It handles line terminators (\n, \r\n) by logging the buffered content.
-// Bare carriage returns (\r) reset the buffer without logging.
 func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	idx := bytes.IndexByte(line, '\n')
 	crIdx := bytes.IndexByte(line, '\r')
 
-	// Handle bare \r (not followed by \n)
 	if crIdx >= 0 && (idx < 0 || crIdx < idx) && (crIdx+1 == len(line) || line[crIdx+1] != '\n') {
 		w.buff.Reset()
 		return line[crIdx+1:]
@@ -109,7 +103,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 			w.log(line[:crIdx])
 		} else {
 			w.buff.Write(line[:crIdx])
-			w.flush(true /* allowEmpty */)
+			w.flush(true)
 		}
 		return line[crIdx+2:]
 	}
@@ -123,12 +117,10 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 
 	if w.buff.Len() == 0 {
 		w.log(line)
-		return
 	}
 
 	w.buff.Write(line)
-	w.flush(true /* allowEmpty */)
-	return
+	w.flush(true)
 }
 
 // Close closes the writer, flushing any buffered data in the process.
