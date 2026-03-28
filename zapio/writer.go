@@ -109,19 +109,28 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	}
 
 	if idx < 0 {
+		// If there are no newlines, buffer the entire string.
 		w.buff.Write(line)
 		return nil
 	}
 
+	// Split on the newline, buffer and flush the left.
 	line, remaining = line[:idx], line[idx+1:]
 
+	// Fast path: if we don't have a partial message from a previous write
+	// in the buffer, skip the buffer and log directly.
 	if w.buff.Len() == 0 {
 		w.log(line)
-		return remaining
+		return
 	}
 
 	w.buff.Write(line)
-	w.flush(true)
+
+	// Log empty messages in the middle of the stream so that we don't lose
+	// information when the user writes "foo\n\nbar".
+	w.flush(true /* allowEmpty */)
+
+	return remaining
 }
 
 // Close closes the writer, flushing any buffered data in the process.
