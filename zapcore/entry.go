@@ -155,7 +155,7 @@ type Entry struct {
 // Register one on a CheckedEntry with the After method.
 //
 //	if ce := logger.Check(...); ce != nil {
-//	  ce = ce.After(hook)
+//	  ce = ce.After(ent, hook)
 //	  ce.Write(...)
 //	}
 //
