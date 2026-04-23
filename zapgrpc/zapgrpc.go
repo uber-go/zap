@@ -72,6 +72,16 @@ func WithDebug() Option {
 	})
 }
 
+// WithVerbosity configures the Logger's verbosity level. V(l) returns true
+// whenever l is less than or equal to the configured verbosity, matching
+// grpclog.LoggerV2's semantics. The default is 0, so V(l) returns true only
+// for V(0). Pass a higher value to allow callers to emit more verbose logs.
+func WithVerbosity(verbosity int) Option {
+	return optionFunc(func(logger *Logger) {
+		logger.verbosity = verbosity
+	})
+}
+
 // withWarn redirects the fatal level to the warn level, which makes testing
 // easier. This is intentionally unexported.
 func withWarn() Option {
@@ -140,6 +150,7 @@ type Logger struct {
 	levelEnabler zapcore.LevelEnabler
 	print        *printer
 	fatal        *printer
+	verbosity    int
 	// printToDebug bool
 	// fatalToWarn  bool
 }
@@ -232,8 +243,15 @@ func (l *Logger) Fatalf(format string, args ...interface{}) {
 }
 
 // V implements grpclog.LoggerV2.
+//
+// V reports whether the requested verbosity level is at or below the Logger's
+// configured verbosity (see [WithVerbosity]). Prior versions of this method
+// consulted the underlying zap core's severity level, which conflated
+// verbosity with severity and caused callers that gate debug-only traces on
+// V(l) to either always fire or never fire. The default verbosity of 0 means
+// only V(0) is enabled unless [WithVerbosity] is used.
 func (l *Logger) V(level int) bool {
-	return l.levelEnabler.Enabled(_grpcToZapLevel[level])
+	return level <= l.verbosity
 }
 
 func sprintln(args []interface{}) string {
