@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Since Zap is a library, we don't want to update its dependency requirements
+  # regularly--not until we need a newer version of a dependency for a feature
+  # or specific fix.
+  # This way, users of Zap aren't forced to upgrade all their transitive
+  # dependencies every time they upgrade Zap.
+  #
+  # However, we do want to regularly update dependencies used inside the tools
+  # submodule because that holds linters and other development tools.
+  - package-ecosystem: "gomod"
+    directory: "/tools"
+    schedule:
+      interval: "weekly"

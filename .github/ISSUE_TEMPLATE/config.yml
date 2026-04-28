@@ -1,0 +1,4 @@
+contact_links:
+  - name: Questions
+    about: Please use our Discussions page
+    url: https://github.com/uber-go/zap/discussions
