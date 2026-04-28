@@ -156,61 +156,48 @@ func TestLoggerFatalExpected(t *testing.T) {
 }
 
 func TestLoggerV(t *testing.T) {
+	// Per grpclog.LoggerV2.V, V(l) reports whether verbosity level l is at
+	// least the logger's configured verbose level. The Logger stores that
+	// level via WithVerbosity (default 0), independent of zap's severity.
 	tests := []struct {
-		zapLevel     zapcore.Level
-		grpcEnabled  []int
-		grpcDisabled []int
+		verbosity int
+		enabled   []int
+		disabled  []int
 	}{
-		{
-			zapLevel:     zapcore.DebugLevel,
-			grpcEnabled:  []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError, grpcLvlFatal},
-			grpcDisabled: []int{}, // everything is enabled, nothing is disabled
-		},
-		{
-			zapLevel:     zapcore.InfoLevel,
-			grpcEnabled:  []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError, grpcLvlFatal},
-			grpcDisabled: []int{}, // everything is enabled, nothing is disabled
-		},
-		{
-			zapLevel:     zapcore.WarnLevel,
-			grpcEnabled:  []int{grpcLvlWarn, grpcLvlError, grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo},
-		},
-		{
-			zapLevel:     zapcore.ErrorLevel,
-			grpcEnabled:  []int{grpcLvlError, grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn},
-		},
-		{
-			zapLevel:     zapcore.DPanicLevel,
-			grpcEnabled:  []int{grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError},
-		},
-		{
-			zapLevel:     zapcore.PanicLevel,
-			grpcEnabled:  []int{grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError},
-		},
-		{
-			zapLevel:     zapcore.FatalLevel,
-			grpcEnabled:  []int{grpcLvlFatal},
-			grpcDisabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError},
-		},
+		{verbosity: 0, enabled: []int{0}, disabled: []int{1, 2, 3}},
+		{verbosity: 1, enabled: []int{0, 1}, disabled: []int{2, 3}},
+		{verbosity: 3, enabled: []int{0, 1, 2, 3}, disabled: []int{4}},
 	}
 	for _, tst := range tests {
-		for _, grpcLvl := range tst.grpcEnabled {
-			t.Run(fmt.Sprintf("enabled %s %d", tst.zapLevel, grpcLvl), func(t *testing.T) {
-				checkLevel(t, tst.zapLevel, true, func(logger *Logger) bool {
-					return logger.V(grpcLvl)
-				})
+		for _, l := range tst.enabled {
+			t.Run(fmt.Sprintf("enabled verbosity=%d l=%d", tst.verbosity, l), func(t *testing.T) {
+				logger := NewLogger(zap.NewNop(), WithVerbosity(tst.verbosity))
+				if !logger.V(l) {
+					t.Fatalf("V(%d) = false, want true at verbosity %d", l, tst.verbosity)
+				}
 			})
 		}
-		for _, grpcLvl := range tst.grpcDisabled {
-			t.Run(fmt.Sprintf("disabled %s %d", tst.zapLevel, grpcLvl), func(t *testing.T) {
-				checkLevel(t, tst.zapLevel, false, func(logger *Logger) bool {
-					return logger.V(grpcLvl)
-				})
+		for _, l := range tst.disabled {
+			t.Run(fmt.Sprintf("disabled verbosity=%d l=%d", tst.verbosity, l), func(t *testing.T) {
+				logger := NewLogger(zap.NewNop(), WithVerbosity(tst.verbosity))
+				if logger.V(l) {
+					t.Fatalf("V(%d) = true, want false at verbosity %d", l, tst.verbosity)
+				}
 			})
+		}
+	}
+}
+
+func TestLoggerVDefaultVerbosity(t *testing.T) {
+	// Without WithVerbosity, only V(0) is enabled, independent of zap level.
+	for _, lvl := range []zapcore.Level{zapcore.DebugLevel, zapcore.ErrorLevel} {
+		core, _ := observer.New(lvl)
+		logger := NewLogger(zap.New(core))
+		if !logger.V(0) {
+			t.Fatalf("V(0) = false at zap level %s, want true", lvl)
+		}
+		if logger.V(1) {
+			t.Fatalf("V(1) = true at zap level %s, want false (default verbosity 0)", lvl)
 		}
 	}
 }
