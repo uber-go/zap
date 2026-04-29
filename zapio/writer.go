@@ -90,6 +90,24 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 // unconsumed bytes.
 func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	idx := bytes.IndexByte(line, '\n')
+	crIdx := bytes.IndexByte(line, '\r')
+
+	if crIdx >= 0 && (idx < 0 || crIdx < idx) && (crIdx+1 == len(line) || line[crIdx+1] != '\n') {
+		w.buff.Reset()
+		return line[crIdx+1:]
+	}
+
+	// Handle \r\n sequences - these are line terminators that should log
+	if crIdx >= 0 && crIdx+1 < len(line) && line[crIdx+1] == '\n' {
+		if w.buff.Len() == 0 {
+			w.log(line[:crIdx])
+		} else {
+			w.buff.Write(line[:crIdx])
+			w.flush(true)
+		}
+		return line[crIdx+2:]
+	}
+
 	if idx < 0 {
 		// If there are no newlines, buffer the entire string.
 		w.buff.Write(line)
@@ -110,7 +128,7 @@ func (w *Writer) writeLine(line []byte) (remaining []byte) {
 
 	// Log empty messages in the middle of the stream so that we don't lose
 	// information when the user writes "foo\n\nbar".
-	w.flush(true /* allowEmpty */)
+	w.flush(true)
 
 	return remaining
 }
@@ -129,7 +147,7 @@ func (w *Writer) Sync() error {
 	// Don't allow empty messages on explicit Sync calls or on Close
 	// because we don't want an extraneous empty message at the end of the
 	// stream -- it's common for files to end with a newline.
-	w.flush(false /* allowEmpty */)
+	w.flush(false)
 	return nil
 }
 
