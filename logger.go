@@ -343,6 +343,13 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	ce := log.core.Check(ent, nil)
 	willWrite := ce != nil
 
+	// Only do further annotation if we're going to write this message; checked
+	// entries that exist only for terminal behavior don't benefit from
+	// annotation.
+	if !willWrite {
+		return ce
+	}
+
 	// Set up any required terminal behavior.
 	switch ent.Level {
 	case zapcore.PanicLevel:
@@ -353,13 +360,6 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 		if log.development {
 			ce = ce.After(ent, terminalHookOverride(zapcore.WriteThenPanic, log.onPanic))
 		}
-	}
-
-	// Only do further annotation if we're going to write this message; checked
-	// entries that exist only for terminal behavior don't benefit from
-	// annotation.
-	if !willWrite {
-		return ce
 	}
 
 	// Thread the error output through to the CheckedEntry.
