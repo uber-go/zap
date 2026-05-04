@@ -44,7 +44,7 @@ import (
 //	    ...
 //	  ],
 //	}
-func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
+func encodeError(key string, err error, enc ObjectEncoder, opts ...bool) (retErr error) {
 	// Try to capture panics (from nil references or otherwise) when calling
 	// the Error() method
 	defer func() {
@@ -68,8 +68,12 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 	case errorGroup:
 		return enc.AddArray(key+"Causes", errArray(e.Errors()))
 	case fmt.Formatter:
+		disableErrorVerbose := false
+		if len(opts) > 0 {
+			disableErrorVerbose = opts[0]
+		}
 		verbose := fmt.Sprintf("%+v", e)
-		if verbose != basic {
+		if !disableErrorVerbose && verbose != basic {
 			// This is a rich error type, like those produced by
 			// github.com/pkg/errors.
 			enc.AddString(key+"Verbose", verbose)
@@ -133,4 +137,11 @@ func (e *errArrayElem) MarshalLogObject(enc ObjectEncoder) error {
 func (e *errArrayElem) Free() {
 	e.err = nil
 	_errArrayElemPool.Put(e)
+}
+
+// ErrorConfig is a type that contains an error and
+// the flag if its error verbose is encoded in the log.
+type ErrorConfig struct {
+	Error               error
+	DisableErrorVerbose bool
 }
