@@ -133,13 +133,12 @@ func (ec EntryCaller) TrimmedPath() string {
 	return caller
 }
 
-// An Entry represents a complete log message. The entry's structured context
-// is already serialized, but the log level, time, message, and call site
-// information are available for inspection and modification. Any fields left
-// empty will be omitted when encoding.
+// An Entry holds the fixed fields of a log record: level, time, logger name,
+// message, caller, and stack trace. Structured context and additional fields
+// are encoded separately by the Encoder; they are not part of Entry.
 //
-// Entries are pooled, so any functions that accept them MUST be careful not to
-// retain references to them.
+// CheckedEntry values passed to Core.Write are pooled; do not retain references
+// to them after Write returns.
 type Entry struct {
 	Level      Level
 	Time       time.Time
