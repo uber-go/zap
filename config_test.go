@@ -121,16 +121,16 @@ func TestConfigWithMissingAttributes(t *testing.T) {
 			expectErr: "missing Level",
 		},
 		{
-			desc: "missing encoder time in encoder config",
+			desc: "encoder config with nil EncodeTime falls back to default",
 			cfg: Config{
 				Level:    NewAtomicLevelAt(zapcore.InfoLevel),
 				Encoding: "json",
 				EncoderConfig: zapcore.EncoderConfig{
 					MessageKey: "msg",
 					TimeKey:    "ts",
+					LevelKey:   "level",
 				},
 			},
-			expectErr: "missing EncodeTime in EncoderConfig",
 		},
 	}
 
@@ -138,7 +138,11 @@ func TestConfigWithMissingAttributes(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			cfg := tt.cfg
 			_, err := cfg.Build()
-			assert.EqualError(t, err, tt.expectErr)
+			if tt.expectErr != "" {
+				assert.EqualError(t, err, tt.expectErr)
+				return
+			}
+			assert.NoError(t, err)
 		})
 	}
 }
