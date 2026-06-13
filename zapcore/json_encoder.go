@@ -471,12 +471,8 @@ func (enc *jsonEncoder) addElementSeparator() {
 func (enc *jsonEncoder) appendFloat(val float64, bitSize int) {
 	enc.addElementSeparator()
 	switch {
-	case math.IsNaN(val):
-		enc.buf.AppendString(`"NaN"`)
-	case math.IsInf(val, 1):
-		enc.buf.AppendString(`"+Inf"`)
-	case math.IsInf(val, -1):
-		enc.buf.AppendString(`"-Inf"`)
+	case math.IsNaN(val), math.IsInf(val, 0):
+		enc.buf.Write(nullLiteralBytes)
 	default:
 		enc.buf.AppendFloat(val, bitSize)
 	}
