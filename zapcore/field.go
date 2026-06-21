@@ -224,6 +224,14 @@ func encodeStringer(key string, stringer interface{}, enc ObjectEncoder) (retErr
 				return
 			}
 
+			// If the interface itself is nil (Kind == Invalid), treat as nil.
+			// This can happen if a caller bypasses the zap.Stringer nil-guard
+			// and constructs a Field{Type: StringerType, Interface: nil} directly.
+			if v := reflect.ValueOf(stringer); !v.IsValid() {
+				enc.AddString(key, "<nil>")
+				return
+			}
+
 			retErr = fmt.Errorf("PANIC=%v", err)
 		}
 	}()
