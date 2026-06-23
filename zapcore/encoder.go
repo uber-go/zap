@@ -254,8 +254,9 @@ func StringDurationEncoder(d time.Duration, enc PrimitiveArrayEncoder) {
 }
 
 // UnmarshalText unmarshals text to a DurationEncoder. "string" is unmarshaled
-// to StringDurationEncoder, and anything else is unmarshaled to
-// NanosDurationEncoder.
+// to StringDurationEncoder, "nanos" is unmarshaled to NanosDurationEncoder,
+// "ms" is unmarshaled to MillisDurationEncoder, and anything else is
+// unmarshaled to SecondsDurationEncoder.
 func (e *DurationEncoder) UnmarshalText(text []byte) error {
 	switch string(text) {
 	case "string":
