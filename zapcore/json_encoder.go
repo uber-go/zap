@@ -23,6 +23,7 @@ package zapcore
 import (
 	"encoding/base64"
 	"math"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -296,10 +297,14 @@ func (enc *jsonEncoder) AppendString(val string) {
 	enc.buf.AppendByte('"')
 }
 
-func (enc *jsonEncoder) AppendTimeLayout(time time.Time, layout string) {
+func (enc *jsonEncoder) AppendTimeLayout(t time.Time, layout string) {
 	enc.addElementSeparator()
 	enc.buf.AppendByte('"')
-	enc.buf.AppendTime(time, layout)
+	if layoutNeedsEscaping(layout, t) {
+		enc.safeAddString(t.Format(layout))
+	} else {
+		enc.buf.AppendTime(t, layout)
+	}
 	enc.buf.AppendByte('"')
 }
 
@@ -502,6 +507,36 @@ func (enc *jsonEncoder) safeAddByteString(s []byte) {
 		enc.buf,
 		s,
 	)
+}
+
+func layoutNeedsEscaping(layout string, t time.Time) bool {
+	if !isJSONStringSafe(layout) {
+		return true
+	}
+	if strings.Contains(layout, "MST") {
+		zone, _ := t.Zone()
+		return !isJSONStringSafe(zone)
+	}
+	return false
+}
+
+func isJSONStringSafe(s string) bool {
+	for i := 0; i < len(s); {
+		if s[i] < utf8.RuneSelf {
+			if s[i] < 0x20 || s[i] == '\\' || s[i] == '"' {
+				return false
+			}
+			i++
+			continue
+		}
+
+		_, size := utf8.DecodeRuneInString(s[i:])
+		if size == 1 {
+			return false
+		}
+		i += size
+	}
+	return true
 }
 
 // safeAppendStringLike is a generic implementation of safeAddString and safeAddByteString.

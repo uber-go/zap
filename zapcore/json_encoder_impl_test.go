@@ -328,6 +328,14 @@ func TestJSONEncoderTimeFormats(t *testing.T) {
 			},
 			expected: `"k":"2000-01-02T03:04:05.000000006Z","a":["2000-01-02T03:04:05.000000006Z"]`,
 		},
+		{
+			desc: "time.Time layout with JSON escapes",
+			cfg: EncoderConfig{
+				EncodeDuration: NanosDurationEncoder,
+				EncodeTime:     TimeEncoderOfLayout("2006\"01\n02"),
+			},
+			expected: `"k":"2000\"01\n02","a":["2000\"01\n02"]`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -335,6 +343,28 @@ func TestJSONEncoderTimeFormats(t *testing.T) {
 			assertOutput(t, tt.cfg, tt.expected, f)
 		})
 	}
+}
+
+func TestJSONEncoderTimeLayoutEscapesZoneName(t *testing.T) {
+	date := time.Date(
+		2000, time.January, 2, 3, 4, 5, 6,
+		time.FixedZone("bad\nzone\"", 0),
+	)
+
+	f := func(e Encoder) {
+		e.AddTime("k", date)
+		err := e.AddArray("a", ArrayMarshalerFunc(func(enc ArrayEncoder) error {
+			enc.AppendTime(date)
+			return nil
+		}))
+		assert.NoError(t, err)
+	}
+
+	cfg := EncoderConfig{
+		EncodeDuration: NanosDurationEncoder,
+		EncodeTime:     TimeEncoderOfLayout("2006 MST"),
+	}
+	assertOutput(t, cfg, `"k":"2000 bad\nzone\"","a":["2000 bad\nzone\""]`, f)
 }
 
 func TestJSONEncoderArrays(t *testing.T) {
