@@ -76,7 +76,7 @@ type errArrayElem struct {
 }
 
 func (e *errArrayElem) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	// Re-use the error field's logic, which supports non-standard error types.
+	// Reuse the error field's logic, which supports non-standard error types.
 	Error(e.error).AddTo(enc)
 	return nil
 }
