@@ -55,6 +55,15 @@ type nopCloserSink struct{ zapcore.WriteSyncer }
 
 func (nopCloserSink) Close() error { return nil }
 
+// stdioSink wraps os.Stdout / os.Stderr. Sync is a no-op because calling Sync
+// on a terminal or pipe returns EINVAL ("inappropriate ioctl for device") on
+// many platforms, which is not an actionable application error.
+// See https://github.com/uber-go/zap/issues/880.
+type stdioSink struct{ *os.File }
+
+func (stdioSink) Sync() error  { return nil }
+func (stdioSink) Close() error { return nil }
+
 type sinkRegistry struct {
 	mu        sync.Mutex
 	factories map[string]func(*url.URL) (Sink, error)          // keyed by scheme
@@ -151,9 +160,9 @@ func (sr *sinkRegistry) newFileSinkFromURL(u *url.URL) (Sink, error) {
 func (sr *sinkRegistry) newFileSinkFromPath(path string) (Sink, error) {
 	switch path {
 	case "stdout":
-		return nopCloserSink{os.Stdout}, nil
+		return stdioSink{os.Stdout}, nil
 	case "stderr":
-		return nopCloserSink{os.Stderr}, nil
+		return stdioSink{os.Stderr}, nil
 	}
 	return sr.openFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0o666)
 }

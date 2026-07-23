@@ -105,3 +105,14 @@ func TestRegisterSinkErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestStdioSinkSyncIsNoop(t *testing.T) {
+	r := newSinkRegistry()
+	for _, path := range []string{"stdout", "stderr"} {
+		sink, err := r.newFileSinkFromPath(path)
+		require.NoError(t, err, path)
+		// Must not return EINVAL / "inappropriate ioctl for device".
+		assert.NoError(t, sink.Sync(), path)
+		assert.NoError(t, sink.Close(), path)
+	}
+}
