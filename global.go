@@ -76,7 +76,10 @@ func ReplaceGlobals(logger *Logger) func() {
 // InfoLevel. To redirect the standard library's package-global logging
 // functions, use RedirectStdLog instead.
 func NewStdLog(l *Logger) *log.Logger {
-	logger := l.WithOptions(AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth))
+	logger := l.WithOptions(
+		AddCallerSkip(_stdLogDefaultDepth+_loggerWriterDepth),
+		suppressCallerFailure(),
+	)
 	f := logger.Info
 	return log.New(&loggerWriter{f}, "" /* prefix */, 0 /* flags */)
 }
@@ -84,7 +87,10 @@ func NewStdLog(l *Logger) *log.Logger {
 // NewStdLogAt returns *log.Logger which writes to supplied zap logger at
 // required level.
 func NewStdLogAt(l *Logger, level zapcore.Level) (*log.Logger, error) {
-	logger := l.WithOptions(AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth))
+	logger := l.WithOptions(
+		AddCallerSkip(_stdLogDefaultDepth+_loggerWriterDepth),
+		suppressCallerFailure(),
+	)
 	logFunc, err := levelToFunc(logger, level)
 	if err != nil {
 		return nil, err
@@ -125,7 +131,10 @@ func redirectStdLogAt(l *Logger, level zapcore.Level) (func(), error) {
 	prefix := log.Prefix()
 	log.SetFlags(0)
 	log.SetPrefix("")
-	logger := l.WithOptions(AddCallerSkip(_stdLogDefaultDepth + _loggerWriterDepth))
+	logger := l.WithOptions(
+		AddCallerSkip(_stdLogDefaultDepth+_loggerWriterDepth),
+		suppressCallerFailure(),
+	)
 	logFunc, err := levelToFunc(logger, level)
 	if err != nil {
 		return nil, err
