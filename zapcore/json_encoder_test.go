@@ -188,12 +188,12 @@ func TestJSONEmptyConfig(t *testing.T) {
 		{
 			name:     "time",
 			field:    zap.Time("foo", time.Unix(1591287718, 0)), // 2020-06-04 09:21:58 -0700 PDT
-			expected: `{"foo": 1591287718000000000}`,
+			expected: `{"foo": 1591287718}`,
 		},
 		{
 			name:     "duration",
 			field:    zap.Duration("bar", time.Microsecond),
-			expected: `{"bar": 1000}`,
+			expected: `{"bar": 0.000001}`,
 		},
 	}
 
