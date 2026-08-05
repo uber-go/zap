@@ -70,12 +70,15 @@ import (
 //	curl -X PUT localhost:8080/log/level -H "Content-Type: application/json" -d '{"level":"debug"}'
 func (lvl AtomicLevel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := lvl.serveHTTP(w, r); err != nil {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = fmt.Fprintf(w, "internal error: %v", err)
 	}
 }
 
 func (lvl AtomicLevel) serveHTTP(w http.ResponseWriter, r *http.Request) error {
+	w.Header().Set("Content-Type", "application/json")
+
 	type errorResponse struct {
 		Error string `json:"error"`
 	}
