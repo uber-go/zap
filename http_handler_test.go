@@ -174,6 +174,7 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 			}()
 
 			require.Equal(t, tt.expectedCode, res.StatusCode, "Unexpected status code.")
+			assert.Equal(t, "application/json", res.Header.Get("Content-Type"), "Unexpected content type.")
 			if tt.expectedCode != http.StatusOK {
 				// Don't need to test exact error message, but one should be present.
 				var pld struct {
@@ -207,6 +208,7 @@ func TestAtomicLevelServeHTTPBrokenWriter(t *testing.T) {
 	}, request)
 
 	assert.Equal(t, http.StatusInternalServerError, recorder.Code, "Unexpected status code.")
+	assert.Equal(t, "text/plain; charset=utf-8", recorder.Header().Get("Content-Type"), "Unexpected content type.")
 }
 
 type brokenHTTPResponseWriter struct {
