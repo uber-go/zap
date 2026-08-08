@@ -188,16 +188,46 @@ func TestLoggerV(t *testing.T) {
 	}
 }
 
-func TestLoggerVDefaultVerbosity(t *testing.T) {
-	// Without WithVerbosity, only V(0) is enabled, independent of zap level.
+func TestLoggerVDefaultKeepsSeverityBehaviour(t *testing.T) {
+	// Without WithVerbosity the historical behaviour is preserved: V(l) reports
+	// whether the core is enabled for the severity l maps to. Changing this by
+	// default would alter behaviour for existing users, so verbosity is opt-in.
+	tests := []struct {
+		level   zapcore.Level
+		enabled []int
+		// levels the core is not enabled for
+		disabled []int
+	}{
+		{level: zapcore.DebugLevel, enabled: []int{grpcLvlInfo, grpcLvlWarn, grpcLvlError, grpcLvlFatal}},
+		{level: zapcore.ErrorLevel, enabled: []int{grpcLvlError, grpcLvlFatal}, disabled: []int{grpcLvlInfo, grpcLvlWarn}},
+	}
+	for _, tst := range tests {
+		core, _ := observer.New(tst.level)
+		logger := NewLogger(zap.New(core))
+		for _, l := range tst.enabled {
+			if !logger.V(l) {
+				t.Errorf("V(%d) = false at zap level %s, want true", l, tst.level)
+			}
+		}
+		for _, l := range tst.disabled {
+			if logger.V(l) {
+				t.Errorf("V(%d) = true at zap level %s, want false", l, tst.level)
+			}
+		}
+	}
+}
+
+func TestLoggerVOptInIsIndependentOfCoreLevel(t *testing.T) {
+	// With WithVerbosity, V is driven by the requested verbosity alone, so the
+	// same answers come back regardless of the core's severity level.
 	for _, lvl := range []zapcore.Level{zapcore.DebugLevel, zapcore.ErrorLevel} {
 		core, _ := observer.New(lvl)
-		logger := NewLogger(zap.New(core))
-		if !logger.V(0) {
-			t.Fatalf("V(0) = false at zap level %s, want true", lvl)
+		logger := NewLogger(zap.New(core), WithVerbosity(1))
+		if !logger.V(1) {
+			t.Errorf("V(1) = false at zap level %s, want true at verbosity 1", lvl)
 		}
-		if logger.V(1) {
-			t.Fatalf("V(1) = true at zap level %s, want false (default verbosity 0)", lvl)
+		if logger.V(2) {
+			t.Errorf("V(2) = true at zap level %s, want false at verbosity 1", lvl)
 		}
 	}
 }

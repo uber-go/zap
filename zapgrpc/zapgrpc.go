@@ -72,13 +72,17 @@ func WithDebug() Option {
 	})
 }
 
-// WithVerbosity configures the Logger's verbosity level. V(l) returns true
-// whenever l is less than or equal to the configured verbosity, matching
-// grpclog.LoggerV2's semantics. The default is 0, so V(l) returns true only
-// for V(0). Pass a higher value to allow callers to emit more verbose logs.
+// WithVerbosity switches [Logger.V] to grpclog.LoggerV2 verbosity semantics and
+// sets the verbosity level: V(l) then reports whether l is less than or equal to
+// verbosity.
+//
+// This is opt-in. Without this option V reports whether the zap core is enabled
+// for the severity that the level maps to, which is the historical behaviour and
+// is left as the default so existing users are unaffected.
 func WithVerbosity(verbosity int) Option {
 	return optionFunc(func(logger *Logger) {
 		logger.verbosity = verbosity
+		logger.useVerbosity = true
 	})
 }
 
@@ -151,6 +155,7 @@ type Logger struct {
 	print        *printer
 	fatal        *printer
 	verbosity    int
+	useVerbosity bool
 	// printToDebug bool
 	// fatalToWarn  bool
 }
@@ -244,14 +249,19 @@ func (l *Logger) Fatalf(format string, args ...interface{}) {
 
 // V implements grpclog.LoggerV2.
 //
-// V reports whether the requested verbosity level is at or below the Logger's
-// configured verbosity (see [WithVerbosity]). Prior versions of this method
-// consulted the underlying zap core's severity level, which conflated
-// verbosity with severity and caused callers that gate debug-only traces on
-// V(l) to either always fire or never fire. The default verbosity of 0 means
-// only V(0) is enabled unless [WithVerbosity] is used.
+// By default this reports whether the zap core is enabled for the severity that
+// level maps to. That conflates verbosity with severity, so callers gating
+// debug-only traces on V(l) see them either always on or always off depending on
+// the core's level rather than on the verbosity they asked for.
+//
+// Pass [WithVerbosity] to get the semantics grpclog documents, where V(l)
+// reports whether l is at or below the configured verbosity. That is opt-in to
+// avoid changing behaviour for existing users.
 func (l *Logger) V(level int) bool {
-	return level <= l.verbosity
+	if l.useVerbosity {
+		return level <= l.verbosity
+	}
+	return l.levelEnabler.Enabled(_grpcToZapLevel[level])
 }
 
 func sprintln(args []interface{}) string {
