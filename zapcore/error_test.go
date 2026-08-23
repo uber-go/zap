@@ -28,7 +28,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.uber.org/multierr"
 	//revive:disable:dot-imports
 	. "go.uber.org/zap/zapcore"
 )
@@ -60,6 +59,8 @@ func (e errTooFewUsers) Format(s fmt.State, verb rune) {
 	}
 }
 
+// customMultierr exercises support for the Errors method implemented by
+// errors from go.uber.org/multierr.
 type customMultierr struct{}
 
 func (e customMultierr) Error() string {
@@ -70,11 +71,16 @@ func (e customMultierr) Errors() []error {
 	return []error{
 		errors.New("foo"),
 		nil,
-		multierr.Append(
-			errors.New("bar"),
-			errors.New("baz"),
-		),
+		nestedCustomMultierr{},
 	}
+}
+
+type nestedCustomMultierr struct{}
+
+func (nestedCustomMultierr) Error() string { return "bar; baz" }
+
+func (nestedCustomMultierr) Errors() []error {
+	return []error{errors.New("bar"), errors.New("baz")}
 }
 
 func TestErrorEncoding(t *testing.T) {
@@ -100,13 +106,13 @@ func TestErrorEncoding(t *testing.T) {
 		},
 		{
 			key: "err",
-			iface: multierr.Combine(
+			iface: errors.Join(
 				errors.New("foo"),
 				errors.New("bar"),
 				errors.New("baz"),
 			),
 			want: map[string]any{
-				"err": "foo; bar; baz",
+				"err": "foo\nbar\nbaz",
 				"errCauses": []any{
 					map[string]any{"error": "foo"},
 					map[string]any{"error": "bar"},
@@ -140,18 +146,18 @@ func TestErrorEncoding(t *testing.T) {
 		},
 		{
 			key: "error",
-			iface: multierr.Combine(
+			iface: errors.Join(
 				fmt.Errorf("hello: %w",
-					multierr.Combine(errors.New("foo"), errors.New("bar")),
+					errors.Join(errors.New("foo"), errors.New("bar")),
 				),
 				errors.New("baz"),
 				fmt.Errorf("world: %w", errors.New("qux")),
 			),
 			want: map[string]any{
-				"error": "hello: foo; bar; baz; world: qux",
+				"error": "hello: foo\nbar\nbaz\nworld: qux",
 				"errorCauses": []any{
 					map[string]any{
-						"error": "hello: foo; bar",
+						"error": "hello: foo\nbar",
 					},
 					map[string]any{"error": "baz"},
 					map[string]any{"error": "world: qux"},
@@ -185,7 +191,7 @@ func TestErrArrayBrokenEncoder(t *testing.T) {
 	f := Field{
 		Key:  "foo",
 		Type: ErrorType,
-		Interface: multierr.Combine(
+		Interface: errors.Join(
 			errors.New("foo"),
 			errors.New("bar"),
 		),

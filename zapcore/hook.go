@@ -20,7 +20,7 @@
 
 package zapcore
 
-import "go.uber.org/multierr"
+import "errors"
 
 type hooked struct {
 	Core
@@ -69,9 +69,11 @@ func (h *hooked) With(fields []Field) Core {
 func (h *hooked) Write(ent Entry, _ []Field) error {
 	// Since our downstream had a chance to register itself directly with the
 	// CheckedMessage, we don't need to call it here.
-	var err error
+	var errs []error
 	for i := range h.funcs {
-		err = multierr.Append(err, h.funcs[i](ent))
+		if err := h.funcs[i](ent); err != nil {
+			errs = append(errs, err)
+		}
 	}
-	return err
+	return errors.Join(errs...)
 }

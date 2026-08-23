@@ -8,9 +8,6 @@ require (
 	google.golang.org/grpc v1.56.3
 )
 
-require (
-	go.uber.org/multierr v1.10.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
-)
+require go.yaml.in/yaml/v3 v3.0.5 // indirect
 
 replace go.uber.org/zap => ../../..

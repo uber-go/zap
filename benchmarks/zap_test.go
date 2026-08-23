@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/internal/ztest"
 	"go.uber.org/zap/zapcore"
@@ -83,11 +82,13 @@ func getMessage(iter int) string {
 type users []*user
 
 func (uu users) MarshalLogArray(arr zapcore.ArrayEncoder) error {
-	var err error
+	var errs []error
 	for i := range uu {
-		err = multierr.Append(err, arr.AppendObject(uu[i]))
+		if err := arr.AppendObject(uu[i]); err != nil {
+			errs = append(errs, err)
+		}
 	}
-	return err
+	return errors.Join(errs...)
 }
 
 type user struct {
