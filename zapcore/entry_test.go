@@ -156,7 +156,7 @@ func TestCheckedEntryBefore(t *testing.T) {
 			return ent, fields
 		})
 		assert.NotNil(t, ce)
-		assert.Equal(t, "hello", ce.Entry.Message)
+		assert.Equal(t, "hello", ce.Message)
 	})
 
 	t.Run("modifies entry and fields", func(t *testing.T) {
