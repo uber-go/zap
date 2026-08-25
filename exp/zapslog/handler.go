@@ -148,6 +148,11 @@ func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
 	}
 
 	if h.addCaller && record.PC != 0 {
+		if h.callerSkip != 0 {
+			var pcs [1]uintptr
+			runtime.Callers(4+h.callerSkip, pcs[:])
+			record.PC = pcs[0]
+		}
 		frame, _ := runtime.CallersFrames([]uintptr{record.PC}).Next()
 		if frame.PC != 0 {
 			ce.Caller = zapcore.EntryCaller{
