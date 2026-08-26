@@ -91,6 +91,8 @@ type Config struct {
 	ErrorOutputPaths []string `json:"errorOutputPaths" yaml:"errorOutputPaths"`
 	// InitialFields is a collection of fields to add to the root logger.
 	InitialFields map[string]interface{} `json:"initialFields" yaml:"initialFields"`
+	// DisableErrorVerbose stops printing error verbose in the error log.
+	DisableErrorVerbose bool `json:"disableErrorVerbose" yaml:"disableErrorVerbose"`
 }
 
 // NewProductionEncoderConfig returns an opinionated EncoderConfig for
@@ -162,10 +164,11 @@ func NewProductionConfig() Config {
 			Initial:    100,
 			Thereafter: 100,
 		},
-		Encoding:         "json",
-		EncoderConfig:    NewProductionEncoderConfig(),
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
+		Encoding:            "json",
+		EncoderConfig:       NewProductionEncoderConfig(),
+		OutputPaths:         []string{"stderr"},
+		ErrorOutputPaths:    []string{"stderr"},
+		DisableErrorVerbose: true,
 	}
 }
 
@@ -226,12 +229,13 @@ func NewDevelopmentEncoderConfig() zapcore.EncoderConfig {
 // on the default encoder configuration.
 func NewDevelopmentConfig() Config {
 	return Config{
-		Level:            NewAtomicLevelAt(DebugLevel),
-		Development:      true,
-		Encoding:         "console",
-		EncoderConfig:    NewDevelopmentEncoderConfig(),
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
+		Level:               NewAtomicLevelAt(DebugLevel),
+		Development:         true,
+		Encoding:            "console",
+		EncoderConfig:       NewDevelopmentEncoderConfig(),
+		OutputPaths:         []string{"stderr"},
+		ErrorOutputPaths:    []string{"stderr"},
+		DisableErrorVerbose: true,
 	}
 }
 
@@ -276,8 +280,13 @@ func (cfg Config) buildOptions(errSink zapcore.WriteSyncer) []Option {
 	if cfg.Development {
 		stackLevel = WarnLevel
 	}
+
 	if !cfg.DisableStacktrace {
 		opts = append(opts, AddStacktrace(stackLevel))
+	}
+
+	if cfg.DisableErrorVerbose {
+		opts = append(opts, DisableErrorVerbose())
 	}
 
 	if scfg := cfg.Sampling; scfg != nil {
