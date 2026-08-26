@@ -22,6 +22,7 @@ package zaptest
 
 import (
 	"bytes"
+	"testing"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -137,6 +138,7 @@ func (w TestingWriter) WithMarkFailed(v bool) TestingWriter {
 
 // Write writes bytes from p to the underlying testing.TB.
 func (w TestingWriter) Write(p []byte) (n int, err error) {
+	w.IsHelper()
 	n = len(p)
 
 	// Strip trailing newline because t.Log always adds one.
@@ -154,4 +156,10 @@ func (w TestingWriter) Write(p []byte) (n int, err error) {
 // Sync commits the current contents (a no-op for TestingWriter).
 func (w TestingWriter) Sync() error {
 	return nil
+}
+
+func (w TestingWriter) IsHelper() {
+	if tb, ok := w.t.(testing.TB); ok {
+		tb.Helper()
+	}
 }
