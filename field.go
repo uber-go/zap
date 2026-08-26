@@ -338,7 +338,12 @@ func Namespace(key string) Field {
 
 // Stringer constructs a field with the given key and the output of the value's
 // String method. The Stringer's String method is called lazily.
+//
+// If the passed value is nil, the field is a no-op.
 func Stringer(key string, val fmt.Stringer) Field {
+	if val == nil {
+		return nilField(key)
+	}
 	return Field{Key: key, Type: zapcore.StringerType, Interface: val}
 }
 

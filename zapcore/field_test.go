@@ -167,6 +167,7 @@ func TestFields(t *testing.T) {
 		{t: SkipType, want: interface{}(nil)},
 		{t: StringerType, iface: (*url.URL)(nil), want: "<nil>"},
 		{t: StringerType, iface: (*users)(nil), want: "<nil>"},
+		{t: StringerType, iface: nil, want: "<nil>"},
 		{t: ErrorType, iface: (*errObj)(nil), want: "<nil>"},
 	}
 
