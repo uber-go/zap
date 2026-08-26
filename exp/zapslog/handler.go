@@ -130,12 +130,12 @@ func convertSlogLevel(l slog.Level) zapcore.Level {
 }
 
 // Enabled reports whether the handler handles records at the given level.
-func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
+func (h *Handler) Enabled(_ context.Context, level slog.Level) bool {
 	return h.core.Enabled(convertSlogLevel(level))
 }
 
 // Handle handles the Record.
-func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
+func (h *Handler) Handle(_ context.Context, record slog.Record) error {
 	ent := zapcore.Entry{
 		Level:      convertSlogLevel(record.Level),
 		Time:       record.Time,

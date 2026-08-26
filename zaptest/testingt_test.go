@@ -26,4 +26,4 @@ import "testing"
 // interface. We could do this in testingt.go but that would put a dependency
 // on the "testing" package from zaptest.
 
-var _ TestingT = (testing.TB)(nil)
+var _ TestingT = testing.TB(nil)

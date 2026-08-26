@@ -35,6 +35,8 @@ func TestTimeToMillis(t *testing.T) {
 		{t: time.Unix(0, 0), stamp: 0},
 		{t: time.Unix(1, 0), stamp: 1000},
 		{t: time.Unix(1, int64(500*time.Millisecond)), stamp: 1500},
+		{t: time.Unix(1, int64(999*time.Millisecond+999*time.Microsecond)), stamp: 1999},
+		{t: time.Unix(-1, 0), stamp: -1000},
 	}
 	for _, tt := range tests {
 		assert.Equal(t, tt.stamp, timeToMillis(tt.t), "Unexpected timestamp for time %v.", tt.t)
