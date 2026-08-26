@@ -217,6 +217,37 @@ func TestRedirectStdLogAtCaller(t *testing.T) {
 	}
 }
 
+func TestRedirectStdLogNoCallerFailure(t *testing.T) {
+	// The std-log bridge bakes in a fixed AddCallerSkip that only matches
+	// messages routed through log.Print -> log.Output -> loggerWriter.Write. A
+	// direct write to the returned writer (e.g. via log.Writer()) arrives on a
+	// shallower stack from which no caller can be resolved. That is expected for
+	// an io.Writer bridge and must not spam the error output with a "failed to
+	// get caller" diagnostic.
+	errBuf := &ztest.Buffer{}
+	withLogger(t, DebugLevel, []Option{AddCaller(), ErrorOutput(errBuf)}, func(l *Logger, logs *observer.ObservedLogs) {
+		defer RedirectStdLog(l)()
+
+		// Write directly to the std logger's writer from a freshly spawned
+		// goroutine. The bare goroutine keeps the stack shallow enough that the
+		// fixed caller skip overshoots the available frames, which is exactly
+		// the condition that used to emit the diagnostic.
+		done := make(chan struct{})
+		writer := log.Writer()
+		go func() {
+			_, _ = writer.Write([]byte("direct writer message\n"))
+			close(done)
+		}()
+		<-done
+
+		assert.NotContains(t, errBuf.String(), "failed to get caller",
+			"std-log redirect must not emit the caller-resolution diagnostic")
+		entries := logs.All()
+		require.Len(t, entries, 1, "Message should still be logged.")
+		assert.Equal(t, "direct writer message", entries[0].Message)
+	})
+}
+
 func TestRedirectStdLogAtPanics(t *testing.T) {
 	initialFlags := log.Flags()
 	initialPrefix := log.Prefix()
