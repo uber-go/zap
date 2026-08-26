@@ -52,7 +52,7 @@ func (d *lazyWithCore) With(fields []Field) Core {
 
 func (d *lazyWithCore) Check(e Entry, ce *CheckedEntry) *CheckedEntry {
 	// This is safe because `lazyWithCore` doesn't change the level.
-	// So we can delagate the level check, any not `initOnce`
+	// So we can delegate the level check, any not `initOnce`
 	// just for the check.
 	if !d.originalCore.Enabled(e.Level) {
 		return ce

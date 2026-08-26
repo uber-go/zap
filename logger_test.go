@@ -1044,7 +1044,7 @@ func TestNopLogger(t *testing.T) {
 
 func TestMust(t *testing.T) {
 	t.Run("must without an error does not panic", func(t *testing.T) {
-		assert.NotPanics(t, func() { Must(NewNop(), nil) }, "must paniced with no error")
+		assert.NotPanics(t, func() { Must(NewNop(), nil) }, "must panicked with no error")
 	})
 
 	t.Run("must with an error panics", func(t *testing.T) {
