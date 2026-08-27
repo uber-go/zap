@@ -132,6 +132,22 @@ func TestErrorEncoding(t *testing.T) {
 			},
 		},
 		{
+			key: "err",
+			iface: errors.Join(
+				errors.New("foo"),
+				errors.New("bar"),
+				errors.New("baz"),
+			),
+			want: map[string]any{
+				"err": "foo\nbar\nbaz",
+				"errCauses": []any{
+					map[string]any{"error": "foo"},
+					map[string]any{"error": "bar"},
+					map[string]any{"error": "baz"},
+				},
+			},
+		},
+		{
 			key:   "k",
 			iface: fmt.Errorf("failed: %w", errors.New("egad")),
 			want: map[string]any{
