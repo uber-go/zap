@@ -75,5 +75,8 @@ func (h *hooked) Write(ent Entry, _ []Field) error {
 			errs = append(errs, err)
 		}
 	}
+	if len(errs) == 1 {
+		return errs[0]
+	}
 	return errors.Join(errs...)
 }

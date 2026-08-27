@@ -121,5 +121,8 @@ func (ws multiWriteSyncer) Sync() error {
 			errs = append(errs, err)
 		}
 	}
+	if len(errs) == 1 {
+		return errs[0]
+	}
 	return errors.Join(errs...)
 }

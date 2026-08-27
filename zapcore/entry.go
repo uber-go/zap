@@ -271,20 +271,24 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 		ent, fields = ce.before[i](ent, fields)
 	}
 
+	errorOutput := ce.ErrorOutput
+
 	var errs []error
 	for i := range ce.cores {
-		if err := ce.cores[i].Write(ent, fields); err != nil {
+		if err := ce.cores[i].Write(ent, fields); err != nil && errorOutput != nil {
 			errs = append(errs, err)
 		}
 	}
-	if err := errors.Join(errs...); err != nil && ce.ErrorOutput != nil {
-		_, _ = fmt.Fprintf(
-			ce.ErrorOutput,
-			"%v write error: %v\n",
-			ce.Time,
-			err,
-		)
-		_ = ce.ErrorOutput.Sync() // ignore error
+	if errorOutput != nil {
+		if err := errors.Join(errs...); err != nil {
+			_, _ = fmt.Fprintf(
+				errorOutput,
+				"%v write error: %v\n",
+				ce.Time,
+				err,
+			)
+			_ = errorOutput.Sync() // ignore error
+		}
 	}
 
 	hook := ce.after
