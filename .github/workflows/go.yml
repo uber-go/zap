@@ -33,7 +33,6 @@ jobs:
     - name: Download Dependencies
       run: |
         go mod download
-        (cd tools && go mod download)
         (cd benchmarks && go mod download)
         (cd zapgrpc/internal/test && go mod download)
 
@@ -67,8 +66,13 @@ jobs:
         # make lint below will handle actually running the linter.
         args: --help
 
+    - uses: golang/govulncheck-action@v1
+      name: Install govulncheck
+      with:
+        go-version-input: 1.27.x
+        # Hack: Use the official action to download, but not run.
+        # make lint below will handle actually running govulncheck.
+        go-package: -version
+
     - run: make lint
       name: Lint
-
-    - name: vulncheck
-      run: make vulncheck
