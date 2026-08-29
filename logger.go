@@ -219,7 +219,13 @@ func (log *Logger) Level() zapcore.Level {
 // is enabled. It's a completely optional optimization; in high-performance
 // applications, Check can help avoid allocating a slice to hold fields.
 func (log *Logger) Check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
-	return log.check(lvl, msg)
+	return log.check(lvl, msg, 0)
+}
+
+func (log *Logger) log(lvl zapcore.Level, msg string, skip int, fields ...Field) {
+	if ce := log.check(lvl, msg, skip); ce != nil {
+		ce.Write(fields...)
+	}
 }
 
 // Log logs a message at the specified level. The message includes any fields
@@ -227,41 +233,34 @@ func (log *Logger) Check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 // Any Fields that require  evaluation (such as Objects) are evaluated upon
 // invocation of Log.
 func (log *Logger) Log(lvl zapcore.Level, msg string, fields ...Field) {
-	if ce := log.check(lvl, msg); ce != nil {
-		ce.Write(fields...)
-	}
+	// Skip 2 frames in Log and all Debug/Info/... methods
+	// below for the public method as well as the private log
+	// method.
+	log.log(lvl, msg, 2, fields...)
 }
 
 // Debug logs a message at DebugLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Debug(msg string, fields ...Field) {
-	if ce := log.check(DebugLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
+	log.log(DebugLevel, msg, 2, fields...)
 }
 
 // Info logs a message at InfoLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Info(msg string, fields ...Field) {
-	if ce := log.check(InfoLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
+	log.log(InfoLevel, msg, 2, fields...)
 }
 
 // Warn logs a message at WarnLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Warn(msg string, fields ...Field) {
-	if ce := log.check(WarnLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
+	log.log(WarnLevel, msg, 2, fields...)
 }
 
 // Error logs a message at ErrorLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Error(msg string, fields ...Field) {
-	if ce := log.check(ErrorLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
+	log.log(ErrorLevel, msg, 2, fields...)
 }
 
 // DPanic logs a message at DPanicLevel. The message includes any fields
@@ -271,9 +270,7 @@ func (log *Logger) Error(msg string, fields ...Field) {
 // "development panic"). This is useful for catching errors that are
 // recoverable, but shouldn't ever happen.
 func (log *Logger) DPanic(msg string, fields ...Field) {
-	if ce := log.check(DPanicLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
+	log.log(DPanicLevel, msg, 2, fields...)
 }
 
 // Panic logs a message at PanicLevel. The message includes any fields passed
@@ -281,9 +278,7 @@ func (log *Logger) DPanic(msg string, fields ...Field) {
 //
 // The logger then panics, even if logging at PanicLevel is disabled.
 func (log *Logger) Panic(msg string, fields ...Field) {
-	if ce := log.check(PanicLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
+	log.log(PanicLevel, msg, 2, fields...)
 }
 
 // Fatal logs a message at FatalLevel. The message includes any fields passed
@@ -292,9 +287,7 @@ func (log *Logger) Panic(msg string, fields ...Field) {
 // The logger then calls os.Exit(1), even if logging at FatalLevel is
 // disabled.
 func (log *Logger) Fatal(msg string, fields ...Field) {
-	if ce := log.check(FatalLevel, msg); ce != nil {
-		ce.Write(fields...)
-	}
+	log.log(FatalLevel, msg, 2, fields...)
 }
 
 // Sync calls the underlying Core's Sync method, flushing any buffered log
@@ -319,12 +312,10 @@ func (log *Logger) clone() *Logger {
 	return &clone
 }
 
-func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
-	// Logger.check must always be called directly by a method in the
-	// Logger interface (e.g., Check, Info, Fatal).
-	// This skips Logger.check and the Info/Fatal/Check/etc. method that
-	// called it.
-	const callerSkipOffset = 2
+func (log *Logger) check(lvl zapcore.Level, msg string, skip int) *zapcore.CheckedEntry {
+	// This skips Logger.check method on top of any additional
+	// skips from the caller.
+	callerSkipOffset := skip + 1
 
 	// Check the level first to reduce the cost of disabled log calls.
 	// Since Panic and higher may exit, we skip the optimization for those levels.
