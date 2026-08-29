@@ -70,3 +70,10 @@ func AddStacktraceAt(lvl slog.Level) HandlerOption {
 		log.addStackAt = lvl
 	})
 }
+
+// .WithContextFieldExtractors configures the Logger to extract fields from the context.
+func WithContextFieldExtractors(extractors ...ContextFieldExtractor) Option {
+	return optionFunc(func(log *Handler) {
+		log.contextFieldExtractors = append(log.contextFieldExtractors, extractors...)
+	})
+}
