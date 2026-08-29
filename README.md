@@ -25,7 +25,12 @@ packages and includes both structured and `printf`-style APIs.
 
 ```go
 logger, _ := zap.NewProduction()
-defer logger.Sync() // flushes buffer, if any
+defer func(logger *zap.Logger) {
+  err := logger.Sync()
+  if err != nil {
+    log.Fatal(err)
+  }
+}(logger) // flushes buffer, if any
 sugar := logger.Sugar()
 sugar.Infow("failed to fetch URL",
   // Structured context as loosely typed key-value pairs.
@@ -42,7 +47,12 @@ structured logging.
 
 ```go
 logger, _ := zap.NewProduction()
-defer logger.Sync()
+defer func(logger *zap.Logger) {
+  err := logger.Sync()
+  if err != nil {
+    log.Fatal(err)
+  }
+}(logger)
 logger.Info("failed to fetch URL",
   // Structured context as strongly typed Field values.
   zap.String("url", url),
