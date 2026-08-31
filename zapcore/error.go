@@ -65,6 +65,8 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 	enc.AddString(key, basic)
 
 	switch e := err.(type) {
+	case multiError:
+		return enc.AddArray(key+"Causes", errArray(e.Unwrap()))
 	case errorGroup:
 		return enc.AddArray(key+"Causes", errArray(e.Errors()))
 	case fmt.Formatter:
@@ -78,9 +80,17 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 	return nil
 }
 
+// multiError is implemented by errors created with errors.Join and other
+// errors that follow the standard Go multi-error convention.
+type multiError interface {
+	Unwrap() []error
+}
+
+// errorGroup is implemented by errors created by go.uber.org/multierr and
+// other errors that expose their component errors as a group.
 type errorGroup interface {
-	// Provides read-only access to the underlying list of errors, preferably
-	// without causing any allocs.
+	// Errors returns the errors that comprise the group. The returned slice
+	// must not be modified.
 	Errors() []error
 }
 

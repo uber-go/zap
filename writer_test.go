@@ -31,7 +31,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/multierr"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -129,7 +128,10 @@ func TestOpenPathsNotFound(t *testing.T) {
 				return
 			}
 
-			errs := multierr.Errors(err)
+			var joined interface{ Unwrap() []error }
+			require.ErrorAs(t, err, &joined)
+
+			errs := joined.Unwrap()
 			require.Len(t, errs, len(tt.wantNotFoundPaths))
 			for i, err := range errs {
 				assert.ErrorIs(t, err, fs.ErrNotExist)

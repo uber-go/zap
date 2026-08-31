@@ -36,7 +36,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/multierr"
 )
 
 var _defaultEncoderConfig = EncoderConfig{
@@ -550,12 +549,14 @@ func (t turducken) MarshalLogObject(enc ObjectEncoder) error {
 type turduckens int
 
 func (t turduckens) MarshalLogArray(enc ArrayEncoder) error {
-	var err error
+	var errs []error
 	tur := turducken{}
 	for i := 0; i < int(t); i++ {
-		err = multierr.Append(err, enc.AppendObject(tur))
+		if err := enc.AppendObject(tur); err != nil {
+			errs = append(errs, err)
+		}
 	}
-	return err
+	return errors.Join(errs...)
 }
 
 type loggable struct{ bool }

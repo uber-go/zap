@@ -188,5 +188,5 @@ func TestTeeSync(t *testing.T) {
 		DebugLevel,
 	)
 	tee = NewTee(tee, noSync)
-	assert.Equal(t, err, tee.Sync(), "Expected an error when part of tee can't Sync.")
+	assert.ErrorIs(t, tee.Sync(), err, "Expected an error when part of tee can't Sync.")
 }

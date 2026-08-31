@@ -21,12 +21,12 @@
 package zapcore
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"strings"
 	"time"
 
-	"go.uber.org/multierr"
 	"go.uber.org/zap/internal/bufferpool"
 	"go.uber.org/zap/internal/exit"
 	"go.uber.org/zap/internal/pool"
@@ -271,18 +271,24 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 		ent, fields = ce.before[i](ent, fields)
 	}
 
-	var err error
+	errorOutput := ce.ErrorOutput
+
+	var errs []error
 	for i := range ce.cores {
-		err = multierr.Append(err, ce.cores[i].Write(ent, fields))
+		if err := ce.cores[i].Write(ent, fields); err != nil && errorOutput != nil {
+			errs = append(errs, err)
+		}
 	}
-	if err != nil && ce.ErrorOutput != nil {
-		_, _ = fmt.Fprintf(
-			ce.ErrorOutput,
-			"%v write error: %v\n",
-			ce.Time,
-			err,
-		)
-		_ = ce.ErrorOutput.Sync() // ignore error
+	if errorOutput != nil {
+		if err := errors.Join(errs...); err != nil {
+			_, _ = fmt.Fprintf(
+				errorOutput,
+				"%v write error: %v\n",
+				ce.Time,
+				err,
+			)
+			_ = errorOutput.Sync() // ignore error
+		}
 	}
 
 	hook := ce.after

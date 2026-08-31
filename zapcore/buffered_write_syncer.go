@@ -22,10 +22,9 @@ package zapcore
 
 import (
 	"bufio"
+	"errors"
 	"sync"
 	"time"
-
-	"go.uber.org/multierr"
 )
 
 const (
@@ -164,7 +163,7 @@ func (s *BufferedWriteSyncer) Sync() error {
 		err = s.writer.Flush()
 	}
 
-	return multierr.Append(err, s.WS.Sync())
+	return errors.Join(err, s.WS.Sync())
 }
 
 // flushLoop flushes the buffer at the configured interval until Stop is

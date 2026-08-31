@@ -9,7 +9,6 @@ require (
 	github.com/go-kit/log v0.2.1
 	github.com/rs/zerolog v1.30.0
 	github.com/sirupsen/logrus v1.9.3
-	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.23.0
 	gopkg.in/inconshreveable/log15.v2 v2.16.0
 )

@@ -21,12 +21,11 @@
 package zap
 
 import (
+	"errors"
 	"fmt"
 	"io"
 
 	"go.uber.org/zap/zapcore"
-
-	"go.uber.org/multierr"
 )
 
 // Open is a high-level wrapper that takes a variadic number of URLs, opens or
@@ -66,19 +65,19 @@ func open(paths []string) ([]zapcore.WriteSyncer, func(), error) {
 		}
 	}
 
-	var openErr error
+	var errs []error
 	for _, path := range paths {
 		sink, err := _sinkRegistry.newSink(path)
 		if err != nil {
-			openErr = multierr.Append(openErr, fmt.Errorf("open sink %q: %w", path, err))
+			errs = append(errs, fmt.Errorf("open sink %q: %w", path, err))
 			continue
 		}
 		writers = append(writers, sink)
 		closers = append(closers, sink)
 	}
-	if openErr != nil {
+	if err := errors.Join(errs...); err != nil {
 		closeAll()
-		return nil, nil, openErr
+		return nil, nil, err
 	}
 
 	return writers, closeAll, nil
