@@ -24,6 +24,7 @@ package zapslog
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log/slog"
 	"sync"
@@ -416,4 +417,107 @@ func TestSlogtest(t *testing.T) {
 		},
 	)
 	require.NoError(t, err, "Unexpected error from slogtest.TestHandler")
+}
+
+func TestLevelMapper(t *testing.T) {
+	t.Parallel()
+
+	// A level in the gap between slog's Info and Warn,
+	// which DefaultLevelMapper would round down to Info.
+	const levelNotice = slog.LevelInfo + 2
+
+	mapper := func(l slog.Level) zapcore.Level {
+		if l == levelNotice {
+			return zapcore.WarnLevel
+		}
+		return DefaultLevelMapper(l)
+	}
+
+	t.Run("custom level", func(t *testing.T) {
+		t.Parallel()
+
+		fac, logs := observer.New(zapcore.DebugLevel)
+		sl := slog.New(NewHandler(fac, WithLevelMapper(mapper)))
+		sl.Log(context.Background(), levelNotice, "msg")
+
+		require.Len(t, logs.AllUntimed(), 1, "Expected exactly one entry to be logged")
+		assert.Equal(t, zapcore.WarnLevel, logs.AllUntimed()[0].Level,
+			"Custom mapper should have been used")
+	})
+
+	t.Run("delegates to default", func(t *testing.T) {
+		t.Parallel()
+
+		fac, logs := observer.New(zapcore.DebugLevel)
+		sl := slog.New(NewHandler(fac, WithLevelMapper(mapper)))
+		sl.Error("msg")
+
+		require.Len(t, logs.AllUntimed(), 1, "Expected exactly one entry to be logged")
+		assert.Equal(t, zapcore.ErrorLevel, logs.AllUntimed()[0].Level,
+			"Levels the mapper doesn't handle should use the default mapping")
+	})
+
+	t.Run("enabled", func(t *testing.T) {
+		t.Parallel()
+
+		// The core drops anything below Warn, so the mapping decides
+		// whether levelNotice survives.
+		fac, logs := observer.New(zapcore.WarnLevel)
+		h := NewHandler(fac, WithLevelMapper(mapper))
+		assert.True(t, h.Enabled(context.Background(), levelNotice),
+			"Enabled should consult the custom mapper")
+
+		slog.New(h).Log(context.Background(), levelNotice, "msg")
+		assert.Len(t, logs.AllUntimed(), 1, "Expected the entry to survive the core's level")
+
+		// Without the mapper, the same level maps to Info and is dropped.
+		fac, logs = observer.New(zapcore.WarnLevel)
+		h = NewHandler(fac)
+		assert.False(t, h.Enabled(context.Background(), levelNotice),
+			"Default mapping should round the level down to Info")
+
+		slog.New(h).Log(context.Background(), levelNotice, "msg")
+		assert.Empty(t, logs.AllUntimed(), "Expected the entry to be dropped")
+	})
+
+	t.Run("nil restores default", func(t *testing.T) {
+		t.Parallel()
+
+		fac, logs := observer.New(zapcore.DebugLevel)
+		sl := slog.New(NewHandler(fac, WithLevelMapper(mapper), WithLevelMapper(nil)))
+		sl.Log(context.Background(), levelNotice, "msg")
+
+		require.Len(t, logs.AllUntimed(), 1, "Expected exactly one entry to be logged")
+		assert.Equal(t, zapcore.InfoLevel, logs.AllUntimed()[0].Level,
+			"A nil mapper should restore the default mapping")
+	})
+}
+
+func TestDefaultLevelMapper(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc string
+		give slog.Level
+		want zapcore.Level
+	}{
+		{"debug", slog.LevelDebug, zapcore.DebugLevel},
+		{"below debug", slog.LevelDebug - 1, zapcore.DebugLevel},
+		{"between debug and info", slog.LevelDebug + 1, zapcore.DebugLevel},
+		{"info", slog.LevelInfo, zapcore.InfoLevel},
+		{"between info and warn", slog.LevelInfo + 1, zapcore.InfoLevel},
+		{"warn", slog.LevelWarn, zapcore.WarnLevel},
+		{"between warn and error", slog.LevelWarn + 1, zapcore.WarnLevel},
+		{"error", slog.LevelError, zapcore.ErrorLevel},
+		{"above error", slog.LevelError + 1, zapcore.ErrorLevel},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, tt.want, DefaultLevelMapper(tt.give))
+		})
+	}
 }
