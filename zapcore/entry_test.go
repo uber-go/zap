@@ -23,6 +23,7 @@ package zapcore
 import (
 	"sync"
 	"testing"
+	"time"
 
 	"go.uber.org/zap/internal/exit"
 
@@ -211,10 +212,69 @@ func TestCheckedEntryBefore(t *testing.T) {
 	})
 }
 
-// recordingCore captures the last entry and fields written to it.
+func TestCheckedEntryFree(t *testing.T) {
+	t.Run("nil is safe", func(t *testing.T) {
+		var ce *CheckedEntry
+		assert.NotPanics(t, func() { ce.Free() }, "Unexpected panic freeing a nil CheckedEntry.")
+	})
+
+	t.Run("marks the entry dirty", func(t *testing.T) {
+		var ce *CheckedEntry
+		ce = ce.AddCore(Entry{Message: "hello"}, &recordingCore{})
+		ce.Free()
+		assert.True(t, ce.dirty, "Expected Free to mark the CheckedEntry dirty.")
+	})
+
+	t.Run("write after free does not reach cores", func(t *testing.T) {
+		core := &recordingCore{}
+		var ce *CheckedEntry
+		ce = ce.AddCore(Entry{Message: "hello"}, core)
+		ce.Free()
+
+		// The dirty bit set by Free flags the misuse, so Write must be a no-op
+		// rather than writing a stale entry and returning it to the pool twice.
+		ce.Write(Field{Key: "k", Type: StringType, String: "v"})
+		assert.Equal(t, Entry{}, core.entry, "Expected no Write to reach the core after Free.")
+		assert.Zero(t, core.writes, "Expected no Write to reach the core after Free.")
+	})
+
+	t.Run("double free is safe", func(t *testing.T) {
+		var ce *CheckedEntry
+		ce = ce.AddCore(Entry{Message: "hello"}, &recordingCore{})
+		assert.NotPanics(t, func() {
+			ce.Free()
+			ce.Free()
+		}, "Unexpected panic on double Free.")
+	})
+
+	t.Run("probe pattern preserves sampling", func(t *testing.T) {
+		// A core that probes and frees must consult the wrapped sampler exactly
+		// once per entry, neither bypassing it nor counting an entry twice.
+		rec := &recordingCore{}
+		sampler := NewSamplerWithOptions(rec, time.Minute, 2, 3)
+		core := &probeThenFreeCore{Core: sampler}
+
+		now := time.Now()
+		const n = 5
+		for i := 0; i < n; i++ {
+			ent := Entry{Level: InfoLevel, Message: "repeat", Time: now}
+			if ce := core.Check(ent, nil); ce != nil {
+				ce.Write()
+			}
+		}
+
+		// first=2 (n=1,2) plus every 3rd thereafter (n=5) => 3 entries logged.
+		assert.Equal(t, 3, rec.writes, "Sampler should log the first 2 and every 3rd after.")
+		assert.Equal(t, 3, core.written, "Filtering core should Write exactly the sampled entries.")
+	})
+}
+
+// recordingCore captures the last entry and fields written to it, along with a
+// count of the number of writes.
 type recordingCore struct {
 	entry  Entry
 	fields []Field
+	writes int
 }
 
 func (c *recordingCore) Enabled(Level) bool                              { return true }
@@ -224,5 +284,31 @@ func (c *recordingCore) Sync() error                                     { retur
 func (c *recordingCore) Write(ent Entry, fields []Field) error {
 	c.entry = ent
 	c.fields = fields
+	c.writes++
 	return nil
+}
+
+// probeThenFreeCore demonstrates the pattern that CheckedEntry.Free enables: it
+// consults the wrapped Core by probing its Check with a nil CheckedEntry,
+// returns the probe to the pool with Free, and then adds itself so that its own
+// Write runs. Probing this way lets the wrapped chain (e.g. a sampler) make its
+// decision exactly once without being bypassed.
+type probeThenFreeCore struct {
+	Core
+	written int
+}
+
+func (c *probeThenFreeCore) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
+	probe := c.Core.Check(ent, nil)
+	if probe == nil {
+		// The wrapped chain declined the entry.
+		return ce
+	}
+	probe.Free()
+	return ce.AddCore(ent, c)
+}
+
+func (c *probeThenFreeCore) Write(ent Entry, fields []Field) error {
+	c.written++
+	return c.Core.Write(ent, fields)
 }

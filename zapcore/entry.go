@@ -292,6 +292,31 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 	putCheckedEntry(ce)
 }
 
+// Free returns the CheckedEntry to the internal pool without writing it.
+//
+// Free is intended for Core implementations that obtain a CheckedEntry by
+// probing a wrapped Core — calling its Check method with a nil CheckedEntry —
+// and then decide not to log the entry. Returning the unused CheckedEntry to
+// the pool with Free keeps the pool effective; dropping it on the floor
+// instead forces a fresh allocation on the next logged entry.
+//
+// Like Write, Free returns the CheckedEntry to the pool, so the reference MUST
+// NOT be used after Free returns. Calling Free on a nil CheckedEntry is a
+// no-op.
+func (ce *CheckedEntry) Free() {
+	if ce == nil {
+		return
+	}
+	if ce.dirty {
+		// Best-effort detection of misuse, mirroring Write: this CheckedEntry
+		// has already been written or freed, so returning it to the pool again
+		// could hand the same reference to two callers.
+		return
+	}
+	ce.dirty = true
+	putCheckedEntry(ce)
+}
+
 // AddCore adds a Core that has agreed to log this CheckedEntry. It's intended to be
 // used by Core.Check implementations, and is safe to call on nil CheckedEntry
 // references.
