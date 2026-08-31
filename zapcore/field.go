@@ -198,7 +198,10 @@ func (f Field) Equals(other Field) bool {
 	switch f.Type {
 	case BinaryType, ByteStringType:
 		return bytes.Equal(f.Interface.([]byte), other.Interface.([]byte))
-	case ArrayMarshalerType, ObjectMarshalerType, ErrorType, ReflectType:
+	case ArrayMarshalerType, ObjectMarshalerType, InlineMarshalerType, StringerType, ErrorType, ReflectType:
+		// These types hold arbitrary user values in Interface, which may be
+		// uncomparable (slices, maps, functions). Comparing them with == would
+		// panic at runtime, so compare them deeply instead.
 		return reflect.DeepEqual(f.Interface, other.Interface)
 	default:
 		return f == other

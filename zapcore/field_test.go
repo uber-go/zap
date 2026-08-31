@@ -25,6 +25,8 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -47,6 +49,21 @@ func (u users) MarshalLogObject(enc ObjectEncoder) error {
 		return errors.New("too few users")
 	}
 	enc.AddInt("users", int(u))
+	return nil
+}
+
+// userNames is an uncomparable (slice-backed) type that satisfies both
+// fmt.Stringer and ObjectMarshaler.
+type userNames []string
+
+func (u userNames) String() string {
+	return strings.Join(u, ", ")
+}
+
+func (u userNames) MarshalLogObject(enc ObjectEncoder) error {
+	for i, name := range u {
+		enc.AddString(strconv.Itoa(i), name)
+	}
 	return nil
 }
 
@@ -300,6 +317,28 @@ func TestEquals(t *testing.T) {
 		{
 			a:    zap.Object("k", users(10)),
 			b:    zap.Object("k", users(20)),
+			want: false,
+		},
+		{
+			// Stringer and Inline hold arbitrary user values, which may be
+			// uncomparable. Comparing these with == used to panic (#444, #912).
+			a:    zap.Stringer("k", userNames{"alice"}),
+			b:    zap.Stringer("k", userNames{"alice"}),
+			want: true,
+		},
+		{
+			a:    zap.Stringer("k", userNames{"alice"}),
+			b:    zap.Stringer("k", userNames{"bob"}),
+			want: false,
+		},
+		{
+			a:    zap.Inline(userNames{"alice"}),
+			b:    zap.Inline(userNames{"alice"}),
+			want: true,
+		},
+		{
+			a:    zap.Inline(userNames{"alice"}),
+			b:    zap.Inline(userNames{"bob"}),
 			want: false,
 		},
 		{
