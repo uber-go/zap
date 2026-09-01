@@ -72,6 +72,20 @@ func WithDebug() Option {
 	})
 }
 
+// WithVerbosity switches [Logger.V] to grpclog.LoggerV2 verbosity semantics and
+// sets the verbosity level: V(l) then reports whether l is less than or equal to
+// verbosity.
+//
+// This is opt-in. Without this option V reports whether the zap core is enabled
+// for the severity that the level maps to, which is the historical behaviour and
+// is left as the default so existing users are unaffected.
+func WithVerbosity(verbosity int) Option {
+	return optionFunc(func(logger *Logger) {
+		logger.verbosity = verbosity
+		logger.useVerbosity = true
+	})
+}
+
 // withWarn redirects the fatal level to the warn level, which makes testing
 // easier. This is intentionally unexported.
 func withWarn() Option {
@@ -140,6 +154,8 @@ type Logger struct {
 	levelEnabler zapcore.LevelEnabler
 	print        *printer
 	fatal        *printer
+	verbosity    int
+	useVerbosity bool
 	// printToDebug bool
 	// fatalToWarn  bool
 }
@@ -232,7 +248,19 @@ func (l *Logger) Fatalf(format string, args ...interface{}) {
 }
 
 // V implements grpclog.LoggerV2.
+//
+// By default this reports whether the zap core is enabled for the severity that
+// level maps to. That conflates verbosity with severity, so callers gating
+// debug-only traces on V(l) see them either always on or always off depending on
+// the core's level rather than on the verbosity they asked for.
+//
+// Pass [WithVerbosity] to get the semantics grpclog documents, where V(l)
+// reports whether l is at or below the configured verbosity. That is opt-in to
+// avoid changing behaviour for existing users.
 func (l *Logger) V(level int) bool {
+	if l.useVerbosity {
+		return level <= l.verbosity
+	}
 	return l.levelEnabler.Enabled(_grpcToZapLevel[level])
 }
 
