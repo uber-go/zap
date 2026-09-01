@@ -21,8 +21,6 @@
 package zaptest
 
 import (
-	"bytes"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -139,11 +137,10 @@ func (w TestingWriter) WithMarkFailed(v bool) TestingWriter {
 func (w TestingWriter) Write(p []byte) (n int, err error) {
 	n = len(p)
 
-	// Strip trailing newline because t.Log always adds one.
-	p = bytes.TrimRight(p, "\n")
-
-	// Note: t.Log is safe for concurrent use.
-	w.t.Logf("%s", p)
+	_, err = w.t.Output().Write(p)
+	if err != nil {
+		return 0, err
+	}
 	if w.markFailed {
 		w.t.Fail()
 	}
