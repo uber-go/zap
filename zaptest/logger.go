@@ -22,6 +22,7 @@ package zaptest
 
 import (
 	"bytes"
+	"strings"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -33,8 +34,9 @@ type LoggerOption interface {
 }
 
 type loggerOptions struct {
-	Level      zapcore.LevelEnabler
-	zapOptions []zap.Option
+	Level                   zapcore.LevelEnabler
+	MuteAfterTestCompletion bool
+	zapOptions              []zap.Option
 }
 
 type loggerOptionFunc func(*loggerOptions)
@@ -55,6 +57,12 @@ func Level(enab zapcore.LevelEnabler) LoggerOption {
 func WrapOptions(zapOpts ...zap.Option) LoggerOption {
 	return loggerOptionFunc(func(opts *loggerOptions) {
 		opts.zapOptions = zapOpts
+	})
+}
+
+func MuteAfterTestCompletion() LoggerOption {
+	return loggerOptionFunc(func(opts *loggerOptions) {
+		opts.MuteAfterTestCompletion = true
 	})
 }
 
@@ -83,6 +91,11 @@ func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 	}
 
 	writer := NewTestingWriter(t)
+
+	if cfg.MuteAfterTestCompletion {
+		writer.muteAfterTestCompletion = true
+	}
+
 	zapOptions := []zap.Option{
 		// Send zap errors to the same writer and mark the test as failed if
 		// that happens.
@@ -107,6 +120,13 @@ type TestingWriter struct {
 	// If true, the test will be marked as failed if this TestingWriter is
 	// ever used.
 	markFailed bool
+
+	// If true, we want to mute logging after the test has completed.
+	// We detect this by catching the panic
+	muteAfterTestCompletion bool
+
+	// If true, we've muted due to a prior panic
+	muted bool
 }
 
 // NewTestingWriter builds a new TestingWriter that writes to the given
@@ -138,6 +158,26 @@ func (w TestingWriter) WithMarkFailed(v bool) TestingWriter {
 // Write writes bytes from p to the underlying testing.TB.
 func (w TestingWriter) Write(p []byte) (n int, err error) {
 	n = len(p)
+
+	if w.muted {
+		// Early exit if we've already muted
+		return n, nil
+	}
+
+	if w.muteAfterTestCompletion {
+		// Set up to catch the panic that happens if the test has completed
+		defer func() {
+			if r := recover(); r != nil {
+				if s, ok := r.(string); ok && strings.HasPrefix(s, "Log in goroutine after") {
+					w.muted = true
+					return
+				}
+
+				// Re-panic if it's not the expected panic (just in case)
+				panic(r)
+			}
+		}()
+	}
 
 	// Strip trailing newline because t.Log always adds one.
 	p = bytes.TrimRight(p, "\n")

@@ -191,3 +191,56 @@ func (t *testLogSpy) AssertFailed() {
 func (t *testLogSpy) assertFailed(v bool, msg string) {
 	assert.Equal(t.TB, v, t.failed, msg)
 }
+
+func TestTestLoggerAfterTestCompletedPanics(t *testing.T) {
+	// A wrapper that always panics as though the wrapped test has completed.
+	w := newTestFinishedWrapper(t)
+
+	log := NewLogger(w)
+	assert.Panics(t, func() {
+		log.Info("foo")
+	})
+}
+
+func TestTestLoggerWithMutingAfterTestCompletedReturns(t *testing.T) {
+	// A wrapper that always panics as though the wrapped test has completed.
+	w := newTestFinishedWrapper(t)
+
+	log := NewLogger(w, MuteAfterTestCompletion())
+	log.Info("foo")
+}
+
+// testFinishedWrapper is a TestingT wrapper that panics if you try to log
+type testFinishedWrapper struct {
+	t *testing.T
+}
+
+func newTestFinishedWrapper(t *testing.T) *testFinishedWrapper {
+	return &testFinishedWrapper{
+		t: t,
+	}
+}
+
+func (f *testFinishedWrapper) Logf(string, ...interface{}) {
+	panic("Log in goroutine after " + f.t.Name() + " has completed")
+}
+
+func (f *testFinishedWrapper) Errorf(string, ...interface{}) {
+	panic("Error in goroutine after " + f.t.Name() + " has completed")
+}
+
+func (f *testFinishedWrapper) Fail() {
+	f.t.Fail()
+}
+
+func (f *testFinishedWrapper) Failed() bool {
+	return f.t.Failed()
+}
+
+func (f *testFinishedWrapper) Name() string {
+	return f.t.Name()
+}
+
+func (f *testFinishedWrapper) FailNow() {
+	f.t.FailNow()
+}
