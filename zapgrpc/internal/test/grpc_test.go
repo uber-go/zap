@@ -49,3 +49,16 @@ func TestLoggerV2(t *testing.T) {
 	assert.Equal(t, "hello from grpc", entry.Message,
 		"Log entry message did not match.")
 }
+
+func TestLoggerV2WithVerbosity(t *testing.T) {
+	core, _ := observer.New(zapcore.InfoLevel)
+	zlog := zap.New(core)
+
+	grpclog.SetLoggerV2(zapgrpc.NewLogger(zlog, zapgrpc.WithVerbosity(2)))
+
+	assert.True(t, grpclog.V(0))
+	assert.True(t, grpclog.V(1))
+	assert.True(t, grpclog.V(2))
+	assert.False(t, grpclog.V(3))
+}
+
