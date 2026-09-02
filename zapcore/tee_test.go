@@ -150,6 +150,17 @@ func TestTeeWith(t *testing.T) {
 	})
 }
 
+func TestTeeFields(t *testing.T) {
+	withTee(func(tee Core, debugLogs, warnLogs *observer.ObservedLogs) {
+		fields := []Field{makeInt64Field("k", 42)}
+		tee = tee.With(fields)
+
+		expectedFields := tee.Fields()
+		assert.Greater(t, len(expectedFields), 0, "Expected non-empty fields.")
+		assert.Equal(t, fields, expectedFields, "Unexpected fields.")
+	})
+}
+
 func TestTeeEnabled(t *testing.T) {
 	infoLogger, _ := observer.New(InfoLevel)
 	warnLogger, _ := observer.New(WarnLevel)
