@@ -26,9 +26,47 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+func filterOptions[T Option](in ...Option) []T {
+	var opts []T
+	for _, opt := range in {
+		if o, ok := opt.(T); ok {
+			opts = append(opts, o)
+		}
+	}
+	return opts
+}
+
 // An Option configures a Logger.
 type Option interface {
 	apply(*Logger)
+}
+
+// wrapEncoderOption wraps a func to make it satisfy the WrapEncoderOption interface.
+type wrapEncoderOption func(encoding string, cfg zapcore.EncoderConfig, encoder zapcore.Encoder) (zapcore.Encoder, error)
+
+func (f wrapEncoderOption) wrapEncoder(encoding string, cfg zapcore.EncoderConfig, encoder zapcore.Encoder) (zapcore.Encoder, error) {
+	return f(encoding, cfg, encoder)
+}
+
+func (f wrapEncoderOption) apply(_ *Logger) {}
+
+// WrapEncoder wraps or replaces the Logger's underlying zapcore.Encoder.
+func WrapEncoder(fn func(encoding string, cfg zapcore.EncoderConfig, encoder zapcore.Encoder) (zapcore.Encoder, error)) Option {
+	return wrapEncoderOption(fn)
+}
+
+// wrapEncoderOption wraps a func to make it satisfy the WrapSinkersOption interface.
+type wrapSinkerOption func(paths []string, sink zapcore.WriteSyncer, errPath []string, errSink zapcore.WriteSyncer) (zapcore.WriteSyncer, zapcore.WriteSyncer, error)
+
+func (f wrapSinkerOption) wrapSink(paths []string, sink zapcore.WriteSyncer, errPath []string, errSink zapcore.WriteSyncer) (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
+	return f(paths, sink, errPath, errSink)
+}
+
+func (f wrapSinkerOption) apply(_ *Logger) {}
+
+// WrapSinker wraps or replaces the Logger's underlying zapcore.Encoder.
+func WrapSinker(fn func(paths []string, sink zapcore.WriteSyncer, errPath []string, errSink zapcore.WriteSyncer) (zapcore.WriteSyncer, zapcore.WriteSyncer, error)) Option {
+	return wrapSinkerOption(fn)
 }
 
 // optionFunc wraps a func so it satisfies the Option interface.
