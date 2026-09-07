@@ -128,6 +128,51 @@ func TestConsoleSeparator(t *testing.T) {
 	}
 }
 
+func TestConsoleMessageSeparator(t *testing.T) {
+	tests := []struct {
+		desc             string
+		messageSeparator string
+		fields           []Field
+		wantConsole      string
+	}{
+		{
+			desc:             "custom message separator",
+			messageSeparator: "]\t",
+			wantConsole:      "0\tinfo\tmain\tfoo.go:42\tfoo.Foo]\thello\nfake-stack\n",
+		},
+		{
+			desc:             "empty message separator falls back to console separator",
+			messageSeparator: "",
+			wantConsole:      "0\tinfo\tmain\tfoo.go:42\tfoo.Foo\thello\nfake-stack\n",
+		},
+		{
+			desc:             "custom message separator keeps field separator for context",
+			messageSeparator: "]\t",
+			fields:           []Field{{Key: "k", Type: StringType, String: "v"}},
+			wantConsole:      "0\tinfo\tmain\tfoo.go:42\tfoo.Foo]\thello\t{\"k\": \"v\"}\nfake-stack\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			cfg := encoderTestEncoderConfig("\t")
+			cfg.ConsoleMessageSeparator = tt.messageSeparator
+			console := NewConsoleEncoder(cfg)
+
+			consoleOut, err := console.EncodeEntry(testEntry, tt.fields)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(
+				t,
+				tt.wantConsole,
+				consoleOut.String(),
+				"Unexpected console output",
+			)
+		})
+	}
+}
+
 func encoderTestEncoderConfig(separator string) EncoderConfig {
 	testEncoder := testEncoderConfig()
 	testEncoder.ConsoleSeparator = separator
