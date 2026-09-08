@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 
 	"go.uber.org/zap/zapcore"
@@ -111,7 +112,8 @@ func (lvl AtomicLevel) serveHTTP(w http.ResponseWriter, r *http.Request) error {
 
 // Decodes incoming PUT requests and returns the requested logging level.
 func decodePutRequest(contentType string, r *http.Request) (zapcore.Level, error) {
-	if contentType == "application/x-www-form-urlencoded" {
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err == nil && mediaType == "application/x-www-form-urlencoded" {
 		return decodePutURL(r)
 	}
 	return decodePutJSON(r.Body)
