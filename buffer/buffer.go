@@ -79,6 +79,71 @@ func (b *Buffer) AppendFloat(f float64, bitSize int) {
 	b.bs = strconv.AppendFloat(b.bs, f, 'f', -1, bitSize)
 }
 
+// AppendNumber appends the signed integer n scaled by 10^-scale as a decimal
+// number. The digits are computed from the integer, so no precision is lost to
+// float64 rounding. Trailing fractional zeros are omitted, matching the minimal
+// form produced by AppendFloat for values that are exactly representable.
+func (b *Buffer) AppendNumber(n int64, scale int) {
+	b.bs = appendNumber(b.bs, n, scale)
+}
+
+func appendNumber(bs []byte, n int64, scale int) []byte {
+	start := len(bs)
+	bs = strconv.AppendInt(bs, n, 10)
+	if scale == 0 || n == 0 {
+		return bs
+	}
+	if scale < 0 {
+		end := len(bs)
+		bs = extend(bs, -scale)
+		for i := end; i < len(bs); i++ {
+			bs[i] = '0'
+		}
+		return bs
+	}
+	// Trim before shifting digits, avoiding a decimal point for whole numbers.
+	for scale > 0 && len(bs) > 0 && bs[len(bs)-1] == '0' {
+		bs = bs[:len(bs)-1]
+		scale--
+	}
+	if scale == 0 {
+		return bs
+	}
+	if n < 0 {
+		start++ // skip the negative sign
+	}
+	end := len(bs)
+	digits := end - start
+
+	if digits > scale {
+		// Insert a decimal point scale digits from the right.
+		pos := end - scale
+		bs = extend(bs, 1)
+		copy(bs[pos+1:], bs[pos:end])
+		bs[pos] = '.'
+	} else {
+		// Value < 1: "0." followed by leading zeros and the magnitude's digits.
+		extra := scale + 2 - digits
+		bs = extend(bs, extra)
+		copy(bs[start+extra:], bs[start:end])
+		bs[start] = '0'
+		bs[start+1] = '.'
+		for i := 2; i < extra; i++ {
+			bs[start+i] = '0'
+		}
+	}
+
+	return bs
+}
+
+// extend adds n uninitialized bytes. The caller must overwrite them.
+func extend(bs []byte, n int) []byte {
+	if n >= 0 && n <= cap(bs)-len(bs) {
+		return bs[:len(bs)+n]
+	}
+	return append(bs, make([]byte, n)...)
+}
+
 // Len returns the length of the underlying byte slice.
 func (b *Buffer) Len() int {
 	return len(b.bs)

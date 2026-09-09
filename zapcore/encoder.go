@@ -98,20 +98,29 @@ func (e *LevelEncoder) UnmarshalText(text []byte) error {
 // to a PrimitiveArrayEncoder's Append* method.
 type TimeEncoder func(time.Time, PrimitiveArrayEncoder)
 
-// EpochTimeEncoder serializes a time.Time to a floating-point number of seconds
-// since the Unix epoch.
+// EpochTimeEncoder serializes a time.Time to a number of seconds since the Unix epoch.
+// When the encoder supports it, the value is written as an exact decimal,
+// otherwise it falls back to a float64.
 func EpochTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 	nanos := t.UnixNano()
-	sec := float64(nanos) / float64(time.Second)
-	enc.AppendFloat64(sec)
+	if e, ok := enc.(appendNumberEncoder); ok {
+		e.AppendNumber(nanos, 9)
+		return
+	}
+	enc.AppendFloat64(float64(nanos) / float64(time.Second))
 }
 
-// EpochMillisTimeEncoder serializes a time.Time to a floating-point number of
-// milliseconds since the Unix epoch.
+// EpochMillisTimeEncoder serializes a time.Time to a number of milliseconds
+// since the Unix epoch.
+// When the encoder supports it, the value is written as an exact decimal,
+// otherwise it falls back to a float64.
 func EpochMillisTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 	nanos := t.UnixNano()
-	millis := float64(nanos) / float64(time.Millisecond)
-	enc.AppendFloat64(millis)
+	if e, ok := enc.(appendNumberEncoder); ok {
+		e.AppendNumber(nanos, 6)
+		return
+	}
+	enc.AppendFloat64(float64(nanos) / float64(time.Millisecond))
 }
 
 // EpochNanosTimeEncoder serializes a time.Time to an integer number of
@@ -230,8 +239,14 @@ func (e *TimeEncoder) UnmarshalJSON(data []byte) error {
 // to a PrimitiveArrayEncoder's Append* method.
 type DurationEncoder func(time.Duration, PrimitiveArrayEncoder)
 
-// SecondsDurationEncoder serializes a time.Duration to a floating-point number of seconds elapsed.
+// SecondsDurationEncoder serializes a time.Duration to a number of seconds elapsed.
+// When the encoder supports it, the value is written as an exact decimal,
+// otherwise it falls back to a float64.
 func SecondsDurationEncoder(d time.Duration, enc PrimitiveArrayEncoder) {
+	if e, ok := enc.(appendNumberEncoder); ok {
+		e.AppendNumber(int64(d), 9)
+		return
+	}
 	enc.AppendFloat64(float64(d) / float64(time.Second))
 }
 
@@ -417,6 +432,13 @@ type ArrayEncoder interface {
 	// AppendReflected uses reflection to serialize arbitrary objects, so it's
 	// slow and allocation-heavy.
 	AppendReflected(value interface{}) error
+}
+
+// appendNumberEncoder is an optional interface that ArrayEncoders may implement
+// to append a signed integer scaled by a power of ten as a decimal, preserving
+// full precision that would otherwise be lost converting through float64.
+type appendNumberEncoder interface {
+	AppendNumber(number int64, scale int)
 }
 
 // PrimitiveArrayEncoder is the subset of the ArrayEncoder interface that deals

@@ -26,6 +26,7 @@ import (
 	"math"
 	"math/rand"
 	"reflect"
+	"strconv"
 	"testing"
 	"testing/quick"
 	"time"
@@ -504,6 +505,54 @@ func TestJSONEncoderTimeArrays(t *testing.T) {
 			}))
 			assert.NoError(t, err)
 			assert.Equal(t, `"array":`+tt.want, enc.buf.String())
+		})
+	}
+}
+
+// TestNumberEncodersFullPrecision verifies that the AppendNumber-based encoders
+// preserve sub-second precision that float64 would round off. For any value
+// past ~2^53 ns, float64 loses low digits, so the legacy float path corrupted
+// the nanosecond remainder.
+func TestNumberEncodersFullPrecision(t *testing.T) {
+	moment := time.Unix(1735689600, 123456789).UTC() // 2025-01-01T00:00:00.123456789Z
+	nanos := moment.UnixNano()                       // 1735689600123456789
+	dur := time.Duration(nanos)
+
+	tests := []struct {
+		desc     string
+		enc      func(*jsonEncoder)
+		want     string
+		floatVal float64
+	}{
+		{
+			"EpochTimeEncoder",
+			func(e *jsonEncoder) { e.EncodeTime = EpochTimeEncoder; e.AppendTime(moment) },
+			"1735689600.123456789",
+			float64(nanos) / float64(time.Second),
+		},
+		{
+			"EpochMillisTimeEncoder",
+			func(e *jsonEncoder) { e.EncodeTime = EpochMillisTimeEncoder; e.AppendTime(moment) },
+			"1735689600123.456789",
+			float64(nanos) / float64(time.Millisecond),
+		},
+		{
+			"SecondsDurationEncoder",
+			func(e *jsonEncoder) { e.EncodeDuration = SecondsDurationEncoder; e.AppendDuration(dur) },
+			"1735689600.123456789",
+			float64(dur) / float64(time.Second),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			enc := &jsonEncoder{buf: bufferpool.Get(), EncoderConfig: &EncoderConfig{}}
+			tt.enc(enc)
+			assert.Equal(t, tt.want, enc.buf.String(),
+				"AppendNumber path should preserve full precision")
+			floatPath := strconv.FormatFloat(tt.floatVal, 'f', -1, 64)
+			assert.NotEqual(t, floatPath, enc.buf.String(),
+				"float64 path should be lossy and differ from the exact decimal")
 		})
 	}
 }
