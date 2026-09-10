@@ -222,6 +222,12 @@ func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 // WithGroup returns a new Handler with the given group appended to
 // the receiver's existing groups.
 func (h *Handler) WithGroup(group string) slog.Handler {
+	if group == "" {
+		// slog.Handler requires that we return the receiver
+		// if the group name is empty.
+		return h
+	}
+
 	newGroups := make([]string, len(h.groups)+1)
 	copy(newGroups, h.groups)
 	newGroups[len(h.groups)] = group
