@@ -101,12 +101,10 @@ func NewMultiWriteSyncer(ws ...WriteSyncer) WriteSyncer {
 func (ws multiWriteSyncer) Write(p []byte) (int, error) {
 	var writeErr error
 	nWritten := 0
-	for _, w := range ws {
+	for i, w := range ws {
 		n, err := w.Write(p)
 		writeErr = multierr.Append(writeErr, err)
-		if nWritten == 0 && n != 0 {
-			nWritten = n
-		} else if n < nWritten {
+		if i == 0 || n < nWritten {
 			nWritten = n
 		}
 	}
