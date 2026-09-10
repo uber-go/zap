@@ -143,6 +143,23 @@ func TestConfigWithMissingAttributes(t *testing.T) {
 	}
 }
 
+func TestConfigWithMissingLevelDoesNotOpenSinks(t *testing.T) {
+	logOut := filepath.Join(t.TempDir(), "test.log")
+	cfg := Config{
+		// Level is deliberately left unset.
+		Encoding:         "json",
+		EncoderConfig:    NewProductionEncoderConfig(),
+		OutputPaths:      []string{logOut},
+		ErrorOutputPaths: []string{"stderr"},
+	}
+
+	_, err := cfg.Build()
+	require.EqualError(t, err, "missing Level")
+
+	_, err = os.Stat(logOut)
+	assert.ErrorIs(t, err, os.ErrNotExist, "Build shouldn't open output paths for an invalid Config.")
+}
+
 func makeSamplerCountingHook() (h func(zapcore.Entry, zapcore.SamplingDecision),
 	dropped, sampled *atomic.Int64,
 ) {
