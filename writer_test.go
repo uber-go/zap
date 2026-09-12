@@ -27,6 +27,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,6 +47,17 @@ func TestOpenNoPaths(t *testing.T) {
 		ws,
 		"Expected opening no paths to return a no-op WriteSyncer.",
 	)
+}
+
+// toFileURLPath returns path in the form it takes inside a file URL: forward
+// slashes, with a leading slash ahead of a Windows drive letter. On Unix-like
+// systems this is the path unchanged.
+func toFileURLPath(path string) string {
+	p := filepath.ToSlash(path)
+	if !strings.HasPrefix(p, "/") {
+		p = "/" + p
+	}
+	return p
 }
 
 func TestOpen(t *testing.T) {
@@ -71,11 +83,11 @@ func TestOpen(t *testing.T) {
 		},
 		{
 			msg:   "temp file file scheme",
-			paths: []string{"file://" + tempName},
+			paths: []string{"file://" + toFileURLPath(tempName)},
 		},
 		{
 			msg:   "temp file with file scheme and host localhost",
-			paths: []string{"file://localhost" + tempName},
+			paths: []string{"file://localhost" + toFileURLPath(tempName)},
 		},
 	}
 
@@ -186,27 +198,27 @@ func TestOpenOtherErrors(t *testing.T) {
 	}{
 		{
 			msg:     "file with unexpected host",
-			paths:   []string{"file://host01.test.com" + tempName},
+			paths:   []string{"file://host01.test.com" + toFileURLPath(tempName)},
 			wantErr: "empty or use localhost",
 		},
 		{
 			msg:     "file with user on localhost",
-			paths:   []string{"file://rms@localhost" + tempName},
+			paths:   []string{"file://rms@localhost" + toFileURLPath(tempName)},
 			wantErr: "user and password not allowed",
 		},
 		{
 			msg:     "file url with fragment",
-			paths:   []string{"file://localhost" + tempName + "#foo"},
+			paths:   []string{"file://localhost" + toFileURLPath(tempName) + "#foo"},
 			wantErr: "fragments not allowed",
 		},
 		{
 			msg:     "file url with query",
-			paths:   []string{"file://localhost" + tempName + "?foo=bar"},
+			paths:   []string{"file://localhost" + toFileURLPath(tempName) + "?foo=bar"},
 			wantErr: "query parameters not allowed",
 		},
 		{
 			msg:     "file with port",
-			paths:   []string{"file://localhost:8080" + tempName},
+			paths:   []string{"file://localhost:8080" + toFileURLPath(tempName)},
 			wantErr: "ports not allowed",
 		},
 	}

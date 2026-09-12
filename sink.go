@@ -27,6 +27,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -59,12 +60,14 @@ type sinkRegistry struct {
 	mu        sync.Mutex
 	factories map[string]func(*url.URL) (Sink, error)          // keyed by scheme
 	openFile  func(string, int, os.FileMode) (*os.File, error) // type matches os.OpenFile
+	isWindows bool                                             // whether file URLs carry Windows drive letters
 }
 
 func newSinkRegistry() *sinkRegistry {
 	sr := &sinkRegistry{
 		factories: make(map[string]func(*url.URL) (Sink, error)),
 		openFile:  os.OpenFile,
+		isWindows: runtime.GOOS == "windows",
 	}
 	// Infallible operation: the registry is empty, so we can't have a conflict.
 	_ = sr.RegisterSink(schemeFile, sr.newFileSinkFromURL)
@@ -145,7 +148,29 @@ func (sr *sinkRegistry) newFileSinkFromURL(u *url.URL) (Sink, error) {
 		return nil, fmt.Errorf("file URLs must leave host empty or use localhost: got %v", u)
 	}
 
-	return sr.newFileSinkFromPath(u.Path)
+	return sr.newFileSinkFromPath(sr.fileURLPath(u.Path))
+}
+
+// fileURLPath returns the filesystem path named by the path component of a
+// file URL. RFC 8089 places a Windows drive letter after a leading slash, so
+// "file:///C:/logs/app.log" has the path "/C:/logs/app.log", which Windows
+// can't open. On Windows, drop that slash; the forward slashes that remain are
+// accepted as they are.
+func (sr *sinkRegistry) fileURLPath(p string) string {
+	if sr.isWindows && hasWindowsDrivePrefix(p) {
+		return p[1:]
+	}
+	return p
+}
+
+// hasWindowsDrivePrefix reports whether p starts with a slash, a drive letter,
+// a colon, and another slash, as in "/C:/".
+func hasWindowsDrivePrefix(p string) bool {
+	if len(p) < 4 || p[0] != '/' || p[2] != ':' || p[3] != '/' {
+		return false
+	}
+	c := p[1]
+	return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
 }
 
 func (sr *sinkRegistry) newFileSinkFromPath(path string) (Sink, error) {
