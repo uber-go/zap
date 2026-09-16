@@ -320,6 +320,11 @@ func (enc *jsonEncoder) AppendUint64(val uint64) {
 	enc.buf.AppendUint(val)
 }
 
+func (enc *jsonEncoder) AppendNumber(number int64, scale int) {
+	enc.addElementSeparator()
+	enc.buf.AppendNumber(number, scale)
+}
+
 func (enc *jsonEncoder) AddInt(k string, v int)         { enc.AddInt64(k, int64(v)) }
 func (enc *jsonEncoder) AddInt32(k string, v int32)     { enc.AddInt64(k, int64(v)) }
 func (enc *jsonEncoder) AddInt16(k string, v int16)     { enc.AddInt64(k, int64(v)) }

@@ -130,3 +130,37 @@ func BenchmarkStandardJSON(b *testing.B) {
 		}
 	})
 }
+
+// floatMillisTimeEncoder mirrors the pre-AppendNumber EpochMillisTimeEncoder
+// (float64 division, lossy past ~2^53 ns), for benchmark comparison.
+func floatMillisTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
+	enc.AppendFloat64(float64(t.UnixNano()) / float64(time.Millisecond))
+}
+
+// BenchmarkEpochMillisTimeEncoder compares the AppendNumber-based
+// EpochMillisTimeEncoder against the legacy float64 path. A single encoder is
+// reused across iterations and the returned buffer is freed each time, so
+// allocations reflect only the encoding path (zero, once pools are warm)
+// rather than encoder construction.
+func BenchmarkEpochMillisTimeEncoder(b *testing.B) {
+	moment := time.Unix(1735689600, 123456789).UTC()
+	cases := []struct {
+		name string
+		fn   TimeEncoder
+	}{
+		{"float64", floatMillisTimeEncoder},
+		{"AppendNumber", EpochMillisTimeEncoder},
+	}
+	for _, tc := range cases {
+		cfg := testEncoderConfig()
+		cfg.EncodeTime = tc.fn
+		enc := NewJSONEncoder(cfg)
+		entry := Entry{Time: moment, Message: "x"}
+		b.Run(tc.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				buf, _ := enc.EncodeEntry(entry, nil)
+				buf.Free()
+			}
+		})
+	}
+}
