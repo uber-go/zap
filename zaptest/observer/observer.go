@@ -190,6 +190,10 @@ func (co *contextObserver) With(fields []zapcore.Field) zapcore.Core {
 	}
 }
 
+func (co *contextObserver) Fields() []zapcore.Field {
+	return co.context
+}
+
 func (co *contextObserver) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 	all := make([]zapcore.Field, 0, len(fields)+len(co.context))
 	all = append(all, co.context...)
