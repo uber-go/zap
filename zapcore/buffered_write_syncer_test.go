@@ -22,6 +22,7 @@ package zapcore
 
 import (
 	"bytes"
+	"io"
 	"testing"
 	"time"
 
@@ -145,4 +146,31 @@ func TestBufferWriterWithoutStart(t *testing.T) {
 		ws := &BufferedWriteSyncer{WS: AddSync(new(bytes.Buffer))}
 		assert.NoError(t, ws.Sync(), "Sync must not fail")
 	})
+}
+
+func TestBufferedWriteSyncerWriteAfterStop(t *testing.T) {
+	for _, initialized := range []bool{false, true} {
+		name := "before first write"
+		if initialized {
+			name = "after first write"
+		}
+		t.Run(name, func(t *testing.T) {
+			buf := &bytes.Buffer{}
+			ws := &BufferedWriteSyncer{WS: AddSync(buf)}
+			t.Cleanup(func() { assert.NoError(t, ws.Stop()) })
+			if initialized {
+				requireWriteWorks(t, ws)
+			}
+			require.NoError(t, ws.Stop())
+			before := buf.String()
+			for attempt := 0; attempt < 2; attempt++ {
+				n, err := ws.Write([]byte("lost log"))
+				assert.Zero(t, n)
+				assert.ErrorIs(t, err, io.ErrClosedPipe)
+				require.NoError(t, ws.Stop())
+			}
+			require.NoError(t, ws.Sync())
+			assert.Equal(t, before, buf.String())
+		})
+	}
 }

@@ -22,6 +22,7 @@ package zapcore
 
 import (
 	"bufio"
+	"io"
 	"sync"
 	"time"
 
@@ -134,9 +135,14 @@ func (s *BufferedWriteSyncer) initialize() {
 
 // Write writes log data into buffer syncer directly, multiple Write calls will be batched,
 // and log data will be flushed to disk when the buffer is full or periodically.
+// Write returns io.ErrClosedPipe after Stop has been called.
 func (s *BufferedWriteSyncer) Write(bs []byte) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	if s.stopped {
+		return 0, io.ErrClosedPipe
+	}
 
 	if !s.initialized {
 		s.initialize()
@@ -193,14 +199,14 @@ func (s *BufferedWriteSyncer) Stop() (err error) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
 
-		if !s.initialized {
-			return false
-		}
-
 		if s.stopped {
 			return false
 		}
 		s.stopped = true
+
+		if !s.initialized {
+			return false
+		}
 
 		s.ticker.Stop()
 		close(s.stop) // tell flushLoop to stop
