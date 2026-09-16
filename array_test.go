@@ -118,6 +118,17 @@ func TestObjectsAndObjectValues(t *testing.T) {
 		want []any
 	}{
 		{
+			desc: "Objects/nil element",
+			give: Objects("", []zapcore.ObjectMarshaler{
+				&fakeObject{value: "foo"},
+				nil,
+			}),
+			want: []any{
+				map[string]any{"value": "foo"},
+				nil,
+			},
+		},
+		{
 			desc: "Objects/nil slice",
 			give: Objects[*emptyObject]("", nil),
 			want: []any{},
@@ -257,6 +268,24 @@ func TestObjectsAndObjectValues_marshalError(t *testing.T) {
 	}
 }
 
+// errReflectedArrayEncoder fails AppendReflected, the call a nil element
+// makes; every other method is never reached.
+type errReflectedArrayEncoder struct {
+	zapcore.ArrayEncoder
+}
+
+func (errReflectedArrayEncoder) AppendReflected(any) error {
+	return errors.New("append reflected failed")
+}
+
+func TestObjectsAndStringers_nilElementEncoderError(t *testing.T) {
+	t.Parallel()
+
+	enc := errReflectedArrayEncoder{}
+	assert.Error(t, objects[zapcore.ObjectMarshaler]{nil}.MarshalLogArray(enc))
+	assert.Error(t, stringers[fmt.Stringer]{nil}.MarshalLogArray(enc))
+}
+
 type stringerObject struct {
 	value string
 }
@@ -273,6 +302,17 @@ func TestStringers(t *testing.T) {
 		give Field
 		want []any
 	}{
+		{
+			desc: "Stringers with nil element",
+			give: Stringers("", []fmt.Stringer{
+				stringerObject{value: "foo"},
+				nil,
+			}),
+			want: []any{
+				"foo",
+				nil,
+			},
+		},
 		{
 			desc: "Stringers",
 			give: Stringers("", []stringerObject{

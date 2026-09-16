@@ -406,8 +406,11 @@ func Object(key string, val zapcore.ObjectMarshaler) Field {
 
 // Inline constructs a Field that is similar to Object, but it
 // will add the elements of the provided ObjectMarshaler to the
-// current namespace.
+// current namespace. A nil ObjectMarshaler adds nothing.
 func Inline(val zapcore.ObjectMarshaler) Field {
+	if val == nil {
+		return Skip()
+	}
 	return zapcore.Field{
 		Type:      zapcore.InlineMarshalerType,
 		Interface: val,

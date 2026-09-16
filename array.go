@@ -30,7 +30,11 @@ import (
 // Array constructs a field with the given key and ArrayMarshaler. It provides
 // a flexible, but still type-safe and efficient, way to add array-like types
 // to the logging context. The struct's MarshalLogArray method is called lazily.
+// A nil ArrayMarshaler is logged as nil, as Object does with a nil ObjectMarshaler.
 func Array(key string, val zapcore.ArrayMarshaler) Field {
+	if val == nil {
+		return nilField(key)
+	}
 	return Field{Key: key, Type: zapcore.ArrayMarshalerType, Interface: val}
 }
 
@@ -135,6 +139,12 @@ type objects[T zapcore.ObjectMarshaler] []T
 
 func (os objects[T]) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	for _, o := range os {
+		if any(o) == nil {
+			if err := arr.AppendReflected(nil); err != nil {
+				return err
+			}
+			continue
+		}
 		if err := arr.AppendObject(o); err != nil {
 			return err
 		}
@@ -221,6 +231,12 @@ type stringers[T fmt.Stringer] []T
 
 func (os stringers[T]) MarshalLogArray(arr zapcore.ArrayEncoder) error {
 	for _, o := range os {
+		if any(o) == nil {
+			if err := arr.AppendReflected(nil); err != nil {
+				return err
+			}
+			continue
+		}
 		arr.AppendString(o.String())
 	}
 	return nil

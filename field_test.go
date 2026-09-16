@@ -254,6 +254,8 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:ErrorNil", Any("k", nilErr), nilField("k")},
 		{"Namespace", Namespace("k"), Field{Key: "k", Type: zapcore.NamespaceType}},
 		{"Object:Nil", Object("k", nil), nilField("k")},
+		{"Array:Nil", Array("k", nil), nilField("k")},
+		{"Inline:Nil", Inline(nil), Skip()},
 	}
 
 	for _, tt := range tests {
