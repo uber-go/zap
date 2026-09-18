@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"io"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -102,6 +103,64 @@ func TestRegisterSinkErrors(t *testing.T) {
 			r := newSinkRegistry()
 			err := r.RegisterSink(tt.scheme, nopFactory)
 			assert.ErrorContains(t, err, tt.err)
+		})
+	}
+}
+
+func TestFileURLPath(t *testing.T) {
+	tests := []struct {
+		msg       string
+		path      string
+		isWindows bool
+		want      string
+	}{
+		{msg: "windows drive letter", path: "/C:/logs/app.log", isWindows: true, want: "C:/logs/app.log"},
+		{msg: "windows lowercase drive letter", path: "/d:/app.log", isWindows: true, want: "d:/app.log"},
+		{msg: "windows path without a drive", path: "/logs/app.log", isWindows: true, want: "/logs/app.log"},
+		{msg: "windows bare drive", path: "/C:", isWindows: true, want: "/C:"},
+		{msg: "windows non-letter drive", path: "/1:/app.log", isWindows: true, want: "/1:/app.log"},
+		{msg: "windows empty path", path: "", isWindows: true, want: ""},
+		{msg: "non-windows keeps the slash", path: "/C:/logs/app.log", isWindows: false, want: "/C:/logs/app.log"},
+		{msg: "non-windows absolute path", path: "/var/log/app.log", isWindows: false, want: "/var/log/app.log"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			sr := newSinkRegistry()
+			sr.isWindows = tt.isWindows
+			assert.Equal(t, tt.want, sr.fileURLPath(tt.path))
+		})
+	}
+}
+
+func TestWindowsFileURLs(t *testing.T) {
+	// RFC 8089 file URLs for Windows paths, see
+	// https://github.com/uber-go/zap/issues/621. These run on every platform
+	// by forcing the registry into Windows mode and stubbing the file open.
+	tests := []struct {
+		msg      string
+		url      string
+		wantPath string
+	}{
+		{msg: "empty host", url: "file:///C:/logs/app.log", wantPath: "C:/logs/app.log"},
+		{msg: "localhost", url: "file://localhost/C:/logs/app.log", wantPath: "C:/logs/app.log"},
+		{msg: "percent-encoded space", url: "file:///C:/My%20Logs/app.log", wantPath: "C:/My Logs/app.log"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			sr := newSinkRegistry()
+			sr.isWindows = true
+
+			openFilename := "<not called>"
+			sr.openFile = func(filename string, _ int, _ os.FileMode) (*os.File, error) {
+				openFilename = filename
+				return nil, assert.AnError
+			}
+
+			_, err := sr.newSink(tt.url)
+			assert.Equal(t, assert.AnError, err, "expect stub error from OpenFile")
+			assert.Equal(t, tt.wantPath, openFilename, "unexpected path opened")
 		})
 	}
 }
