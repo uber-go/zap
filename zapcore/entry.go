@@ -119,9 +119,17 @@ func (ec EntryCaller) TrimmedPath() string {
 		return ec.FullPath()
 	}
 	// Find the penultimate separator.
+	end := idx
 	idx = strings.LastIndexByte(ec.File[:idx], '/')
 	if idx == -1 {
 		return ec.FullPath()
+	}
+	// A directory like "v2@v2.0.3" is a module's major-version suffix in the
+	// module cache, not the package name; keep one more directory.
+	if isVersionDir(ec.File[idx+1 : end]) {
+		if i := strings.LastIndexByte(ec.File[:idx], '/'); i != -1 {
+			idx = i
+		}
 	}
 	buf := bufferpool.Get()
 	// Keep everything after the penultimate separator.
@@ -131,6 +139,26 @@ func (ec EntryCaller) TrimmedPath() string {
 	caller := buf.String()
 	buf.Free()
 	return caller
+}
+
+// isVersionDir reports whether dir is a module directory with a major-version
+// suffix in the module cache, of the form "v<digits>@v<digits>.".
+func isVersionDir(dir string) bool {
+	if len(dir) < 2 || dir[0] != 'v' {
+		return false
+	}
+	i := 1
+	for i < len(dir) && dir[i] >= '0' && dir[i] <= '9' {
+		i++
+	}
+	if i == 1 || !strings.HasPrefix(dir[i:], "@v") {
+		return false
+	}
+	j := i + 2
+	for j < len(dir) && dir[j] >= '0' && dir[j] <= '9' {
+		j++
+	}
+	return j > i+2 && j < len(dir) && dir[j] == '.'
 }
 
 // An Entry represents a complete log message. The entry's structured context

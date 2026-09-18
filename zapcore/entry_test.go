@@ -94,6 +94,31 @@ func TestEntryCaller(t *testing.T) {
 			full:   "to/foo.go:42",
 			short:  "to/foo.go:42",
 		},
+		{
+			caller: NewEntryCaller(100, "/go/pkg/mod/github.com/me/go-pkg/v2@v2.0.3/foo.go", 42, true),
+			full:   "/go/pkg/mod/github.com/me/go-pkg/v2@v2.0.3/foo.go:42",
+			short:  "go-pkg/v2@v2.0.3/foo.go:42",
+		},
+		{
+			caller: NewEntryCaller(100, "/go/pkg/mod/github.com/me/go-pkg/v10@v10.1.2/foo.go", 42, true),
+			full:   "/go/pkg/mod/github.com/me/go-pkg/v10@v10.1.2/foo.go:42",
+			short:  "go-pkg/v10@v10.1.2/foo.go:42",
+		},
+		{
+			caller: NewEntryCaller(100, "v2@v2.0.3/foo.go", 42, true),
+			full:   "v2@v2.0.3/foo.go:42",
+			short:  "v2@v2.0.3/foo.go:42",
+		},
+		{
+			caller: NewEntryCaller(100, "/path/to/v2plus/foo.go", 42, true),
+			full:   "/path/to/v2plus/foo.go:42",
+			short:  "v2plus/foo.go:42",
+		},
+		{
+			caller: NewEntryCaller(100, "/vendor/pkg/v2/foo.go", 42, true),
+			full:   "/vendor/pkg/v2/foo.go:42",
+			short:  "v2/foo.go:42",
+		},
 	}
 
 	for _, tt := range tests {
