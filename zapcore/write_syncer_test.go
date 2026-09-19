@@ -101,6 +101,41 @@ func TestMultiWriteSyncerFailsShortWrite(t *testing.T) {
 	assert.Equal(t, 3, n, "Expected byte count to return from underlying writer")
 }
 
+// countingWriter is a WriteSyncer that reports a fixed number of bytes
+// written, without an error.
+type countingWriter int
+
+func (w countingWriter) Write([]byte) (int, error) { return int(w), nil }
+
+func (countingWriter) Sync() error { return nil }
+
+func TestMultiWriteSyncerReturnsSmallestWrite(t *testing.T) {
+	tests := []struct {
+		desc   string
+		writes []int
+		want   int
+	}{
+		{"ascending", []int{1, 2, 3}, 1},
+		{"descending", []int{3, 2, 1}, 1},
+		{"nothing written first", []int{0, 3}, 0},
+		{"nothing written last", []int{3, 0}, 0},
+		{"nothing written in the middle", []int{3, 0, 5}, 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			syncers := make([]WriteSyncer, 0, len(tt.writes))
+			for _, n := range tt.writes {
+				syncers = append(syncers, countingWriter(n))
+			}
+
+			n, err := NewMultiWriteSyncer(syncers...).Write(make([]byte, 8))
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, n, "Expected the smallest number of bytes written.")
+		})
+	}
+}
+
 func TestWritestoAllSyncs_EvenIfFirstErrors(t *testing.T) {
 	failer := &ztest.FailWriter{}
 	second := &bytes.Buffer{}
