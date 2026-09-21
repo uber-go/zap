@@ -90,6 +90,24 @@ func (w *Writer) Write(bs []byte) (n int, err error) {
 // unconsumed bytes.
 func (w *Writer) writeLine(line []byte) (remaining []byte) {
 	idx := bytes.IndexByte(line, '\n')
+	crIdx := bytes.IndexByte(line, '\r')
+
+	if crIdx >= 0 && (idx < 0 || crIdx < idx) && (crIdx+1 == len(line) || line[crIdx+1] != '\n') {
+		w.buff.Reset()
+		return line[crIdx+1:]
+	}
+
+	// Handle \r\n sequences - these are line terminators that should log
+	if crIdx >= 0 && crIdx+1 < len(line) && line[crIdx+1] == '\n' {
+		if w.buff.Len() == 0 {
+			w.log(line[:crIdx])
+		} else {
+			w.buff.Write(line[:crIdx])
+			w.flush(true)
+		}
+		return line[crIdx+2:]
+	}
+
 	if idx < 0 {
 		// If there are no newlines, buffer the entire string.
 		w.buff.Write(line)
