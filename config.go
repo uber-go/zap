@@ -123,18 +123,19 @@ type Config struct {
 //	cfg.EncodeTime = zapcore.ISO8601TimeEncoder
 func NewProductionEncoderConfig() zapcore.EncoderConfig {
 	return zapcore.EncoderConfig{
-		TimeKey:        "ts",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		CallerKey:      "caller",
-		FunctionKey:    zapcore.OmitKey,
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeTime:     zapcore.EpochTimeEncoder,
-		EncodeDuration: zapcore.SecondsDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+		TimeKey:          "ts",
+		LevelKey:         "level",
+		NameKey:          "logger",
+		CallerKey:        "caller",
+		FunctionKey:      zapcore.OmitKey,
+		MessageKey:       "msg",
+		StacktraceKey:    "stacktrace",
+		LineEnding:       zapcore.DefaultLineEnding,
+		EncodeLevel:      zapcore.LowercaseLevelEncoder,
+		EncodeTime:       zapcore.EpochTimeEncoder,
+		EncodeDuration:   zapcore.SecondsDurationEncoder,
+		EncodeCaller:     zapcore.ShortCallerEncoder,
+		EncodeStacktrace: zapcore.FullStacktraceEncoder,
 	}
 }
 
@@ -200,18 +201,19 @@ func NewProductionConfig() Config {
 func NewDevelopmentEncoderConfig() zapcore.EncoderConfig {
 	return zapcore.EncoderConfig{
 		// Keys can be anything except the empty string.
-		TimeKey:        "T",
-		LevelKey:       "L",
-		NameKey:        "N",
-		CallerKey:      "C",
-		FunctionKey:    zapcore.OmitKey,
-		MessageKey:     "M",
-		StacktraceKey:  "S",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.CapitalLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.StringDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+		TimeKey:          "T",
+		LevelKey:         "L",
+		NameKey:          "N",
+		CallerKey:        "C",
+		FunctionKey:      zapcore.OmitKey,
+		MessageKey:       "M",
+		StacktraceKey:    "S",
+		LineEnding:       zapcore.DefaultLineEnding,
+		EncodeLevel:      zapcore.CapitalLevelEncoder,
+		EncodeTime:       zapcore.ISO8601TimeEncoder,
+		EncodeDuration:   zapcore.StringDurationEncoder,
+		EncodeCaller:     zapcore.ShortCallerEncoder,
+		EncodeStacktrace: zapcore.FullStacktraceEncoder,
 	}
 }
 
