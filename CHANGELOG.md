@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+Enhancements:
+* [#1572][]: Add `CheckedEntry.Free` method to return a checked entry to the pool without writing it.
+
+[#1572]: https://github.com/uber-go/zap/pull/1572
+
 ## 1.28.0 (27 Apr 2026)
 Enhancements:
 * [#1534][]: Add `zapcore.CheckPreWriteHook` and `CheckedEntry.Before` method for transforming entries before they are written to any Cores.
