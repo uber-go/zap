@@ -90,6 +90,20 @@ func newJSONEncoder(cfg EncoderConfig, spaced bool) *jsonEncoder {
 		cfg.NewReflectedEncoder = defaultReflectedEncoder
 	}
 
+	// If no encoder is provided, fall back to the default implementation.
+	if cfg.EncodeLevel == nil {
+		cfg.EncodeLevel = LowercaseLevelEncoder
+	}
+	if cfg.EncodeTime == nil {
+		cfg.EncodeTime = EpochTimeEncoder
+	}
+	if cfg.EncodeDuration == nil {
+		cfg.EncodeDuration = SecondsDurationEncoder
+	}
+	if cfg.EncodeCaller == nil {
+		cfg.EncodeCaller = ShortCallerEncoder
+	}
+
 	return &jsonEncoder{
 		EncoderConfig: &cfg,
 		buf:           bufferpool.Get(),
