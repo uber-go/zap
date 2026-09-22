@@ -356,6 +356,8 @@ type EncoderConfig struct {
 	// Configures the field separator used by the console encoder. Defaults
 	// to tab.
 	ConsoleSeparator string `json:"consoleSeparator" yaml:"consoleSeparator"`
+	// Configures the console filed order. Defaults to Time Level Name Callee Function Message Stack
+	ConsoleFieldOrder []OrderField `json:"consoleFieldOrder" yaml:"consoleFieldOrder"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a

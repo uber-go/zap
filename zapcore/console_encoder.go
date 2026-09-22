@@ -34,6 +34,37 @@ var _sliceEncoderPool = pool.New(func() *sliceArrayEncoder {
 	}
 })
 
+// OrderField represents a field that can be included in console encoder output.
+type OrderField string
+
+// Console encoder field constants that can be used to configure field order.
+const (
+	// OrderFieldTime represents the timestamp field
+	OrderFieldTime OrderField = "Time"
+	// OrderFieldLevel represents the log level field
+	OrderFieldLevel OrderField = "Level"
+	// OrderFieldName represents the logger name field
+	OrderFieldName OrderField = "Name"
+	// OrderFieldCallee represents the caller file and line field
+	OrderFieldCallee OrderField = "Callee"
+	// OrderFieldFunction represents the caller function field
+	OrderFieldFunction OrderField = "Function"
+	// OrderFieldMessage represents the log message field
+	OrderFieldMessage OrderField = "Message"
+	// OrderFieldStack represents the stack trace field
+	OrderFieldStack OrderField = "Stack"
+)
+
+var defaultConsoleOrder = []OrderField{
+	OrderFieldTime,
+	OrderFieldLevel,
+	OrderFieldName,
+	OrderFieldCallee,
+	OrderFieldFunction,
+	OrderFieldMessage,
+	OrderFieldStack,
+}
+
 func getSliceEncoder() *sliceArrayEncoder {
 	return _sliceEncoderPool.Get()
 }
@@ -60,11 +91,18 @@ func NewConsoleEncoder(cfg EncoderConfig) Encoder {
 		// Use a default delimiter of '\t' for backwards compatibility
 		cfg.ConsoleSeparator = "\t"
 	}
-	return consoleEncoder{newJSONEncoder(cfg, true)}
+
+	jsonEncoder := newJSONEncoder(cfg, true)
+
+	return consoleEncoder{
+		jsonEncoder: jsonEncoder,
+	}
 }
 
 func (c consoleEncoder) Clone() Encoder {
-	return consoleEncoder{c.jsonEncoder.Clone().(*jsonEncoder)}
+	return consoleEncoder{
+		jsonEncoder: c.jsonEncoder.Clone().(*jsonEncoder),
+	}
 }
 
 func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, error) {
@@ -77,53 +115,128 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 	// If this ever becomes a performance bottleneck, we can implement
 	// ArrayEncoder for our plain-text format.
 	arr := getSliceEncoder()
-	if c.TimeKey != "" && c.EncodeTime != nil && !ent.Time.IsZero() {
-		c.EncodeTime(ent.Time, arr)
-	}
-	if c.LevelKey != "" && c.EncodeLevel != nil {
-		c.EncodeLevel(ent.Level, arr)
-	}
-	if ent.LoggerName != "" && c.NameKey != "" {
-		nameEncoder := c.EncodeName
 
-		if nameEncoder == nil {
-			// Fall back to FullNameEncoder for backward compatibility.
-			nameEncoder = FullNameEncoder
-		}
+	// Process ordered fields
+	for _, f := range c.jsonEncoder.ConsoleFieldOrder {
+		switch f {
+		case OrderFieldTime:
+			if c.TimeKey != "" && c.EncodeTime != nil && !ent.Time.IsZero() {
+				c.EncodeTime(ent.Time, arr)
+			}
+		case OrderFieldLevel:
+			if c.LevelKey != "" && c.EncodeLevel != nil {
+				c.EncodeLevel(ent.Level, arr)
+			}
+		case OrderFieldName:
+			if ent.LoggerName != "" && c.NameKey != "" {
+				nameEncoder := c.EncodeName
+				if nameEncoder == nil {
+					// Fall back to FullNameEncoder for backward compatibility.
+					nameEncoder = FullNameEncoder
+				}
+				nameEncoder(ent.LoggerName, arr)
+			}
+		case OrderFieldCallee:
+			if ent.Caller.Defined {
+				if c.CallerKey != "" && c.EncodeCaller != nil {
+					c.EncodeCaller(ent.Caller, arr)
+				}
+			}
+		case OrderFieldFunction:
+			if ent.Caller.Defined {
+				if c.FunctionKey != "" {
+					arr.AppendString(ent.Caller.Function)
+				}
+			}
+		case OrderFieldMessage:
+			// Add the message itself.
+			if c.MessageKey != "" {
+				arr.AppendString(ent.Message)
+			}
 
-		nameEncoder(ent.LoggerName, arr)
-	}
-	if ent.Caller.Defined {
-		if c.CallerKey != "" && c.EncodeCaller != nil {
-			c.EncodeCaller(ent.Caller, arr)
+			// Add any structured context.
+			contextEncoder := c.jsonEncoder.Clone().(*jsonEncoder)
+			defer contextEncoder.buf.Free() // Free the cloned buffer when done.
+
+			// Add fields from the parameter to the cloned encoder.
+			for _, f := range fields {
+				f.AddTo(contextEncoder)
+			}
+			// Add fields from the internal buffer too (from With).
+			// The clone already includes fields added via With,
+			// so no need to explicitly add c.jsonEncoder.buf.Bytes().
+			// We just need to ensure namespaces are closed on the clone.
+			contextEncoder.closeOpenNamespaces()
+
+			// Check if the cloned encoder has any content.
+			if contextEncoder.buf.Len() > 0 {
+				// Manually add curly braces because the buffer contains only the inner KVs.
+				jsonStr := "{" + contextEncoder.buf.String() + "}"
+				arr.AppendString(jsonStr)
+			}
+		case OrderFieldStack:
+			// If there's no stacktrace key, honor that; this allows users to force
+			// single-line output.
+			if ent.Stack != "" && c.StacktraceKey != "" {
+				arr.AppendString("\n" + ent.Stack)
+			}
 		}
-		if c.FunctionKey != "" {
-			arr.AppendString(ent.Caller.Function)
-		}
 	}
-	for i := range arr.elems {
+
+	// Optimized loop to format arr.elems into line buffer
+	for i, elem := range arr.elems {
 		if i > 0 {
-			line.AppendString(c.ConsoleSeparator)
+			// Optimized: Avoid adding separator before stack trace if it starts with newline
+			needSeparator := true
+			if i == len(arr.elems)-1 { // Check if it's the last element
+				if str, ok := elem.(string); ok && len(str) > 0 && str[0] == '\n' {
+					needSeparator = false
+				}
+			}
+			if needSeparator {
+				line.AppendString(c.ConsoleSeparator)
+			}
+		} // End of if i > 0
+
+		// Optimized writing based on type
+		switch e := elem.(type) {
+		case string:
+			line.AppendString(e)
+		case []byte:
+			line.Write(e)
+		case int:
+			line.AppendInt(int64(e))
+		case int8:
+			line.AppendInt(int64(e))
+		case int16:
+			line.AppendInt(int64(e))
+		case int32:
+			line.AppendInt(int64(e))
+		case int64:
+			line.AppendInt(e)
+		case uint:
+			line.AppendUint(uint64(e))
+		case uint8:
+			line.AppendUint(uint64(e))
+		case uint16:
+			line.AppendUint(uint64(e))
+		case uint32:
+			line.AppendUint(uint64(e))
+		case uint64:
+			line.AppendUint(e)
+		case float32:
+			line.AppendFloat(float64(e), 32)
+		case float64:
+			line.AppendFloat(e, 64)
+		case bool:
+			line.AppendBool(e)
+		default:
+			// Fallback using fmt.Fprint for unexpected or complex types
+			// This path might still cause allocations
+			_, _ = fmt.Fprint(line, e)
 		}
-		_, _ = fmt.Fprint(line, arr.elems[i])
-	}
+	} // End of loop through arr.elems
 	putSliceEncoder(arr)
-
-	// Add the message itself.
-	if c.MessageKey != "" {
-		c.addSeparatorIfNecessary(line)
-		line.AppendString(ent.Message)
-	}
-
-	// Add any structured context.
-	c.writeContext(line, fields)
-
-	// If there's no stacktrace key, honor that; this allows users to force
-	// single-line output.
-	if ent.Stack != "" && c.StacktraceKey != "" {
-		line.AppendByte('\n')
-		line.AppendString(ent.Stack)
-	}
 
 	line.AppendString(c.LineEnding)
 	return line, nil

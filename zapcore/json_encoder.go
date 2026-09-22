@@ -90,6 +90,10 @@ func newJSONEncoder(cfg EncoderConfig, spaced bool) *jsonEncoder {
 		cfg.NewReflectedEncoder = defaultReflectedEncoder
 	}
 
+	if len(cfg.ConsoleFieldOrder) != len(defaultConsoleOrder) {
+		cfg.ConsoleFieldOrder = defaultConsoleOrder
+	}
+
 	return &jsonEncoder{
 		EncoderConfig: &cfg,
 		buf:           bufferpool.Get(),
