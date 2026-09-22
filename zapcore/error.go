@@ -85,7 +85,7 @@ type errorGroup interface {
 }
 
 // Note that errArray and errArrayElem are very similar to the version
-// implemented in the top-level error.go file. We can't re-use this because
+// implemented in the top-level error.go file. We can't reuse this because
 // that would require exporting errArray as part of the zapcore API.
 
 // Encodes a list of errors using the standard error encoding logic.
@@ -111,7 +111,7 @@ var _errArrayElemPool = pool.New(func() *errArrayElem {
 	return &errArrayElem{}
 })
 
-// Encodes any error into a {"error": ...} re-using the same errors logic.
+// Encodes any error into a {"error": ...} reusing the same errors logic.
 //
 // May be passed in place of an array to build a single-element array.
 type errArrayElem struct{ err error }

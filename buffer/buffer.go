@@ -99,7 +99,7 @@ func (b *Buffer) String() string {
 	return string(b.bs)
 }
 
-// Reset resets the underlying byte slice. Subsequent writes re-use the slice's
+// Reset resets the underlying byte slice. Subsequent writes reuse the slice's
 // backing array.
 func (b *Buffer) Reset() {
 	b.bs = b.bs[:0]

@@ -50,6 +50,6 @@ func TestCheckedEntryIllegalReuse(t *testing.T) {
 
 	// The second write should fail.
 	ce.Write(zap.String("foo", "bar"), zap.Int("x", 1))
-	assert.Contains(t, errOut.String(), "Unsafe CheckedEntry re-use near Entry",
+	assert.Contains(t, errOut.String(), "Unsafe CheckedEntry reuse near Entry",
 		"Expected error logged on second write.")
 }

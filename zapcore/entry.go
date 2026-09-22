@@ -241,7 +241,7 @@ func (ce *CheckedEntry) reset() {
 }
 
 // Write writes the entry to the stored Cores, returns any errors, and returns
-// the CheckedEntry reference to a pool for immediate re-use. Finally, it
+// the CheckedEntry reference to a pool for immediate reuse. Finally, it
 // executes any required CheckWriteAction.
 func (ce *CheckedEntry) Write(fields ...Field) {
 	if ce == nil {
@@ -250,13 +250,13 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 
 	if ce.dirty {
 		if ce.ErrorOutput != nil {
-			// Make a best effort to detect unsafe re-use of this CheckedEntry.
+			// Make a best effort to detect unsafe reuse of this CheckedEntry.
 			// If the entry is dirty, log an internal error; because the
 			// CheckedEntry is being used after it was returned to the pool,
 			// the message may be an amalgamation from multiple call sites.
 			_, _ = fmt.Fprintf(
 				ce.ErrorOutput,
-				"%v Unsafe CheckedEntry re-use near Entry %+v.\n",
+				"%v Unsafe CheckedEntry reuse near Entry %+v.\n",
 				ce.Time,
 				ce.Entry,
 			)
