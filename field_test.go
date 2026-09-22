@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"fmt"
 	"math"
 	"net"
 	"regexp"
@@ -124,12 +125,14 @@ func TestFieldConstructors(t *testing.T) {
 		{"Reflect", Field{Key: "k", Type: zapcore.ReflectType, Interface: ints}, Reflect("k", ints)},
 		{"Reflect", Field{Key: "k", Type: zapcore.ReflectType}, Reflect("k", nil)},
 		{"Stringer", Field{Key: "k", Type: zapcore.StringerType, Interface: addr}, Stringer("k", addr)},
+		{"Stringer:Nil", nilField("k"), Stringer("k", nil)},
 		{"Object", Field{Key: "k", Type: zapcore.ObjectMarshalerType, Interface: name}, Object("k", name)},
 		{"Inline", Field{Type: zapcore.InlineMarshalerType, Interface: name}, Inline(name)},
 		{"Any:ObjectMarshaler", Any("k", name), Object("k", name)},
 		{"Any:ArrayMarshaler", Any("k", bools([]bool{true})), Array("k", bools([]bool{true}))},
 		{"Any:Dict", Any("k", []Field{String("k", "v")}), Dict("k", String("k", "v"))},
 		{"Any:Stringer", Any("k", addr), Stringer("k", addr)},
+		{"Any:Stringer:Nil", Any("k", (fmt.Stringer)(nil)), Stringer("k", nil)},
 		{"Any:Bool", Any("k", true), Bool("k", true)},
 		{"Any:Bools", Any("k", []bool{true}), Bools("k", []bool{true})},
 		{"Any:Byte", Any("k", byte(1)), Uint8("k", 1)},
