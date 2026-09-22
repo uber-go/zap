@@ -58,7 +58,7 @@ func Lock(ws WriteSyncer) WriteSyncer {
 		// no need to layer on another lock
 		return ws
 	}
-	return &lockedWriteSyncer{ws: ws}
+	return &lockedWriteSyncer{ws: lockWriteSyncer(ws)}
 }
 
 func (s *lockedWriteSyncer) Write(bs []byte) (int, error) {
