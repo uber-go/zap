@@ -39,6 +39,7 @@ type Handler struct {
 	addCaller  bool
 	addStackAt slog.Level
 	callerSkip int
+	mapLevel   LevelMapper
 
 	// List of unapplied groups.
 	//
@@ -54,6 +55,7 @@ func NewHandler(core zapcore.Core, opts ...HandlerOption) *Handler {
 	h := &Handler{
 		core:       core,
 		addStackAt: slog.LevelError,
+		mapLevel:   DefaultLevelMapper,
 	}
 	for _, v := range opts {
 		v.apply(h)
@@ -113,10 +115,25 @@ func convertAttrToField(attr slog.Attr) zapcore.Field {
 	}
 }
 
-// convertSlogLevel maps slog Levels to zap Levels.
-// Note that there is some room between slog levels while zap levels are continuous, so we can't 1:1 map them.
-// See also https://go.googlesource.com/proposal/+/master/design/56345-structured-logging.md?pli=1#levels
-func convertSlogLevel(l slog.Level) zapcore.Level {
+// A LevelMapper maps a [slog.Level] to a [zapcore.Level].
+//
+// slog levels are sparse -- callers may define their own levels anywhere in
+// the gaps between the standard ones -- while zap levels are contiguous, so a
+// mapper cannot be a 1:1 correspondence. See the [structured logging proposal]
+// for details on slog's level scheme.
+//
+// Use [WithLevelMapper] to install a custom mapper on a [Handler].
+//
+// [structured logging proposal]: https://go.googlesource.com/proposal/+/master/design/56345-structured-logging.md?pli=1#levels
+type LevelMapper func(slog.Level) zapcore.Level
+
+// DefaultLevelMapper is the [LevelMapper] used by a Handler
+// that was not given a [WithLevelMapper] option.
+// It maps each standard slog level to the zap level of the same name,
+// rounding levels in between down to the next lowest standard slog level.
+//
+// Custom mappers can call it to handle the levels they don't care about.
+func DefaultLevelMapper(l slog.Level) zapcore.Level {
 	switch {
 	case l >= slog.LevelError:
 		return zapcore.ErrorLevel
@@ -131,13 +148,13 @@ func convertSlogLevel(l slog.Level) zapcore.Level {
 
 // Enabled reports whether the handler handles records at the given level.
 func (h *Handler) Enabled(_ context.Context, level slog.Level) bool {
-	return h.core.Enabled(convertSlogLevel(level))
+	return h.core.Enabled(h.mapLevel(level))
 }
 
 // Handle handles the Record.
 func (h *Handler) Handle(_ context.Context, record slog.Record) error {
 	ent := zapcore.Entry{
-		Level:      convertSlogLevel(record.Level),
+		Level:      h.mapLevel(record.Level),
 		Time:       record.Time,
 		Message:    record.Message,
 		LoggerName: h.name,

@@ -70,3 +70,27 @@ func AddStacktraceAt(lvl slog.Level) HandlerOption {
 		log.addStackAt = lvl
 	})
 }
+
+// WithLevelMapper configures how the Handler maps [slog.Level] values
+// to [zapcore.Level] values.
+//
+// This is useful for applications that define custom slog levels
+// in the gaps between the standard ones,
+// or that want to reach zap levels which slog has no equivalent for.
+//
+//	zapslog.WithLevelMapper(func(l slog.Level) zapcore.Level {
+//		if l == LevelTrace {
+//			return zapcore.DebugLevel
+//		}
+//		return zapslog.DefaultLevelMapper(l)
+//	})
+//
+// A nil mapper restores the default mapping.
+func WithLevelMapper(m LevelMapper) HandlerOption {
+	return handlerOptionFunc(func(handler *Handler) {
+		if m == nil {
+			m = DefaultLevelMapper
+		}
+		handler.mapLevel = m
+	})
+}
