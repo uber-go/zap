@@ -22,6 +22,7 @@ package zap
 
 import (
 	"fmt"
+	"log/slog"
 	"math"
 	"time"
 
@@ -487,6 +488,12 @@ func (f anyFieldC[T]) Any(key string, val any) Field {
 // Since byte/uint8 and rune/int32 are aliases, Any can't differentiate between
 // them. To minimize surprises, []byte values are treated as binary blobs, byte
 // values are treated as uint8, and runes are always treated as integers.
+//
+// slog values are converted with the same rules as the exp/zapslog adapter:
+// slog.Attr values use their own key unless an explicit key is provided, and
+// slog.LogValuer values are resolved eagerly. A value implementing error is
+// still logged as an error; among the remaining interfaces, LogValuer takes
+// precedence over fmt.Stringer.
 func Any(key string, value interface{}) Field {
 	var c interface{ Any(string, any) Field }
 
@@ -615,6 +622,10 @@ func Any(key string, value interface{}) Field {
 		c = anyFieldC[error](NamedError)
 	case []error:
 		c = anyFieldC[[]error](Errors)
+	case slog.Attr:
+		c = anyFieldC[slog.Attr](slogAttrField)
+	case slog.LogValuer:
+		c = anyFieldC[slog.LogValuer](slogLogValuerField)
 	case fmt.Stringer:
 		c = anyFieldC[fmt.Stringer](Stringer)
 	default:
@@ -622,4 +633,61 @@ func Any(key string, value interface{}) Field {
 	}
 
 	return c.Any(key, value)
+}
+
+// slogAttrField converts an slog.Attr to a field, applying the same
+// conversion rules as the exp/zapslog adapter. The explicit key wins if
+// non-empty; otherwise the attribute's own key is used. Empty attributes
+// are skipped.
+func slogAttrField(key string, attr slog.Attr) Field {
+	if key == "" {
+		key = attr.Key
+	}
+	if attr.Key == "" && attr.Value.Kind() == slog.KindAny && attr.Value.Any() == nil {
+		return Skip()
+	}
+
+	switch attr.Value.Kind() {
+	case slog.KindBool:
+		return Bool(key, attr.Value.Bool())
+	case slog.KindDuration:
+		return Duration(key, attr.Value.Duration())
+	case slog.KindFloat64:
+		return Float64(key, attr.Value.Float64())
+	case slog.KindInt64:
+		return Int64(key, attr.Value.Int64())
+	case slog.KindString:
+		return String(key, attr.Value.String())
+	case slog.KindTime:
+		return Time(key, attr.Value.Time())
+	case slog.KindUint64:
+		return Uint64(key, attr.Value.Uint64())
+	case slog.KindGroup:
+		if key == "" {
+			// Inline keyless groups, mirroring exp/zapslog.
+			return Inline(slogGroup(attr.Value.Group()))
+		}
+		return Object(key, slogGroup(attr.Value.Group()))
+	case slog.KindLogValuer:
+		return slogAttrField(key, slog.Attr{Key: key, Value: attr.Value.Resolve()})
+	default:
+		return Any(key, attr.Value.Any())
+	}
+}
+
+// slogLogValuerField resolves an slog.LogValuer eagerly and converts the
+// resulting value. Lazy resolution would require a new field type; see the
+// TODO in exp/zapslog.
+func slogLogValuerField(key string, v slog.LogValuer) Field {
+	return slogAttrField(key, slog.Attr{Key: key, Value: v.LogValue().Resolve()})
+}
+
+// slogGroup adapts a group of slog attributes to zapcore.ObjectMarshaler.
+type slogGroup []slog.Attr
+
+func (gs slogGroup) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	for _, attr := range gs {
+		slogAttrField(attr.Key, attr).AddTo(enc)
+	}
+	return nil
 }

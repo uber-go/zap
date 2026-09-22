@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"log/slog"
 	"math"
 	"net"
 	"regexp"
@@ -38,6 +39,39 @@ type username string
 func (n username) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("username", string(n))
 	return nil
+}
+
+type slogLogValuer struct{ v string }
+
+func (s slogLogValuer) LogValue() slog.Value { return slog.StringValue(s.v) }
+
+type slogLogValuerStringer struct{ v string }
+
+func (s slogLogValuerStringer) LogValue() slog.Value { return slog.StringValue(s.v) }
+func (s slogLogValuerStringer) String() string       { return "stringer-wins" }
+
+type slogErrorLogValuer struct{ msg string }
+
+func (s slogErrorLogValuer) Error() string        { return s.msg }
+func (s slogErrorLogValuer) LogValue() slog.Value { return slog.StringValue(s.msg) }
+
+func TestAnySlogGroupEncoding(t *testing.T) {
+	field := Any("g", slog.Group("outer",
+		slog.String("a", "1"),
+		slog.Int("b", 2),
+		slog.Group("sub", slog.String("c", "3")),
+		slog.Group("", slog.String("inlined", "yes")),
+	))
+
+	enc := zapcore.NewMapObjectEncoder()
+	field.AddTo(enc)
+
+	assert.Equal(t, map[string]interface{}{
+		"a":       "1",
+		"b":       int64(2),
+		"sub":     map[string]interface{}{"c": "3"},
+		"inlined": "yes",
+	}, enc.Fields["g"])
 }
 
 func assertCanBeReused(t testing.TB, field Field) {
@@ -173,6 +207,28 @@ func TestFieldConstructors(t *testing.T) {
 		{"Any:Times", Any("k", []time.Time{time.Unix(0, 0)}), Times("k", []time.Time{time.Unix(0, 0)})},
 		{"Any:Duration", Any("k", time.Second), Duration("k", time.Second)},
 		{"Any:Durations", Any("k", []time.Duration{time.Second}), Durations("k", []time.Duration{time.Second})},
+		{"Any:slogAttr", Any("k", slog.String("inner", "v")), String("k", "v")},
+		{"Any:slogAttr", Any("", slog.String("inner", "v")), String("inner", "v")},
+		{"Any:slogAttr", Any("k", slog.Bool("inner", true)), Bool("k", true)},
+		{"Any:slogAttr", Any("k", slog.Duration("inner", time.Second)), Duration("k", time.Second)},
+		{"Any:slogAttr", Any("k", slog.Float64("inner", 3.14)), Float64("k", 3.14)},
+		{"Any:slogAttr", Any("k", slog.Int64("inner", 1)), Int64("k", 1)},
+		{"Any:slogAttr", Any("k", slog.Int("inner", 1)), Int("k", 1)},
+		{"Any:slogAttr", Any("k", slog.Time("inner", time.Unix(0, 0))), Time("k", time.Unix(0, 0))},
+		{"Any:slogAttr", Any("k", slog.Uint64("inner", 1)), Uint64("k", 1)},
+		{"Any:slogAttr", Any("k", slog.Group("inner", slog.String("a", "1"))), Object("k", slogGroup(slog.Group("inner", slog.String("a", "1")).Value.Group()))},
+		{"Any:slogAttr", Any("", slog.Group("", slog.String("a", "1"))), Inline(slogGroup([]slog.Attr{slog.String("a", "1")}))},
+		{"Any:slogAttr", Any("k", slog.Attr{}), Skip()},
+		{"Any:slogAttr:logValuer", Any("k", slog.Any("inner", slogLogValuer{"v"})), String("k", "v")},
+		{"Any:slogLogValuer", Any("k", slogLogValuer{"v"}), String("k", "v")},
+		{"Any:slogLogValuer", Any("", slogLogValuer{"v"}), String("", "v")},
+		{"Any:slogLogValuer:beatsStringer", Any("k", slogLogValuerStringer{"v"}), String("k", "v")},
+		// slog.AnyValue wraps LogValuer implementations as lazy values, so
+		// inside an slog.Attr the LogValue resolution wins over the error
+		// interface, matching slog and exp/zapslog semantics. A bare value
+		// passed straight to Any still logs as an error (see the next case).
+		{"Any:slogAttr:logValuerBeatsError", Any("k", slog.Any("inner", slogErrorLogValuer{"boom"})), String("k", "boom")},
+		{"Any:slogLogValuer:errorWins", Any("k", slogErrorLogValuer{"boom"}), NamedError("k", slogErrorLogValuer{"boom"})},
 		{"Any:Fallback", Any("k", struct{}{}), Reflect("k", struct{}{})},
 		{"Ptr:Bool", Boolp("k", nil), nilField("k")},
 		{"Ptr:Bool", Boolp("k", &boolVal), Bool("k", boolVal)},
