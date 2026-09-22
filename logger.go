@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -54,6 +55,8 @@ type Logger struct {
 	callerSkip int
 
 	clock zapcore.Clock
+
+	contextFunc func(ctx context.Context) []Field
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
@@ -232,11 +235,29 @@ func (log *Logger) Log(lvl zapcore.Level, msg string, fields ...Field) {
 	}
 }
 
+// LogCtx logs a message at the specified level. The message includes any
+// fields extracted from ctx by the Context option, any fields passed at the
+// log site, and any fields accumulated on the logger.
+func (log *Logger) LogCtx(ctx context.Context, lvl zapcore.Level, msg string, fields ...Field) {
+	if ce := log.check(lvl, msg); ce != nil {
+		ce.Write(log.generateFields(ctx, fields...)...)
+	}
+}
+
 // Debug logs a message at DebugLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Debug(msg string, fields ...Field) {
 	if ce := log.check(DebugLevel, msg); ce != nil {
 		ce.Write(fields...)
+	}
+}
+
+// DebugCtx logs a message at DebugLevel. The message includes any fields
+// extracted from ctx by the Context option, any fields passed at the log
+// site, and any fields accumulated on the logger.
+func (log *Logger) DebugCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(DebugLevel, msg); ce != nil {
+		ce.Write(log.generateFields(ctx, fields...)...)
 	}
 }
 
@@ -248,6 +269,15 @@ func (log *Logger) Info(msg string, fields ...Field) {
 	}
 }
 
+// InfoCtx logs a message at InfoLevel. The message includes any fields
+// extracted from ctx by the Context option, any fields passed at the log
+// site, and any fields accumulated on the logger.
+func (log *Logger) InfoCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(InfoLevel, msg); ce != nil {
+		ce.Write(log.generateFields(ctx, fields...)...)
+	}
+}
+
 // Warn logs a message at WarnLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Warn(msg string, fields ...Field) {
@@ -256,11 +286,29 @@ func (log *Logger) Warn(msg string, fields ...Field) {
 	}
 }
 
+// WarnCtx logs a message at WarnLevel. The message includes any fields
+// extracted from ctx by the Context option, any fields passed at the log
+// site, and any fields accumulated on the logger.
+func (log *Logger) WarnCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(WarnLevel, msg); ce != nil {
+		ce.Write(log.generateFields(ctx, fields...)...)
+	}
+}
+
 // Error logs a message at ErrorLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 func (log *Logger) Error(msg string, fields ...Field) {
 	if ce := log.check(ErrorLevel, msg); ce != nil {
 		ce.Write(fields...)
+	}
+}
+
+// ErrorCtx logs a message at ErrorLevel. The message includes any fields
+// extracted from ctx by the Context option, any fields passed at the log
+// site, and any fields accumulated on the logger.
+func (log *Logger) ErrorCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(ErrorLevel, msg); ce != nil {
+		ce.Write(log.generateFields(ctx, fields...)...)
 	}
 }
 
@@ -276,6 +324,19 @@ func (log *Logger) DPanic(msg string, fields ...Field) {
 	}
 }
 
+// DPanicCtx logs a message at DPanicLevel. The message includes any fields
+// extracted from ctx by the Context option, any fields passed at the log
+// site, and any fields accumulated on the logger.
+//
+// If the logger is in development mode, it then panics (DPanic means
+// "development panic"). This is useful for catching errors that are
+// recoverable, but shouldn't ever happen.
+func (log *Logger) DPanicCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(DPanicLevel, msg); ce != nil {
+		ce.Write(log.generateFields(ctx, fields...)...)
+	}
+}
+
 // Panic logs a message at PanicLevel. The message includes any fields passed
 // at the log site, as well as any fields accumulated on the logger.
 //
@@ -283,6 +344,17 @@ func (log *Logger) DPanic(msg string, fields ...Field) {
 func (log *Logger) Panic(msg string, fields ...Field) {
 	if ce := log.check(PanicLevel, msg); ce != nil {
 		ce.Write(fields...)
+	}
+}
+
+// PanicCtx logs a message at PanicLevel. The message includes any fields
+// extracted from ctx by the Context option, any fields passed at the log
+// site, and any fields accumulated on the logger.
+//
+// The logger then panics, even if logging at PanicLevel is disabled.
+func (log *Logger) PanicCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(PanicLevel, msg); ce != nil {
+		ce.Write(log.generateFields(ctx, fields...)...)
 	}
 }
 
@@ -294,6 +366,18 @@ func (log *Logger) Panic(msg string, fields ...Field) {
 func (log *Logger) Fatal(msg string, fields ...Field) {
 	if ce := log.check(FatalLevel, msg); ce != nil {
 		ce.Write(fields...)
+	}
+}
+
+// FatalCtx logs a message at FatalLevel. The message includes any fields
+// extracted from ctx by the Context option, any fields passed at the log
+// site, and any fields accumulated on the logger.
+//
+// The logger then calls os.Exit(1), even if logging at FatalLevel is
+// disabled.
+func (log *Logger) FatalCtx(ctx context.Context, msg string, fields ...Field) {
+	if ce := log.check(FatalLevel, msg); ce != nil {
+		ce.Write(log.generateFields(ctx, fields...)...)
 	}
 }
 
@@ -419,6 +503,17 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	}
 
 	return ce
+}
+
+// generateFields prepends the fields extracted from ctx by the configured
+// Context option to the fields passed at the log site. The log-site fields
+// are always preserved; when no Context option is set or ctx is nil, they are
+// returned unchanged.
+func (log *Logger) generateFields(ctx context.Context, fields ...Field) []Field {
+	if ctx == nil || log.contextFunc == nil {
+		return fields
+	}
+	return append(log.contextFunc(ctx), fields...)
 }
 
 func terminalHookOverride(defaultHook, override zapcore.CheckWriteHook) zapcore.CheckWriteHook {

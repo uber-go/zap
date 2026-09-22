@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"context"
 	"fmt"
 
 	"go.uber.org/zap/zapcore"
@@ -83,6 +84,19 @@ func ErrorOutput(w zapcore.WriteSyncer) Option {
 func Development() Option {
 	return optionFunc(func(log *Logger) {
 		log.development = true
+	})
+}
+
+// Context configures the Logger to extract fields from a context.Context at
+// each *Ctx log site (for example InfoCtx). The supplied function decides
+// which context values become log fields; its result is prepended to any
+// fields passed at the log site.
+//
+// If no Context option is set, the *Ctx methods behave like their non-context
+// counterparts and only emit the fields passed at the log site.
+func Context(contextFunc func(ctx context.Context) []Field) Option {
+	return optionFunc(func(log *Logger) {
+		log.contextFunc = contextFunc
 	})
 }
 
