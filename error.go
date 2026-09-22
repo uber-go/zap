@@ -48,6 +48,14 @@ func NamedError(key string, err error) Field {
 	return Field{Key: key, Type: zapcore.ErrorType, Interface: err}
 }
 
+// ErrorConfig constructs a field that stores ErrorConfig type.
+func ErrorConfig(key string, ec zapcore.ErrorConfig) Field {
+	if ec.Error == nil {
+		return Skip()
+	}
+	return Field{Key: key, Type: zapcore.ErrorTypeWithoutVerbose, Interface: ec}
+}
+
 type errArray []error
 
 func (errs errArray) MarshalLogArray(arr zapcore.ArrayEncoder) error {
