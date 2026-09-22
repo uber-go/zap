@@ -60,6 +60,10 @@ func NewConsoleEncoder(cfg EncoderConfig) Encoder {
 		// Use a default delimiter of '\t' for backwards compatibility
 		cfg.ConsoleSeparator = "\t"
 	}
+	if cfg.ConsoleMessageSeparator == "" {
+		// Fall back to the field separator for backwards compatibility.
+		cfg.ConsoleMessageSeparator = cfg.ConsoleSeparator
+	}
 	return consoleEncoder{newJSONEncoder(cfg, true)}
 }
 
@@ -111,7 +115,7 @@ func (c consoleEncoder) EncodeEntry(ent Entry, fields []Field) (*buffer.Buffer, 
 
 	// Add the message itself.
 	if c.MessageKey != "" {
-		c.addSeparatorIfNecessary(line)
+		c.addMessageSeparatorIfNecessary(line)
 		line.AppendString(ent.Message)
 	}
 
@@ -153,5 +157,11 @@ func (c consoleEncoder) writeContext(line *buffer.Buffer, extra []Field) {
 func (c consoleEncoder) addSeparatorIfNecessary(line *buffer.Buffer) {
 	if line.Len() > 0 {
 		line.AppendString(c.ConsoleSeparator)
+	}
+}
+
+func (c consoleEncoder) addMessageSeparatorIfNecessary(line *buffer.Buffer) {
+	if line.Len() > 0 {
+		line.AppendString(c.ConsoleMessageSeparator)
 	}
 }

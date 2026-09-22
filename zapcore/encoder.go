@@ -356,6 +356,9 @@ type EncoderConfig struct {
 	// Configures the field separator used by the console encoder. Defaults
 	// to tab.
 	ConsoleSeparator string `json:"consoleSeparator" yaml:"consoleSeparator"`
+	// Configures the separator between the console entry prefix (timestamp,
+	// level, name, caller) and the message. Defaults to ConsoleSeparator.
+	ConsoleMessageSeparator string `json:"consoleMessageSeparator" yaml:"consoleMessageSeparator"`
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a
