@@ -111,6 +111,16 @@ func AddCallerSkip(skip int) Option {
 	})
 }
 
+// suppressCallerFailure silences the "failed to get caller" diagnostic emitted
+// when caller resolution fails. It is intended for the standard-library bridges
+// (see NewStdLog, NewStdLogAt, RedirectStdLog), whose fixed caller skip cannot
+// resolve a caller for messages written directly to the returned io.Writer.
+func suppressCallerFailure() Option {
+	return optionFunc(func(log *Logger) {
+		log.suppressCallerFailure = true
+	})
+}
+
 // AddStacktrace configures the Logger to record a stack trace for all messages at
 // or above a given level.
 func AddStacktrace(lvl zapcore.LevelEnabler) Option {

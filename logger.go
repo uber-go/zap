@@ -54,6 +54,16 @@ type Logger struct {
 	callerSkip int
 
 	clock zapcore.Clock
+
+	// suppressCallerFailure silences the "failed to get caller" diagnostic
+	// that check emits when caller resolution fails. It is set on the loggers
+	// backing the standard-library bridges (NewStdLog, NewStdLogAt,
+	// RedirectStdLog): their fixed caller skip only matches messages routed
+	// through log.Output, so a direct write to the returned writer (e.g. via
+	// log.Writer()) arrives on a shallower stack from which no caller can be
+	// resolved. That is expected for an io.Writer bridge and must not spam the
+	// error output.
+	suppressCallerFailure bool
 }
 
 // New constructs a new Logger from the provided zapcore.Core and Options. If
@@ -380,7 +390,7 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	defer stack.Free()
 
 	if stack.Count() == 0 {
-		if log.addCaller {
+		if log.addCaller && !log.suppressCallerFailure {
 			_, _ = fmt.Fprintf(
 				log.errorOutput,
 				"%v Logger.check error: failed to get caller\n",
