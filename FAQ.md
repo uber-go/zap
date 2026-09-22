@@ -30,7 +30,7 @@ just the methods you use.
 ### Why are some of my logs missing?
 
 Logs are dropped intentionally by zap when sampling is enabled. The production
-configuration (as returned by `NewProductionConfig()` enables sampling which will
+configuration (as returned by `NewProductionConfig()`) enables sampling which will
 cause repeated logs within a second to be sampled. See more details on why sampling
 is enabled in [Why sample application logs](https://github.com/uber-go/zap/blob/master/FAQ.md#why-sample-application-logs).
 
