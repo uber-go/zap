@@ -72,6 +72,15 @@ func WithDebug() Option {
 	})
 }
 
+// WithVerbosity configures a Logger to use the given verbosity level for V() calls.
+// By default, V() uses zap's severity levels instead (Info, Warn, Error, Fatal).
+func WithVerbosity(verbosity int) Option {
+	return optionFunc(func(logger *Logger) {
+		logger.useVerbosity = true
+		logger.verbosity = verbosity
+	})
+}
+
 // withWarn redirects the fatal level to the warn level, which makes testing
 // easier. This is intentionally unexported.
 func withWarn() Option {
@@ -140,8 +149,8 @@ type Logger struct {
 	levelEnabler zapcore.LevelEnabler
 	print        *printer
 	fatal        *printer
-	// printToDebug bool
-	// fatalToWarn  bool
+	useVerbosity bool
+	verbosity    int
 }
 
 // Print implements grpclog.Logger.
@@ -233,6 +242,9 @@ func (l *Logger) Fatalf(format string, args ...interface{}) {
 
 // V implements grpclog.LoggerV2.
 func (l *Logger) V(level int) bool {
+	if l.useVerbosity {
+		return level <= l.verbosity
+	}
 	return l.levelEnabler.Enabled(_grpcToZapLevel[level])
 }
 

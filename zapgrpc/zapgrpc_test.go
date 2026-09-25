@@ -221,7 +221,17 @@ func checkLevel(
 	expectedBool bool,
 	f func(*Logger) bool,
 ) {
-	withLogger(enab, nil, func(logger *Logger, observedLogs *observer.ObservedLogs) {
+	checkLevelOpts(t, enab, nil, expectedBool, f)
+}
+
+func checkLevelOpts(
+	t testing.TB,
+	enab zapcore.LevelEnabler,
+	opts []Option,
+	expectedBool bool,
+	f func(*Logger) bool,
+) {
+	withLogger(enab, opts, func(logger *Logger, observedLogs *observer.ObservedLogs) {
 		actualBool := f(logger)
 		if expectedBool {
 			require.True(t, actualBool)
@@ -229,6 +239,47 @@ func checkLevel(
 			require.False(t, actualBool)
 		}
 	})
+}
+
+func TestLoggerVWithVerbosity(t *testing.T) {
+	tests := []struct {
+		verbosity    int
+		grpcEnabled  []int
+		grpcDisabled []int
+	}{
+		{
+			verbosity:    0,
+			grpcEnabled:  []int{0, -1},
+			grpcDisabled: []int{1, 2, 3},
+		},
+		{
+			verbosity:    2,
+			grpcEnabled:  []int{0, 1, 2},
+			grpcDisabled: []int{3, 4},
+		},
+	}
+	
+	// Test that it behaves independently of the core zap level
+	zapLevels := []zapcore.Level{zapcore.DebugLevel, zapcore.InfoLevel, zapcore.ErrorLevel}
+
+	for _, zl := range zapLevels {
+		for _, tst := range tests {
+			for _, grpcLvl := range tst.grpcEnabled {
+				t.Run(fmt.Sprintf("level %s verbosity %d enabled %d", zl, tst.verbosity, grpcLvl), func(t *testing.T) {
+					checkLevelOpts(t, zl, []Option{WithVerbosity(tst.verbosity)}, true, func(logger *Logger) bool {
+						return logger.V(grpcLvl)
+					})
+				})
+			}
+			for _, grpcLvl := range tst.grpcDisabled {
+				t.Run(fmt.Sprintf("level %s verbosity %d disabled %d", zl, tst.verbosity, grpcLvl), func(t *testing.T) {
+					checkLevelOpts(t, zl, []Option{WithVerbosity(tst.verbosity)}, false, func(logger *Logger) bool {
+						return logger.V(grpcLvl)
+					})
+				})
+			}
+		}
+	}
 }
 
 func checkMessages(
