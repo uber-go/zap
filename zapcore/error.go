@@ -52,7 +52,7 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 			// If it's a nil pointer, just say "<nil>". The likeliest causes are a
 			// error that fails to guard against nil or a nil pointer for a
 			// value receiver, and in either case, "<nil>" is a nice result.
-			if v := reflect.ValueOf(err); v.Kind() == reflect.Ptr && v.IsNil() {
+			if v := reflect.ValueOf(err); v.Kind() == reflect.Pointer && v.IsNil() {
 				enc.AddString(key, "<nil>")
 				return
 			}

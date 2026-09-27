@@ -242,13 +242,13 @@ func (cfg Config) Build(opts ...Option) (*Logger, error) {
 		return nil, err
 	}
 
+	if cfg.Level == (AtomicLevel{}) {
+		return nil, errors.New("missing Level")
+	}
+
 	sink, errSink, err := cfg.openSinks()
 	if err != nil {
 		return nil, err
-	}
-
-	if cfg.Level == (AtomicLevel{}) {
-		return nil, errors.New("missing Level")
 	}
 
 	log := New(

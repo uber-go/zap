@@ -68,6 +68,39 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 			body:          "level=warn",
 		},
 		{
+			desc:          "PUT URL encoded with charset",
+			method:        http.MethodPut,
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			contentType:   "application/x-www-form-urlencoded; charset=UTF-8",
+			body:          "level=warn",
+		},
+		{
+			desc:          "PUT URL encoded with mixed-case media type",
+			method:        http.MethodPut,
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			contentType:   "Application/X-WWW-Form-Urlencoded",
+			body:          "level=warn",
+		},
+		{
+			desc:          "PUT query parameters with charset",
+			method:        http.MethodPut,
+			query:         "?level=warn",
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			contentType:   "application/x-www-form-urlencoded; charset=utf-8",
+		},
+		{
+			desc:          "body with charset takes precedence over query",
+			method:        http.MethodPut,
+			query:         "?level=info",
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+			contentType:   "application/x-www-form-urlencoded; charset=utf-8",
+			body:          "level=warn",
+		},
+		{
 			desc:          "PUT query parameters",
 			method:        http.MethodPut,
 			query:         "?level=warn",
@@ -174,6 +207,7 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 			}()
 
 			require.Equal(t, tt.expectedCode, res.StatusCode, "Unexpected status code.")
+			assert.Equal(t, "application/json", res.Header.Get("Content-Type"), "Unexpected content type.")
 			if tt.expectedCode != http.StatusOK {
 				// Don't need to test exact error message, but one should be present.
 				var pld struct {
@@ -207,6 +241,7 @@ func TestAtomicLevelServeHTTPBrokenWriter(t *testing.T) {
 	}, request)
 
 	assert.Equal(t, http.StatusInternalServerError, recorder.Code, "Unexpected status code.")
+	assert.Equal(t, "text/plain; charset=utf-8", recorder.Header().Get("Content-Type"), "Unexpected content type.")
 }
 
 type brokenHTTPResponseWriter struct {

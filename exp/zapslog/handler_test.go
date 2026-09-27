@@ -230,6 +230,23 @@ func TestWithGroup(t *testing.T) {
 		}, logs[0].ContextMap(), "Unexpected context")
 	})
 
+	// slog.Handler requires that WithGroup return the receiver when the
+	// name is empty. slog.Logger.WithGroup filters those out, but handlers
+	// are also chained directly by middleware.
+	t.Run("empty name", func(t *testing.T) {
+		var h slog.Handler = NewHandler(fac)
+		assert.Same(t, h, h.WithGroup(""), "Expected WithGroup to return the receiver")
+
+		slog.New(h.WithGroup("")).With("a", "b").Info("msg", "c", "d")
+
+		logs := observedLogs.TakeAll()
+		require.Len(t, logs, 1, "Expected exactly one entry to be logged")
+		assert.Equal(t, map[string]any{
+			"a": "b",
+			"c": "d",
+		}, logs[0].ContextMap(), "Unexpected context")
+	})
+
 	t.Run("skipped field", func(t *testing.T) {
 		sl := slog.New(NewHandler(fac))
 		sl.WithGroup("H").With(slog.Attr{}).Info("msg")

@@ -40,7 +40,7 @@ func NewLazyWith(core Core, fields []Field) Core {
 }
 
 func (d *lazyWithCore) initOnce() {
-	d.Once.Do(func() {
+	d.Do(func() {
 		d.core = d.originalCore.With(d.fields)
 	})
 }
