@@ -232,22 +232,6 @@ func TestLoggerVOptInIsIndependentOfCoreLevel(t *testing.T) {
 	}
 }
 
-func checkLevel(
-	t testing.TB,
-	enab zapcore.LevelEnabler,
-	expectedBool bool,
-	f func(*Logger) bool,
-) {
-	withLogger(enab, nil, func(logger *Logger, observedLogs *observer.ObservedLogs) {
-		actualBool := f(logger)
-		if expectedBool {
-			require.True(t, actualBool)
-		} else {
-			require.False(t, actualBool)
-		}
-	})
-}
-
 func checkMessages(
 	t testing.TB,
 	enab zapcore.LevelEnabler,
