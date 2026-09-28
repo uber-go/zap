@@ -253,8 +253,10 @@ func (enc *jsonEncoder) appendComplex(val complex128, precision int) {
 	// special-casing NaN and +/-Inf.
 	enc.buf.AppendFloat(r, precision)
 	// If imaginary part is less than 0, minus (-) sign is added by default
-	// by AppendFloat.
-	if i >= 0 {
+	// by AppendFloat. Note that negative zero compares >= 0, so it needs to
+	// be excluded explicitly: AppendFloat still renders it as "-0", and
+	// prepending '+' would produce a malformed "1+-0i".
+	if i >= 0 && !math.Signbit(i) {
 		enc.buf.AppendByte('+')
 	}
 	enc.buf.AppendFloat(i, precision)
