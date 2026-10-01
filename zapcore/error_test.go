@@ -77,6 +77,47 @@ func (e customMultierr) Errors() []error {
 	}
 }
 
+type objectErr struct {
+	code int
+	msg  string
+}
+
+func (e objectErr) Error() string {
+	return e.msg
+}
+
+func (e objectErr) MarshalLogObject(enc ObjectEncoder) error {
+	enc.AddInt("code", e.code)
+	enc.AddString("msg", e.msg)
+	return nil
+}
+
+type objectFormatterErr struct {
+	msg string
+}
+
+func (e objectFormatterErr) Error() string {
+	return e.msg
+}
+
+func (e objectFormatterErr) Format(s fmt.State, verb rune) {
+	if verb == 'v' && s.Flag('+') {
+		_, _ = io.WriteString(s, "verbose: "+e.msg)
+	}
+}
+
+func (e objectFormatterErr) MarshalLogObject(enc ObjectEncoder) error {
+	enc.AddString("object_msg", e.msg)
+	return nil
+}
+
+type brokenObjectErr struct{}
+
+func (brokenObjectErr) Error() string { return "broken" }
+func (brokenObjectErr) MarshalLogObject(ObjectEncoder) error {
+	return errors.New("marshal failed")
+}
+
 func TestErrorEncoding(t *testing.T) {
 	tests := []struct {
 		key   string
@@ -158,6 +199,32 @@ func TestErrorEncoding(t *testing.T) {
 				},
 			},
 		},
+		{
+			key:   "err",
+			iface: objectErr{code: 404, msg: "not found"},
+			want: map[string]any{
+				"err": map[string]any{
+					"code": 404,
+					"msg":  "not found",
+				},
+			},
+		},
+		{
+			key:   "err",
+			iface: objectFormatterErr{msg: "formatted and object"},
+			want: map[string]any{
+				"err": map[string]any{
+					"object_msg": "formatted and object",
+				},
+			},
+		},
+		{
+			key:   "err",
+			iface: (*objectErr)(nil),
+			want: map[string]any{
+				"err": "<nil>",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -166,6 +233,15 @@ func TestErrorEncoding(t *testing.T) {
 		f.AddTo(enc)
 		assert.Equal(t, tt.want, enc.Fields, "Unexpected output from field %+v.", f)
 	}
+}
+
+func TestObjectMarshalerErrorFailure(t *testing.T) {
+	t.Parallel()
+
+	enc := NewMapObjectEncoder()
+	f := Field{Key: "k", Type: ErrorType, Interface: brokenObjectErr{}}
+	f.AddTo(enc)
+	assert.Equal(t, "marshal failed", enc.Fields["kError"], "Expected marshal error.")
 }
 
 func TestRichErrorSupport(t *testing.T) {
