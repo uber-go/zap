@@ -131,3 +131,47 @@ func (enc brokenArrayObjectEncoder) AddArray(key string, marshaler zapcore.Array
 func (enc brokenArrayObjectEncoder) AppendObject(zapcore.ObjectMarshaler) error {
 	return enc.Err
 }
+
+type objErr struct {
+	code int
+	msg  string
+}
+
+func (e objErr) Error() string { return e.msg }
+func (e objErr) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddInt("code", e.code)
+	enc.AddString("msg", e.msg)
+	return nil
+}
+
+func TestErrorsArraysHandleObjectErrors(t *testing.T) {
+	errs := []error{objErr{code: 123, msg: "egad"}}
+
+	enc := zapcore.NewMapObjectEncoder()
+	Errors("k", errs).AddTo(enc)
+	assert.Equal(t, 1, len(enc.Fields), "Expected only top-level field.")
+
+	val := enc.Fields["k"]
+	arr, ok := val.([]interface{})
+	require.True(t, ok, "Expected top-level field to be an array.")
+	require.Equal(t, 1, len(arr), "Expected only one error object in array.")
+
+	serialized := arr[0]
+	errMap, ok := serialized.(map[string]interface{})
+	require.True(t, ok, "Expected serialized error to be a map, got %T.", serialized)
+	assert.Equal(t, map[string]interface{}{
+		"code": 123,
+		"msg":  "egad",
+	}, errMap["error"], "Unexpected object error.")
+}
+
+func TestErrorObjectMarshaler(t *testing.T) {
+	enc := zapcore.NewMapObjectEncoder()
+	Error(objErr{code: 42, msg: "fail"}).AddTo(enc)
+	assert.Equal(t, map[string]interface{}{
+		"error": map[string]interface{}{
+			"code": 42,
+			"msg":  "fail",
+		},
+	}, enc.Fields, "Unexpected object error field.")
+}
