@@ -81,3 +81,20 @@ func TestHooks(t *testing.T) {
 		}
 	}
 }
+
+func TestHooksSkippedWhenCoreDisabledInTee(t *testing.T) {
+	debugCore, _ := observer.New(DebugLevel)
+	errorCore, _ := observer.New(ErrorLevel)
+
+	var called int
+	hooked := RegisterHooks(errorCore, func(Entry) error {
+		called++
+		return nil
+	})
+
+	core := NewTee(debugCore, hooked)
+	if ce := core.Check(Entry{Message: "foo", Level: InfoLevel}, nil); ce != nil {
+		ce.Write()
+	}
+	assert.Equal(t, 0, called, "Hook ran for an entry its core did not log.")
+}
