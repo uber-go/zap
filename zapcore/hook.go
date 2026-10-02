@@ -53,8 +53,18 @@ func (h *hooked) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 	// Let the wrapped Core decide whether to log this message or not. This
 	// also gives the downstream a chance to register itself directly with the
 	// CheckedEntry.
+	//
+	// ce may already be non-nil if another Core (e.g. in a Tee) accepted the
+	// entry, so only run the hooks if the wrapped Core added itself.
+	var n int
+	if ce != nil {
+		n = len(ce.cores)
+	}
 	if downstream := h.Core.Check(ent, ce); downstream != nil {
-		return downstream.AddCore(ent, h)
+		if len(downstream.cores) > n {
+			return downstream.AddCore(ent, h)
+		}
+		return downstream
 	}
 	return ce
 }
