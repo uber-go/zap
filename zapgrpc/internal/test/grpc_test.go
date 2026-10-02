@@ -32,6 +32,8 @@ import (
 	"google.golang.org/grpc/grpclog"
 )
 
+var _ grpclog.DepthLoggerV2 = (*zapgrpc.Logger)(nil)
+
 func TestLoggerV2(t *testing.T) {
 	core, observedLogs := observer.New(zapcore.InfoLevel)
 	zlog := zap.New(core)
@@ -48,4 +50,27 @@ func TestLoggerV2(t *testing.T) {
 		"Log entry level did not match.")
 	assert.Equal(t, "hello from grpc", entry.Message,
 		"Log entry message did not match.")
+}
+
+func TestDepthLoggerV2(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.InfoLevel)
+	zlog := zap.New(core)
+
+	grpclog.SetLoggerV2(zapgrpc.NewLogger(zlog))
+
+	grpclog.InfoDepth(0, "hello from grpc info depth")
+	grpclog.WarningDepth(0, "hello from grpc warning depth")
+	grpclog.ErrorDepth(0, "hello from grpc error depth")
+
+	logs := observedLogs.TakeAll()
+	require.Len(t, logs, 3, "Expected three log entries.")
+
+	assert.Equal(t, zapcore.InfoLevel, logs[0].Level)
+	assert.Equal(t, "hello from grpc info depth", logs[0].Message)
+
+	assert.Equal(t, zapcore.WarnLevel, logs[1].Level)
+	assert.Equal(t, "hello from grpc warning depth", logs[1].Message)
+
+	assert.Equal(t, zapcore.ErrorLevel, logs[2].Level)
+	assert.Equal(t, "hello from grpc error depth", logs[2].Message)
 }

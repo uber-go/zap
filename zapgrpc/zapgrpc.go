@@ -88,6 +88,7 @@ func withWarn() Option {
 // NewLogger returns a new Logger.
 func NewLogger(l *zap.Logger, options ...Option) *Logger {
 	logger := &Logger{
+		logger:       l.WithOptions(zap.AddCallerSkip(1)),
 		delegate:     l.Sugar(),
 		levelEnabler: l.Core(),
 	}
@@ -134,8 +135,10 @@ func (v *printer) Println(args ...interface{}) {
 	}
 }
 
-// Logger adapts zap's Logger to be compatible with grpclog.LoggerV2 and the deprecated grpclog.Logger.
+// Logger adapts zap's Logger to be compatible with grpclog.LoggerV2,
+// grpclog.DepthLoggerV2 and the deprecated grpclog.Logger.
 type Logger struct {
+	logger       *zap.Logger
 	delegate     *zap.SugaredLogger
 	levelEnabler zapcore.LevelEnabler
 	print        *printer
@@ -182,6 +185,13 @@ func (l *Logger) Infof(format string, args ...interface{}) {
 	l.delegate.Infof(format, args...)
 }
 
+// InfoDepth implements grpclog.DepthLoggerV2.
+func (l *Logger) InfoDepth(depth int, args ...interface{}) {
+	if l.levelEnabler.Enabled(zapcore.InfoLevel) {
+		l.logger.WithOptions(zap.AddCallerSkip(depth)).Info(sprintln(args))
+	}
+}
+
 // Warning implements grpclog.LoggerV2.
 func (l *Logger) Warning(args ...interface{}) {
 	l.delegate.Warn(args...)
@@ -197,6 +207,13 @@ func (l *Logger) Warningln(args ...interface{}) {
 // Warningf implements grpclog.LoggerV2.
 func (l *Logger) Warningf(format string, args ...interface{}) {
 	l.delegate.Warnf(format, args...)
+}
+
+// WarningDepth implements grpclog.DepthLoggerV2.
+func (l *Logger) WarningDepth(depth int, args ...interface{}) {
+	if l.levelEnabler.Enabled(zapcore.WarnLevel) {
+		l.logger.WithOptions(zap.AddCallerSkip(depth)).Warn(sprintln(args))
+	}
 }
 
 // Error implements grpclog.LoggerV2.
@@ -216,6 +233,13 @@ func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.delegate.Errorf(format, args...)
 }
 
+// ErrorDepth implements grpclog.DepthLoggerV2.
+func (l *Logger) ErrorDepth(depth int, args ...interface{}) {
+	if l.levelEnabler.Enabled(zapcore.ErrorLevel) {
+		l.logger.WithOptions(zap.AddCallerSkip(depth)).Error(sprintln(args))
+	}
+}
+
 // Fatal implements grpclog.LoggerV2.
 func (l *Logger) Fatal(args ...interface{}) {
 	l.fatal.Print(args...)
@@ -229,6 +253,13 @@ func (l *Logger) Fatalln(args ...interface{}) {
 // Fatalf implements grpclog.LoggerV2.
 func (l *Logger) Fatalf(format string, args ...interface{}) {
 	l.fatal.Printf(format, args...)
+}
+
+// FatalDepth implements grpclog.DepthLoggerV2.
+func (l *Logger) FatalDepth(depth int, args ...interface{}) {
+	if l.levelEnabler.Enabled(l.fatal.level) {
+		l.logger.WithOptions(zap.AddCallerSkip(depth)).Log(l.fatal.level, sprintln(args))
+	}
 }
 
 // V implements grpclog.LoggerV2.

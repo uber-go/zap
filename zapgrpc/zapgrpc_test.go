@@ -22,6 +22,7 @@ package zapgrpc
 
 import (
 	"fmt"
+	"runtime"
 	"testing"
 
 	"go.uber.org/zap"
@@ -260,4 +261,122 @@ func withLogger(
 ) {
 	core, observedLogs := observer.New(enab)
 	f(NewLogger(zap.New(core), append(opts, withWarn())...), observedLogs)
+}
+
+func TestLoggerDepthExpected(t *testing.T) {
+	checkMessages(t, zapcore.DebugLevel, nil, zapcore.InfoLevel, []string{
+		"hello",
+		"s1 s2 1 2 3 s3 4 s5 6",
+		"",
+	}, func(logger *Logger) {
+		logger.InfoDepth(0, "hello")
+		logger.InfoDepth(0, "s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
+		logger.InfoDepth(0)
+	})
+
+	checkMessages(t, zapcore.DebugLevel, nil, zapcore.WarnLevel, []string{
+		"hello",
+		"s1 s2 1 2 3 s3 4 s5 6",
+		"",
+	}, func(logger *Logger) {
+		logger.WarningDepth(0, "hello")
+		logger.WarningDepth(0, "s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
+		logger.WarningDepth(0)
+	})
+
+	checkMessages(t, zapcore.DebugLevel, nil, zapcore.ErrorLevel, []string{
+		"hello",
+		"s1 s2 1 2 3 s3 4 s5 6",
+		"",
+	}, func(logger *Logger) {
+		logger.ErrorDepth(0, "hello")
+		logger.ErrorDepth(0, "s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
+		logger.ErrorDepth(0)
+	})
+
+	checkMessages(t, zapcore.DebugLevel, nil, zapcore.FatalLevel, []string{
+		"hello",
+		"s1 s2 1 2 3 s3 4 s5 6",
+		"",
+	}, func(logger *Logger) {
+		logger.FatalDepth(0, "hello")
+		logger.FatalDepth(0, "s1", "s2", 1, 2, 3, "s3", 4, "s5", 6)
+		logger.FatalDepth(0)
+	})
+}
+
+func TestLoggerDepthSuppressed(t *testing.T) {
+	checkMessages(t, zapcore.WarnLevel, nil, zapcore.InfoLevel, nil, func(logger *Logger) {
+		logger.InfoDepth(0, "hello")
+	})
+	checkMessages(t, zapcore.ErrorLevel, nil, zapcore.WarnLevel, nil, func(logger *Logger) {
+		logger.WarningDepth(0, "hello")
+	})
+	checkMessages(t, zapcore.FatalLevel, nil, zapcore.ErrorLevel, nil, func(logger *Logger) {
+		logger.ErrorDepth(0, "hello")
+	})
+}
+
+func TestLoggerDepthCallerAttribution(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+	logger := NewLogger(zap.New(core, zap.AddCaller()), withWarn())
+
+	logAtDepth := func(depth int, logFunc func(int, ...interface{}), msg string) {
+		logFunc(depth, msg)
+	}
+
+	wrapper1 := func(depth int, logFunc func(int, ...interface{}), msg string) {
+		logAtDepth(depth, logFunc, msg)
+	}
+
+	wrapper2 := func(depth int, logFunc func(int, ...interface{}), msg string) {
+		wrapper1(depth, logFunc, msg)
+	}
+
+	tests := []struct {
+		name    string
+		logFunc func(int, ...interface{})
+		lvl     zapcore.Level
+	}{
+		{"InfoDepth", logger.InfoDepth, zapcore.InfoLevel},
+		{"WarningDepth", logger.WarningDepth, zapcore.WarnLevel},
+		{"ErrorDepth", logger.ErrorDepth, zapcore.ErrorLevel},
+		{"FatalDepth", logger.FatalDepth, zapcore.WarnLevel},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observedLogs.TakeAll()
+
+			// Depth 0: direct caller
+			_, _, line0, _ := runtime.Caller(0)
+			tt.logFunc(0, "depth 0") // expected at line0 + 1
+
+			// Depth 1: skips logAtDepth
+			_, _, line1, _ := runtime.Caller(0)
+			logAtDepth(1, tt.logFunc, "depth 1") // expected at line1 + 1
+
+			// Depth 2: skips logAtDepth and wrapper1
+			_, _, line2, _ := runtime.Caller(0)
+			wrapper1(2, tt.logFunc, "depth 2") // expected at line2 + 1
+
+			// Depth 3: skips logAtDepth, wrapper1, and wrapper2
+			_, _, line3, _ := runtime.Caller(0)
+			wrapper2(3, tt.logFunc, "depth 3") // expected at line3 + 1
+
+			logs := observedLogs.TakeAll()
+			require.Len(t, logs, 4)
+
+			for _, entry := range logs {
+				require.Equal(t, tt.lvl, entry.Level)
+				require.True(t, entry.Caller.Defined, "Caller must be defined")
+				require.Contains(t, entry.Caller.File, "zapgrpc_test.go")
+			}
+
+			require.Equal(t, line0+1, logs[0].Caller.Line)
+			require.Equal(t, line1+1, logs[1].Caller.Line)
+			require.Equal(t, line2+1, logs[2].Caller.Line)
+			require.Equal(t, line3+1, logs[3].Caller.Line)
+		})
+	}
 }
