@@ -22,6 +22,9 @@ package zaptest
 
 import (
 	"bytes"
+	"fmt"
+	"strings"
+	"sync/atomic"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -33,8 +36,9 @@ type LoggerOption interface {
 }
 
 type loggerOptions struct {
-	Level      zapcore.LevelEnabler
-	zapOptions []zap.Option
+	Level                   zapcore.LevelEnabler
+	zapOptions              []zap.Option
+	muteAfterTestCompletion bool
 }
 
 type loggerOptionFunc func(*loggerOptions)
@@ -55,6 +59,17 @@ func Level(enab zapcore.LevelEnabler) LoggerOption {
 func WrapOptions(zapOpts ...zap.Option) LoggerOption {
 	return loggerOptionFunc(func(opts *loggerOptions) {
 		opts.zapOptions = zapOpts
+	})
+}
+
+// MuteAfterTestCompletion returns a LoggerOption that suppresses panics
+// caused by logging after the test has finished.
+//
+// By default, testing.TB panics when a goroutine logs after test completion.
+// This option suppresses those panics and drops any subsequent logs.
+func MuteAfterTestCompletion() LoggerOption {
+	return loggerOptionFunc(func(opts *loggerOptions) {
+		opts.muteAfterTestCompletion = true
 	})
 }
 
@@ -83,6 +98,9 @@ func NewLogger(t TestingT, opts ...LoggerOption) *zap.Logger {
 	}
 
 	writer := NewTestingWriter(t)
+	if cfg.muteAfterTestCompletion {
+		writer = writer.WithMuteAfterTestCompletion(true)
+	}
 	zapOptions := []zap.Option{
 		// Send zap errors to the same writer and mark the test as failed if
 		// that happens.
@@ -107,6 +125,13 @@ type TestingWriter struct {
 	// If true, the test will be marked as failed if this TestingWriter is
 	// ever used.
 	markFailed bool
+
+	// If true, log messages emitted after test completion will be ignored
+	// instead of causing a panic.
+	muteAfterTestCompletion bool
+
+	// muted tracks whether a post-completion panic was encountered.
+	muted *atomic.Bool
 }
 
 // NewTestingWriter builds a new TestingWriter that writes to the given
@@ -125,7 +150,10 @@ type TestingWriter struct {
 //
 //	logger := zap.New(core, zap.AddCaller())
 func NewTestingWriter(t TestingT) TestingWriter {
-	return TestingWriter{t: t}
+	return TestingWriter{
+		t:     t,
+		muted: new(atomic.Bool),
+	}
 }
 
 // WithMarkFailed returns a copy of this TestingWriter with markFailed set to
@@ -135,9 +163,37 @@ func (w TestingWriter) WithMarkFailed(v bool) TestingWriter {
 	return w
 }
 
+// WithMuteAfterTestCompletion returns a copy of this TestingWriter with
+// muteAfterTestCompletion set to the provided value.
+func (w TestingWriter) WithMuteAfterTestCompletion(v bool) TestingWriter {
+	w.muteAfterTestCompletion = v
+	if w.muted == nil {
+		w.muted = new(atomic.Bool)
+	}
+	return w
+}
+
 // Write writes bytes from p to the underlying testing.TB.
 func (w TestingWriter) Write(p []byte) (n int, err error) {
 	n = len(p)
+
+	if w.muteAfterTestCompletion && w.muted != nil && w.muted.Load() {
+		return n, nil
+	}
+
+	if w.muteAfterTestCompletion {
+		defer func() {
+			if r := recover(); r != nil {
+				if isTestCompletedPanic(r) {
+					if w.muted != nil {
+						w.muted.Store(true)
+					}
+					return
+				}
+				panic(r)
+			}
+		}()
+	}
 
 	// Strip trailing newline because t.Log always adds one.
 	p = bytes.TrimRight(p, "\n")
@@ -149,6 +205,20 @@ func (w TestingWriter) Write(p []byte) (n int, err error) {
 	}
 
 	return n, nil
+}
+
+func isTestCompletedPanic(r interface{}) bool {
+	var s string
+	switch v := r.(type) {
+	case string:
+		s = v
+	case fmt.Stringer:
+		s = v.String()
+	default:
+		return false
+	}
+	return strings.HasPrefix(s, "Log in goroutine after") ||
+		strings.HasPrefix(s, "Fail in goroutine after")
 }
 
 // Sync commits the current contents (a no-op for TestingWriter).
