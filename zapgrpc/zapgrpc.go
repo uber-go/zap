@@ -72,6 +72,19 @@ func WithDebug() Option {
 	})
 }
 
+// WithVerbosity configures the logger's verbosity level threshold for [Logger.V].
+// When configured, V(l) reports whether verbosity level l is less than or equal to
+// the configured threshold.
+//
+// Without this option, V preserves backward compatibility by reporting whether the
+// underlying zap core is enabled for the severity level mapped from the gRPC log level.
+func WithVerbosity(verbosity int) Option {
+	return optionFunc(func(logger *Logger) {
+		logger.verbosity = verbosity
+		logger.useVerbosity = true
+	})
+}
+
 // withWarn redirects the fatal level to the warn level, which makes testing
 // easier. This is intentionally unexported.
 func withWarn() Option {
@@ -140,6 +153,8 @@ type Logger struct {
 	levelEnabler zapcore.LevelEnabler
 	print        *printer
 	fatal        *printer
+	verbosity    int
+	useVerbosity bool
 	// printToDebug bool
 	// fatalToWarn  bool
 }
@@ -232,7 +247,15 @@ func (l *Logger) Fatalf(format string, args ...interface{}) {
 }
 
 // V implements grpclog.LoggerV2.
+//
+// When [WithVerbosity] is configured, V reports whether verbosity level
+// is at or below the configured verbosity threshold.
+// Otherwise, it preserves historical behavior by reporting whether the zap core
+// is enabled for the severity level mapped from the gRPC log level.
 func (l *Logger) V(level int) bool {
+	if l.useVerbosity {
+		return level <= l.verbosity
+	}
 	return l.levelEnabler.Enabled(_grpcToZapLevel[level])
 }
 

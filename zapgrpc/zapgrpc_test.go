@@ -215,6 +215,67 @@ func TestLoggerV(t *testing.T) {
 	}
 }
 
+func TestLoggerVWithVerbosity(t *testing.T) {
+	tests := []struct {
+		verbosity int
+		enabled   []int
+		disabled  []int
+	}{
+		{
+			verbosity: 0,
+			enabled:   []int{-1, 0},
+			disabled:  []int{1, 2, 3},
+		},
+		{
+			verbosity: 1,
+			enabled:   []int{-1, 0, 1},
+			disabled:  []int{2, 3, 4},
+		},
+		{
+			verbosity: 3,
+			enabled:   []int{-1, 0, 1, 2, 3},
+			disabled:  []int{4, 5},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(fmt.Sprintf("verbosity_%d", tt.verbosity), func(t *testing.T) {
+			logger := NewLogger(zap.NewNop(), WithVerbosity(tt.verbosity))
+			for _, lvl := range tt.enabled {
+				require.True(t, logger.V(lvl), "expected V(%d) to be true for verbosity %d", lvl, tt.verbosity)
+			}
+			for _, lvl := range tt.disabled {
+				require.False(t, logger.V(lvl), "expected V(%d) to be false for verbosity %d", lvl, tt.verbosity)
+			}
+		})
+	}
+}
+
+func TestLoggerVWithVerbosityIndependentOfZapLevel(t *testing.T) {
+	levels := []zapcore.Level{
+		zapcore.DebugLevel,
+		zapcore.InfoLevel,
+		zapcore.WarnLevel,
+		zapcore.ErrorLevel,
+		zapcore.DPanicLevel,
+		zapcore.PanicLevel,
+		zapcore.FatalLevel,
+	}
+
+	for _, lvl := range levels {
+		lvl := lvl
+		t.Run(lvl.String(), func(t *testing.T) {
+			core, _ := observer.New(lvl)
+			logger := NewLogger(zap.New(core), WithVerbosity(1))
+
+			require.True(t, logger.V(0), "expected V(0) to be true at verbosity 1 regardless of zap level %s", lvl)
+			require.True(t, logger.V(1), "expected V(1) to be true at verbosity 1 regardless of zap level %s", lvl)
+			require.False(t, logger.V(2), "expected V(2) to be false at verbosity 1 regardless of zap level %s", lvl)
+		})
+	}
+}
+
 func checkLevel(
 	t testing.TB,
 	enab zapcore.LevelEnabler,
