@@ -191,3 +191,150 @@ func (t *testLogSpy) AssertFailed() {
 func (t *testLogSpy) assertFailed(v bool, msg string) {
 	assert.Equal(t.TB, v, t.failed, msg)
 }
+
+func TestTestLoggerAfterTestCompletedPanics(t *testing.T) {
+	w := newTestFinishedWrapper(t)
+	log := NewLogger(w)
+
+	assert.Panics(t, func() {
+		log.Info("foo")
+	})
+}
+
+func TestTestLoggerWithMuteAfterTestCompletion(t *testing.T) {
+	w := newTestFinishedWrapper(t)
+	log := NewLogger(w, MuteAfterTestCompletion())
+
+	assert.NotPanics(t, func() {
+		log.Info("first call after test completed")
+		log.Info("second call after test completed")
+	})
+
+	assert.Equal(t, 1, w.LogCount(), "subsequent logs should be muted early without calling Logf again")
+}
+
+func TestTestLoggerWithMuteAfterTestCompletion_Concurrent(t *testing.T) {
+	w := newTestFinishedWrapper(t)
+	log := NewLogger(w, MuteAfterTestCompletion())
+
+	const goroutines = 20
+	done := make(chan struct{}, goroutines)
+
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer func() { done <- struct{}{} }()
+			assert.NotPanics(t, func() {
+				log.Info("concurrent log after test completed")
+			})
+		}()
+	}
+
+	for i := 0; i < goroutines; i++ {
+		<-done
+	}
+}
+
+func TestTestLoggerWithMuteAfterTestCompletion_OtherPanic(t *testing.T) {
+	w := newTestFinishedWrapper(t)
+	w.logPanicMsg = "unexpected runtime panic"
+	log := NewLogger(w, MuteAfterTestCompletion())
+
+	assert.PanicsWithValue(t, "unexpected runtime panic", func() {
+		log.Info("foo")
+	})
+}
+
+func TestTestingWriterWithMuteAfterTestCompletion(t *testing.T) {
+	w := newTestFinishedWrapper(t)
+
+	unmuted := NewTestingWriter(w)
+	assert.Panics(t, func() {
+		_, _ = unmuted.Write([]byte("foo\n"))
+	})
+
+	muted := NewTestingWriter(w).WithMuteAfterTestCompletion(true)
+	assert.NotPanics(t, func() {
+		n, err := muted.Write([]byte("foo\n"))
+		assert.NoError(t, err)
+		assert.Equal(t, 4, n)
+	})
+}
+
+func TestTestLoggerErrorOutputAfterTestCompleted(t *testing.T) {
+	w := newTestFinishedWrapper(t)
+	log := NewLogger(w, MuteAfterTestCompletion())
+
+	log = log.WithOptions(zap.WrapCore(func(zapcore.Core) zapcore.Core {
+		return zapcore.NewCore(
+			zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
+			zapcore.Lock(zapcore.AddSync(ztest.FailWriter{})),
+			zapcore.DebugLevel,
+		)
+	}))
+
+	assert.NotPanics(t, func() {
+		log.Info("foo")
+	})
+}
+
+func TestTestingWriterFailAfterTestCompletedPanics(t *testing.T) {
+	w := newTestFinishedWrapper(t)
+	w.logPanicMsg = ""
+	w.failPanicMsg = "Fail in goroutine after " + t.Name() + " has completed"
+
+	unmuted := NewTestingWriter(w).WithMarkFailed(true)
+	assert.Panics(t, func() {
+		_, _ = unmuted.Write([]byte("foo\n"))
+	})
+
+	muted := NewTestingWriter(w).WithMarkFailed(true).WithMuteAfterTestCompletion(true)
+	assert.NotPanics(t, func() {
+		n, err := muted.Write([]byte("foo\n"))
+		assert.NoError(t, err)
+		assert.Equal(t, 4, n)
+	})
+}
+
+func TestTestLoggerNormalLoggingWithMute(t *testing.T) {
+	ts := newTestLogSpy(t)
+	defer ts.AssertPassed()
+
+	log := NewLogger(ts, MuteAfterTestCompletion())
+	log.Info("regular message")
+
+	ts.AssertMessages("INFO\tregular message")
+}
+
+type testFinishedWrapper struct {
+	TestingT
+	logPanicMsg  string
+	failPanicMsg string
+	logged       chan struct{}
+}
+
+func newTestFinishedWrapper(t TestingT) *testFinishedWrapper {
+	return &testFinishedWrapper{
+		TestingT:    t,
+		logPanicMsg: "Log in goroutine after " + t.Name() + " has completed",
+		logged:      make(chan struct{}, 100),
+	}
+}
+
+func (f *testFinishedWrapper) LogCount() int {
+	return len(f.logged)
+}
+
+func (f *testFinishedWrapper) Logf(format string, args ...interface{}) {
+	f.logged <- struct{}{}
+	if f.logPanicMsg != "" {
+		panic(f.logPanicMsg)
+	}
+	f.TestingT.Logf(format, args...)
+}
+
+func (f *testFinishedWrapper) Fail() {
+	if f.failPanicMsg != "" {
+		panic(f.failPanicMsg)
+	}
+	f.TestingT.Fail()
+}
