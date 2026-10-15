@@ -117,6 +117,32 @@ get -u go.uber.org/zap`, and always import it in your code with `import
 
 ## Usage
 
+### How can I log `netip.Addr` and `netip.AddrPort` with fewer allocations?
+
+Both types implement `fmt.Stringer`, so they work with `zap.Stringer` and
+`zap.Any`. However, passing these values through an interface can allocate,
+even when the log entry is disabled. Lazily calling `String` does not avoid
+this interface conversion.
+
+In performance-sensitive code, check whether the entry will be logged before
+constructing its fields, then pass the string representation to `zap.String`:
+
+```go
+peer := netip.MustParseAddrPort("[2001:db8::1]:8080")
+if ce := logger.Check(zap.DebugLevel, "received packet"); ce != nil {
+  ce.Write(zap.String("peer", peer.String()))
+}
+```
+
+The same pattern works for `netip.Addr`. It avoids boxing the address value
+and skips field construction and string formatting when the entry is disabled
+or dropped by sampling. Formatting an enabled entry can still allocate; this
+is not an allocation-free encoding of the address. Calling `peer.String()`
+outside the `Check` block would pay the formatting cost even for dropped entries.
+
+Run `go test -run '^$' -bench '^BenchmarkNetipFields$' -benchmem .` to compare
+these approaches with your Go version and platform.
+
 ### Does zap support log rotation?
 
 Zap doesn't natively support rotating log files, since we prefer to leave this
