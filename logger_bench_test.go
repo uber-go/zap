@@ -22,6 +22,7 @@ package zap
 
 import (
 	"errors"
+	"net/netip"
 	"runtime"
 	"strconv"
 	"sync"
@@ -356,6 +357,49 @@ func BenchmarkAny(b *testing.B) {
 					})
 				})
 			})
+		})
+	}
+}
+
+// BenchmarkNetipFields compares interface boxing and eager string conversion,
+// including the cost of constructing fields for disabled log entries.
+func BenchmarkNetipFields(b *testing.B) {
+	for _, enabled := range []bool{false, true} {
+		b.Run("enabled="+strconv.FormatBool(enabled), func(b *testing.B) {
+			level := InfoLevel
+			if enabled {
+				level = DebugLevel
+			}
+			logger := New(zapcore.NewCore(zapcore.NewJSONEncoder(NewProductionEncoderConfig()), &ztest.Discarder{}, level))
+			addr := netip.MustParseAddr("2001:db8::1")
+			addrPort := netip.AddrPortFrom(addr, 8080)
+			cases := []struct {
+				name string
+				log  func()
+			}{
+				{"Addr/Stringer", func() { logger.Debug("peer", Stringer("peer", addr)) }},
+				{"Addr/String", func() { logger.Debug("peer", String("peer", addr.String())) }},
+				{"Addr/CheckString", func() {
+					if ce := logger.Check(DebugLevel, "peer"); ce != nil {
+						ce.Write(String("peer", addr.String()))
+					}
+				}},
+				{"AddrPort/Stringer", func() { logger.Debug("peer", Stringer("peer", addrPort)) }},
+				{"AddrPort/String", func() { logger.Debug("peer", String("peer", addrPort.String())) }},
+				{"AddrPort/CheckString", func() {
+					if ce := logger.Check(DebugLevel, "peer"); ce != nil {
+						ce.Write(String("peer", addrPort.String()))
+					}
+				}},
+			}
+			for _, tt := range cases {
+				b.Run(tt.name, func(b *testing.B) {
+					b.ReportAllocs()
+					for i := 0; i < b.N; i++ {
+						tt.log()
+					}
+				})
+			}
 		})
 	}
 }

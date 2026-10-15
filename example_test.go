@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"net/netip"
 	"os"
 	"time"
 
@@ -455,4 +456,17 @@ func ExampleObjectValues() {
 		}))
 	// Output:
 	// {"level":"debug","msg":"starting tunnels","addrs":[{"url":"/foo","ip":"127.0.0.1","port":8080,"remote":{"ip":"123.45.67.89","port":4040}},{"url":"/bar","ip":"127.0.0.1","port":8080,"remote":{"ip":"127.0.0.1","port":31200}}]}
+}
+
+func ExampleLogger_Check_netip() {
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	peer := netip.MustParseAddrPort("[2001:db8::1]:8080")
+	if ce := logger.Check(zap.DebugLevel, "received packet"); ce != nil {
+		ce.Write(zap.String("peer", peer.String()))
+	}
+
+	// Output:
+	// {"level":"debug","msg":"received packet","peer":"[2001:db8::1]:8080"}
 }
