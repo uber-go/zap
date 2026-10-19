@@ -130,7 +130,29 @@ func TestEmptyAttr(t *testing.T) {
 			},
 		}, logs[0].ContextMap(), "Unexpected context")
 	})
+
+	// slog.Logger drops empty groups from records, but WithAttrs receives
+	// them as is, and a LogValuer can resolve to an empty group.
+	// Handlers must ignore groups without attributes.
+	t.Run("EmptyGroup", func(t *testing.T) {
+		sl.With(slog.String("foo", "bar"), slog.Group("empty")).Info("msg")
+		sl.WithGroup("G").With(slog.Group("empty")).Info("msg")
+		sl.Info("msg", slog.String("foo", "bar"), slog.Any("empty", emptyGroupValuer{}))
+		sl.WithGroup("G").Info("msg", slog.Any("empty", emptyGroupValuer{}))
+
+		logs := observedLogs.TakeAll()
+		require.Len(t, logs, 4, "Expected exactly four entries to be logged")
+		assert.Equal(t, map[string]any{"foo": "bar"}, logs[0].ContextMap(), "Unexpected context")
+		assert.Equal(t, map[string]any{}, logs[1].ContextMap(), "Unexpected context")
+		assert.Equal(t, map[string]any{"foo": "bar"}, logs[2].ContextMap(), "Unexpected context")
+		assert.Equal(t, map[string]any{}, logs[3].ContextMap(), "Unexpected context")
+	})
 }
+
+// emptyGroupValuer is a slog.LogValuer that resolves to an empty group.
+type emptyGroupValuer struct{}
+
+func (emptyGroupValuer) LogValue() slog.Value { return slog.GroupValue() }
 
 func TestWithName(t *testing.T) {
 	fac, observedLogs := observer.New(zapcore.DebugLevel)
