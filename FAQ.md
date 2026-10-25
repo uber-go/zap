@@ -84,10 +84,10 @@ See the discussion in uber-go/zap#207 for more details.
 
 ### What's `DPanic`?
 
-`DPanic` stands for "panic in development." In development, it logs at
-`PanicLevel`; otherwise, it logs at `ErrorLevel`. `DPanic` makes it easier to
-catch errors that are theoretically possible, but shouldn't actually happen,
-*without* crashing in production.
+`DPanic` stands for "panic in development." It always logs at `DPanicLevel`.
+In development, the logger then panics; otherwise, it only logs the message.
+`DPanic` makes it easier to catch errors that are theoretically possible, but
+shouldn't actually happen, *without* crashing in production.
 
 If you've ever written code like this, you need `DPanic`:
 

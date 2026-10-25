@@ -119,8 +119,8 @@ func (sr *sinkRegistry) newSink(rawURL string) (Sink, error) {
 // RegisterSink registers a user-supplied factory for all sinks with a
 // particular scheme.
 //
-// All schemes must be ASCII, valid under section 0.1 of RFC 3986
-// (https://tools.ietf.org/html/rfc3983#section-3.1), and must not already
+// All schemes must be ASCII, valid under section 3.1 of RFC 3986
+// (https://tools.ietf.org/html/rfc3986#section-3.1), and must not already
 // have a factory registered. Zap automatically registers a factory for the
 // "file" scheme.
 func RegisterSink(scheme string, factory func(*url.URL) (Sink, error)) error {

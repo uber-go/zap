@@ -75,8 +75,8 @@ func CapitalColorLevelEncoder(l Level, enc PrimitiveArrayEncoder) {
 }
 
 // UnmarshalText unmarshals text to a LevelEncoder. "capital" is unmarshaled to
-// CapitalLevelEncoder, "coloredCapital" is unmarshaled to CapitalColorLevelEncoder,
-// "colored" is unmarshaled to LowercaseColorLevelEncoder, and anything else
+// CapitalLevelEncoder, "capitalColor" is unmarshaled to CapitalColorLevelEncoder,
+// "color" is unmarshaled to LowercaseColorLevelEncoder, and anything else
 // is unmarshaled to LowercaseLevelEncoder.
 func (e *LevelEncoder) UnmarshalText(text []byte) error {
 	switch string(text) {
@@ -172,7 +172,7 @@ func TimeEncoderOfLayout(layout string) TimeEncoder {
 // "rfc3339" and "RFC3339" are unmarshaled to RFC3339TimeEncoder.
 // "iso8601" and "ISO8601" are unmarshaled to ISO8601TimeEncoder.
 // "millis" is unmarshaled to EpochMillisTimeEncoder.
-// "nanos" is unmarshaled to EpochNanosEncoder.
+// "nanos" is unmarshaled to EpochNanosTimeEncoder.
 // Anything else is unmarshaled to EpochTimeEncoder.
 func (e *TimeEncoder) UnmarshalText(text []byte) error {
 	switch string(text) {
