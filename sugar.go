@@ -91,7 +91,7 @@ func (s *SugaredLogger) WithOptions(opts ...Option) *SugaredLogger {
 //	 sugaredLogger.With(
 //	   "hello", "world",
 //	   "failure", errors.New("oh no"),
-//	   Stack(),
+//	   Stack("stack"),
 //	   "count", 42,
 //	   "user", User{Name: "alice"},
 //	)
@@ -101,16 +101,15 @@ func (s *SugaredLogger) WithOptions(opts ...Option) *SugaredLogger {
 //	unsugared.With(
 //	  String("hello", "world"),
 //	  String("failure", "oh no"),
-//	  Stack(),
+//	  Stack("stack"),
 //	  Int("count", 42),
 //	  Object("user", User{Name: "alice"}),
 //	)
 //
-// Note that the keys in key-value pairs should be strings. In development,
-// passing a non-string key panics. In production, the logger is more
-// forgiving: a separate error is logged, but the key-value pair is skipped
-// and execution continues. Passing an orphaned key triggers similar behavior:
-// panics in development and errors in production.
+// Note that the keys in key-value pairs should be strings. If a key isn't a
+// string, a separate error is logged, the key-value pair is skipped, and
+// execution continues. Passing an orphaned key triggers the same behavior.
+// This is true in both development and production.
 func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
 	return &SugaredLogger{base: s.base.With(s.sweetenFields(args)...)}
 }
@@ -123,9 +122,9 @@ func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
 // not the time of WithLazy().
 //
 // Similar to [With], fields added to the child don't affect the parent,
-// and vice versa. Also, the keys in key-value pairs should be strings. In development,
-// passing a non-string key panics, while in production it logs an error and skips the pair.
-// Passing an orphaned key has the same behavior.
+// and vice versa. Also, the keys in key-value pairs should be strings. Passing a
+// non-string key logs an error and skips the pair, in both development and
+// production. Passing an orphaned key has the same behavior.
 func (s *SugaredLogger) WithLazy(args ...interface{}) *SugaredLogger {
 	return &SugaredLogger{base: s.base.WithLazy(s.sweetenFields(args)...)}
 }

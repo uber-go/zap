@@ -115,7 +115,7 @@ func nopSamplingHook(Entry, SamplingDecision) {}
 //	var dropped atomic.Int64
 //	zapcore.SamplerHook(func(ent zapcore.Entry, dec zapcore.SamplingDecision) {
 //	  if dec&zapcore.LogDropped > 0 {
-//	    dropped.Inc()
+//	    dropped.Add(1)
 //	  }
 //	})
 func SamplerHook(hook func(entry Entry, dec SamplingDecision)) SamplerOption {
