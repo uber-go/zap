@@ -337,6 +337,72 @@ func TestJSONEncoderTimeFormats(t *testing.T) {
 	}
 }
 
+func TestJSONEncoderTimeLayoutEscaping(t *testing.T) {
+	// The output of a custom time layout must be JSON-escaped like any other
+	// string value: layouts may contain literal quotes, backslashes, and
+	// control characters, and time zone names (e.g. from time.FixedZone) can
+	// contain arbitrary characters too.
+	date := time.Date(2000, time.January, 2, 3, 4, 5, 0, time.UTC)
+	tests := []struct {
+		desc     string
+		tm       time.Time
+		layout   string
+		expected string
+	}{
+		{
+			desc:     "safe layout is unchanged",
+			tm:       date,
+			layout:   time.RFC3339,
+			expected: `"k":"2000-01-02T03:04:05Z","a":["2000-01-02T03:04:05Z"]`,
+		},
+		{
+			desc:     "layout with double quote",
+			tm:       date,
+			layout:   `03:04"05`,
+			expected: `"k":"03:04\"05","a":["03:04\"05"]`,
+		},
+		{
+			desc:     "layout with backslash",
+			tm:       date,
+			layout:   `03:04\05`,
+			expected: `"k":"03:04\\05","a":["03:04\\05"]`,
+		},
+		{
+			desc:     "layout with control character",
+			tm:       date,
+			layout:   "03:04\t05",
+			expected: `"k":"03:04\t05","a":["03:04\t05"]`,
+		},
+		{
+			desc:     "time zone name with double quote",
+			tm:       time.Date(2000, time.January, 2, 3, 4, 5, 0, time.FixedZone(`we"ird`, 0)),
+			layout:   "MST",
+			expected: `"k":"we\"ird","a":["we\"ird"]`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			enc := NewJSONEncoder(EncoderConfig{
+				EncodeDuration: NanosDurationEncoder,
+				EncodeTime:     TimeEncoderOfLayout(tt.layout),
+			}).(*jsonEncoder)
+			enc.AddTime("k", tt.tm)
+			assert.NoError(
+				t,
+				enc.AddArray("a", ArrayMarshalerFunc(func(arr ArrayEncoder) error {
+					arr.AppendTime(tt.tm)
+					return nil
+				})),
+				"Unexpected error adding array to JSON encoder.",
+			)
+			assert.Equal(t, tt.expected, enc.buf.String())
+			// The encoded fields must always form valid JSON.
+			assert.True(t, json.Valid([]byte("{"+enc.buf.String()+"}")))
+		})
+	}
+}
+
 func TestJSONEncoderArrays(t *testing.T) {
 	tests := []struct {
 		desc     string

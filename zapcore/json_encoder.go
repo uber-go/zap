@@ -296,10 +296,16 @@ func (enc *jsonEncoder) AppendString(val string) {
 	enc.buf.AppendByte('"')
 }
 
-func (enc *jsonEncoder) AppendTimeLayout(time time.Time, layout string) {
+func (enc *jsonEncoder) AppendTimeLayout(t time.Time, layout string) {
 	enc.addElementSeparator()
 	enc.buf.AppendByte('"')
-	enc.buf.AppendTime(time, layout)
+	// Format the time into a scratch buffer so that the output can be
+	// JSON-escaped like any other string value: layouts and even time zone
+	// names may contain characters that aren't valid inside a JSON string.
+	scratch := bufferpool.Get()
+	scratch.AppendTime(t, layout)
+	enc.safeAddByteString(scratch.Bytes())
+	scratch.Free()
 	enc.buf.AppendByte('"')
 }
 
