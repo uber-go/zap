@@ -535,6 +535,37 @@ func TestSugarAddCaller(t *testing.T) {
 	}
 }
 
+func TestSugarArgErrorsReportCaller(t *testing.T) {
+	// The errors logged for malformed key-value pairs should point at the
+	// code that passed them, like the log entry itself does.
+	tests := []struct {
+		desc string
+		log  func(*SugaredLogger)
+	}{
+		{"Infow dangling key", func(l *SugaredLogger) { l.Infow("msg", "dangling") }},
+		{"Infow non-string key", func(l *SugaredLogger) { l.Infow("msg", 42, "value") }},
+		{"Infow multiple errors", func(l *SugaredLogger) { l.Infow("msg", errors.New("a"), errors.New("b")) }},
+		{"Logw dangling key", func(l *SugaredLogger) { l.Logw(WarnLevel, "msg", "dangling") }},
+		{"With dangling key", func(l *SugaredLogger) { l.With("dangling") }},
+		{"WithLazy dangling key", func(l *SugaredLogger) { l.WithLazy("dangling") }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			withSugar(t, DebugLevel, opts(AddCaller()), func(logger *SugaredLogger, logs *observer.ObservedLogs) {
+				tt.log(logger)
+				errLogs := logs.FilterLevelExact(ErrorLevel).AllUntimed()
+				require.Len(t, errLogs, 1, "Expected one error about the arguments.")
+				assert.Regexp(
+					t,
+					`.+/sugar_test.go:[\d]+$`,
+					errLogs[0].Caller,
+					"Expected the argument error to report the caller of the sugared method.",
+				)
+			})
+		})
+	}
+}
+
 func TestSugarAddCallerFail(t *testing.T) {
 	errBuf := &ztest.Buffer{}
 	withSugar(t, DebugLevel, opts(AddCaller(), AddCallerSkip(1e3), ErrorOutput(errBuf)), func(log *SugaredLogger, logs *observer.ObservedLogs) {

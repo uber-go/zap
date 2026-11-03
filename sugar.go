@@ -112,7 +112,7 @@ func (s *SugaredLogger) WithOptions(opts ...Option) *SugaredLogger {
 // and execution continues. Passing an orphaned key triggers similar behavior:
 // panics in development and errors in production.
 func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
-	return &SugaredLogger{base: s.base.With(s.sweetenFields(args)...)}
+	return &SugaredLogger{base: s.base.With(s.sweetenFields(args, 1)...)}
 }
 
 // WithLazy adds a variadic number of fields to the logging context lazily.
@@ -127,7 +127,7 @@ func (s *SugaredLogger) With(args ...interface{}) *SugaredLogger {
 // passing a non-string key panics, while in production it logs an error and skips the pair.
 // Passing an orphaned key has the same behavior.
 func (s *SugaredLogger) WithLazy(args ...interface{}) *SugaredLogger {
-	return &SugaredLogger{base: s.base.WithLazy(s.sweetenFields(args)...)}
+	return &SugaredLogger{base: s.base.WithLazy(s.sweetenFields(args, 1)...)}
 }
 
 // Level reports the minimum enabled level for this logger.
@@ -352,7 +352,7 @@ func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interf
 
 	msg := getMessage(template, fmtArgs)
 	if ce := s.base.Check(lvl, msg); ce != nil {
-		ce.Write(s.sweetenFields(context)...)
+		ce.Write(s.sweetenFields(context, 2)...)
 	}
 }
 
@@ -364,7 +364,7 @@ func (s *SugaredLogger) logln(lvl zapcore.Level, fmtArgs []interface{}, context 
 
 	msg := getMessageln(fmtArgs)
 	if ce := s.base.Check(lvl, msg); ce != nil {
-		ce.Write(s.sweetenFields(context)...)
+		ce.Write(s.sweetenFields(context, 2)...)
 	}
 }
 
@@ -392,7 +392,11 @@ func getMessageln(fmtArgs []interface{}) string {
 	return msg[:len(msg)-1]
 }
 
-func (s *SugaredLogger) sweetenFields(args []interface{}) []Field {
+// sweetenFields turns loosely-typed key-value pairs into Fields, logging an
+// error for each malformed pair it skips. depth is the number of frames
+// between sweetenFields and the caller's code: 1 for With and WithLazy, 2 for
+// the logging methods, which go through log or logln.
+func (s *SugaredLogger) sweetenFields(args []interface{}, depth int) []Field {
 	if len(args) == 0 {
 		return nil
 	}
@@ -419,7 +423,7 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []Field {
 				seenError = true
 				fields = append(fields, Error(err))
 			} else {
-				s.base.Error(_multipleErrMsg, Error(err))
+				s.argError(depth, _multipleErrMsg, Error(err))
 			}
 			i++
 			continue
@@ -427,7 +431,7 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []Field {
 
 		// Make sure this element isn't a dangling key.
 		if i == len(args)-1 {
-			s.base.Error(_oddNumberErrMsg, Any("ignored", args[i]))
+			s.argError(depth, _oddNumberErrMsg, Any("ignored", args[i]))
 			break
 		}
 
@@ -448,9 +452,16 @@ func (s *SugaredLogger) sweetenFields(args []interface{}) []Field {
 
 	// If we encountered any invalid key-value pairs, log an error.
 	if len(invalid) > 0 {
-		s.base.Error(_nonStringKeyErrMsg, Array("invalid", invalid))
+		s.argError(depth, _nonStringKeyErrMsg, Array("invalid", invalid))
 	}
 	return fields
+}
+
+// argError logs an error about the arguments passed to a sugared method, with
+// the caller set to the code that called that method. The two frames the base
+// logger already skips are argError and sweetenFields; depth adds the rest.
+func (s *SugaredLogger) argError(depth int, msg string, field Field) {
+	s.base.WithOptions(AddCallerSkip(depth)).Error(msg, field)
 }
 
 type invalidPair struct {
