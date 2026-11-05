@@ -118,6 +118,18 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 			body:          "level=warn",
 		},
 		{
+			desc:          "PUT query parameters without content type or body",
+			method:        http.MethodPut,
+			query:         "?level=warn",
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+		},
+		{
+			desc:         "PUT without content type, body or query",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+		},
+		{
 			desc:          "JSON ignores query",
 			method:        http.MethodPut,
 			query:         "?level=info",

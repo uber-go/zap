@@ -116,6 +116,12 @@ func decodePutRequest(contentType string, r *http.Request) (zapcore.Level, error
 	if err == nil && mediaType == "application/x-www-form-urlencoded" {
 		return decodePutURL(r)
 	}
+	if contentType == "" && r.ContentLength == 0 {
+		// A PUT without a body, such as "curl -X PUT .../log/level?level=debug",
+		// sends no Content-Type. There is no JSON payload to decode, so read the
+		// level from the query parameter.
+		return decodePutURL(r)
+	}
 	return decodePutJSON(r.Body)
 }
 
