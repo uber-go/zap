@@ -21,7 +21,9 @@
 package zap
 
 import (
+	"io"
 	"log"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -141,6 +143,31 @@ func TestNewStdLogAtFatal(t *testing.T) {
 		})
 		assert.True(t, true, stub.Exited, "Expected Fatal logger call to terminate process.")
 		stub.Unstub()
+	})
+}
+
+func TestNewStdLogWriterReportsFullLength(t *testing.T) {
+	// The writer behind the *log.Logger trims surrounding whitespace before
+	// logging, but it must still report the whole input as written:
+	// io.Copy and os/exec treat n < len(p) as io.ErrShortWrite.
+	withLogger(t, DebugLevel, nil, func(l *Logger, logs *observer.ObservedLogs) {
+		w := NewStdLog(l).Writer()
+
+		for _, msg := range []string{"redirected\n", "  padded\t\n", "no newline"} {
+			n, err := w.Write([]byte(msg))
+			require.NoError(t, err, "Unexpected error writing %q.", msg)
+			assert.Equal(t, len(msg), n, "Unexpected byte count writing %q.", msg)
+		}
+
+		_, err := io.Copy(w, strings.NewReader("copied\n"))
+		require.NoError(t, err, "Unexpected error copying into the writer.")
+
+		var msgs []string
+		for _, ent := range logs.AllUntimed() {
+			msgs = append(msgs, ent.Message)
+		}
+		assert.Equal(t, []string{"redirected", "padded", "no newline", "copied"}, msgs,
+			"Unexpected logged messages.")
 	})
 }
 

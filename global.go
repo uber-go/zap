@@ -163,7 +163,8 @@ type loggerWriter struct {
 }
 
 func (l *loggerWriter) Write(p []byte) (int, error) {
-	p = bytes.TrimSpace(p)
-	l.logFunc(string(p))
+	l.logFunc(string(bytes.TrimSpace(p)))
+	// Report the full input as written even though surrounding whitespace
+	// was trimmed; io.Writer requires an error whenever n < len(p).
 	return len(p), nil
 }
