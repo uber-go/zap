@@ -139,7 +139,7 @@ type sliceArrayEncoder struct {
 }
 
 func (s *sliceArrayEncoder) AppendArray(v ArrayMarshaler) error {
-	enc := &sliceArrayEncoder{}
+	enc := &sliceArrayEncoder{elems: make([]interface{}, 0)}
 	err := v.MarshalLogArray(enc)
 	s.elems = append(s.elems, enc.elems)
 	return err

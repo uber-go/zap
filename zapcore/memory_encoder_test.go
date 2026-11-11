@@ -304,6 +304,13 @@ func TestSliceArrayEncoderAppend(t *testing.T) {
 			expected: []interface{}{true, false},
 		},
 		{
+			desc: "AppendArray (empty)",
+			f: func(e ArrayEncoder) {
+				assert.NoError(t, e.AppendArray(turduckens(0)))
+			},
+			expected: []interface{}{},
+		},
+		{
 			desc: "object (no nested namespace) then string",
 			f: func(e ArrayEncoder) {
 				err := e.AppendArray(ArrayMarshalerFunc(func(inner ArrayEncoder) error {
