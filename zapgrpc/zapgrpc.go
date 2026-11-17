@@ -129,7 +129,8 @@ func (v *printer) Printf(format string, args ...interface{}) {
 }
 
 func (v *printer) Println(args ...interface{}) {
-	if v.enab.Enabled(v.level) {
+	// Fatal must exit even if the core is disabled, like SugaredLogger.Fatal.
+	if v.level >= zapcore.DPanicLevel || v.enab.Enabled(v.level) {
 		v.print(sprintln(args))
 	}
 }
