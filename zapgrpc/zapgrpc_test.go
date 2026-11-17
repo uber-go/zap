@@ -155,6 +155,14 @@ func TestLoggerFatalExpected(t *testing.T) {
 	})
 }
 
+func TestLoggerFatalDisabledCore(t *testing.T) {
+	logger := NewLogger(zap.New(zapcore.NewNopCore(), zap.WithFatalHook(zapcore.WriteThenPanic)))
+
+	require.Panics(t, func() { logger.Fatal("foo") }, "Fatal")
+	require.Panics(t, func() { logger.Fatalf("%s", "foo") }, "Fatalf")
+	require.Panics(t, func() { logger.Fatalln("foo") }, "Fatalln")
+}
+
 func TestLoggerV(t *testing.T) {
 	tests := []struct {
 		zapLevel     zapcore.Level
