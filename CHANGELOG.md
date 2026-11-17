@@ -75,8 +75,8 @@ Enhancements:
 Thanks to @Abirdcfly, @craigpastro, @nnnkkk7, and @sashamelentyev for their
 contributions to this release.
 
-[#1148]: https://github.coml/uber-go/zap/pull/1148
-[#1185]: https://github.coml/uber-go/zap/pull/1185
+[#1148]: https://github.com/uber-go/zap/pull/1148
+[#1185]: https://github.com/uber-go/zap/pull/1185
 
 ## 1.23.0 (24 Aug 2022)
 
