@@ -118,6 +118,12 @@ func (brokenObjectErr) MarshalLogObject(ObjectEncoder) error {
 	return errors.New("marshal failed")
 }
 
+type nilSafeErr struct{}
+
+func (*nilSafeErr) Error() string {
+	return "nil-safe error"
+}
+
 func TestErrorEncoding(t *testing.T) {
 	tests := []struct {
 		key   string
@@ -225,6 +231,13 @@ func TestErrorEncoding(t *testing.T) {
 				"err": "<nil>",
 			},
 		},
+		{
+			key:   "err",
+			iface: (*nilSafeErr)(nil),
+			want: map[string]any{
+				"err": "nil-safe error",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -242,6 +255,15 @@ func TestObjectMarshalerErrorFailure(t *testing.T) {
 	f := Field{Key: "k", Type: ErrorType, Interface: brokenObjectErr{}}
 	f.AddTo(enc)
 	assert.Equal(t, "marshal failed", enc.Fields["kError"], "Expected marshal error.")
+}
+
+func TestNilSafeErrorWithoutObjectMarshaler(t *testing.T) {
+	t.Parallel()
+
+	enc := NewMapObjectEncoder()
+	f := Field{Key: "k", Type: ErrorType, Interface: (*nilSafeErr)(nil)}
+	f.AddTo(enc)
+	assert.Equal(t, "nil-safe error", enc.Fields["k"], "Expected nil-safe Error method to be called.")
 }
 
 func TestRichErrorSupport(t *testing.T) {

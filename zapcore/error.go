@@ -64,13 +64,12 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 		}
 	}()
 
-	if v := reflect.ValueOf(err); v.Kind() == reflect.Pointer && v.IsNil() {
-		enc.AddString(key, "<nil>")
-		return nil
-	}
-
 	switch e := err.(type) {
 	case ObjectMarshaler:
+		if v := reflect.ValueOf(err); v.Kind() == reflect.Pointer && v.IsNil() {
+			enc.AddString(key, "<nil>")
+			return nil
+		}
 		return enc.AddObject(key, e)
 	}
 

@@ -175,3 +175,15 @@ func TestErrorObjectMarshaler(t *testing.T) {
 		},
 	}, enc.Fields, "Unexpected object error field.")
 }
+
+type nilSafeErr struct{}
+
+func (*nilSafeErr) Error() string { return "nil-safe error" }
+
+func TestErrorNilSafePointer(t *testing.T) {
+	enc := zapcore.NewMapObjectEncoder()
+	Error((*nilSafeErr)(nil)).AddTo(enc)
+	assert.Equal(t, map[string]interface{}{
+		"error": "nil-safe error",
+	}, enc.Fields, "Unexpected nil-safe error field.")
+}
