@@ -30,12 +30,15 @@ import (
 // Encodes the given error into fields of an object. A field with the given
 // name is added for the error message.
 //
+// If the error implements ObjectMarshaler, it is preferred and the error is
+// encoded as an object using its MarshalLogObject method.
+//
 // If the error implements fmt.Formatter, a field with the name ${key}Verbose
 // is also added with the full verbose error message.
 //
-// Finally, if the error implements errorGroup (from go.uber.org/multierr) or
-// causer (from github.com/pkg/errors), a ${key}Causes field is added with an
-// array of objects containing the errors this error was comprised of.
+// Finally, if the error implements errorGroup (from go.uber.org/multierr),
+// a ${key}Causes field is added with an array of objects containing the
+// errors this error was comprised of.
 //
 //	{
 //	  "error": err.Error(),
@@ -60,6 +63,15 @@ func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
 			retErr = fmt.Errorf("PANIC=%v", rerr)
 		}
 	}()
+
+	switch e := err.(type) {
+	case ObjectMarshaler:
+		if v := reflect.ValueOf(err); v.Kind() == reflect.Pointer && v.IsNil() {
+			enc.AddString(key, "<nil>")
+			return nil
+		}
+		return enc.AddObject(key, e)
+	}
 
 	basic := err.Error()
 	enc.AddString(key, basic)
