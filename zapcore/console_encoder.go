@@ -39,6 +39,9 @@ func getSliceEncoder() *sliceArrayEncoder {
 }
 
 func putSliceEncoder(e *sliceArrayEncoder) {
+	for i := range e.elems {
+		e.elems[i] = nil
+	}
 	e.elems = e.elems[:0]
 	_sliceEncoderPool.Put(e)
 }
