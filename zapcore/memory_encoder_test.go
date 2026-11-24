@@ -368,3 +368,18 @@ func TestMapObjectEncoderReflectionFailures(t *testing.T) {
 		"Expected encoder to use empty values on errors.",
 	)
 }
+
+func TestPutSliceEncoderClearsElems(t *testing.T) {
+	enc := &sliceArrayEncoder{
+		elems: make([]interface{}, 0, 4),
+	}
+	enc.AppendString("payload")
+	enc.AppendByteString([]byte("secret"))
+
+	backing := enc.elems[:cap(enc.elems)]
+	putSliceEncoder(enc)
+
+	for i, elem := range backing {
+		assert.Nil(t, elem, "backing array element %d should be nil after putSliceEncoder", i)
+	}
+}
