@@ -372,6 +372,31 @@ func TestLoggerWithCaptures(t *testing.T) {
 	}
 }
 
+func TestLoggerWithLazySyncDoesNotCaptureFields(t *testing.T) {
+	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{
+		MessageKey: "m",
+	})
+
+	var bs ztest.Buffer
+	logger := New(zapcore.NewCore(enc, &bs, DebugLevel))
+
+	x := 0
+	arr := zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
+		enc.AppendInt(x)
+		return nil
+	})
+
+	logger = logger.WithLazy(Array("a", arr))
+	x = 1
+	require.NoError(t, logger.Sync())
+	x = 2
+	logger.Info("hello")
+
+	if lines := bs.Lines(); assert.Len(t, lines, 1) {
+		assert.JSONEq(t, `{"m":"hello","a":[2]}`, lines[0], "WithLazy fields were captured by Sync instead of the first write.")
+	}
+}
+
 func TestLoggerLogPanic(t *testing.T) {
 	for _, tt := range []struct {
 		do       func(*Logger)
