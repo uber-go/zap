@@ -72,6 +72,8 @@ func (d *lazyWithCore) Write(e Entry, fields []Field) error {
 }
 
 func (d *lazyWithCore) Sync() error {
-	d.initOnce()
-	return d.core.Sync()
+	// Syncing does not write a log entry, so it must not initialize the lazy
+	// fields. With only adds structured context, so flushing the original core
+	// is equivalent to flushing the initialized core.
+	return d.originalCore.Sync()
 }
