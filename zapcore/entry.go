@@ -86,13 +86,7 @@ func (ec EntryCaller) FullPath() string {
 	if !ec.Defined {
 		return "undefined"
 	}
-	buf := bufferpool.Get()
-	buf.AppendString(ec.File)
-	buf.AppendByte(':')
-	buf.AppendInt(int64(ec.Line))
-	caller := buf.String()
-	buf.Free()
-	return caller
+	return ec.formatPath(ec.File)
 }
 
 // TrimmedPath returns a package/file:line description of the caller,
@@ -100,6 +94,23 @@ func (ec EntryCaller) FullPath() string {
 func (ec EntryCaller) TrimmedPath() string {
 	if !ec.Defined {
 		return "undefined"
+	}
+	return ec.formatPath(callerFile(ec, true))
+}
+
+func (ec EntryCaller) formatPath(file string) string {
+	buf := bufferpool.Get()
+	buf.AppendString(file)
+	buf.AppendByte(':')
+	buf.AppendInt(int64(ec.Line))
+	caller := buf.String()
+	buf.Free()
+	return caller
+}
+
+func callerFile(ec EntryCaller, trimmed bool) string {
+	if !trimmed {
+		return ec.File
 	}
 	// nb. To make sure we trim the path correctly on Windows too, we
 	// counter-intuitively need to use '/' and *not* os.PathSeparator here,
@@ -111,26 +122,15 @@ func (ec EntryCaller) TrimmedPath() string {
 	// and https://github.com/golang/go/issues/18151
 	//
 	// for discussion on the issue on Go side.
-	//
-	// Find the last separator.
-	//
 	idx := strings.LastIndexByte(ec.File, '/')
 	if idx == -1 {
-		return ec.FullPath()
+		return ec.File
 	}
-	// Find the penultimate separator.
 	idx = strings.LastIndexByte(ec.File[:idx], '/')
 	if idx == -1 {
-		return ec.FullPath()
+		return ec.File
 	}
-	buf := bufferpool.Get()
-	// Keep everything after the penultimate separator.
-	buf.AppendString(ec.File[idx+1:])
-	buf.AppendByte(':')
-	buf.AppendInt(int64(ec.Line))
-	caller := buf.String()
-	buf.Free()
-	return caller
+	return ec.File[idx+1:]
 }
 
 // An Entry represents a complete log message. The entry's structured context
