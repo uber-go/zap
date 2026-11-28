@@ -43,6 +43,7 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 		query         string
 		contentType   string
 		body          string
+		chunked       bool
 		expectedCode  int
 		expectedLevel zapcore.Level
 	}{
@@ -118,6 +119,80 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 			body:          "level=warn",
 		},
 		{
+			desc:          "PUT query parameters without content type or body",
+			method:        http.MethodPut,
+			query:         "?level=warn",
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+		},
+		{
+			desc:          "PUT query parameters without content type and empty chunked body",
+			method:        http.MethodPut,
+			query:         "?level=warn",
+			chunked:       true,
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.WarnLevel,
+		},
+		{
+			desc:         "PUT without content type, body or query",
+			method:       http.MethodPut,
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			desc:         "PUT empty chunked body without content type or query",
+			method:       http.MethodPut,
+			chunked:      true,
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			desc:          "PUT chunked JSON without content type",
+			method:        http.MethodPut,
+			body:          `{"level":"debug"}`,
+			chunked:       true,
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.DebugLevel,
+		},
+		{
+			desc:          "PUT chunked JSON ignores query",
+			method:        http.MethodPut,
+			query:         "?level=info",
+			body:          `{"level":"debug"}`,
+			chunked:       true,
+			expectedCode:  http.StatusOK,
+			expectedLevel: zap.DebugLevel,
+		},
+		{
+			desc:         "PUT invalid chunked JSON without content type",
+			method:       http.MethodPut,
+			query:        "?level=warn",
+			body:         `{invalid`,
+			chunked:      true,
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			desc:         "PUT whitespace-only chunked body without content type",
+			method:       http.MethodPut,
+			query:        "?level=warn",
+			body:         "   ",
+			chunked:      true,
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			desc:         "PUT empty body with JSON content type",
+			method:       http.MethodPut,
+			query:        "?level=warn",
+			contentType:  "application/json",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			desc:         "PUT empty chunked body with JSON content type",
+			method:       http.MethodPut,
+			query:        "?level=warn",
+			contentType:  "application/json",
+			chunked:      true,
+			expectedCode: http.StatusBadRequest,
+		},
+		{
 			desc:          "JSON ignores query",
 			method:        http.MethodPut,
 			query:         "?level=info",
@@ -191,11 +266,29 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 			lvl := zap.NewAtomicLevel()
 			lvl.SetLevel(zapcore.InfoLevel)
 
-			server := httptest.NewServer(lvl)
+			type requestMeta struct {
+				contentLength    int64
+				transferEncoding []string
+			}
+			metaCh := make(chan requestMeta, 1)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				metaCh <- requestMeta{
+					contentLength:    r.ContentLength,
+					transferEncoding: r.TransferEncoding,
+				}
+				lvl.ServeHTTP(w, r)
+			}))
 			defer server.Close()
 
-			req, err := http.NewRequest(tt.method, server.URL+tt.query, strings.NewReader(tt.body))
+			var body io.Reader = strings.NewReader(tt.body)
+			if tt.chunked {
+				body = io.NopCloser(strings.NewReader(tt.body))
+			}
+			req, err := http.NewRequest(tt.method, server.URL+tt.query, body)
 			require.NoError(t, err, "Error constructing %s request.", req.Method)
+			if tt.chunked {
+				req.ContentLength = -1
+			}
 			if tt.contentType != "" {
 				req.Header.Set("Content-Type", tt.contentType)
 			}
@@ -206,6 +299,12 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 				assert.NoError(t, res.Body.Close(), "Error closing response body.")
 			}()
 
+			if tt.chunked {
+				meta := <-metaCh
+				assert.Equal(t, int64(-1), meta.contentLength, "Expected unknown Content-Length for chunked request.")
+				assert.Equal(t, []string{"chunked"}, meta.transferEncoding, "Expected chunked Transfer-Encoding.")
+			}
+
 			require.Equal(t, tt.expectedCode, res.StatusCode, "Unexpected status code.")
 			assert.Equal(t, "application/json", res.Header.Get("Content-Type"), "Unexpected content type.")
 			if tt.expectedCode != http.StatusOK {
@@ -215,6 +314,7 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 				}
 				require.NoError(t, json.NewDecoder(res.Body).Decode(&pld), "Decoding response body")
 				assert.NotEmpty(t, pld.Error, "Expected an error message")
+				assert.Equal(t, zapcore.InfoLevel, lvl.Level(), "Logging level should remain unchanged on error")
 				return
 			}
 
@@ -225,6 +325,47 @@ func TestAtomicLevelServeHTTP(t *testing.T) {
 			assert.Equal(t, tt.expectedLevel, pld.Level, "Unexpected logging level returned")
 		})
 	}
+}
+
+func TestAtomicLevelServeHTTPDirectRequests(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil body reads query parameter", func(t *testing.T) {
+		lvl := zap.NewAtomicLevel()
+		lvl.SetLevel(zapcore.InfoLevel)
+
+		req, err := http.NewRequest(http.MethodPut, "http://localhost:1234/log/level?level=warn", nil)
+		require.NoError(t, err, "Error constructing request.")
+
+		recorder := httptest.NewRecorder()
+		lvl.ServeHTTP(recorder, req)
+
+		require.Equal(t, http.StatusOK, recorder.Code, "Unexpected status code.")
+		assert.Equal(t, zapcore.WarnLevel, lvl.Level(), "Unexpected logging level.")
+	})
+
+	t.Run("read error does not fall back to query parameter", func(t *testing.T) {
+		lvl := zap.NewAtomicLevel()
+		lvl.SetLevel(zapcore.InfoLevel)
+
+		req, err := http.NewRequest(http.MethodPut, "http://localhost:1234/log/level?level=warn", errReader{err: io.ErrUnexpectedEOF})
+		require.NoError(t, err, "Error constructing request.")
+		req.ContentLength = -1
+
+		recorder := httptest.NewRecorder()
+		lvl.ServeHTTP(recorder, req)
+
+		require.Equal(t, http.StatusBadRequest, recorder.Code, "Unexpected status code.")
+		assert.Equal(t, zapcore.InfoLevel, lvl.Level(), "Logging level should remain unchanged on error.")
+	})
+}
+
+type errReader struct {
+	err error
+}
+
+func (r errReader) Read([]byte) (int, error) {
+	return 0, r.err
 }
 
 func TestAtomicLevelServeHTTPBrokenWriter(t *testing.T) {
