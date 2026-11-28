@@ -699,6 +699,73 @@ func TestCallerEncoders(t *testing.T) {
 	}
 }
 
+func TestJSONCallerEncoderMatchesPath(t *testing.T) {
+	callers := []EntryCaller{
+		{Defined: true, File: "/home/jack/src/github.com/foo/foo.go", Line: 42},
+		{Defined: true, File: "to/foo.go", Line: 42},
+		{Defined: true, File: "foo.go", Line: 42},
+		{Defined: true, File: "a/b/quote\".go", Line: 7},
+		{Defined: true, File: `a/b/back\slash.go`, Line: 8},
+		{Defined: true, File: "a/b/ctl\n.go", Line: 9},
+		{Defined: true, File: "a/b/ünicode.go", Line: 10},
+		{Defined: false, File: "/path/to/foo.go", Line: 42},
+	}
+	for _, caller := range callers {
+		for _, full := range []bool{false, true} {
+			cfg := testEncoderConfig()
+			cfg.TimeKey = ""
+			cfg.FunctionKey = ""
+			if full {
+				cfg.EncodeCaller = FullCallerEncoder
+			}
+			enc := NewJSONEncoder(cfg)
+			buf, err := enc.EncodeEntry(Entry{
+				Level:   InfoLevel,
+				Message: "m",
+				Caller:  caller,
+			}, nil)
+			require.NoError(t, err)
+			var got map[string]any
+			require.NoError(t, json.Unmarshal(buf.Bytes(), &got), "invalid JSON %s", buf.String())
+			buf.Free()
+			if !caller.Defined {
+				_, ok := got["caller"]
+				assert.False(t, ok, "undefined caller should be omitted")
+				continue
+			}
+			want := caller.TrimmedPath()
+			if full {
+				want = caller.FullPath()
+			}
+			assert.Equal(t, want, got["caller"])
+		}
+	}
+}
+
+func TestJSONCallerEncoderAllocs(t *testing.T) {
+	cfg := testEncoderConfig()
+	cfg.TimeKey = ""
+	cfg.FunctionKey = ""
+	enc := NewJSONEncoder(cfg)
+	ent := Entry{
+		Level:   InfoLevel,
+		Message: "hello",
+		Caller:  EntryCaller{Defined: true, File: "/home/jack/src/github.com/foo/foo.go", Line: 42, Function: "foo.Foo"},
+	}
+	buf, err := enc.EncodeEntry(ent, nil)
+	require.NoError(t, err)
+	buf.Free()
+
+	allocs := testing.AllocsPerRun(100, func() {
+		buf, err := enc.EncodeEntry(ent, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		buf.Free()
+	})
+	assert.Zero(t, allocs, "encoding a caller should not allocate")
+}
+
 func TestNameEncoders(t *testing.T) {
 	tests := []struct {
 		name     string

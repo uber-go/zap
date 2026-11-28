@@ -279,14 +279,20 @@ type CallerEncoder func(EntryCaller, PrimitiveArrayEncoder)
 // FullCallerEncoder serializes a caller in /full/path/to/package/file:line
 // format.
 func FullCallerEncoder(caller EntryCaller, enc PrimitiveArrayEncoder) {
-	// TODO: consider using a byte-oriented API to save an allocation.
+	if je, ok := enc.(*jsonEncoder); ok {
+		je.appendCaller(caller, false)
+		return
+	}
 	enc.AppendString(caller.String())
 }
 
 // ShortCallerEncoder serializes a caller in package/file:line format, trimming
 // all but the final directory from the full path.
 func ShortCallerEncoder(caller EntryCaller, enc PrimitiveArrayEncoder) {
-	// TODO: consider using a byte-oriented API to save an allocation.
+	if je, ok := enc.(*jsonEncoder); ok {
+		je.appendCaller(caller, true)
+		return
+	}
 	enc.AppendString(caller.TrimmedPath())
 }
 

@@ -296,6 +296,19 @@ func (enc *jsonEncoder) AppendString(val string) {
 	enc.buf.AppendByte('"')
 }
 
+func (enc *jsonEncoder) appendCaller(ec EntryCaller, trimmed bool) {
+	if !ec.Defined {
+		enc.AppendString("undefined")
+		return
+	}
+	enc.addElementSeparator()
+	enc.buf.AppendByte('"')
+	enc.safeAddString(callerFile(ec, trimmed))
+	enc.buf.AppendByte(':')
+	enc.buf.AppendInt(int64(ec.Line))
+	enc.buf.AppendByte('"')
+}
+
 func (enc *jsonEncoder) AppendTimeLayout(time time.Time, layout string) {
 	enc.addElementSeparator()
 	enc.buf.AppendByte('"')
