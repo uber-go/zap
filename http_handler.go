@@ -21,6 +21,7 @@
 package zap
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -116,11 +117,22 @@ func decodePutRequest(contentType string, r *http.Request) (zapcore.Level, error
 	if err == nil && mediaType == "application/x-www-form-urlencoded" {
 		return decodePutURL(r)
 	}
-	if contentType == "" && r.ContentLength == 0 {
-		// A PUT without a body, such as "curl -X PUT .../log/level?level=debug",
-		// sends no Content-Type. There is no JSON payload to decode, so read the
-		// level from the query parameter.
-		return decodePutURL(r)
+	if contentType == "" && r.ContentLength <= 0 {
+		// A PUT without a body, such as "curl -X PUT .../log/level?level=debug"
+		// or an empty chunked PUT (ContentLength == -1), sends no Content-Type.
+		// There is no JSON payload to decode, so read the level from the query
+		// parameter.
+		if r.Body == nil || r.Body == http.NoBody {
+			return decodePutURL(r)
+		}
+		br := bufio.NewReader(r.Body)
+		if _, err := br.Peek(1); err != nil {
+			if errors.Is(err, io.EOF) {
+				return decodePutURL(r)
+			}
+			return 0, fmt.Errorf("malformed request body: %v", err)
+		}
+		return decodePutJSON(br)
 	}
 	return decodePutJSON(r.Body)
 }
